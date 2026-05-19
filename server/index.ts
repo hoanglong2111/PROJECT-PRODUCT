@@ -21,7 +21,9 @@ import {
   createDeliveryOrder,
   createPurchaseOrder,
   createPurchaseRequest,
+  attachDeliveryOrderDocument,
   fetchExchangeRates,
+  listDeliveryOrderAttachments,
   normalizeCurrencyCode,
   normalizeDeliveryOrder,
   normalizePurchaseOrder,
@@ -46,6 +48,17 @@ import type {
   UpdatePurchaseRequestStatusBody,
   UpdateTaskBody,
 } from './types';
+
+type ParsedMultipartUpload = {
+  documentType: string;
+  file: {
+    buffer: Buffer;
+    fileName: string;
+    mimeType: string;
+  };
+};
+
+const MAX_UPLOAD_BYTES = 6 * 1024 * 1024;
 
 const app = express();
 app.use(
@@ -390,6 +403,34 @@ app.patch(
 );
 
 app.get(
+  `${API_PREFIX}/delivery-orders/:orderNumber/attachments`,
+  authenticateRequest,
+  authorizeRole(readAllRoles),
+  async (request, response) => {
+    const attachments = await listDeliveryOrderAttachments(
+      decodeURIComponent(String(request.params.orderNumber ?? '')),
+    );
+    response.json({ data: attachments, errors: [] });
+  },
+);
+
+app.post(
+  `${API_PREFIX}/delivery-orders/:orderNumber/attachments`,
+  authenticateRequest,
+  authorizeRole(['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'WAREHOUSE_STAFF']),
+  async (request: AuthenticatedRequest, response) => {
+    const upload = await parseMultipartUpload(request);
+    const result = await attachDeliveryOrderDocument({
+      auth: request.auth,
+      documentType: upload.documentType,
+      file: upload.file,
+      orderNumber: decodeURIComponent(String(request.params.orderNumber ?? '')),
+    });
+    response.status(201).json({ data: result, errors: [] });
+  },
+);
+
+app.get(
   `${API_PREFIX}/tasks`,
   authenticateRequest,
   authorizeRole(readAllRoles),
@@ -438,6 +479,67 @@ app.use((error: Error, _request: Request, response: Response, _next: NextFunctio
     errors: [{ message: error.message }],
   });
 });
+
+async function parseMultipartUpload(request: Request): Promise<ParsedMultipartUpload> {
+  const contentType = request.headers['content-type'] ?? '';
+  const boundaryMatch = /boundary=([^;]+)/i.exec(contentType);
+
+  if (!boundaryMatch) {
+    throw new ApiError(400, 'Content-Type multipart/form-data là bắt buộc.');
+  }
+
+  const chunks: Buffer[] = [];
+  let totalBytes = 0;
+
+  for await (const chunk of request) {
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    totalBytes += buffer.length;
+    if (totalBytes > MAX_UPLOAD_BYTES) {
+      throw new ApiError(413, 'File upload vượt quá giới hạn 5MB.');
+    }
+    chunks.push(buffer);
+  }
+
+  const body = Buffer.concat(chunks);
+  const boundary = `--${boundaryMatch[1]}`;
+  const parts = body.toString('binary').split(boundary).slice(1, -1);
+  let documentType = '';
+  let file: ParsedMultipartUpload['file'] | null = null;
+
+  for (const rawPart of parts) {
+    const part = rawPart.replace(/^\r\n/, '').replace(/\r\n$/, '');
+    const separatorIndex = part.indexOf('\r\n\r\n');
+    if (separatorIndex === -1) continue;
+
+    const rawHeaders = part.slice(0, separatorIndex);
+    const rawContent = part.slice(separatorIndex + 4);
+    const nameMatch = /name="([^"]+)"/i.exec(rawHeaders);
+    const name = nameMatch?.[1];
+
+    if (!name) continue;
+
+    if (name === 'documentType') {
+      documentType = Buffer.from(rawContent, 'binary').toString('utf8').trim();
+      continue;
+    }
+
+    if (name === 'file') {
+      const fileName = /filename="([^"]+)"/i.exec(rawHeaders)?.[1] ?? 'attachment';
+      const mimeType = /content-type:\s*([^\r\n]+)/i.exec(rawHeaders)?.[1]?.trim() ?? 'application/octet-stream';
+      file = {
+        buffer: Buffer.from(rawContent, 'binary'),
+        fileName,
+        mimeType,
+      };
+    }
+  }
+
+  if (!documentType || !file) {
+    throw new ApiError(400, 'documentType và file là bắt buộc.');
+  }
+
+  return { documentType, file };
+}
 
 start().catch((error: unknown) => {
   // eslint-disable-next-line no-console

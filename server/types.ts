@@ -203,6 +203,19 @@ export type ExchangeRate = {
   rate: number;
 };
 
+export type LogisticsAttachment = {
+  documentType: string;
+  entityId: string;
+  entityType: string;
+  fileName: string;
+  id: string;
+  mimeType: string;
+  size: number;
+  storageUrl: string;
+  uploadedAt: string;
+  uploadedBy: string | null;
+};
+
 export type ExchangeRatesPayload = {
   base: string;
   nextUpdateAt: string | null;

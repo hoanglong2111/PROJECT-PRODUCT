@@ -179,6 +179,24 @@ export type DashboardStats = {
   monthlyThroughput: Array<{ month: string; deliveryOrders: number; completedTasks: number }>;
 };
 
+export type LogisticsAttachment = {
+  documentType: string;
+  entityId: string;
+  entityType: string;
+  fileName: string;
+  id: string;
+  mimeType: string;
+  size: number;
+  storageUrl: string;
+  uploadedAt: string;
+  uploadedBy: string | null;
+};
+
+export type UploadDeliveryOrderAttachmentResult = {
+  attachment: LogisticsAttachment;
+  deliveryOrder: DeliveryOrder;
+};
+
 async function readCollection<T>(path: string): Promise<T> {
   const response = await http.get<ApiResponse<T>>(path);
   return response.data.data;
@@ -249,6 +267,30 @@ export async function updateDeliveryOrder(orderNumber: string, payload: UpdateDe
   const response = await http.patch<ApiResponse<DeliveryOrder>>(
     `/delivery-orders/${encodeURIComponent(orderNumber)}`,
     payload,
+  );
+  return response.data.data;
+}
+
+export async function fetchDeliveryOrderAttachments(orderNumber: string) {
+  return readCollection<LogisticsAttachment[]>(`/delivery-orders/${encodeURIComponent(orderNumber)}/attachments`);
+}
+
+export async function uploadDeliveryOrderAttachment({
+  documentType,
+  file,
+  orderNumber,
+}: {
+  documentType: string;
+  file: File;
+  orderNumber: string;
+}) {
+  const formData = new FormData();
+  formData.append('documentType', documentType);
+  formData.append('file', file);
+
+  const response = await http.post<ApiResponse<UploadDeliveryOrderAttachmentResult>>(
+    `/delivery-orders/${encodeURIComponent(orderNumber)}/attachments`,
+    formData,
   );
   return response.data.data;
 }

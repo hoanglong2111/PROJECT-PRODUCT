@@ -38,6 +38,8 @@ async function main() {
     ALTER TABLE purchase_orders ADD COLUMN IF NOT EXISTS sap_object_id TEXT;
     ALTER TABLE purchase_orders ADD COLUMN IF NOT EXISTS sap_raw_payload JSONB;
     ALTER TABLE purchase_orders ADD COLUMN IF NOT EXISTS sap_synced_at TIMESTAMPTZ;
+    ALTER TABLE logistics_attachments ADD COLUMN IF NOT EXISTS mime_type TEXT;
+    ALTER TABLE logistics_attachments ADD COLUMN IF NOT EXISTS size_bytes INTEGER;
   `);
     const seedData = loadSeedData();
 

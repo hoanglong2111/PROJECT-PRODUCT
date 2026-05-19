@@ -187,6 +187,8 @@ CREATE TABLE IF NOT EXISTS logistics_attachments (
   document_type TEXT NOT NULL,
   file_name TEXT NOT NULL,
   storage_url TEXT NOT NULL,
+  mime_type TEXT,
+  size_bytes INTEGER,
   uploaded_by TEXT,
   uploaded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
