@@ -211,6 +211,7 @@ const en = {
   'exchangeRates.baseCurrency': 'Base currency',
   'exchangeRates.amount': 'Amount',
   'exchangeRates.currency': 'Currency',
+  'exchangeRates.autoRefresh': 'Auto refresh every 5 minutes',
   'exchangeRates.emptyDescription': 'No currency matches the current filter.',
   'exchangeRates.emptyTitle': 'No exchange rates',
   'exchangeRates.errorDescription': 'KBFE could not load live currency rates from backend.',
@@ -225,6 +226,7 @@ const en = {
   'exchangeRates.loadingDescription': 'Loading currency rates from external provider.',
   'exchangeRates.oneBase': '1 base =',
   'exchangeRates.rate': 'Rate',
+  'exchangeRates.refreshNow': 'Refresh now',
   'exchangeRates.searchPlaceholder': 'Find currency code (USD, VND, EUR...)',
   'exchangeRates.subtitle': 'Track real-time currency rates for purchasing and logistics planning.',
   'exchangeRates.title': 'Exchange Rates',
@@ -699,6 +701,7 @@ const vi: Record<MessageKey, string> = {
   'exchangeRates.baseCurrency': 'Chọn tiền tệ gốc',
   'exchangeRates.amount': 'Số tiền',
   'exchangeRates.currency': 'Tiền tệ',
+  'exchangeRates.autoRefresh': 'Tự cập nhật mỗi 5 phút',
   'exchangeRates.emptyDescription': 'Không có tiền tệ nào khớp bộ lọc hiện tại.',
   'exchangeRates.emptyTitle': 'Không có dữ liệu tỷ giá',
   'exchangeRates.errorDescription': 'KBFE chưa lấy được tỷ giá tiền tệ từ backend.',
@@ -713,6 +716,7 @@ const vi: Record<MessageKey, string> = {
   'exchangeRates.loadingDescription': 'Đang tải tỷ giá tiền tệ từ nhà cung cấp bên ngoài.',
   'exchangeRates.oneBase': '1 tiền tệ gốc =',
   'exchangeRates.rate': 'Tỷ giá',
+  'exchangeRates.refreshNow': 'Cập nhật ngay',
   'exchangeRates.searchPlaceholder': 'Tìm mã tiền tệ (USD, VND, EUR...)',
   'exchangeRates.subtitle': 'Theo dõi tỷ giá thực tế để hỗ trợ kế hoạch mua hàng và logistics.',
   'exchangeRates.title': 'Tỷ giá tiền tệ',
@@ -1079,6 +1083,51 @@ const languageLabels: Record<WorkspaceLanguage, Record<WorkspaceLanguage, string
   },
 };
 
+const currencyCountryLabels: Record<WorkspaceLanguage, Record<string, string>> = {
+  en: {
+    AUD: 'Australia',
+    CAD: 'Canada',
+    CHF: 'Switzerland',
+    CNY: 'China',
+    EUR: 'Eurozone',
+    GBP: 'United Kingdom',
+    HKD: 'Hong Kong',
+    IDR: 'Indonesia',
+    INR: 'India',
+    JPY: 'Japan',
+    KRW: 'South Korea',
+    LAK: 'Laos',
+    MYR: 'Malaysia',
+    PHP: 'Philippines',
+    SGD: 'Singapore',
+    THB: 'Thailand',
+    TWD: 'Taiwan',
+    USD: 'United States',
+    VND: 'Vietnam',
+  },
+  vi: {
+    AUD: 'Úc',
+    CAD: 'Canada',
+    CHF: 'Thụy Sĩ',
+    CNY: 'Trung Quốc',
+    EUR: 'Khu vực đồng Euro',
+    GBP: 'Vương quốc Anh',
+    HKD: 'Hồng Kông',
+    IDR: 'Indonesia',
+    INR: 'Ấn Độ',
+    JPY: 'Nhật Bản',
+    KRW: 'Hàn Quốc',
+    LAK: 'Lào',
+    MYR: 'Malaysia',
+    PHP: 'Philippines',
+    SGD: 'Singapore',
+    THB: 'Thái Lan',
+    TWD: 'Đài Loan',
+    USD: 'Hoa Kỳ',
+    VND: 'Việt Nam',
+  },
+};
+
 const statusLabels: Record<WorkspaceLanguage, Record<string, string>> = {
   en: {
     APPROVED: 'Approved',
@@ -1209,6 +1258,11 @@ export function useI18n() {
 
     return {
       language,
+      currencyLabel: (currencyCode: string) => {
+        const normalizedCode = currencyCode.toUpperCase();
+        const country = currencyCountryLabels[language][normalizedCode];
+        return country ? `${normalizedCode} (${country})` : normalizedCode;
+      },
       documentLabel: (documentName: string) => documentLabels[language][documentName] ?? documentName,
       eventThemeLabel: (theme: EventTheme) => eventThemeLabels[language][theme],
       flowTagLabel: (tag: BusinessFlowTag) => flowTagLabels[language][tag],

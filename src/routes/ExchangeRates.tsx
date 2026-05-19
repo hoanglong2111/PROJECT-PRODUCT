@@ -1,5 +1,6 @@
 import {
   Badge,
+  Button,
   Group,
   Loader,
   NumberFormatter,
@@ -15,7 +16,7 @@ import {
   Title,
 } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
-import { IconExchange, IconSearch } from '@tabler/icons-react';
+import { IconExchange, IconRefresh, IconSearch } from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
 
 import { fetchExchangeRates } from '../api/system';
@@ -23,10 +24,7 @@ import { EmptyState } from '../components/EmptyState';
 import { PageError, PageLoading } from '../components/PageFeedback';
 import { useI18n } from '../i18n';
 
-const baseCurrencyOptions = ['USD', 'VND', 'EUR', 'JPY', 'CNY', 'KRW', 'THB', 'SGD'].map((currency) => ({
-  label: currency,
-  value: currency,
-}));
+const baseCurrencyCodes = ['USD', 'VND', 'EUR', 'JPY', 'CNY', 'KRW', 'THB', 'SGD'];
 const quickCurrencyCodes = ['VND', 'USD', 'EUR', 'CNY'];
 
 function formatRate(value: number | null | undefined) {
@@ -41,7 +39,7 @@ function formatRate(value: number | null | undefined) {
 }
 
 export function ExchangeRates() {
-  const { t } = useI18n();
+  const { currencyLabel, t } = useI18n();
   const [baseCurrency, setBaseCurrency] = useState('USD');
   const [estimateAmount, setEstimateAmount] = useState<number | string>(1000);
   const [fromCurrency, setFromCurrency] = useState('USD');
@@ -51,6 +49,9 @@ export function ExchangeRates() {
   const exchangeRatesQuery = useQuery({
     queryKey: ['exchange-rates', baseCurrency],
     queryFn: () => fetchExchangeRates(baseCurrency),
+    refetchInterval: 5 * 60 * 1000,
+    refetchIntervalInBackground: true,
+    staleTime: 60 * 1000,
   });
 
   const rates = exchangeRatesQuery.data?.rates ?? [];
@@ -64,8 +65,11 @@ export function ExchangeRates() {
       return rates;
     }
 
-    return rates.filter((item) => item.currency.includes(normalizedSearch));
-  }, [rates, search]);
+    return rates.filter((item) => {
+      const label = currencyLabel(item.currency).toUpperCase();
+      return item.currency.includes(normalizedSearch) || label.includes(normalizedSearch);
+    });
+  }, [currencyLabel, rates, search]);
 
   const quickRates = useMemo(
     () =>
@@ -79,8 +83,12 @@ export function ExchangeRates() {
   );
   const currencyOptions = useMemo(() => {
     const currencies = Array.from(new Set([baseCurrency, ...rates.map((item) => item.currency)])).sort();
-    return currencies.map((currency) => ({ label: currency, value: currency }));
-  }, [baseCurrency, rates]);
+    return currencies.map((currency) => ({ label: currencyLabel(currency), value: currency }));
+  }, [baseCurrency, currencyLabel, rates]);
+  const baseCurrencyOptions = useMemo(
+    () => baseCurrencyCodes.map((currency) => ({ label: currencyLabel(currency), value: currency })),
+    [currencyLabel],
+  );
   const rateByCurrency = useMemo(() => {
     const entries = new Map(rates.map((item) => [item.currency, item.rate]));
     entries.set(baseCurrency, 1);
@@ -134,9 +142,19 @@ export function ExchangeRates() {
             {t('exchangeRates.subtitle')}
           </Text>
         </div>
-        <Badge leftSection={<IconExchange size={14} />} size="lg" variant="light">
-          {exchangeRatesQuery.data?.provider}
-        </Badge>
+        <Group gap="xs">
+          <Badge leftSection={<IconExchange size={14} />} size="lg" variant="light">
+            {exchangeRatesQuery.data?.provider}
+          </Badge>
+          <Button
+            leftSection={<IconRefresh size={16} />}
+            loading={exchangeRatesQuery.isFetching}
+            onClick={() => void exchangeRatesQuery.refetch()}
+            variant="light"
+          >
+            {t('exchangeRates.refreshNow')}
+          </Button>
+        </Group>
       </Group>
 
       <SimpleGrid cols={{ base: 1, sm: 3 }}>
@@ -150,8 +168,8 @@ export function ExchangeRates() {
           {quickRates.map((item) => (
             <Metric
               key={item.currency}
-              label={`${t('exchangeRates.oneBase')} ${baseCurrency}`}
-              value={`${formatRate(item.rate)} ${item.currency}`}
+              label={`${t('exchangeRates.oneBase')} ${currencyLabel(baseCurrency)}`}
+              value={`${formatRate(item.rate)} ${currencyLabel(item.currency)}`}
             />
           ))}
         </SimpleGrid>
@@ -196,9 +214,9 @@ export function ExchangeRates() {
             {estimate
               ? t('exchangeRates.estimateFormula', {
                   amount: formatRate(estimate.amount),
-                  from: fromCurrency,
+                  from: currencyLabel(fromCurrency),
                   rate: formatRate(estimate.rate),
-                  to: toCurrency,
+                  to: currencyLabel(toCurrency),
                 })
               : t('exchangeRates.estimateUnavailable')}
           </Text>
@@ -224,7 +242,7 @@ export function ExchangeRates() {
           <Group justify="flex-end" align="end" gap="xs">
             {exchangeRatesQuery.isFetching ? <Loader size="sm" /> : null}
             <Text size="sm" c="dimmed">
-              {t('common.shown', { count: filteredRates.length })}
+              {t('common.shown', { count: filteredRates.length })} · {t('exchangeRates.autoRefresh')}
             </Text>
           </Group>
         </SimpleGrid>
@@ -246,7 +264,7 @@ export function ExchangeRates() {
                 {filteredRates.map((item) => (
                   <Table.Tr key={item.currency}>
                     <Table.Td>
-                      <Text fw={700}>{item.currency}</Text>
+                      <Text fw={700}>{currencyLabel(item.currency)}</Text>
                     </Table.Td>
                     <Table.Td>
                       <Text fw={600}>
