@@ -197,6 +197,16 @@ body {
   background: #eff6ff;
 }
 
+.ops-panel {
+  border-color: #bae6fd;
+  background: #f0f9ff;
+}
+
+.ops-panel-risk {
+  border-color: #fed7aa;
+  background: #fff7ed;
+}
+
 .page-state-panel {
   max-width: 56rem;
 }
@@ -280,6 +290,16 @@ html[data-mantine-color-scheme='dark'] .page-state-panel-error {
 html[data-mantine-color-scheme='dark'] .flow-context {
   border-color: #1d4ed8;
   background: #111827;
+}
+
+html[data-mantine-color-scheme='dark'] .ops-panel {
+  border-color: #075985;
+  background: #082f49;
+}
+
+html[data-mantine-color-scheme='dark'] .ops-panel-risk {
+  border-color: #9a3412;
+  background: #2f1608;
 }
 
 html[data-kbfe-event-theme='risk-focus'] .risk-panel {

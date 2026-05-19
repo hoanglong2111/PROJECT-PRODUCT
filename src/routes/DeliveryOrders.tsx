@@ -29,6 +29,7 @@ import {
   IconAlertTriangle,
   IconArrowRight,
   IconChecklist,
+  IconClipboardCheck,
   IconEye,
   IconFileCheck,
   IconGitBranch,
@@ -62,6 +63,12 @@ import { useEntityParam } from '../hooks/useEntityParam';
 import { useI18n } from '../i18n';
 import { useWorkspaceStore } from '../stores/workspaceStore';
 import { calcDelay } from '../utils/delay';
+import {
+  getDeliveryOrderRisks,
+  getOperationalGates,
+  getRiskColor,
+  type OperationalRiskCode,
+} from '../utils/operations';
 
 const shippingIcon = {
   SEA: IconShip,
@@ -469,6 +476,8 @@ export function DeliveryOrders() {
 
 function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: DeliveryOrder }) {
   const { documentLabel, statusLabel, t } = useI18n();
+  const gates = getOperationalGates(deliveryOrder);
+  const risks = getDeliveryOrderRisks(deliveryOrder);
   const taskProgress =
     deliveryOrder.task_summary.total_tasks > 0
       ? Math.round((deliveryOrder.task_summary.completed_tasks / deliveryOrder.task_summary.total_tasks) * 100)
@@ -512,12 +521,17 @@ function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: DeliveryOrder }
         </Alert>
       )}
 
+      <OperationalGateSummary deliveryOrder={deliveryOrder} gates={gates} risks={risks} />
+
       <UpdateDeliveryOrderForm deliveryOrder={deliveryOrder} />
 
       <Tabs defaultValue="overview">
         <Tabs.List>
           <Tabs.Tab value="overview" leftSection={<IconTruckDelivery size={16} />}>
             {t('deliveryOrders.overview')}
+          </Tabs.Tab>
+          <Tabs.Tab value="ops" leftSection={<IconClipboardCheck size={16} />}>
+            {t('deliveryOrders.opsControl')}
           </Tabs.Tab>
           <Tabs.Tab value="documents" leftSection={<IconFileCheck size={16} />}>
             {t('common.documents')}
@@ -556,6 +570,75 @@ function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: DeliveryOrder }
               </Timeline.Item>
             </Timeline>
           </SimpleGrid>
+        </Tabs.Panel>
+
+        <Tabs.Panel value="ops" pt="md">
+          <Stack gap="md">
+            <SimpleGrid cols={{ base: 1, sm: 2 }}>
+              {gates.map((gate) => (
+                <Paper key={gate.id} withBorder p="md" className={gate.passed ? undefined : 'risk-panel'}>
+                  <Group justify="space-between" align="flex-start" gap="xs" wrap="nowrap">
+                    <div>
+                      <Text fw={700}>{gateLabel(gate.id, t)}</Text>
+                      <Text size="sm" c="dimmed">
+                        {gate.detail || '-'}
+                      </Text>
+                    </div>
+                    <Badge color={gate.passed ? 'teal' : 'orange'} variant="light">
+                      {gate.passed ? t('deliveryOrders.gatePassed') : t('deliveryOrders.gateBlocked')}
+                    </Badge>
+                  </Group>
+                  <Text size="xs" c="dimmed" mt="xs">
+                    {t('common.owner')}: {gate.owner}
+                  </Text>
+                </Paper>
+              ))}
+            </SimpleGrid>
+
+            <Paper withBorder p="md">
+              <Group justify="space-between" align="flex-start" mb="sm">
+                <div>
+                  <Text fw={700}>{t('deliveryOrders.nextActions')}</Text>
+                  <Text size="sm" c="dimmed">
+                    {t('deliveryOrders.nextActionsDescription')}
+                  </Text>
+                </div>
+                <Badge color={risks.length > 0 ? 'red' : 'teal'} variant="light">
+                  {risks.length > 0 ? t('common.atRisk') : t('deliveryOrders.readyForClosure')}
+                </Badge>
+              </Group>
+              <Stack gap="xs">
+                {risks.length > 0 ? (
+                  risks.map((risk) => (
+                    <Group key={risk.code} justify="space-between" gap="sm">
+                      <Group gap="xs">
+                        <Badge color={getRiskColor(risk.severity)} variant="light">
+                          {riskLabel(risk.code, t)}
+                        </Badge>
+                        <Text size="sm">{risk.detail}</Text>
+                      </Group>
+                      <Text size="sm" c="dimmed">
+                        {risk.owner} · SLA {risk.sla}
+                      </Text>
+                    </Group>
+                  ))
+                ) : (
+                  <Text size="sm" c="dimmed">
+                    {t('deliveryOrders.noOpsRisk')}
+                  </Text>
+                )}
+              </Stack>
+            </Paper>
+
+            <SimpleGrid cols={{ base: 1, md: 3 }}>
+              <Info label="eFMS Booking" value={deliveryOrder.order_info.tracking_number ?? deliveryOrder.order_info.order_number} />
+              <Info label="MBL / Vessel" value={`${deliveryOrder.logistics_shipping.shipping_line ?? '-'} / ${deliveryOrder.logistics_shipping.vessel_code ?? '-'}`} />
+              <Info label="POL / POD" value={`${deliveryOrder.logistics_shipping.port_of_departure} -> ${deliveryOrder.logistics_shipping.port_of_destination}`} />
+              <Info label={t('deliveryOrders.ofAfDebitNote')} value={gates.find((gate) => gate.id === 'documents')?.passed ? t('deliveryOrders.ready') : t('deliveryOrders.waitingDocuments')} />
+              <Info label={t('deliveryOrders.finalDebitNote')} value={gates.find((gate) => gate.id === 'finance')?.passed ? t('deliveryOrders.ready') : t('deliveryOrders.waitingOpsGates')} />
+              <Info label={t('deliveryOrders.podArchive')} value={deliveryOrder.warehouse_tracking.actual_entry_date ? t('deliveryOrders.ready') : t('deliveryOrders.waitingWarehouse')} />
+            </SimpleGrid>
+          </Stack>
         </Tabs.Panel>
 
         <Tabs.Panel value="documents" pt="md">
@@ -600,6 +683,88 @@ function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: DeliveryOrder }
       </Tabs>
     </Paper>
   );
+}
+
+function OperationalGateSummary({
+  deliveryOrder,
+  gates,
+  risks,
+}: {
+  deliveryOrder: DeliveryOrder;
+  gates: ReturnType<typeof getOperationalGates>;
+  risks: ReturnType<typeof getDeliveryOrderRisks>;
+}) {
+  const { t } = useI18n();
+  const passedCount = gates.filter((gate) => gate.passed).length;
+  const delay = calcDelay({
+    actualEntryDate: deliveryOrder.warehouse_tracking.actual_entry_date,
+    plannedEntryDate: deliveryOrder.warehouse_tracking.planned_entry_date,
+    warehouseDeadline: deliveryOrder.warehouse_tracking.warehouse_deadline,
+  });
+
+  return (
+    <Paper withBorder p="md" className={risks.length > 0 ? 'ops-panel ops-panel-risk' : 'ops-panel'}>
+      <SimpleGrid cols={{ base: 1, sm: 3 }}>
+        <div>
+          <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+            {t('deliveryOrders.opsGateScore')}
+          </Text>
+          <Title order={3}>
+            {passedCount}/{gates.length}
+          </Title>
+          <Text size="sm" c="dimmed">
+            {t('deliveryOrders.opsGateScoreDescription')}
+          </Text>
+        </div>
+        <div>
+          <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+            {t('common.delay')}
+          </Text>
+          <Title order={3} c={delay.isLate ? 'red' : 'teal'}>
+            {delay.days}d
+          </Title>
+          <Text size="sm" c="dimmed">
+            {deliveryOrder.warehouse_tracking.warehouse_deadline}
+          </Text>
+        </div>
+        <div>
+          <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+            {t('deliveryOrders.nextAction')}
+          </Text>
+          <Title order={4}>{risks[0] ? riskLabel(risks[0].code, t) : t('deliveryOrders.readyForClosure')}</Title>
+          <Text size="sm" c="dimmed">
+            {risks[0] ? `${risks[0].owner} · SLA ${risks[0].sla}` : t('deliveryOrders.noOpsRisk')}
+          </Text>
+        </div>
+      </SimpleGrid>
+    </Paper>
+  );
+}
+
+function gateLabel(id: string, t: ReturnType<typeof useI18n>['t']) {
+  const labels: Record<string, string> = {
+    customs: t('deliveryOrders.gateCustoms'),
+    documents: t('deliveryOrders.gateDocuments'),
+    finance: t('deliveryOrders.gateFinance'),
+    sap: t('deliveryOrders.gateSap'),
+    tasks: t('deliveryOrders.gateTasks'),
+    warehouse: t('deliveryOrders.gateWarehouse'),
+  };
+
+  return labels[id] ?? id;
+}
+
+function riskLabel(code: OperationalRiskCode, t: ReturnType<typeof useI18n>['t']) {
+  const labels: Record<OperationalRiskCode, string> = {
+    BLOCKED_TASKS: t('opsRisk.blockedTasks'),
+    FINANCE_NOT_READY: t('opsRisk.financeNotReady'),
+    MISSING_DOCUMENTS: t('opsRisk.missingDocuments'),
+    REQUIRED_TASKS: t('opsRisk.requiredTasks'),
+    SAP_SYNC: t('opsRisk.sapSync'),
+    WAREHOUSE_DELAY: t('opsRisk.warehouseDelay'),
+  };
+
+  return labels[code];
 }
 
 function Metric({ color = 'blue', label, value }: { color?: string; label: string; value: number }) {

@@ -18,6 +18,7 @@ import {
   IconAlertTriangle,
   IconArrowRight,
   IconChecklist,
+  IconClockHour4,
   IconFileInvoice,
   IconGitBranch,
   IconShoppingCart,
@@ -35,6 +36,13 @@ import {
 } from '../api/logistics';
 import { PageError, PageLoading } from '../components/PageFeedback';
 import { useI18n } from '../i18n';
+import {
+  getDeliveryOrderRisks,
+  getPrimaryOperationalRisk,
+  getRiskColor,
+  type OperationalRisk,
+  type OperationalRiskCode,
+} from '../utils/operations';
 
 export function Dashboard() {
   const { t } = useI18n();
@@ -100,13 +108,16 @@ export function Dashboard() {
   );
 
   const riskRows = deliveryOrders
-    .filter(
-      (deliveryOrder) =>
-        deliveryOrder.warehouse_tracking.delay_days > 0 ||
-        deliveryOrder.task_summary.blocked_tasks > 0 ||
-        deliveryOrder.logistics_shipping.missing_documents.length > 0,
+    .map((deliveryOrder) => ({
+      deliveryOrder,
+      primaryRisk: getPrimaryOperationalRisk(deliveryOrder),
+      risks: getDeliveryOrderRisks(deliveryOrder),
+    }))
+    .filter((row): row is { deliveryOrder: typeof row.deliveryOrder; primaryRisk: OperationalRisk; risks: OperationalRisk[] } =>
+      Boolean(row.primaryRisk),
     )
-    .slice(0, 5);
+    .sort((a, b) => b.risks.length - a.risks.length)
+    .slice(0, 6);
 
   return (
     <Stack gap="lg">
@@ -154,36 +165,55 @@ export function Dashboard() {
               <Table.Thead>
                 <Table.Tr>
                   <Table.Th>DO</Table.Th>
-                  <Table.Th>ETA</Table.Th>
-                  <Table.Th>{t('common.deadline')}</Table.Th>
-                  <Table.Th>{t('common.delay')}</Table.Th>
+                  <Table.Th>{t('dashboard.nextAction')}</Table.Th>
+                  <Table.Th>{t('common.owner')}</Table.Th>
+                  <Table.Th>SLA</Table.Th>
                   <Table.Th>{t('common.blockers')}</Table.Th>
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {riskRows.map((deliveryOrder) => (
+                {riskRows.map(({ deliveryOrder, primaryRisk, risks }) => (
                   <Table.Tr key={deliveryOrder.id}>
                     <Table.Td>
                       <Text fw={700}>{deliveryOrder.order_info.order_number}</Text>
                       <Text size="xs" c="dimmed">
                         {deliveryOrder.sap_integration.po_number}
                       </Text>
+                      <Button
+                        component={Link}
+                        to={`/delivery-orders?do=${deliveryOrder.order_info.order_number}`}
+                        size="compact-xs"
+                        variant="subtle"
+                        rightSection={<IconArrowRight size={12} />}
+                      >
+                        {t('dashboard.openDo')}
+                      </Button>
                     </Table.Td>
-                    <Table.Td>{deliveryOrder.logistics_shipping.eta_planned ?? '-'}</Table.Td>
-                    <Table.Td>{deliveryOrder.warehouse_tracking.warehouse_deadline}</Table.Td>
                     <Table.Td>
-                      <Badge color={deliveryOrder.warehouse_tracking.delay_days > 0 ? 'red' : 'teal'} variant="light">
-                        {deliveryOrder.warehouse_tracking.delay_days}d
+                      <Badge color={getRiskColor(primaryRisk.severity)} variant="light">
+                        {riskLabel(primaryRisk.code, t)}
+                      </Badge>
+                      <Text size="xs" c="dimmed" mt={4}>
+                        {primaryRisk.detail}
+                      </Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm" fw={600}>
+                        {primaryRisk.owner}
+                      </Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Badge leftSection={<IconClockHour4 size={12} />} color="blue" variant="light">
+                        {primaryRisk.sla}
                       </Badge>
                     </Table.Td>
                     <Table.Td>
                       <Group gap={6}>
-                        {deliveryOrder.task_summary.blocked_tasks > 0 ? (
-                          <Badge color="red">{t('dashboard.blockedTaskBadge', { count: deliveryOrder.task_summary.blocked_tasks })}</Badge>
-                        ) : null}
-                        {deliveryOrder.logistics_shipping.missing_documents.length > 0 ? (
-                          <Badge color="orange">{t('dashboard.docBadge', { count: deliveryOrder.logistics_shipping.missing_documents.length })}</Badge>
-                        ) : null}
+                        {risks.map((risk) => (
+                          <Badge key={risk.code} color={getRiskColor(risk.severity)} variant="light" size="xs">
+                            {riskLabel(risk.code, t)}
+                          </Badge>
+                        ))}
                       </Group>
                     </Table.Td>
                   </Table.Tr>
@@ -234,6 +264,19 @@ export function Dashboard() {
       </SimpleGrid>
     </Stack>
   );
+}
+
+function riskLabel(code: OperationalRiskCode, t: ReturnType<typeof useI18n>['t']) {
+  const labels: Record<OperationalRiskCode, string> = {
+    BLOCKED_TASKS: t('opsRisk.blockedTasks'),
+    FINANCE_NOT_READY: t('opsRisk.financeNotReady'),
+    MISSING_DOCUMENTS: t('opsRisk.missingDocuments'),
+    REQUIRED_TASKS: t('opsRisk.requiredTasks'),
+    SAP_SYNC: t('opsRisk.sapSync'),
+    WAREHOUSE_DELAY: t('opsRisk.warehouseDelay'),
+  };
+
+  return labels[code];
 }
 
 function DashboardCharts({ stats }: { stats: DashboardStats }) {
