@@ -1,0 +1,302 @@
+:root {
+  color-scheme: light dark;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+  background:
+    linear-gradient(180deg, rgba(245, 248, 250, 0.95), rgba(255, 255, 255, 0.92)),
+    #f7f8f6;
+}
+
+.mantine-AppShell-header {
+  border-bottom-color: #e6e9e6;
+}
+
+.mantine-AppShell-navbar {
+  border-right-color: #e6e9e6;
+}
+
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  gap: 0.625rem;
+  color: inherit;
+}
+
+.brand-logo-frame {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 5rem;
+  height: 2.75rem;
+  flex: 0 0 auto;
+}
+
+.brand-logo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 1px rgba(15, 23, 42, 0.12));
+}
+
+.brand-title {
+  line-height: 1;
+}
+
+.profile-trigger {
+  border-radius: 0.5rem;
+  padding: 0.25rem 0.375rem;
+}
+
+.profile-trigger:hover {
+  background: #f3f4f6;
+}
+
+.profile-meta {
+  max-width: 11rem;
+}
+
+.global-search-shell {
+  flex: 1 1 24rem;
+  max-width: 44rem;
+  min-width: 12rem;
+  margin-inline: clamp(0.25rem, 2vw, 1.5rem);
+}
+
+.global-search-input input {
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.global-search-dropdown {
+  overflow: hidden;
+}
+
+.global-search-result {
+  display: block;
+  width: 100%;
+  border-radius: 0.5rem;
+  padding: 0.625rem;
+}
+
+.global-search-result:hover {
+  background: #f3f7f6;
+}
+
+.global-search-result-icon {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 0.5rem;
+  background: #eef2ff;
+  color: #4338ca;
+}
+
+.global-search-result-icon[data-kind='purchase_request'] {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.global-search-result-icon[data-kind='purchase_order'] {
+  background: #ccfbf1;
+  color: #0f766e;
+}
+
+.global-search-result-icon[data-kind='delivery_order'] {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.global-search-result-icon[data-kind='account'] {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.metric-card {
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.metric-icon {
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-items: center;
+  border-radius: 0.5rem;
+}
+
+.metric-icon-teal {
+  background: #ccfbf1;
+  color: #0f766e;
+}
+
+.metric-icon-blue {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.metric-icon-yellow {
+  background: #fef3c7;
+  color: #a16207;
+}
+
+.metric-icon-red {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.stack-pill {
+  background: #fbfbf9;
+}
+
+.module-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  background: #fbfbf9;
+  transition:
+    border-color 120ms ease,
+    transform 120ms ease;
+}
+
+.module-link:hover {
+  border-color: #14b8a6;
+  transform: translateY(-1px);
+}
+
+.module-link-icon {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 0.5rem;
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.risk-panel {
+  border-color: #fecaca;
+  background: #fff7f7;
+}
+
+.flow-context {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.page-state-panel {
+  max-width: 56rem;
+}
+
+.page-state-panel-error {
+  border-color: #fecaca;
+  background: #fffafa;
+}
+
+.settings-account-row-highlight {
+  outline: 2px solid #14b8a6;
+  outline-offset: -2px;
+}
+
+.status-control {
+  align-self: end;
+}
+
+.filter-switch,
+.filter-actions {
+  align-self: end;
+  min-height: 2.25rem;
+}
+
+@media (max-width: 48em) {
+  .global-search-shell {
+    min-width: 0;
+    margin-inline: 0.25rem;
+  }
+
+  .profile-meta {
+    display: none;
+  }
+
+  .status-control,
+  .filter-switch,
+  .filter-actions {
+    align-self: stretch;
+  }
+}
+
+@media (max-width: 36em) {
+  .brand-mark > span:last-child {
+    display: none;
+  }
+}
+
+html[data-mantine-color-scheme='dark'] body {
+  background:
+    linear-gradient(180deg, rgba(17, 24, 39, 0.97), rgba(3, 7, 18, 0.94)),
+    #030712;
+}
+
+html[data-mantine-color-scheme='dark'] .mantine-AppShell-header,
+html[data-mantine-color-scheme='dark'] .mantine-AppShell-navbar {
+  border-color: #253044;
+}
+
+html[data-mantine-color-scheme='dark'] .profile-trigger:hover,
+html[data-mantine-color-scheme='dark'] .global-search-result:hover {
+  background: #1f2937;
+}
+
+html[data-mantine-color-scheme='dark'] .brand-logo {
+  filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.54)) drop-shadow(0 1px 3px rgba(0, 0, 0, 0.42));
+}
+
+html[data-mantine-color-scheme='dark'] .global-search-input input,
+html[data-mantine-color-scheme='dark'] .metric-card,
+html[data-mantine-color-scheme='dark'] .stack-pill,
+html[data-mantine-color-scheme='dark'] .module-link {
+  background: rgba(17, 24, 39, 0.88);
+}
+
+html[data-mantine-color-scheme='dark'] .risk-panel,
+html[data-mantine-color-scheme='dark'] .page-state-panel-error {
+  border-color: #7f1d1d;
+  background: #2a1216;
+}
+
+html[data-mantine-color-scheme='dark'] .flow-context {
+  border-color: #1d4ed8;
+  background: #111827;
+}
+
+html[data-kbfe-event-theme='risk-focus'] .risk-panel {
+  border-color: #ef4444;
+  background: #fff1f2;
+}
+
+html[data-kbfe-event-theme='risk-focus'][data-mantine-color-scheme='dark'] .risk-panel {
+  border-color: #f87171;
+  background: #2f1116;
+}
+
+html[data-kbfe-event-theme='compact'] .mantine-AppShell-main {
+  --mantine-spacing-lg: 0.875rem;
+}
+
+html[data-kbfe-event-theme='compact'] .metric-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+}
