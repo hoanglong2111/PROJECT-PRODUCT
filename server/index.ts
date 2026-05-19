@@ -27,8 +27,10 @@ import {
   normalizePurchaseOrder,
   normalizePurchaseRequest,
   readSnapshot,
+  syncPurchaseOrderWithSap,
   updateDeliveryOrder,
   updatePurchaseRequest,
+  updatePurchaseRequestStatus,
   updateTask,
 } from './services/logistics';
 import type {
@@ -41,6 +43,7 @@ import type {
   TokenPayload,
   UpdateDeliveryOrderBody,
   UpdatePurchaseRequestBody,
+  UpdatePurchaseRequestStatusBody,
   UpdateTaskBody,
 } from './types';
 
@@ -291,6 +294,20 @@ app.patch(
   },
 );
 
+app.patch(
+  `${API_PREFIX}/purchase-requests/:requestedOrderId/status`,
+  authenticateRequest,
+  authorizeRole(['ADMIN', 'PIC_MANAGER']),
+  async (request: AuthenticatedRequest, response) => {
+    const purchaseRequest = await updatePurchaseRequestStatus(
+      decodeURIComponent(String(request.params.requestedOrderId ?? '')),
+      request.body as UpdatePurchaseRequestStatusBody,
+      request.auth,
+    );
+    response.json({ data: purchaseRequest, errors: [] });
+  },
+);
+
 app.get(
   `${API_PREFIX}/purchase-orders`,
   authenticateRequest,
@@ -315,6 +332,19 @@ app.post(
   async (request, response) => {
     const purchaseOrder = await createPurchaseOrder(request.body as CreatePurchaseOrderBody);
     response.status(201).json({ data: purchaseOrder, errors: [] });
+  },
+);
+
+app.post(
+  `${API_PREFIX}/purchase-orders/:poNumber/sap-sync`,
+  authenticateRequest,
+  authorizeRole(['ADMIN', 'PIC_MANAGER']),
+  async (request: AuthenticatedRequest, response) => {
+    const purchaseOrder = await syncPurchaseOrderWithSap(
+      decodeURIComponent(String(request.params.poNumber ?? '')),
+      request.auth,
+    );
+    response.json({ data: purchaseOrder, errors: [] });
   },
 );
 

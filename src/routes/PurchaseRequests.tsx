@@ -1,5 +1,6 @@
 import {
   ActionIcon,
+  Alert,
   Badge,
   Button,
   Drawer,
@@ -19,12 +20,13 @@ import {
   Tooltip,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { useQuery } from '@tanstack/react-query';
-import { IconEye, IconFileInvoice, IconPlus, IconSearch } from '@tabler/icons-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { IconCheck, IconEye, IconFileInvoice, IconPlus, IconSearch, IconX } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { CreatePurchaseRequestDrawer } from '../components/CreateOrderForms';
+import { getApiErrorMessage } from '../api/http';
 import { DelayBadge } from '../components/DelayBadge';
 import { EmptyState } from '../components/EmptyState';
 import { EntityLink } from '../components/EntityLink';
@@ -34,7 +36,15 @@ import { PageError, PageLoading } from '../components/PageFeedback';
 import { SourceLineTable } from '../components/SourceLineTable';
 import { StatusBadge } from '../components/StatusBadge';
 import { UpdatePurchaseRequestForm } from '../components/UpdateOrderForms';
-import { fetchPurchaseOrders, fetchPurchaseRequests, type PurchaseOrder, type PurchaseRequest, type PurchaseRequestStatus } from '../api/logistics';
+import {
+  fetchPurchaseOrders,
+  fetchPurchaseRequests,
+  type PurchaseOrder,
+  type PurchaseRequest,
+  type PurchaseRequestStatus,
+  updatePurchaseRequestStatus,
+} from '../api/logistics';
+import { useAuth } from '../auth/useAuth';
 import { useEntityParam } from '../hooks/useEntityParam';
 import { useI18n } from '../i18n';
 import { useWorkspaceStore } from '../stores/workspaceStore';
@@ -51,6 +61,7 @@ type PurchaseRequestTab = 'all' | 'ready' | 'partial' | 'fulfilled' | 'split' | 
 
 export function PurchaseRequests() {
   const { flowTagLabel, priorityLabel, statusLabel, t } = useI18n();
+  const { user } = useAuth();
   const { close: closePrParam, open: openPrParam, value: focusedPr } = useEntityParam('pr');
   const [selectedPr, setSelectedPr] = useState<PurchaseRequest | null>(null);
   const [activeTab, setActiveTab] = useState<PurchaseRequestTab>('all');
@@ -137,6 +148,7 @@ export function PurchaseRequests() {
   ).length;
   const riskCount = purchaseRequests.filter((request) => request.delay_days > 0).length;
   const pendingCount = purchaseRequests.filter((request) => request.status === 'PENDING_APPROVAL').length;
+  const canManagePurchaseRequests = user?.role === 'ADMIN' || user?.role === 'PIC_MANAGER';
 
   const openDetail = (request: PurchaseRequest) => {
     setSelectedPr(request);
@@ -181,9 +193,11 @@ export function PurchaseRequests() {
           </Text>
         </div>
         <Group gap="xs">
-          <Button onClick={createHandlers.open} leftSection={<IconPlus size={16} />}>
-            {t('purchaseRequests.create')}
-          </Button>
+          {canManagePurchaseRequests ? (
+            <Button onClick={createHandlers.open} leftSection={<IconPlus size={16} />}>
+              {t('purchaseRequests.create')}
+            </Button>
+          ) : null}
           <Button component={Link} to="/workflow" leftSection={<IconFileInvoice size={16} />} variant="light">
             {t('purchaseRequests.inspectWorkflow')}
           </Button>
@@ -341,7 +355,9 @@ export function PurchaseRequests() {
       />
 
       <Drawer opened={Boolean(focusedPr && selectedPr)} onClose={closeDrawer} title={t('purchaseRequests.detailTitle')} position="right" size="lg">
-        {selectedPr ? <PurchaseRequestDetail request={selectedPr} onUpdated={setSelectedPr} /> : null}
+        {selectedPr ? (
+          <PurchaseRequestDetail canManagePurchaseRequests={canManagePurchaseRequests} request={selectedPr} onUpdated={setSelectedPr} />
+        ) : null}
       </Drawer>
     </Stack>
   );
@@ -361,13 +377,15 @@ function Metric({ color = 'blue', label, value }: { color?: string; label: strin
 }
 
 function PurchaseRequestDetail({
+  canManagePurchaseRequests,
   onUpdated,
   request,
 }: {
+  canManagePurchaseRequests: boolean;
   onUpdated?: (request: PurchaseRequest) => void;
   request: PurchaseRequest;
 }) {
-  const { formatNumber, t } = useI18n();
+  const { formatNumber, statusLabel, t } = useI18n();
 
   return (
     <Stack gap="md">
@@ -422,9 +440,20 @@ function PurchaseRequestDetail({
         <Info label={t('common.buyer')} value={`${request.purchasing_manager.name} - ${request.purchasing_manager.department}`} />
       </SimpleGrid>
 
+      <PurchaseRequestStatusActions request={request} onUpdated={onUpdated} statusLabel={statusLabel} />
+
       <SourceLineTable lines={request.line_items} />
 
-      <UpdatePurchaseRequestForm request={request} onUpdated={onUpdated} />
+      {canManagePurchaseRequests ? (
+        <UpdatePurchaseRequestForm request={request} onUpdated={onUpdated} />
+      ) : (
+        <Paper withBorder p="md">
+          <Text fw={700}>{t('purchaseRequests.readOnlyForRole')}</Text>
+          <Text size="sm" c="dimmed">
+            {t('purchaseRequests.readOnlyForRoleDescription')}
+          </Text>
+        </Paper>
+      )}
 
       <Paper withBorder p="md">
         <Text fw={700} mb={6}>
@@ -454,6 +483,106 @@ function PurchaseRequestDetail({
       </Paper>
     </Stack>
   );
+}
+
+function PurchaseRequestStatusActions({
+  onUpdated,
+  request,
+  statusLabel,
+}: {
+  onUpdated?: (request: PurchaseRequest) => void;
+  request: PurchaseRequest;
+  statusLabel: (status: string) => string;
+}) {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { t } = useI18n();
+  const canManageStatus = user?.role === 'ADMIN' || user?.role === 'PIC_MANAGER';
+  const mutation = useMutation({
+    mutationFn: (status: PurchaseRequestStatus) =>
+      updatePurchaseRequestStatus(request.requested_order_id, {
+        reason: t('purchaseRequests.statusChangedByPic'),
+        status,
+      }),
+    onSuccess: (updatedRequest) => {
+      onUpdated?.(updatedRequest);
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['purchase-requests'] }),
+        queryClient.invalidateQueries({ queryKey: ['purchase-orders'] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
+        queryClient.invalidateQueries({ queryKey: ['global-search'] }),
+      ]);
+    },
+  });
+  const options = getPurchaseRequestStatusActions(request.status);
+
+  if (!canManageStatus && options.length === 0) {
+    return null;
+  }
+
+  return (
+    <Paper withBorder p="md">
+      <Group justify="space-between" align="flex-start" gap="md">
+        <div>
+          <Text fw={700}>{t('purchaseRequests.statusControl')}</Text>
+          <Text size="sm" c="dimmed">
+            {t('purchaseRequests.statusControlDescription')}
+          </Text>
+        </div>
+        <Badge color={canManageStatus ? 'teal' : 'gray'} variant="light">
+          {canManageStatus ? t('purchaseRequests.picCanApprove') : t('purchaseRequests.picOnly')}
+        </Badge>
+      </Group>
+
+      {mutation.isError ? (
+        <Alert color="red" mt="md">
+          {getApiErrorMessage(mutation.error)}
+        </Alert>
+      ) : null}
+
+      <Group gap="xs" mt="md">
+        {options.length > 0 ? (
+          options.map((status) => (
+            <Button
+              key={status}
+              disabled={!canManageStatus}
+              loading={mutation.isPending}
+              onClick={() => mutation.mutate(status)}
+              leftSection={status === 'APPROVED' ? <IconCheck size={16} /> : status === 'REJECTED' ? <IconX size={16} /> : undefined}
+              color={status === 'APPROVED' ? 'teal' : status === 'REJECTED' || status === 'CANCELLED' ? 'red' : 'blue'}
+              variant={status === 'APPROVED' ? 'filled' : 'light'}
+            >
+              {statusLabel(status)}
+            </Button>
+          ))
+        ) : (
+          <Text size="sm" c="dimmed">
+            {t('purchaseRequests.noStatusAction')}
+          </Text>
+        )}
+      </Group>
+    </Paper>
+  );
+}
+
+function getPurchaseRequestStatusActions(status: PurchaseRequestStatus): PurchaseRequestStatus[] {
+  if (status === 'NEW') {
+    return ['PENDING_APPROVAL', 'APPROVED', 'CANCELLED'];
+  }
+
+  if (status === 'PENDING_APPROVAL') {
+    return ['APPROVED', 'REJECTED', 'CANCELLED'];
+  }
+
+  if (status === 'APPROVED') {
+    return ['CANCELLED'];
+  }
+
+  if (status === 'REJECTED') {
+    return ['PENDING_APPROVAL'];
+  }
+
+  return [];
 }
 
 function Info({ label, value }: { label: string; value: string }) {

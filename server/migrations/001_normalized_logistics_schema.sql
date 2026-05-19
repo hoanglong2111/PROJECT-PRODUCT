@@ -41,6 +41,9 @@ CREATE TABLE IF NOT EXISTS purchase_request_lines (
 CREATE TABLE IF NOT EXISTS purchase_orders (
   id TEXT PRIMARY KEY,
   po_number TEXT NOT NULL UNIQUE,
+  sap_object_id TEXT,
+  sap_raw_payload JSONB,
+  sap_synced_at TIMESTAMPTZ,
   supplier_code TEXT NOT NULL,
   supplier_name TEXT NOT NULL,
   status TEXT NOT NULL,
@@ -53,6 +56,20 @@ CREATE TABLE IF NOT EXISTS purchase_orders (
   flow_tags TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS sap_sync_events (
+  id TEXT PRIMARY KEY,
+  entity_type TEXT NOT NULL,
+  entity_id TEXT NOT NULL,
+  sap_object_type TEXT NOT NULL,
+  sap_object_id TEXT,
+  status TEXT NOT NULL,
+  request_payload JSONB NOT NULL DEFAULT '{}'::JSONB,
+  response_payload JSONB,
+  error_message TEXT,
+  created_by TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS purchase_order_lines (
@@ -216,3 +233,4 @@ CREATE INDEX IF NOT EXISTS idx_delivery_orders_request_code ON delivery_orders(r
 CREATE INDEX IF NOT EXISTS idx_delivery_orders_po_number ON delivery_orders(po_number);
 CREATE INDEX IF NOT EXISTS idx_logistics_tasks_do_number ON logistics_tasks(do_number);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_entity ON audit_logs(entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_sap_sync_events_entity ON sap_sync_events(entity_type, entity_id);

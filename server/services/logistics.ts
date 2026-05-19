@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto';
 
 import { seedUsers as logisticsSeedUsers } from '../seeds/logisticsSeed';
 import { APP_ROLES } from '../../src/auth/types';
+import { createSapClient } from '../integrations/sap/client';
+import { buildSapPurchaseOrderPayload } from '../integrations/sap/types';
 import type {
   BusinessFlowTag,
   DeliveryOrder,
@@ -12,6 +14,7 @@ import type {
   PurchaseOrderLineItem,
   PurchaseRequest,
   PurchaseRequestLineItem,
+  PurchaseRequestStatus,
   UserRef,
 } from '../../src/models/logistics';
 import { PRIORITIES, REQUIRED_DOCUMENTS, SHIPPING_METHODS, TASK_STATUSES } from '../constants';
@@ -31,6 +34,7 @@ import type {
   TokenPayload,
   UpdateDeliveryOrderBody,
   UpdatePurchaseRequestBody,
+  UpdatePurchaseRequestStatusBody,
   UpdateTaskBody,
 } from '../types';
 
@@ -208,6 +212,96 @@ export async function createPurchaseOrder(body: CreatePurchaseOrderBody) {
     return purchaseOrder;
   } catch (error) {
     await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function syncPurchaseOrderWithSap(poNumber: string, auth?: TokenPayload) {
+  if (!poNumber) {
+    throw new ApiError(400, 'poNumber là bắt buộc.');
+  }
+
+  if (!auth || !['ADMIN', 'PIC_MANAGER'].includes(auth.role)) {
+    throw new ApiError(403, 'Chỉ PIC Manager được đồng bộ SAP cho PO.');
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const purchaseOrders = await readSnapshot<PurchaseOrder[]>('purchase_orders', client);
+    const normalizedOrders = purchaseOrders.map(normalizePurchaseOrder);
+    const order = normalizedOrders.find((item) => item.po_number === poNumber);
+
+    if (!order) {
+      throw new ApiError(404, 'Không tìm thấy PO cần đồng bộ SAP.');
+    }
+
+    if (order.status === 'CLOSED') {
+      throw new ApiError(409, 'PO đã đóng, không thể đồng bộ SAP.');
+    }
+
+    const sapPayload = buildSapPurchaseOrderPayload(order);
+    const sapClient = createSapClient();
+    const result = await sapClient.syncPurchaseOrder(sapPayload);
+    const updatedOrder: PurchaseOrder = {
+      ...order,
+      sap_sync_status: result.status,
+      status: result.status === 'SYNCED' ? 'SAP_SYNCED' : 'SAP_PENDING',
+    };
+    const updatedOrders = normalizedOrders.map((item) => (item.po_number === poNumber ? updatedOrder : item));
+
+    await writeSnapshot('purchase_orders', updatedOrders, client);
+    await client.query(
+      `
+        UPDATE purchase_orders
+        SET sap_object_id = $1,
+            sap_raw_payload = $2,
+            sap_synced_at = $3,
+            updated_at = NOW()
+        WHERE po_number = $4
+      `,
+      [result.sapObjectId, result.raw, result.syncedAt, poNumber],
+    );
+    await client.query(
+      `
+        INSERT INTO sap_sync_events (
+          id, entity_type, entity_id, sap_object_type, sap_object_id, status,
+          request_payload, response_payload, error_message, created_by
+        )
+        VALUES ($1, 'purchase_order', $2, 'PO', $3, $4, $5, $6, NULL, $7)
+      `,
+      [
+        `sap-sync-${randomUUID()}`,
+        poNumber,
+        result.sapObjectId,
+        result.status,
+        sapPayload,
+        result.raw,
+        auth.sub,
+      ],
+    );
+    await client.query('COMMIT');
+
+    return updatedOrder;
+  } catch (error) {
+    await client.query('ROLLBACK');
+
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    await pool.query(
+      `
+        INSERT INTO sap_sync_events (
+          id, entity_type, entity_id, sap_object_type, sap_object_id, status,
+          request_payload, response_payload, error_message, created_by
+        )
+        VALUES ($1, 'purchase_order', $2, 'PO', NULL, 'FAILED', '{}'::JSONB, NULL, $3, $4)
+      `,
+      [`sap-sync-${randomUUID()}`, poNumber, errorMessage, auth?.sub ?? null],
+    );
+
     throw error;
   } finally {
     client.release();
@@ -473,6 +567,61 @@ export async function updatePurchaseRequest(requestedOrderId: string, body: Upda
         : lineItem,
     );
 
+    const updatedRequests = purchaseRequests.map((request) =>
+      request.requested_order_id === requestedOrderId ? next : request,
+    );
+
+    await writeSnapshot('purchase_requests', updatedRequests, client);
+    await client.query('COMMIT');
+
+    return next;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function updatePurchaseRequestStatus(
+  requestedOrderId: string,
+  body: UpdatePurchaseRequestStatusBody,
+  auth?: TokenPayload,
+) {
+  if (!requestedOrderId) {
+    throw new ApiError(400, 'requestedOrderId là bắt buộc.');
+  }
+
+  const nextStatus = normalizePurchaseRequestStatus(body.status);
+  if (!auth || !['ADMIN', 'PIC_MANAGER'].includes(auth.role)) {
+    throw new ApiError(403, 'Chỉ PIC Manager được đổi trạng thái PR.');
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const purchaseRequests = await readSnapshot<PurchaseRequest[]>('purchase_requests', client);
+    const requestIndex = purchaseRequests.findIndex((request) => request.requested_order_id === requestedOrderId);
+
+    if (requestIndex === -1) {
+      throw new ApiError(404, 'Không tìm thấy PR cần cập nhật trạng thái.');
+    }
+
+    const current = normalizePurchaseRequest(purchaseRequests[requestIndex]);
+    validatePurchaseRequestStatusTransition(current, nextStatus);
+
+    const reason = optionalString(body.reason);
+    const actionNote = reason
+      ? `Status changed ${current.status} -> ${nextStatus}: ${reason}`
+      : `Status changed ${current.status} -> ${nextStatus}.`;
+    const next: PurchaseRequest = {
+      ...current,
+      adjusted_date: todayIso(),
+      notes: current.notes ? `${current.notes}\n${actionNote}` : actionNote,
+      status: nextStatus,
+    };
     const updatedRequests = purchaseRequests.map((request) =>
       request.requested_order_id === requestedOrderId ? next : request,
     );
@@ -1182,6 +1331,47 @@ function normalizePriority(value: unknown): Priority {
   }
 
   return 'MEDIUM';
+}
+
+function normalizePurchaseRequestStatus(value: unknown): PurchaseRequestStatus {
+  const allowedStatuses: PurchaseRequestStatus[] = ['NEW', 'PENDING_APPROVAL', 'APPROVED', 'REJECTED', 'CANCELLED'];
+
+  if (typeof value === 'string' && allowedStatuses.includes(value as PurchaseRequestStatus)) {
+    return value as PurchaseRequestStatus;
+  }
+
+  throw new ApiError(400, 'status PR không hợp lệ.');
+}
+
+function validatePurchaseRequestStatusTransition(current: PurchaseRequest, nextStatus: PurchaseRequestStatus) {
+  if (current.status === nextStatus) {
+    return;
+  }
+
+  if (current.status === 'CONVERTED_TO_PO' || current.linked_po_numbers.length > 0) {
+    throw new ApiError(409, 'PR đã chuyển sang PO, không thể đổi trạng thái.');
+  }
+
+  if (current.status === 'CANCELLED') {
+    throw new ApiError(409, 'PR đã hủy, không thể đổi trạng thái.');
+  }
+
+  if (current.status === 'REJECTED' && nextStatus !== 'PENDING_APPROVAL') {
+    throw new ApiError(409, 'PR đã bị từ chối chỉ có thể đưa lại về chờ duyệt.');
+  }
+
+  const allowedTransitions: Record<PurchaseRequestStatus, PurchaseRequestStatus[]> = {
+    APPROVED: ['PENDING_APPROVAL', 'CANCELLED'],
+    CANCELLED: [],
+    CONVERTED_TO_PO: [],
+    NEW: ['PENDING_APPROVAL', 'APPROVED', 'CANCELLED'],
+    PENDING_APPROVAL: ['APPROVED', 'REJECTED', 'CANCELLED'],
+    REJECTED: ['PENDING_APPROVAL'],
+  };
+
+  if (!allowedTransitions[current.status].includes(nextStatus)) {
+    throw new ApiError(409, `Không thể đổi PR từ ${current.status} sang ${nextStatus}.`);
+  }
 }
 
 function normalizeShippingMethod(value: unknown): DeliveryOrder['logistics_shipping']['shipping_method'] {

@@ -33,7 +33,12 @@ async function main() {
 
   try {
     await client.query('BEGIN');
-    await client.query(migrationSql);
+  await client.query(migrationSql);
+  await client.query(`
+    ALTER TABLE purchase_orders ADD COLUMN IF NOT EXISTS sap_object_id TEXT;
+    ALTER TABLE purchase_orders ADD COLUMN IF NOT EXISTS sap_raw_payload JSONB;
+    ALTER TABLE purchase_orders ADD COLUMN IF NOT EXISTS sap_synced_at TIMESTAMPTZ;
+  `);
     const seedData = loadSeedData();
 
     if (RESET_NORMALIZED_SEED) {

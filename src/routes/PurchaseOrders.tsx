@@ -1,5 +1,6 @@
 import {
   ActionIcon,
+  Alert,
   Badge,
   Button,
   Drawer,
@@ -17,8 +18,8 @@ import {
   Tooltip,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { useQuery } from '@tanstack/react-query';
-import { IconEye, IconPlus, IconSearch, IconShoppingCart } from '@tabler/icons-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { IconEye, IconPlugConnected, IconPlus, IconRefresh, IconSearch, IconShoppingCart } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import { CreatePurchaseOrderDrawer } from '../components/CreateOrderForms';
@@ -29,7 +30,9 @@ import { PageError, PageLoading } from '../components/PageFeedback';
 import { StatusBadge } from '../components/StatusBadge';
 import { EmptyState } from '../components/EmptyState';
 import { SourceLineTable } from '../components/SourceLineTable';
-import { fetchPurchaseOrders, fetchPurchaseRequests, type PurchaseOrder } from '../api/logistics';
+import { getApiErrorMessage } from '../api/http';
+import { fetchPurchaseOrders, fetchPurchaseRequests, syncPurchaseOrderSap, type PurchaseOrder } from '../api/logistics';
+import { useAuth } from '../auth/useAuth';
 import { useEntityParam } from '../hooks/useEntityParam';
 import { useI18n } from '../i18n';
 
@@ -37,6 +40,7 @@ type PurchaseOrderTab = 'all' | 'single' | 'bulk' | 'awaiting' | 'partial' | 'cl
 
 export function PurchaseOrders() {
   const { flowTagLabel, statusLabel, t } = useI18n();
+  const { user } = useAuth();
   const { close: closePoParam, open: openPoParam, value: focusedPo } = useEntityParam('po');
   const [selectedPo, setSelectedPo] = useState<PurchaseOrder | null>(null);
   const [activeTab, setActiveTab] = useState<PurchaseOrderTab>('all');
@@ -54,6 +58,7 @@ export function PurchaseOrders() {
   const purchaseOrders = purchaseOrdersQuery.data ?? [];
   const purchaseRequests = purchaseRequestsQuery.data ?? [];
   const isFetching = purchaseOrdersQuery.isFetching;
+  const canCreatePurchaseOrders = user?.role === 'ADMIN' || user?.role === 'PIC_MANAGER';
 
   useEffect(() => {
     if (!focusedPo) {
@@ -149,9 +154,11 @@ export function PurchaseOrders() {
           </Text>
         </div>
         <Group gap="xs">
-          <Button onClick={createHandlers.open} leftSection={<IconPlus size={16} />}>
-            {t('purchaseOrders.create')}
-          </Button>
+          {canCreatePurchaseOrders ? (
+            <Button onClick={createHandlers.open} leftSection={<IconPlus size={16} />}>
+              {t('purchaseOrders.create')}
+            </Button>
+          ) : null}
           <Badge leftSection={<IconShoppingCart size={14} />} size="lg" variant="light">
             {t('purchaseOrders.sapSource')}
           </Badge>
@@ -276,7 +283,7 @@ export function PurchaseOrders() {
       />
 
       <Drawer opened={Boolean(focusedPo && selectedPo)} onClose={closeDrawer} title={t('purchaseOrders.detailTitle')} position="right" size="lg">
-        {selectedPo ? <PurchaseOrderDetail order={selectedPo} /> : null}
+        {selectedPo ? <PurchaseOrderDetail order={selectedPo} onUpdated={setSelectedPo} /> : null}
       </Drawer>
     </Stack>
   );
@@ -295,8 +302,24 @@ function Metric({ color = 'blue', label, value }: { color?: string; label: strin
   );
 }
 
-function PurchaseOrderDetail({ order }: { order: PurchaseOrder }) {
+function PurchaseOrderDetail({ onUpdated, order }: { onUpdated?: (order: PurchaseOrder) => void; order: PurchaseOrder }) {
   const { formatNumber, statusLabel, t } = useI18n();
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const canSyncSap = user?.role === 'ADMIN' || user?.role === 'PIC_MANAGER';
+  const syncMutation = useMutation({
+    mutationFn: () => syncPurchaseOrderSap(order.po_number),
+    onSuccess: (updatedOrder) => {
+      onUpdated?.(updatedOrder);
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['purchase-orders'] }),
+        queryClient.invalidateQueries({ queryKey: ['delivery-orders'] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
+        queryClient.invalidateQueries({ queryKey: ['global-search'] }),
+      ]);
+    },
+  });
+  const sapSynced = order.sap_sync_status === 'SYNCED';
 
   return (
     <Stack gap="md">
@@ -309,6 +332,36 @@ function PurchaseOrderDetail({ order }: { order: PurchaseOrder }) {
         </div>
         <StatusBadge status={order.status} />
       </Group>
+
+      <Paper withBorder p="md" className={sapSynced ? 'ops-panel' : 'ops-panel-risk'}>
+        <Group justify="space-between" align="flex-start" gap="md">
+          <div>
+            <Text fw={700}>{t('purchaseOrders.sapSyncControl')}</Text>
+            <Text size="sm" c="dimmed">
+              {sapSynced ? t('purchaseOrders.sapSyncedDescription') : t('purchaseOrders.sapPendingDescription')}
+            </Text>
+          </div>
+          <Button
+            disabled={!canSyncSap || order.status === 'CLOSED'}
+            loading={syncMutation.isPending}
+            onClick={() => syncMutation.mutate()}
+            leftSection={sapSynced ? <IconRefresh size={16} /> : <IconPlugConnected size={16} />}
+            variant={sapSynced ? 'light' : 'filled'}
+          >
+            {sapSynced ? t('purchaseOrders.retrySapSync') : t('purchaseOrders.syncSap')}
+          </Button>
+        </Group>
+        {!canSyncSap ? (
+          <Text size="sm" c="dimmed" mt="sm">
+            {t('purchaseOrders.sapSyncPicOnly')}
+          </Text>
+        ) : null}
+        {syncMutation.isError ? (
+          <Alert color="red" mt="md">
+            {getApiErrorMessage(syncMutation.error)}
+          </Alert>
+        ) : null}
+      </Paper>
 
       <SimpleGrid cols={{ base: 1, sm: 2 }}>
         <Info label={t('forms.supplierCode')} value={order.supplier_code} />

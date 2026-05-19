@@ -98,6 +98,11 @@ export async function ensureSchemaAndSeed() {
   `);
 
   await pool.query(migrationSql);
+  await pool.query(`
+    ALTER TABLE purchase_orders ADD COLUMN IF NOT EXISTS sap_object_id TEXT;
+    ALTER TABLE purchase_orders ADD COLUMN IF NOT EXISTS sap_raw_payload JSONB;
+    ALTER TABLE purchase_orders ADD COLUMN IF NOT EXISTS sap_synced_at TIMESTAMPTZ;
+  `);
 
   const usersCount = await pool.query<{ count: string }>('SELECT COUNT(*) AS count FROM app_users');
   if (Number(usersCount.rows[0]?.count ?? 0) === 0) {

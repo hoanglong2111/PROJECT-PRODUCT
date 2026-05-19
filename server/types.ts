@@ -10,6 +10,7 @@ import type {
   Priority,
   PurchaseOrder,
   PurchaseRequest,
+  PurchaseRequestStatus,
 } from '../src/models/logistics';
 
 export type TokenPayload = {
@@ -107,6 +108,11 @@ export type UpdatePurchaseRequestBody = {
   unit?: string;
   warehouseCode?: string;
   warehouseDeadlineDate?: string;
+};
+
+export type UpdatePurchaseRequestStatusBody = {
+  reason?: string;
+  status?: PurchaseRequestStatus;
 };
 
 export type UpdateDeliveryOrderBody = {

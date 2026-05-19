@@ -124,6 +124,11 @@ export type UpdatePurchaseRequestPayload = {
   warehouseDeadlineDate?: string;
 };
 
+export type UpdatePurchaseRequestStatusPayload = {
+  reason?: string;
+  status: PurchaseRequestStatus;
+};
+
 export type UpdateDeliveryOrderPayload = {
   actualEntryDate?: string | null;
   currency?: string;
@@ -209,6 +214,13 @@ export async function createPurchaseOrder(payload: CreatePurchaseOrderPayload) {
   return response.data.data;
 }
 
+export async function syncPurchaseOrderSap(poNumber: string) {
+  const response = await http.post<ApiResponse<PurchaseOrder>>(
+    `/purchase-orders/${encodeURIComponent(poNumber)}/sap-sync`,
+  );
+  return response.data.data;
+}
+
 export async function createDeliveryOrder(payload: CreateDeliveryOrderPayload) {
   const response = await http.post<ApiResponse<DeliveryOrder>>('/delivery-orders', payload);
   return response.data.data;
@@ -217,6 +229,17 @@ export async function createDeliveryOrder(payload: CreateDeliveryOrderPayload) {
 export async function updatePurchaseRequest(requestedOrderId: string, payload: UpdatePurchaseRequestPayload) {
   const response = await http.patch<ApiResponse<PurchaseRequest>>(
     `/purchase-requests/${encodeURIComponent(requestedOrderId)}`,
+    payload,
+  );
+  return response.data.data;
+}
+
+export async function updatePurchaseRequestStatus(
+  requestedOrderId: string,
+  payload: UpdatePurchaseRequestStatusPayload,
+) {
+  const response = await http.patch<ApiResponse<PurchaseRequest>>(
+    `/purchase-requests/${encodeURIComponent(requestedOrderId)}/status`,
     payload,
   );
   return response.data.data;

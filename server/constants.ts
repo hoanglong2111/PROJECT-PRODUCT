@@ -26,8 +26,8 @@ export const SHIPPING_METHODS: Array<DeliveryOrder['logistics_shipping']['shippi
 export const TASK_STATUSES: LogisticsTask['status'][] = ['TODO', 'IN_PROGRESS', 'WAITING', 'BLOCKED', 'COMPLETED', 'CANCELLED'];
 
 export const roleGroups = {
-  purchaseRequests: ['ADMIN', 'PIC_MANAGER', 'SALE_STAFF'] as AppRole[],
-  purchaseOrders: ['ADMIN', 'PIC_MANAGER', 'SALE_STAFF', 'FINANCE_OFFICER'] as AppRole[],
+  purchaseRequests: ['ADMIN', 'PIC_MANAGER'] as AppRole[],
+  purchaseOrders: ['ADMIN', 'PIC_MANAGER'] as AppRole[],
   deliveryOrders: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'WAREHOUSE_STAFF'] as AppRole[],
   tasks: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'FINANCE_OFFICER', 'WAREHOUSE_STAFF'] as AppRole[],
 };
