@@ -4,7 +4,12 @@ import { APP_ROLES } from '../src/auth/types';
 
 export const API_PREFIX = '/api';
 export const PORT = Number(process.env.PORT ?? process.env.BE_PORT ?? 4000);
-export const CORS_ORIGIN = process.env.CORS_ORIGIN ?? 'http://localhost:5173';
+export const normalizeOrigin = (origin: string) => origin.trim().replace(/\/+$/, '');
+export const CORS_ORIGINS = (process.env.CORS_ORIGIN ?? 'http://localhost:5173')
+  .split(',')
+  .map(normalizeOrigin)
+  .filter(Boolean);
+export const CORS_ORIGIN = CORS_ORIGINS[0] ?? 'http://localhost:5173';
 export const DATABASE_URL =
   process.env.DATABASE_URL ??
   (() => {

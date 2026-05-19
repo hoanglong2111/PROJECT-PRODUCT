@@ -9,7 +9,7 @@ import { randomUUID } from 'node:crypto';
 import { APP_ROLES } from '../src/auth/types';
 import type { DeliveryOrder, LogisticsTask, PurchaseOrder, PurchaseRequest } from '../src/models/logistics';
 import { authenticateRequest, authorizeRole, toAuthUser } from './auth';
-import { API_PREFIX, CORS_ORIGIN, JWT_SECRET, PORT, readAllRoles, roleGroups } from './constants';
+import { API_PREFIX, CORS_ORIGINS, JWT_SECRET, PORT, normalizeOrigin, readAllRoles, roleGroups } from './constants';
 import { pool } from './db';
 import { ApiError } from './errors';
 import { ensureSchemaAndSeed } from './schema';
@@ -45,7 +45,18 @@ import type {
 } from './types';
 
 const app = express();
-app.use(cors({ origin: CORS_ORIGIN }));
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || CORS_ORIGINS.includes(normalizeOrigin(origin))) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error(`CORS origin is not allowed: ${origin}`));
+    },
+  }),
+);
 app.use(express.json());
 
 app.get(`${API_PREFIX}/health`, (_request, response) => {

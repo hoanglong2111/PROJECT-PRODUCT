@@ -117,6 +117,7 @@ JWT_SECRET=<strong-secret>
 ```
 
 `BE_PORT` is still supported for local development, but hosted Node platforms such as Render usually provide `PORT`.
+Use origins without a trailing slash. Multiple FE domains can be comma-separated, for example `https://app.example.com,https://preview.example.com`.
 
 Health check:
 
