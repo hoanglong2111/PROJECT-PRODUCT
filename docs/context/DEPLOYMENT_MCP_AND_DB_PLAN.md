@@ -112,6 +112,7 @@ Required BE env:
 PORT=10000
 CORS_ORIGIN=https://app.<your-domain>
 DATABASE_URL=postgresql://...
+DATABASE_SSL=true
 JWT_SECRET=<strong-secret>
 ```
 

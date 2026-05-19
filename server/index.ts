@@ -398,9 +398,9 @@ app.use((error: Error, _request: Request, response: Response, _next: NextFunctio
   });
 });
 
-start().catch((error: Error) => {
+start().catch((error: unknown) => {
   // eslint-disable-next-line no-console
-  console.error('Failed to start KBFE backend:', error.message);
+  console.error('Failed to start KBFE backend:', error);
   process.exit(1);
 });
 
