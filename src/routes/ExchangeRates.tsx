@@ -3,6 +3,7 @@ import {
   Group,
   Loader,
   NumberFormatter,
+  NumberInput,
   Paper,
   ScrollArea,
   Select,
@@ -28,10 +29,24 @@ const baseCurrencyOptions = ['USD', 'VND', 'EUR', 'JPY', 'CNY', 'KRW', 'THB', 'S
 }));
 const quickCurrencyCodes = ['VND', 'USD', 'EUR', 'CNY'];
 
+function formatRate(value: number | null | undefined) {
+  if (value === null || value === undefined || !Number.isFinite(value)) {
+    return '-';
+  }
+
+  return value.toLocaleString(undefined, {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
+  });
+}
+
 export function ExchangeRates() {
   const { t } = useI18n();
   const [baseCurrency, setBaseCurrency] = useState('USD');
+  const [estimateAmount, setEstimateAmount] = useState<number | string>(1000);
+  const [fromCurrency, setFromCurrency] = useState('USD');
   const [search, setSearch] = useState('');
+  const [toCurrency, setToCurrency] = useState('VND');
 
   const exchangeRatesQuery = useQuery({
     queryKey: ['exchange-rates', baseCurrency],
@@ -62,6 +77,30 @@ export function ExchangeRates() {
         .filter((item) => item.rate !== null),
     [rates],
   );
+  const currencyOptions = useMemo(() => {
+    const currencies = Array.from(new Set([baseCurrency, ...rates.map((item) => item.currency)])).sort();
+    return currencies.map((currency) => ({ label: currency, value: currency }));
+  }, [baseCurrency, rates]);
+  const rateByCurrency = useMemo(() => {
+    const entries = new Map(rates.map((item) => [item.currency, item.rate]));
+    entries.set(baseCurrency, 1);
+    return entries;
+  }, [baseCurrency, rates]);
+  const estimate = useMemo(() => {
+    const amount = Number(estimateAmount);
+    const fromRate = rateByCurrency.get(fromCurrency);
+    const toRate = rateByCurrency.get(toCurrency);
+
+    if (!Number.isFinite(amount) || amount < 0 || !fromRate || !toRate) {
+      return null;
+    }
+
+    return {
+      amount,
+      rate: toRate / fromRate,
+      value: amount * (toRate / fromRate),
+    };
+  }, [estimateAmount, fromCurrency, rateByCurrency, toCurrency]);
 
   if (exchangeRatesQuery.isError) {
     return (
@@ -112,11 +151,59 @@ export function ExchangeRates() {
             <Metric
               key={item.currency}
               label={`${t('exchangeRates.oneBase')} ${baseCurrency}`}
-              value={`${item.rate?.toLocaleString(undefined, { maximumFractionDigits: 6 })} ${item.currency}`}
+              value={`${formatRate(item.rate)} ${item.currency}`}
             />
           ))}
         </SimpleGrid>
       ) : null}
+
+      <Paper withBorder p="md">
+        <Stack gap="sm">
+          <div>
+            <Title order={3}>{t('exchangeRates.estimateTitle')}</Title>
+            <Text size="sm" c="dimmed">
+              {t('exchangeRates.estimateDescription')}
+            </Text>
+          </div>
+          <SimpleGrid cols={{ base: 1, md: 4 }}>
+            <NumberInput
+              label={t('exchangeRates.amount')}
+              min={0}
+              thousandSeparator=","
+              value={estimateAmount}
+              onChange={setEstimateAmount}
+            />
+            <Select
+              label={t('exchangeRates.fromCurrency')}
+              data={currencyOptions}
+              value={fromCurrency}
+              onChange={(value) => setFromCurrency(value ?? baseCurrency)}
+              searchable
+            />
+            <Select
+              label={t('exchangeRates.toCurrency')}
+              data={currencyOptions}
+              value={toCurrency}
+              onChange={(value) => setToCurrency(value ?? baseCurrency)}
+              searchable
+            />
+            <Metric
+              label={t('exchangeRates.estimatedValue')}
+              value={estimate ? `${formatRate(estimate.value)} ${toCurrency}` : '-'}
+            />
+          </SimpleGrid>
+          <Text size="sm" c="dimmed">
+            {estimate
+              ? t('exchangeRates.estimateFormula', {
+                  amount: formatRate(estimate.amount),
+                  from: fromCurrency,
+                  rate: formatRate(estimate.rate),
+                  to: toCurrency,
+                })
+              : t('exchangeRates.estimateUnavailable')}
+          </Text>
+        </Stack>
+      </Paper>
 
       <Paper withBorder p="md">
         <SimpleGrid cols={{ base: 1, md: 3 }}>
@@ -163,7 +250,7 @@ export function ExchangeRates() {
                     </Table.Td>
                     <Table.Td>
                       <Text fw={600}>
-                        <NumberFormatter value={item.rate} thousandSeparator decimalScale={6} />
+                        <NumberFormatter value={item.rate} thousandSeparator decimalScale={2} fixedDecimalScale />
                       </Text>
                     </Table.Td>
                   </Table.Tr>
