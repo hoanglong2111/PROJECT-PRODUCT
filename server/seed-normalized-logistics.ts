@@ -15,9 +15,16 @@ const { Pool } = pg;
 
 const DATABASE_URL = process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/kbfe';
 const RESET_NORMALIZED_SEED = process.env.RESET_NORMALIZED_SEED === '1';
+const requiresSsl =
+  process.env.DATABASE_SSL === 'true' ||
+  process.env.RENDER === 'true' ||
+  DATABASE_URL.includes('render.com') ||
+  DATABASE_URL.includes('railway.app') ||
+  DATABASE_URL.includes('sslmode=require');
 
 const pool = new Pool({
   connectionString: DATABASE_URL,
+  ssl: requiresSsl ? { rejectUnauthorized: false } : undefined,
 });
 
 type NormalizedSeedData = {
