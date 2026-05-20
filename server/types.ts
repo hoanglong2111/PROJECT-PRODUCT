@@ -84,6 +84,7 @@ export type CreatePurchaseRequestBody = {
 export type CreatePurchaseOrderBody = {
   currency?: string;
   orderDate?: string;
+  poNumber?: string;
   sourceLines?: Array<{
     prCode?: string;
     prLineId?: string;

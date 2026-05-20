@@ -23,7 +23,7 @@ import {
   IconShip,
   IconTruckDelivery,
 } from '@tabler/icons-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 import {
@@ -54,9 +54,16 @@ type WorkflowTab = BusinessFlowTag | 'all' | 'issues';
 export function Workflow() {
   const { flowTagLabel, t } = useI18n();
   const [searchParams] = useSearchParams();
+  const tagParam = searchParams.get('tag');
   const [activeTab, setActiveTab] = useState<WorkflowTab>('all');
   const focusedDo = searchParams.get('do');
   const focusedPr = searchParams.get('pr');
+
+  useEffect(() => {
+    if (tagParam) {
+      setActiveTab(tagParam as WorkflowTab);
+    }
+  }, [tagParam]);
 
   const purchaseRequestsQuery = useQuery({
     queryKey: ['purchase-requests'],
@@ -179,9 +186,24 @@ export function Workflow() {
       )}
 
       <SimpleGrid cols={{ base: 1, sm: 3 }}>
-        <Metric label={t('workflow.prChains')} value={rows.length} color="blue" />
-        <Metric label={t('workflow.missingDocuments')} value={missingDocumentCount} color={missingDocumentCount > 0 ? 'orange' : 'teal'} />
-        <Metric label={t('workflow.blockedTasks')} value={blockedTaskCount} color={blockedTaskCount > 0 ? 'red' : 'teal'} />
+        <Metric
+          label={t('workflow.prChains')}
+          value={rows.length}
+          color="blue"
+          icon={<IconGitBranch size={22} />}
+        />
+        <Metric
+          label={t('workflow.missingDocuments')}
+          value={missingDocumentCount}
+          color={missingDocumentCount > 0 ? 'orange' : 'teal'}
+          icon={<IconFileInvoice size={22} />}
+        />
+        <Metric
+          label={t('workflow.blockedTasks')}
+          value={blockedTaskCount}
+          color={blockedTaskCount > 0 ? 'red' : 'teal'}
+          icon={<IconChecklist size={22} />}
+        />
       </SimpleGrid>
 
       <Tabs value={activeTab} onChange={(value) => setActiveTab((value ?? 'all') as WorkflowTab)} variant="pills">
@@ -231,8 +253,8 @@ export function Workflow() {
       </Paper>
 
       <Paper withBorder p={0}>
-        <ScrollArea>
-          <Table miw={1180} verticalSpacing="sm" highlightOnHover>
+        <ScrollArea className="data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
+          <Table miw={1320} verticalSpacing="sm" highlightOnHover>
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>{t('workflow.prDemand')}</Table.Th>
@@ -261,24 +283,24 @@ export function Workflow() {
                 );
                 const delay = deliveryOrder
                   ? calcDelay({
-                      actualEntryDate: deliveryOrder.warehouse_tracking.actual_entry_date,
-                      plannedEntryDate: deliveryOrder.warehouse_tracking.planned_entry_date,
-                      warehouseDeadline: deliveryOrder.warehouse_tracking.warehouse_deadline,
-                    })
+                    actualEntryDate: deliveryOrder.warehouse_tracking.actual_entry_date,
+                    plannedEntryDate: deliveryOrder.warehouse_tracking.planned_entry_date,
+                    warehouseDeadline: deliveryOrder.warehouse_tracking.warehouse_deadline,
+                  })
                   : calcDelay({
-                      actualEntryDate: purchaseRequest.actual_warehouse_entry_date,
-                      plannedEntryDate: purchaseRequest.expected_arrival_date,
-                      warehouseDeadline: purchaseRequest.warehouse_deadline_date,
-                    });
+                    actualEntryDate: purchaseRequest.actual_warehouse_entry_date,
+                    plannedEntryDate: purchaseRequest.expected_arrival_date,
+                    warehouseDeadline: purchaseRequest.warehouse_deadline_date,
+                  });
                 const completedTasks = flowTasks.filter((task) => task.status === 'COMPLETED').length;
                 const taskProgress = flowTasks.length > 0 ? Math.round((completedTasks / flowTasks.length) * 100) : 0;
                 const rowKey = `${purchaseRequest.requested_order_id}-${deliveryOrder?.order_info.order_number ?? 'no-do'}`;
 
                 return (
                   <Table.Tr key={rowKey}>
-                    <Table.Td>
+                    <Table.Td className="table-cell-truncate" style={{ maxWidth: '15rem' }}>
                       <Text fw={700}>{purchaseRequest.requested_order_id}</Text>
-                      <Text size="sm" c="dimmed">
+                      <Text size="sm" c="dimmed" lineClamp={1} title={purchaseRequest.item_code}>
                         {purchaseRequest.item_code}
                       </Text>
                       <Badge size="xs" color={purchaseRequest.delay_days > 0 ? 'red' : 'teal'} variant="light">
@@ -286,8 +308,8 @@ export function Workflow() {
                       </Badge>
                       <FlowTagBadge compact tags={flowTags} />
                     </Table.Td>
-                    <Table.Td>
-                      <Text size="sm" fw={600}>
+                    <Table.Td className="table-cell-truncate" style={{ maxWidth: '22rem' }}>
+                      <Text size="sm" fw={600} lineClamp={1} title={linkedPo ?? t('workflow.poPending')}>
                         {linkedPo ?? t('workflow.poPending')}
                       </Text>
                       <Text size="sm" c="dimmed">
@@ -402,15 +424,30 @@ function StageBadge({
   );
 }
 
-function Metric({ color = 'blue', label, value }: { color?: string; label: string; value: number }) {
+function Metric({
+  color = 'blue',
+  icon,
+  label,
+  value,
+}: {
+  color?: string;
+  icon?: React.ReactNode;
+  label: string;
+  value: number;
+}) {
   return (
     <Paper withBorder p="md" className="metric-card">
-      <Text size="sm" c="dimmed">
-        {label}
-      </Text>
-      <Title order={2} c={color}>
-        {value}
-      </Title>
+      <Group justify="space-between" wrap="nowrap">
+        <div>
+          <Text className="metric-label" size="xs" fw={700} lts="0.05em" tt="uppercase" mb={4}>
+            {label}
+          </Text>
+          <Title order={1} fw={800} c={color} style={{ lineHeight: 1.1 }}>
+            {value}
+          </Title>
+        </div>
+        {icon && <span className={`metric-icon metric-icon-${color}`}>{icon}</span>}
+      </Group>
     </Paper>
   );
 }

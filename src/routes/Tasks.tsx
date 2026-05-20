@@ -19,10 +19,10 @@ import {
   Tooltip,
 } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
-import { IconEye, IconGitBranch, IconSearch, IconUserCheck } from '@tabler/icons-react';
+import { IconAlertTriangle, IconChecklist, IconClock, IconEye, IconGitBranch, IconSearch, IconUserCheck } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 import { EmptyState } from '../components/EmptyState';
 import { EntityLink } from '../components/EntityLink';
@@ -50,6 +50,8 @@ const priorityColor = {
 
 export function Tasks() {
   const { flowTagLabel, priorityLabel, statusLabel, t, taskRoleLabel } = useI18n();
+  const [searchParams] = useSearchParams();
+  const roleParam = searchParams.get('role');
   const { value: focusedDo } = useEntityParam('do');
   const { value: focusedPr } = useEntityParam('pr');
   const { close: closeTaskParam, open: openTaskParam, value: focusedTask } = useEntityParam('task');
@@ -76,6 +78,12 @@ export function Tasks() {
   const tasks = tasksQuery.data ?? [];
   const deliveryOrders = deliveryOrdersQuery.data ?? [];
   const isFetching = tasksQuery.isFetching;
+
+  useEffect(() => {
+    if (roleParam) {
+      setRoleFilter(roleParam as any);
+    }
+  }, [roleParam, setRoleFilter]);
 
   useEffect(() => {
     if (!focusedTask) {
@@ -195,9 +203,9 @@ export function Tasks() {
       ) : null}
 
       <SimpleGrid cols={{ base: 1, sm: 3 }}>
-        <Metric label={t('tasks.totalTasks')} value={tasks.length} />
-        <Metric label={t('tasks.blocked')} value={blockedCount} color="red" />
-        <Metric label={t('tasks.overdue')} value={overdueCount} color="orange" />
+        <Metric label={t('tasks.totalTasks')} value={tasks.length} color="blue" icon={<IconChecklist size={22} />} />
+        <Metric label={t('tasks.blocked')} value={blockedCount} color="red" icon={<IconAlertTriangle size={22} />} />
+        <Metric label={t('tasks.overdue')} value={overdueCount} color="orange" icon={<IconClock size={22} />} />
       </SimpleGrid>
 
       <Paper withBorder p="md">
@@ -266,8 +274,8 @@ export function Tasks() {
       </Paper>
 
       <Paper withBorder p={0}>
-        <ScrollArea>
-          <Table miw={1160} verticalSpacing="sm" highlightOnHover>
+        <ScrollArea className="data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
+          <Table miw={1320} verticalSpacing="sm" highlightOnHover>
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>{t('common.task')}</Table.Th>
@@ -285,8 +293,8 @@ export function Tasks() {
             <Table.Tbody>
               {filteredTasks.map((task) => (
                 <Table.Tr key={task.task_id}>
-                  <Table.Td>
-                    <Text fw={700}>{task.task_name}</Text>
+                  <Table.Td className="table-cell-truncate" style={{ maxWidth: '20rem' }}>
+                    <Text fw={700} lineClamp={1} title={task.task_name}>{task.task_name}</Text>
                     <Text size="xs" c="dimmed">
                       {task.task_id}
                     </Text>
@@ -327,9 +335,9 @@ export function Tasks() {
                       {task.due_date}
                     </Text>
                   </Table.Td>
-                  <Table.Td>
+                  <Table.Td className="table-cell-truncate" style={{ maxWidth: '18rem' }}>
                     {task.blocked_reason ? (
-                      <Badge color="red">{task.blocked_reason}</Badge>
+                      <Badge color="red" title={task.blocked_reason}>{task.blocked_reason}</Badge>
                     ) : (
                       <Text size="sm" c="dimmed">
                         -
@@ -360,15 +368,30 @@ export function Tasks() {
   );
 }
 
-function Metric({ color = 'blue', label, value }: { color?: string; label: string; value: number }) {
+function Metric({
+  color = 'blue',
+  icon,
+  label,
+  value,
+}: {
+  color?: string;
+  icon?: React.ReactNode;
+  label: string;
+  value: number;
+}) {
   return (
     <Paper withBorder p="md" className="metric-card">
-      <Text size="sm" c="dimmed">
-        {label}
-      </Text>
-      <Title order={2} c={color}>
-        {value}
-      </Title>
+      <Group justify="space-between" wrap="nowrap">
+        <div>
+          <Text className="metric-label" size="xs" fw={700} lts="0.05em" tt="uppercase" mb={4}>
+            {label}
+          </Text>
+          <Title order={1} fw={800} c={color} style={{ lineHeight: 1.1 }}>
+            {value}
+          </Title>
+        </div>
+        {icon && <span className={`metric-icon metric-icon-${color}`}>{icon}</span>}
+      </Group>
     </Paper>
   );
 }
@@ -434,7 +457,7 @@ function TaskDetail({ onUpdated, task }: { onUpdated?: (task: LogisticsTask) => 
 function Info({ label, value }: { label: string; value: string }) {
   return (
     <Paper withBorder p="sm">
-      <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+      <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
         {label}
       </Text>
       <Text fw={600}>{value}</Text>

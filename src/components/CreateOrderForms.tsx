@@ -70,6 +70,7 @@ type PurchaseRequestFormValues = {
 type PurchaseOrderFormValues = {
   currency: string;
   orderDate: string;
+  poNumber: string;
   supplierCode: string;
   supplierName: string;
   totalAmount: number;
@@ -331,12 +332,14 @@ export function CreatePurchaseOrderDrawer({
     initialValues: {
       currency: 'USD',
       orderDate: todayIso(),
+      poNumber: '',
       supplierCode: '',
       supplierName: '',
       totalAmount: 1,
       warehouseCode: 'WH-HCM-01',
     },
     validate: {
+      poNumber: requiredField(t('forms.required')),
       supplierCode: requiredField(t('forms.required')),
       supplierName: requiredField(t('forms.required')),
       totalAmount: positiveNumber(t('forms.positiveNumber')),
@@ -371,6 +374,7 @@ export function CreatePurchaseOrderDrawer({
           const payload: CreatePurchaseOrderPayload = {
             currency: values.currency.trim().toUpperCase(),
             orderDate: values.orderDate,
+            poNumber: values.poNumber.trim(),
             sourceLines: selectedLineKeys.map((key) => {
               const line = selectableLines.find((item) => item.key === key);
               return {
@@ -448,6 +452,7 @@ export function CreatePurchaseOrderDrawer({
           </Stack>
 
           <SimpleGrid cols={{ base: 1, sm: 2 }}>
+            <TextInput label="PO / Hợp đồng" placeholder="KBI-SDEC-2604 (LOT 1)" {...form.getInputProps('poNumber')} />
             <TextInput label={t('forms.supplierCode')} placeholder="SUP-CN-0007" {...form.getInputProps('supplierCode')} />
             <TextInput label={t('forms.supplierName')} placeholder={t('forms.supplierNamePlaceholder')} {...form.getInputProps('supplierName')} />
             <TextInput label={t('forms.orderDate')} type="date" {...form.getInputProps('orderDate')} />

@@ -32,8 +32,8 @@ export function SourceLineTable({ lines }: { lines: SourceLine[] }) {
 
   return (
     <Paper withBorder p={0}>
-      <ScrollArea>
-        <Table miw={640} verticalSpacing="sm">
+      <ScrollArea className="data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
+        <Table miw={820} verticalSpacing="sm">
           <Table.Thead>
             <Table.Tr>
               <Table.Th>{t('common.source')}</Table.Th>
@@ -46,9 +46,17 @@ export function SourceLineTable({ lines }: { lines: SourceLine[] }) {
           <Table.Tbody>
             {lines.map((line) => (
               <Table.Tr key={line.id}>
-                <Table.Td>{getSource(line)}</Table.Td>
+                <Table.Td className="table-cell-truncate" style={{ maxWidth: '16rem' }}>
+                  <Text size="sm" lineClamp={1} title={getSource(line)}>
+                    {getSource(line)}
+                  </Text>
+                </Table.Td>
                 <Table.Td>{line.item_code}</Table.Td>
-                <Table.Td>{line.item_name}</Table.Td>
+                <Table.Td className="table-cell-truncate" style={{ maxWidth: '18rem' }}>
+                  <Text size="sm" lineClamp={1} title={line.item_name}>
+                    {line.item_name}
+                  </Text>
+                </Table.Td>
                 <Table.Td>
                   <NumberFormatter value={line.quantity} thousandSeparator /> {line.unit}
                 </Table.Td>

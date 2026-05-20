@@ -10,6 +10,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "seed:logistics": "tsx server/seed-normalized-logistics.ts",
+    "seed:master-csv": "RESET_NORMALIZED_SEED=1 tsx server/seed-normalized-logistics.ts",
     "mcp:deploy": "tsx server/mcp/deployServer.ts",
     "typecheck": "tsc --noEmit",
     "start:be": "tsx server/index.ts"

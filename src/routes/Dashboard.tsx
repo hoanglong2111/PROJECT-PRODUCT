@@ -24,7 +24,9 @@ import {
   IconShoppingCart,
   IconTruckDelivery,
 } from '@tabler/icons-react';
-import { Link } from 'react-router-dom';
+import { useMemo } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import dayjs from 'dayjs';
 
 import {
   fetchDashboardStats,
@@ -33,6 +35,8 @@ import {
   fetchPurchaseOrders,
   fetchPurchaseRequests,
   type DashboardStats,
+  type PurchaseRequest,
+  type PurchaseOrder,
 } from '../api/logistics';
 import { PageError, PageLoading } from '../components/PageFeedback';
 import { useI18n } from '../i18n';
@@ -146,122 +150,87 @@ export function Dashboard() {
         </Alert>
       ) : null}
 
-      {dashboardStats ? <DashboardCharts stats={dashboardStats} /> : null}
+      {dashboardStats ? (
+        <DashboardCharts
+          stats={dashboardStats}
+          purchaseRequests={purchaseRequests}
+          purchaseOrders={purchaseOrders}
+        />
+      ) : null}
 
-      <SimpleGrid cols={{ base: 1, xl: 2 }}>
-        <Paper withBorder p="lg">
-          <Group justify="space-between" mb="md">
-            <div>
-              <Title order={3}>{t('dashboard.riskQueue')}</Title>
-              <Text size="sm" c="dimmed">
-                {t('dashboard.riskQueueDescription')}
-              </Text>
-            </div>
-            <Badge variant="light">{t('common.records', { count: riskRows.length })}</Badge>
-          </Group>
+      <Paper withBorder p="lg">
+        <Group justify="space-between" mb="md">
+          <div>
+            <Title order={3}>{t('dashboard.riskQueue')}</Title>
+            <Text size="sm" c="dimmed">
+              {t('dashboard.riskQueueDescription')}
+            </Text>
+          </div>
+          <Badge variant="light">{t('common.records', { count: riskRows.length })}</Badge>
+        </Group>
 
-          <ScrollArea>
-            <Table miw={720} verticalSpacing="sm">
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>DO</Table.Th>
-                  <Table.Th>{t('dashboard.nextAction')}</Table.Th>
-                  <Table.Th>{t('common.owner')}</Table.Th>
-                  <Table.Th>SLA</Table.Th>
-                  <Table.Th>{t('common.blockers')}</Table.Th>
+        <ScrollArea>
+          <Table miw={720} verticalSpacing="sm">
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>DO</Table.Th>
+                <Table.Th>{t('dashboard.nextAction')}</Table.Th>
+                <Table.Th>{t('common.owner')}</Table.Th>
+                <Table.Th>SLA</Table.Th>
+                <Table.Th>{t('common.blockers')}</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {riskRows.map(({ deliveryOrder, primaryRisk, risks }) => (
+                <Table.Tr key={deliveryOrder.id}>
+                  <Table.Td>
+                    <Text fw={700}>{deliveryOrder.order_info.order_number}</Text>
+                    <Text size="xs" c="dimmed">
+                      {deliveryOrder.sap_integration.po_number}
+                    </Text>
+                    <Button
+                      component={Link}
+                      to={`/delivery-orders?do=${deliveryOrder.order_info.order_number}`}
+                      size="compact-xs"
+                      variant="subtle"
+                      rightSection={<IconArrowRight size={12} />}
+                    >
+                      {t('dashboard.openDo')}
+                    </Button>
+                  </Table.Td>
+                  <Table.Td>
+                    <Badge color={getRiskColor(primaryRisk.severity)} variant="light">
+                      {riskLabel(primaryRisk.code, t)}
+                    </Badge>
+                    <Text size="xs" c="dimmed" mt={4}>
+                      {primaryRisk.detail}
+                    </Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Text size="sm" fw={600}>
+                      {primaryRisk.owner}
+                    </Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Badge leftSection={<IconClockHour4 size={12} />} color="blue" variant="light">
+                      {primaryRisk.sla}
+                    </Badge>
+                  </Table.Td>
+                  <Table.Td>
+                    <Group gap={6}>
+                      {risks.map((risk) => (
+                        <Badge key={risk.code} color={getRiskColor(risk.severity)} variant="light" size="xs">
+                          {riskLabel(risk.code, t)}
+                        </Badge>
+                      ))}
+                    </Group>
+                  </Table.Td>
                 </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {riskRows.map(({ deliveryOrder, primaryRisk, risks }) => (
-                  <Table.Tr key={deliveryOrder.id}>
-                    <Table.Td>
-                      <Text fw={700}>{deliveryOrder.order_info.order_number}</Text>
-                      <Text size="xs" c="dimmed">
-                        {deliveryOrder.sap_integration.po_number}
-                      </Text>
-                      <Button
-                        component={Link}
-                        to={`/delivery-orders?do=${deliveryOrder.order_info.order_number}`}
-                        size="compact-xs"
-                        variant="subtle"
-                        rightSection={<IconArrowRight size={12} />}
-                      >
-                        {t('dashboard.openDo')}
-                      </Button>
-                    </Table.Td>
-                    <Table.Td>
-                      <Badge color={getRiskColor(primaryRisk.severity)} variant="light">
-                        {riskLabel(primaryRisk.code, t)}
-                      </Badge>
-                      <Text size="xs" c="dimmed" mt={4}>
-                        {primaryRisk.detail}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="sm" fw={600}>
-                        {primaryRisk.owner}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Badge leftSection={<IconClockHour4 size={12} />} color="blue" variant="light">
-                        {primaryRisk.sla}
-                      </Badge>
-                    </Table.Td>
-                    <Table.Td>
-                      <Group gap={6}>
-                        {risks.map((risk) => (
-                          <Badge key={risk.code} color={getRiskColor(risk.severity)} variant="light" size="xs">
-                            {riskLabel(risk.code, t)}
-                          </Badge>
-                        ))}
-                      </Group>
-                    </Table.Td>
-                  </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
-          </ScrollArea>
-        </Paper>
-
-        <Paper withBorder p="lg">
-          <Title order={3}>{t('dashboard.modulesTitle')}</Title>
-          <Text size="sm" c="dimmed" mt={4}>
-            {t('dashboard.modulesDescription')}
-          </Text>
-          <Stack gap="md" mt="lg">
-            <ModuleLink
-              to="/workflow"
-              icon={<IconGitBranch size={20} />}
-              title={t('dashboard.moduleWorkflowTitle')}
-              description={t('dashboard.moduleWorkflowDescription')}
-            />
-            <ModuleLink
-              to="/purchase-requests"
-              icon={<IconFileInvoice size={20} />}
-              title={t('dashboard.modulePurchaseRequestsTitle')}
-              description={t('dashboard.modulePurchaseRequestsDescription')}
-            />
-            <ModuleLink
-              to="/purchase-orders"
-              icon={<IconShoppingCart size={20} />}
-              title={t('dashboard.modulePurchaseOrdersTitle')}
-              description={t('dashboard.modulePurchaseOrdersDescription')}
-            />
-            <ModuleLink
-              to="/delivery-orders"
-              icon={<IconTruckDelivery size={20} />}
-              title={t('dashboard.moduleDeliveryOrdersTitle')}
-              description={t('dashboard.moduleDeliveryOrdersDescription')}
-            />
-            <ModuleLink
-              to="/tasks"
-              icon={<IconChecklist size={20} />}
-              title={t('dashboard.moduleTasksTitle')}
-              description={t('dashboard.moduleTasksDescription')}
-            />
-          </Stack>
-        </Paper>
-      </SimpleGrid>
+              ))}
+            </Table.Tbody>
+          </Table>
+        </ScrollArea>
+      </Paper>
     </Stack>
   );
 }
@@ -279,8 +248,18 @@ function riskLabel(code: OperationalRiskCode, t: ReturnType<typeof useI18n>['t']
   return labels[code];
 }
 
-function DashboardCharts({ stats }: { stats: DashboardStats }) {
+function DashboardCharts({
+  stats,
+  purchaseRequests,
+  purchaseOrders,
+}: {
+  stats: DashboardStats;
+  purchaseRequests: PurchaseRequest[];
+  purchaseOrders: PurchaseOrder[];
+}) {
+  const navigate = useNavigate();
   const { flowTagLabel, statusLabel, t, taskRoleLabel } = useI18n();
+
   const maxDeliveryStatus = Math.max(...stats.deliveryOrderStatus.map((item) => item.count), 1);
   const maxBusinessFlow = Math.max(...(stats.businessFlowCounts ?? []).map((item) => item.count), 1);
   const maxRoleTasks = Math.max(...stats.taskRoleProgress.map((item) => item.total), 1);
@@ -289,8 +268,175 @@ function DashboardCharts({ stats }: { stats: DashboardStats }) {
     1,
   );
 
+  // Group PR and PO counts by the last 6 months dynamically for the Line Chart
+  const monthlyPrPoData = useMemo(() => {
+    const months: string[] = [];
+    for (let i = 5; i >= 0; i--) {
+      months.push(dayjs().subtract(i, 'month').format('YYYY-MM'));
+    }
+
+    return months.map((m) => {
+      const prCount = purchaseRequests.filter((pr) => {
+        const dateStr = pr.requested_order_date || pr.expected_arrival_date;
+        return dateStr && dateStr.startsWith(m);
+      }).length;
+
+      const poCount = purchaseOrders.filter((po) => {
+        const dateStr = po.order_date;
+        return dateStr && dateStr.startsWith(m);
+      }).length;
+
+      const label = dayjs(m, 'YYYY-MM').format('MM/YY');
+
+      return {
+        month: m,
+        label,
+        pr: prCount,
+        po: poCount,
+      };
+    });
+  }, [purchaseRequests, purchaseOrders]);
+
+  // SVG Line Chart Dimensions and Math
+  const maxVal = Math.max(...monthlyPrPoData.flatMap((d) => [d.pr, d.po]), 4);
+  const width = 500;
+  const height = 240;
+  const paddingX = 45;
+  const paddingY = 40;
+  const chartWidth = width - paddingX * 2;
+  const chartHeight = height - paddingY * 2;
+
+  const prPoints = monthlyPrPoData.map((d, index) => {
+    const x = paddingX + (index / (monthlyPrPoData.length - 1)) * chartWidth;
+    const y = paddingY + chartHeight - (d.pr / maxVal) * chartHeight;
+    return { x, y };
+  });
+
+  const poPoints = monthlyPrPoData.map((d, index) => {
+    const x = paddingX + (index / (monthlyPrPoData.length - 1)) * chartWidth;
+    const y = paddingY + chartHeight - (d.po / maxVal) * chartHeight;
+    return { x, y };
+  });
+
+  const prPath = prPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+  const poPath = poPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+
+  const prAreaPath = prPoints.length > 0
+    ? `${prPath} L ${prPoints[prPoints.length - 1].x} ${height - paddingY} L ${prPoints[0].x} ${height - paddingY} Z`
+    : '';
+  const poAreaPath = poPoints.length > 0
+    ? `${poPath} L ${poPoints[poPoints.length - 1].x} ${height - paddingY} L ${poPoints[0].x} ${height - paddingY} Z`
+    : '';
+
   return (
     <SimpleGrid cols={{ base: 1, xl: 2 }}>
+      {/* 1. Line Chart: PR & PO Relation (Newly Added!) */}
+      <Paper withBorder p="lg">
+        <Title order={3}>Mối quan hệ PR & PO</Title>
+        <Text size="sm" c="dimmed" mb="md">
+          Biểu đồ xu hướng khởi tạo Yêu cầu (PR) và Đơn hàng (PO) qua các tháng. Click vào các đường hoặc điểm tròn để xem chi tiết.
+        </Text>
+        <div style={{ position: 'relative', width: '100%', height: height }}>
+          <svg viewBox={`0 0 ${width} ${height}`} width="100%" height="100%" style={{ overflow: 'visible' }}>
+            <defs>
+              <linearGradient id="prGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--mantine-color-blue-filled)" stopOpacity="0.15" />
+                <stop offset="100%" stopColor="var(--mantine-color-blue-filled)" stopOpacity="0.0" />
+              </linearGradient>
+              <linearGradient id="poGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--mantine-color-orange-filled)" stopOpacity="0.15" />
+                <stop offset="100%" stopColor="var(--mantine-color-orange-filled)" stopOpacity="0.0" />
+              </linearGradient>
+            </defs>
+
+            {/* Grid lines */}
+            {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
+              const y = paddingY + chartHeight * ratio;
+              const val = Math.round(maxVal * (1 - ratio));
+              return (
+                <g key={ratio} opacity={0.15}>
+                  <line x1={paddingX} y1={y} x2={width - paddingX} y2={y} stroke="currentColor" strokeDasharray="3,3" />
+                  <text x={paddingX - 10} y={y + 4} textAnchor="end" fontSize={10} fill="currentColor">
+                    {val}
+                  </text>
+                </g>
+              );
+            })}
+
+            {/* X axis labels */}
+            {monthlyPrPoData.map((d, index) => {
+              const x = paddingX + (index / (monthlyPrPoData.length - 1)) * chartWidth;
+              return (
+                <text key={index} x={x} y={height - paddingY + 20} textAnchor="middle" fontSize={10} fill="currentColor" opacity={0.6}>
+                  {d.label}
+                </text>
+              );
+            })}
+
+            {/* PR Line & Area */}
+            <g style={{ cursor: 'pointer' }} onClick={() => navigate('/purchase-requests')}>
+              <path d={prAreaPath} fill="url(#prGrad)" />
+              <path d={prPath} fill="none" stroke="var(--mantine-color-blue-filled)" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
+            </g>
+
+            {/* PO Line & Area */}
+            <g style={{ cursor: 'pointer' }} onClick={() => navigate('/purchase-orders')}>
+              <path d={poAreaPath} fill="url(#poGrad)" />
+              <path d={poPath} fill="none" stroke="var(--mantine-color-orange-filled)" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
+            </g>
+
+            {/* Interactive Dots */}
+            {monthlyPrPoData.map((d, index) => {
+              const prP = prPoints[index];
+              const poP = poPoints[index];
+              return (
+                <g key={index}>
+                  {/* PR dot */}
+                  <circle
+                    cx={prP.x}
+                    cy={prP.y}
+                    r={5}
+                    fill="var(--mantine-color-blue-filled)"
+                    stroke="var(--mantine-color-body)"
+                    strokeWidth={2}
+                    style={{ cursor: 'pointer', transition: 'r 100ms ease' }}
+                    onClick={() => navigate(`/purchase-requests?month=${d.month}`)}
+                  >
+                    <title>{t('dashboard.chartPrTooltip', { month: d.label, count: d.pr })}</title>
+                  </circle>
+                  {/* PO dot */}
+                  <circle
+                    cx={poP.x}
+                    cy={poP.y}
+                    r={5}
+                    fill="var(--mantine-color-orange-filled)"
+                    stroke="var(--mantine-color-body)"
+                    strokeWidth={2}
+                    style={{ cursor: 'pointer', transition: 'r 100ms ease' }}
+                    onClick={() => navigate(`/purchase-orders?month=${d.month}`)}
+                  >
+                    <title>{t('dashboard.chartPoTooltip', { month: d.label, count: d.po })}</title>
+                  </circle>
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+
+        {/* Legend */}
+        <Group justify="center" mt="md" gap="lg">
+          <Group gap={6} style={{ cursor: 'pointer' }} onClick={() => navigate('/purchase-requests')}>
+            <span style={{ display: 'inline-block', width: 12, height: 12, borderRadius: '50%', background: 'var(--mantine-color-blue-filled)' }} />
+            <Text size="xs" fw={700}>{t('dashboard.modulePurchaseRequestsTitle')}</Text>
+          </Group>
+          <Group gap={6} style={{ cursor: 'pointer' }} onClick={() => navigate('/purchase-orders')}>
+            <span style={{ display: 'inline-block', width: 12, height: 12, borderRadius: '50%', background: 'var(--mantine-color-orange-filled)' }} />
+            <Text size="xs" fw={700}>{t('dashboard.modulePurchaseOrdersTitle')}</Text>
+          </Group>
+        </Group>
+      </Paper>
+
+      {/* 2. Delivery Status Chart */}
       <Paper withBorder p="lg">
         <Title order={3}>{t('dashboard.deliveryStatusChart')}</Title>
         <Text size="sm" c="dimmed" mb="md">
@@ -298,19 +444,26 @@ function DashboardCharts({ stats }: { stats: DashboardStats }) {
         </Text>
         <Stack gap="sm">
           {stats.deliveryOrderStatus.map((item) => (
-            <div key={item.status}>
-              <Group justify="space-between" mb={6}>
-                <Text size="sm">{statusLabel(item.status)}</Text>
-                <Text size="sm" fw={700}>
-                  {item.count}
-                </Text>
-              </Group>
-              <Progress value={Math.round((item.count / maxDeliveryStatus) * 100)} color="blue" />
-            </div>
+            <Link
+              key={item.status}
+              to={`/delivery-orders?status=${item.status}`}
+              style={{ display: 'block', color: 'inherit', textDecoration: 'none' }}
+            >
+              <div style={{ padding: '2px 0' }}>
+                <Group justify="space-between" mb={6}>
+                  <Text size="sm" className="hover-underline">{statusLabel(item.status)}</Text>
+                  <Text size="sm" fw={700}>
+                    {item.count}
+                  </Text>
+                </Group>
+                <Progress value={Math.round((item.count / maxDeliveryStatus) * 100)} color="blue" style={{ cursor: 'pointer' }} />
+              </div>
+            </Link>
           ))}
         </Stack>
       </Paper>
 
+      {/* 3. Task Role Chart */}
       <Paper withBorder p="lg">
         <Title order={3}>{t('dashboard.taskRoleChart')}</Title>
         <Text size="sm" c="dimmed" mb="md">
@@ -318,20 +471,27 @@ function DashboardCharts({ stats }: { stats: DashboardStats }) {
         </Text>
         <Stack gap="sm">
           {stats.taskRoleProgress.map((item) => (
-            <div key={item.role}>
-              <Group justify="space-between" mb={6}>
-                <Text size="sm">{taskRoleLabel(item.role)}</Text>
-                <Text size="sm" fw={700}>
-                  {item.completed}/{item.total}
-                </Text>
-              </Group>
-              <Progress value={Math.round((item.total / maxRoleTasks) * 100)} color="gray" />
-              <Progress value={item.completionRate} color={item.completionRate >= 80 ? 'teal' : 'orange'} mt={6} />
-            </div>
+            <Link
+              key={item.role}
+              to={`/tasks?role=${item.role}`}
+              style={{ display: 'block', color: 'inherit', textDecoration: 'none' }}
+            >
+              <div style={{ padding: '2px 0' }}>
+                <Group justify="space-between" mb={6}>
+                  <Text size="sm" className="hover-underline">{taskRoleLabel(item.role)}</Text>
+                  <Text size="sm" fw={700}>
+                    {item.completed}/{item.total}
+                  </Text>
+                </Group>
+                <Progress value={Math.round((item.total / maxRoleTasks) * 100)} color="gray" style={{ cursor: 'pointer' }} />
+                <Progress value={item.completionRate} color={item.completionRate >= 80 ? 'teal' : 'orange'} mt={6} style={{ cursor: 'pointer' }} />
+              </div>
+            </Link>
           ))}
         </Stack>
       </Paper>
 
+      {/* 4. Business Flows Chart */}
       <Paper withBorder p="lg">
         <Title order={3}>{t('dashboard.businessFlows')}</Title>
         <Text size="sm" c="dimmed" mb="md">
@@ -339,21 +499,28 @@ function DashboardCharts({ stats }: { stats: DashboardStats }) {
         </Text>
         <Stack gap="sm">
           {(stats.businessFlowCounts ?? []).map((item) => (
-            <div key={item.tag}>
-              <Group justify="space-between" mb={6}>
-                <Button component={Link} to="/workflow" size="compact-sm" variant="subtle">
-                  {flowTagLabel(item.tag)}
-                </Button>
-                <Text size="sm" fw={700}>
-                  {item.count}
-                </Text>
-              </Group>
-              <Progress value={Math.round((item.count / maxBusinessFlow) * 100)} color="grape" />
-            </div>
+            <Link
+              key={item.tag}
+              to={`/workflow?tag=${item.tag}`}
+              style={{ display: 'block', color: 'inherit', textDecoration: 'none' }}
+            >
+              <div style={{ padding: '2px 0' }}>
+                <Group justify="space-between" mb={6}>
+                  <Text size="sm" className="hover-underline" style={{ color: 'var(--mantine-color-grape-filled)', fontWeight: 600 }}>
+                    {flowTagLabel(item.tag)}
+                  </Text>
+                  <Text size="sm" fw={700}>
+                    {item.count}
+                  </Text>
+                </Group>
+                <Progress value={Math.round((item.count / maxBusinessFlow) * 100)} color="grape" style={{ cursor: 'pointer' }} />
+              </div>
+            </Link>
           ))}
         </Stack>
       </Paper>
 
+      {/* 5. Monthly Throughput Chart */}
       <Paper withBorder p="lg">
         <Title order={3}>{t('dashboard.monthlyThroughputChart')}</Title>
         <Text size="sm" c="dimmed" mb="md">
@@ -363,17 +530,61 @@ function DashboardCharts({ stats }: { stats: DashboardStats }) {
           {stats.monthlyThroughput.map((item) => (
             <div key={item.month}>
               <Group justify="space-between" mb={6}>
-                <Text size="sm">{item.month}</Text>
+                <Text size="sm" fw={600}>{item.month}</Text>
                 <Text size="sm" fw={700}>
                   {t('dashboard.throughputLegend', { deliveryOrders: item.deliveryOrders, completedTasks: item.completedTasks })}
                 </Text>
               </Group>
               <Stack gap={4}>
-                <Progress value={Math.round((item.deliveryOrders / maxMonthly) * 100)} color="blue" />
-                <Progress value={Math.round((item.completedTasks / maxMonthly) * 100)} color="teal" />
+                <Link to="/delivery-orders" style={{ display: 'block' }} title={t('dashboard.viewDeliveryOrders')}>
+                  <Progress value={Math.round((item.deliveryOrders / maxMonthly) * 100)} color="blue" style={{ cursor: 'pointer' }} />
+                </Link>
+                <Link to="/tasks" style={{ display: 'block' }} title={t('dashboard.viewTasks')}>
+                  <Progress value={Math.round((item.completedTasks / maxMonthly) * 100)} color="teal" style={{ cursor: 'pointer' }} />
+                </Link>
               </Stack>
             </div>
           ))}
+        </Stack>
+      </Paper>
+
+      {/* 6. Operational Modules (Moved here for perfect layout alignment!) */}
+      <Paper withBorder p="lg">
+        <Title order={3}>{t('dashboard.modulesTitle')}</Title>
+        <Text size="sm" c="dimmed" mt={4}>
+          {t('dashboard.modulesDescription')}
+        </Text>
+        <Stack gap="md" mt="lg">
+          <ModuleLink
+            to="/workflow"
+            icon={<IconGitBranch size={20} />}
+            title={t('dashboard.moduleWorkflowTitle')}
+            description={t('dashboard.moduleWorkflowDescription')}
+          />
+          <ModuleLink
+            to="/purchase-requests"
+            icon={<IconFileInvoice size={20} />}
+            title={t('dashboard.modulePurchaseRequestsTitle')}
+            description={t('dashboard.modulePurchaseRequestsDescription')}
+          />
+          <ModuleLink
+            to="/purchase-orders"
+            icon={<IconShoppingCart size={20} />}
+            title={t('dashboard.modulePurchaseOrdersTitle')}
+            description={t('dashboard.modulePurchaseOrdersDescription')}
+          />
+          <ModuleLink
+            to="/delivery-orders"
+            icon={<IconTruckDelivery size={20} />}
+            title={t('dashboard.moduleDeliveryOrdersTitle')}
+            description={t('dashboard.moduleDeliveryOrdersDescription')}
+          />
+          <ModuleLink
+            to="/tasks"
+            icon={<IconChecklist size={20} />}
+            title={t('dashboard.moduleTasksTitle')}
+            description={t('dashboard.moduleTasksDescription')}
+          />
         </Stack>
       </Paper>
     </SimpleGrid>
@@ -395,10 +606,10 @@ function MetricCard({
     <Paper withBorder p="md" className="metric-card">
       <Group justify="space-between" wrap="nowrap">
         <div>
-          <Text size="sm" c="dimmed">
+          <Text className="metric-label" size="xs" fw={700} lts="0.05em" tt="uppercase" mb={4}>
             {label}
           </Text>
-          <Title order={2}>
+          <Title order={1} fw={800} c={color} style={{ lineHeight: 1.1 }}>
             <NumberFormatter value={value} thousandSeparator />
           </Title>
         </div>

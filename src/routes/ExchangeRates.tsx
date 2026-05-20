@@ -16,7 +16,7 @@ import {
   Title,
 } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
-import { IconExchange, IconRefresh, IconSearch } from '@tabler/icons-react';
+import { IconClock, IconCoins, IconExchange, IconRefresh, IconSearch } from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
 
 import { fetchExchangeRates } from '../api/system';
@@ -158,9 +158,9 @@ export function ExchangeRates() {
       </Group>
 
       <SimpleGrid cols={{ base: 1, sm: 3 }}>
-        <Metric label={t('exchangeRates.base')} value={exchangeRatesQuery.data?.base ?? baseCurrency} />
-        <Metric label={t('exchangeRates.totalCurrencies')} value={String(rates.length)} />
-        <Metric label={t('exchangeRates.lastUpdated')} value={updatedAtLabel} />
+        <Metric label={t('exchangeRates.base')} value={exchangeRatesQuery.data?.base ?? baseCurrency} color="blue" icon={<IconCoins size={22} />} />
+        <Metric label={t('exchangeRates.totalCurrencies')} value={String(rates.length)} color="teal" icon={<IconExchange size={22} />} />
+        <Metric label={t('exchangeRates.lastUpdated')} value={updatedAtLabel} color="gray" icon={<IconClock size={22} />} />
       </SimpleGrid>
 
       {quickRates.length > 0 ? (
@@ -170,6 +170,8 @@ export function ExchangeRates() {
               key={item.currency}
               label={`${t('exchangeRates.oneBase')} ${currencyLabel(baseCurrency)}`}
               value={`${formatRate(item.rate)} ${currencyLabel(item.currency)}`}
+              color="blue"
+              icon={<IconCoins size={22} />}
             />
           ))}
         </SimpleGrid>
@@ -208,16 +210,18 @@ export function ExchangeRates() {
             <Metric
               label={t('exchangeRates.estimatedValue')}
               value={estimate ? `${formatRate(estimate.value)} ${toCurrency}` : '-'}
+              color="blue"
+              icon={<IconExchange size={22} />}
             />
           </SimpleGrid>
           <Text size="sm" c="dimmed">
             {estimate
               ? t('exchangeRates.estimateFormula', {
-                  amount: formatRate(estimate.amount),
-                  from: currencyLabel(fromCurrency),
-                  rate: formatRate(estimate.rate),
-                  to: currencyLabel(toCurrency),
-                })
+                amount: formatRate(estimate.amount),
+                from: currencyLabel(fromCurrency),
+                rate: formatRate(estimate.rate),
+                to: currencyLabel(toCurrency),
+              })
               : t('exchangeRates.estimateUnavailable')}
           </Text>
         </Stack>
@@ -284,15 +288,30 @@ export function ExchangeRates() {
 
 export default ExchangeRates;
 
-function Metric({ label, value }: { label: string; value: string }) {
+function Metric({
+  color = 'blue',
+  icon,
+  label,
+  value,
+}: {
+  color?: string;
+  icon?: React.ReactNode;
+  label: string;
+  value: string;
+}) {
   return (
     <Paper withBorder p="md" className="metric-card">
-      <Text size="sm" c="dimmed">
-        {label}
-      </Text>
-      <Text fw={700} size="lg">
-        {value}
-      </Text>
+      <Group justify="space-between" wrap="nowrap">
+        <div>
+          <Text className="metric-label" size="xs" fw={700} lts="0.05em" tt="uppercase" mb={4}>
+            {label}
+          </Text>
+          <Text fw={800} size="xl" c={color} style={{ lineHeight: 1.1 }}>
+            {value}
+          </Text>
+        </div>
+        {icon && <span className={`metric-icon metric-icon-${color}`}>{icon}</span>}
+      </Group>
     </Paper>
   );
 }

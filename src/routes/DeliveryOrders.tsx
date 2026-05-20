@@ -43,7 +43,7 @@ import {
   IconTruckDelivery,
 } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 import { CreateDeliveryOrderDrawer } from '../components/CreateOrderForms';
 import { DelayBadge } from '../components/DelayBadge';
@@ -104,6 +104,8 @@ function hasOperationalRisk(deliveryOrder: DeliveryOrder) {
 
 export function DeliveryOrders() {
   const { flowTagLabel, statusLabel, t } = useI18n();
+  const [searchParams] = useSearchParams();
+  const statusParam = searchParams.get('status');
   const { close: closeDoParam, open: openDoParam, value: focusedDo } = useEntityParam('do');
   const { value: focusedPr } = useEntityParam('pr');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -131,6 +133,17 @@ export function DeliveryOrders() {
   const purchaseRequests = purchaseRequestsQuery.data ?? [];
   const purchaseOrders = purchaseOrdersQuery.data ?? [];
   const isFetching = deliveryOrdersQuery.isFetching;
+
+  useEffect(() => {
+    if (statusParam) {
+      const matchedTab = Object.entries(deliveryOrderStatusTabs).find(([_, statuses]) =>
+        statuses.includes(statusParam as any)
+      )?.[0] as DeliveryOrderTab;
+      if (matchedTab) {
+        setActiveTab(matchedTab);
+      }
+    }
+  }, [statusParam]);
 
   useEffect(() => {
     if (!focusedDo && !focusedPr) {
@@ -163,9 +176,9 @@ export function DeliveryOrders() {
     const normalizedSearch = search.toLowerCase().trim();
 
     return deliveryOrders.filter((deliveryOrder) => {
-      const statusMatchesTab =
-        activeTab === 'all' ||
-        deliveryOrderStatusTabs[activeTab].includes(deliveryOrder.order_info.status);
+      const statusMatchesTab = statusParam
+        ? deliveryOrder.order_info.status === statusParam
+        : (activeTab === 'all' || deliveryOrderStatusTabs[activeTab].includes(deliveryOrder.order_info.status));
       const matchesFlow = flowFilter === 'all' || deliveryOrder.flow_tags.includes(flowFilter);
       const matchesRisk = !riskOnly || hasOperationalRisk(deliveryOrder) || deliveryOrder.sap_integration.sync_status !== 'SYNCED';
       const matchesSearch = [
@@ -174,14 +187,14 @@ export function DeliveryOrders() {
         deliveryOrder.sap_integration.po_number,
         deliveryOrder.sap_integration.supplier_name,
         deliveryOrder.product_details.item_name_requested,
-        ]
+      ]
         .join(' ')
         .toLowerCase()
         .includes(normalizedSearch);
 
       return statusMatchesTab && matchesFlow && matchesRisk && matchesSearch;
     });
-  }, [activeTab, deliveryOrders, flowFilter, riskOnly, search]);
+  }, [activeTab, deliveryOrders, flowFilter, riskOnly, search, statusParam]);
 
   const tabCounts = useMemo(
     () => ({
@@ -273,12 +286,13 @@ export function DeliveryOrders() {
       ) : null}
 
       <SimpleGrid cols={{ base: 1, sm: 3 }}>
-        <Metric label={t('deliveryOrders.activeDo')} value={deliveryOrders.filter((deliveryOrder) => deliveryOrder.order_info.status !== 'DELIVERED').length} />
-        <Metric label={t('deliveryOrders.riskQueue')} value={riskCount} color="red" />
+        <Metric label={t('deliveryOrders.activeDo')} value={deliveryOrders.filter((deliveryOrder) => deliveryOrder.order_info.status !== 'DELIVERED').length} color="blue" icon={<IconTruckDelivery size={22} />} />
+        <Metric label={t('deliveryOrders.riskQueue')} value={riskCount} color="red" icon={<IconAlertTriangle size={22} />} />
         <Metric
           label={t('deliveryOrders.completedTasks')}
           value={deliveryOrders.reduce((total, deliveryOrder) => total + deliveryOrder.task_summary.completed_tasks, 0)}
           color="teal"
+          icon={<IconChecklist size={22} />}
         />
       </SimpleGrid>
 
@@ -341,8 +355,8 @@ export function DeliveryOrders() {
       </Paper>
 
       <Paper withBorder p={0}>
-        <ScrollArea>
-          <Table miw={960} verticalSpacing="sm" highlightOnHover>
+        <ScrollArea className="data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
+          <Table miw={1180} verticalSpacing="sm" highlightOnHover>
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>{t('deliveryOrders.doColumn')}</Table.Th>
@@ -385,21 +399,21 @@ export function DeliveryOrders() {
                       </Group>
                       <FlowTagBadge compact tags={deliveryOrder.flow_tags} />
                     </Table.Td>
-                    <Table.Td>
-                      <Text size="sm" fw={600}>
+                    <Table.Td className="table-cell-truncate" style={{ maxWidth: '18rem' }}>
+                      <Text size="sm" fw={600} lineClamp={1} title={deliveryOrder.sap_integration.supplier_name ?? t('deliveryOrders.supplierPending')}>
                         {deliveryOrder.sap_integration.supplier_name ?? t('deliveryOrders.supplierPending')}
                       </Text>
-                      <Text size="sm" c="dimmed">
+                      <Text size="sm" c="dimmed" lineClamp={1}>
                         {deliveryOrder.sap_integration.actual_item_code ?? '-'} ·{' '}
                         {deliveryOrder.product_details.quantity.toLocaleString()} {deliveryOrder.product_details.unit}
                       </Text>
                     </Table.Td>
-                    <Table.Td>
+                    <Table.Td className="table-cell-truncate" style={{ maxWidth: '17rem' }}>
                       <Group gap={6} wrap="nowrap">
                         <ShippingIcon size={18} />
                         <div>
-                          <Text size="sm">{deliveryOrder.logistics_shipping.port_of_departure}</Text>
-                          <Text size="sm" c="dimmed">
+                          <Text size="sm" lineClamp={1} title={deliveryOrder.logistics_shipping.port_of_departure}>{deliveryOrder.logistics_shipping.port_of_departure}</Text>
+                          <Text size="sm" c="dimmed" lineClamp={1} title={deliveryOrder.logistics_shipping.port_of_destination}>
                             {deliveryOrder.logistics_shipping.port_of_destination}
                           </Text>
                         </div>
@@ -973,15 +987,30 @@ function extractTaskGateCounts(detail: string) {
   };
 }
 
-function Metric({ color = 'blue', label, value }: { color?: string; label: string; value: number }) {
+function Metric({
+  color = 'blue',
+  icon,
+  label,
+  value,
+}: {
+  color?: string;
+  icon?: React.ReactNode;
+  label: string;
+  value: number;
+}) {
   return (
     <Paper withBorder p="md" className="metric-card">
-      <Text size="sm" c="dimmed">
-        {label}
-      </Text>
-      <Title order={2} c={color}>
-        <NumberFormatter value={value} thousandSeparator />
-      </Title>
+      <Group justify="space-between" wrap="nowrap">
+        <div>
+          <Text className="metric-label" size="xs" fw={700} lts="0.05em" tt="uppercase" mb={4}>
+            {label}
+          </Text>
+          <Title order={1} fw={800} c={color} style={{ lineHeight: 1.1 }}>
+            <NumberFormatter value={value} thousandSeparator />
+          </Title>
+        </div>
+        {icon && <span className={`metric-icon metric-icon-${color}`}>{icon}</span>}
+      </Group>
     </Paper>
   );
 }
@@ -989,7 +1018,7 @@ function Metric({ color = 'blue', label, value }: { color?: string; label: strin
 function Info({ label, value }: { label: string; value: string }) {
   return (
     <Paper withBorder p="sm">
-      <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+      <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
         {label}
       </Text>
       <Text fw={600}>{value}</Text>

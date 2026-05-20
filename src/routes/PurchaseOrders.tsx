@@ -19,8 +19,9 @@ import {
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { IconEye, IconPlugConnected, IconPlus, IconRefresh, IconSearch, IconShoppingCart } from '@tabler/icons-react';
+import { IconAlertTriangle, IconCircleCheck, IconEye, IconPlugConnected, IconPlus, IconRefresh, IconSearch, IconShoppingCart } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 import { CreatePurchaseOrderDrawer } from '../components/CreateOrderForms';
 import { EntityLink } from '../components/EntityLink';
@@ -40,6 +41,8 @@ type PurchaseOrderTab = 'all' | 'single' | 'bulk' | 'awaiting' | 'partial' | 'cl
 
 export function PurchaseOrders() {
   const { flowTagLabel, statusLabel, t } = useI18n();
+  const [searchParams] = useSearchParams();
+  const monthParam = searchParams.get('month');
   const { user } = useAuth();
   const { close: closePoParam, open: openPoParam, value: focusedPo } = useEntityParam('po');
   const [selectedPo, setSelectedPo] = useState<PurchaseOrder | null>(null);
@@ -94,9 +97,12 @@ export function PurchaseOrders() {
         .toLowerCase()
         .includes(normalizedSearch);
 
-      return matchesTab && matchesSearch;
+      const dateStr = order.order_date;
+      const matchesMonth = !monthParam || (dateStr && dateStr.startsWith(monthParam));
+
+      return matchesTab && matchesSearch && matchesMonth;
     });
-  }, [activeTab, purchaseOrders, search]);
+  }, [activeTab, purchaseOrders, search, monthParam]);
 
   const tabCounts = useMemo(
     () => ({
@@ -166,9 +172,9 @@ export function PurchaseOrders() {
       </Group>
 
       <SimpleGrid cols={{ base: 1, sm: 3 }}>
-        <Metric label={t('purchaseOrders.totalPo')} value={purchaseOrders.length} />
-        <Metric label={t('purchaseOrders.synced')} value={purchaseOrders.filter((order) => order.sap_sync_status === 'SYNCED').length} color="teal" />
-        <Metric label={t('purchaseOrders.pendingSap')} value={purchaseOrders.filter((order) => order.sap_sync_status !== 'SYNCED').length} color="orange" />
+        <Metric label={t('purchaseOrders.totalPo')} value={purchaseOrders.length} color="blue" icon={<IconShoppingCart size={22} />} />
+        <Metric label={t('purchaseOrders.synced')} value={purchaseOrders.filter((order) => order.sap_sync_status === 'SYNCED').length} color="teal" icon={<IconCircleCheck size={22} />} />
+        <Metric label={t('purchaseOrders.pendingSap')} value={purchaseOrders.filter((order) => order.sap_sync_status !== 'SYNCED').length} color="orange" icon={<IconAlertTriangle size={22} />} />
       </SimpleGrid>
 
       <FilterToolbar
@@ -186,22 +192,22 @@ export function PurchaseOrders() {
           { label: t('common.sapIssues'), value: 'sap', count: tabCounts.sap },
         ]}
       >
-          <TextInput
-            label={t('common.search')}
-            placeholder={t('purchaseOrders.searchPlaceholder')}
-            leftSection={<IconSearch size={16} />}
-            value={search}
-            onChange={(event) => setSearch(event.currentTarget.value)}
-            w={{ base: '100%', sm: 360 }}
-          />
+        <TextInput
+          label={t('common.search')}
+          placeholder={t('purchaseOrders.searchPlaceholder')}
+          leftSection={<IconSearch size={16} />}
+          value={search}
+          onChange={(event) => setSearch(event.currentTarget.value)}
+          w={{ base: '100%', sm: 360 }}
+        />
       </FilterToolbar>
 
       <Paper withBorder p={0}>
         {filteredPurchaseOrders.length === 0 ? (
           <EmptyState title={t('purchaseOrders.emptyTitle')} description={t('purchaseOrders.emptyDescription')} />
         ) : (
-          <ScrollArea>
-            <Table miw={1060} verticalSpacing="sm" highlightOnHover>
+          <ScrollArea className="data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
+            <Table miw={1220} verticalSpacing="sm" highlightOnHover>
               <Table.Thead>
                 <Table.Tr>
                   <Table.Th>PO</Table.Th>
@@ -217,15 +223,15 @@ export function PurchaseOrders() {
               <Table.Tbody>
                 {filteredPurchaseOrders.map((order) => (
                   <Table.Tr key={order.id}>
-                    <Table.Td>
-                      <Text fw={700}>{order.po_number}</Text>
+                    <Table.Td className="table-cell-truncate" style={{ maxWidth: '20rem' }}>
+                      <Text fw={700} lineClamp={1} title={order.po_number}>{order.po_number}</Text>
                       <Text size="xs" c="dimmed">
                         {order.order_date}
                       </Text>
                       <FlowTagBadge compact tags={order.flow_tags} />
                     </Table.Td>
-                    <Table.Td>
-                      <Text size="sm" fw={600}>
+                    <Table.Td className="table-cell-truncate" style={{ maxWidth: '18rem' }}>
+                      <Text size="sm" fw={600} lineClamp={1} title={order.supplier_name}>
                         {order.supplier_name}
                       </Text>
                       <Text size="xs" c="dimmed">
@@ -289,15 +295,30 @@ export function PurchaseOrders() {
   );
 }
 
-function Metric({ color = 'blue', label, value }: { color?: string; label: string; value: number }) {
+function Metric({
+  color = 'blue',
+  icon,
+  label,
+  value,
+}: {
+  color?: string;
+  icon?: React.ReactNode;
+  label: string;
+  value: number;
+}) {
   return (
     <Paper withBorder p="md" className="metric-card">
-      <Text size="sm" c="dimmed">
-        {label}
-      </Text>
-      <Title order={2} c={color}>
-        {value}
-      </Title>
+      <Group justify="space-between" wrap="nowrap">
+        <div>
+          <Text className="metric-label" size="xs" fw={700} lts="0.05em" tt="uppercase" mb={4}>
+            {label}
+          </Text>
+          <Title order={1} fw={800} c={color} style={{ lineHeight: 1.1 }}>
+            {value}
+          </Title>
+        </div>
+        {icon && <span className={`metric-icon metric-icon-${color}`}>{icon}</span>}
+      </Group>
     </Paper>
   );
 }
@@ -393,7 +414,7 @@ function PurchaseOrderDetail({ onUpdated, order }: { onUpdated?: (order: Purchas
 function Info({ label, value }: { label: string; value: string }) {
   return (
     <Paper withBorder p="sm">
-      <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+      <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
         {label}
       </Text>
       <Text fw={600}>{value}</Text>

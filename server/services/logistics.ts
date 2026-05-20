@@ -140,6 +140,7 @@ export async function createPurchaseRequest(body: CreatePurchaseRequestBody, aut
 }
 
 export async function createPurchaseOrder(body: CreatePurchaseOrderBody) {
+  const poNumber = normalizeBusinessCode(requiredString(body.poNumber, 'poNumber'));
   const supplierCode = requiredString(body.supplierCode, 'supplierCode');
   const supplierName = requiredString(body.supplierName, 'supplierName');
   const currency = requiredString(body.currency, 'currency').toUpperCase();
@@ -159,7 +160,10 @@ export async function createPurchaseOrder(body: CreatePurchaseOrderBody) {
     const normalizedOrders = purchaseOrders.map(normalizePurchaseOrder);
     const sourceLines = normalizePurchaseOrderSourceLines(body, normalizedRequests, normalizedOrders);
 
-    const poNumber = nextPurchaseOrderNumber(purchaseOrders);
+    if (normalizedOrders.some((order) => normalizeBusinessCode(order.po_number) === poNumber)) {
+      throw new ApiError(409, `PO ${poNumber} đã tồn tại.`);
+    }
+
     const sourcePrCodes = Array.from(new Set(sourceLines.map((line) => line.source_pr_code)));
     const lineItems: PurchaseOrderLineItem[] = sourceLines.map((line) => ({
       id: `po-line-${randomUUID()}`,
@@ -1646,6 +1650,16 @@ function requiredString(value: unknown, fieldName: string) {
   return cleaned;
 }
 
+function normalizeBusinessCode(value: string) {
+  return value
+    .split(/\r?\n/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function optionalString(value: unknown) {
   if (value === null || value === undefined) {
     return null;
@@ -1727,15 +1741,6 @@ function optionalDateTime(value: unknown, fieldName: string) {
 
 function appendUnique<T>(items: T[], item: T) {
   return items.includes(item) ? items : [...items, item];
-}
-
-function nextPurchaseOrderNumber(purchaseOrders: PurchaseOrder[]) {
-  const numbers = purchaseOrders
-    .map((order) => Number(order.po_number.match(/^PO-(\d+)$/)?.[1] ?? 0))
-    .filter((value) => Number.isFinite(value));
-  const next = Math.max(4500098000, ...numbers) + 1;
-
-  return `PO-${next}`;
 }
 
 function nextTaskNumber(tasks: LogisticsTask[]) {

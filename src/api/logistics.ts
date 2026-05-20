@@ -110,6 +110,7 @@ export type CreatePurchaseRequestPayload = {
 export type CreatePurchaseOrderPayload = {
   currency: string;
   orderDate?: string;
+  poNumber: string;
   sourceLines?: Array<{
     prCode: string;
     prLineId: string;

@@ -125,8 +125,50 @@ body {
   color: #374151;
 }
 
+.data-table-scroll {
+  width: 100%;
+}
+
+.data-table-scroll .mantine-ScrollArea-scrollbar[data-orientation='horizontal'] {
+  height: 0.625rem;
+}
+
+.table-cell-truncate {
+  max-width: var(--cell-max-width, 16rem);
+  min-width: 0;
+}
+
+.table-cell-truncate .mantine-Text-root {
+  overflow-wrap: anywhere;
+}
+
+.table-cell-truncate .mantine-Badge-root {
+  max-width: 100%;
+}
+
+.table-cell-truncate .mantine-Badge-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .metric-card {
-  background: rgba(255, 255, 255, 0.84);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(8px);
+  border-color: #e6e9e6;
+  transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.05);
+  border-color: #ccd1cc;
+}
+
+.metric-label {
+  color: #000000 !important; /* Pure black for high contrast readability in light mode */
+  opacity: 0.85;
+  transition: color 150ms ease, opacity 150ms ease;
 }
 
 .metric-icon {
@@ -249,7 +291,7 @@ body {
 }
 
 @media (max-width: 36em) {
-  .brand-mark > span:last-child {
+  .brand-mark>span:last-child {
     display: none;
   }
 }
@@ -275,10 +317,24 @@ html[data-mantine-color-scheme='dark'] .brand-logo {
 }
 
 html[data-mantine-color-scheme='dark'] .global-search-input input,
-html[data-mantine-color-scheme='dark'] .metric-card,
 html[data-mantine-color-scheme='dark'] .stack-pill,
 html[data-mantine-color-scheme='dark'] .module-link {
   background: rgba(17, 24, 39, 0.88);
+}
+
+html[data-mantine-color-scheme='dark'] .metric-card {
+  background: rgba(17, 24, 39, 0.88);
+  border-color: #253044;
+}
+
+html[data-mantine-color-scheme='dark'] .metric-card:hover {
+  border-color: #3b4c66;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.36);
+}
+
+html[data-mantine-color-scheme='dark'] .metric-label {
+  color: #ffffff !important; /* Pure white for maximum contrast in dark mode */
+  opacity: 0.9;
 }
 
 html[data-mantine-color-scheme='dark'] .risk-panel,

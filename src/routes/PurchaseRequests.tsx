@@ -21,9 +21,9 @@ import {
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { IconCheck, IconEye, IconFileInvoice, IconPlus, IconSearch, IconX } from '@tabler/icons-react';
+import { IconAlertTriangle, IconCheck, IconChecklist, IconEye, IconFileInvoice, IconPlus, IconSearch, IconX } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 import { CreatePurchaseRequestDrawer } from '../components/CreateOrderForms';
 import { getApiErrorMessage } from '../api/http';
@@ -61,6 +61,8 @@ type PurchaseRequestTab = 'all' | 'ready' | 'partial' | 'fulfilled' | 'split' | 
 
 export function PurchaseRequests() {
   const { flowTagLabel, priorityLabel, statusLabel, t } = useI18n();
+  const [searchParams] = useSearchParams();
+  const monthParam = searchParams.get('month');
   const { user } = useAuth();
   const { close: closePrParam, open: openPrParam, value: focusedPr } = useEntityParam('pr');
   const [selectedPr, setSelectedPr] = useState<PurchaseRequest | null>(null);
@@ -127,9 +129,12 @@ export function PurchaseRequests() {
         .toLowerCase()
         .includes(normalizedSearch);
 
-      return matchesTab && matchesStatus && matchesRisk && matchesSearch;
+      const dateStr = request.requested_order_date || request.expected_arrival_date;
+      const matchesMonth = !monthParam || (dateStr && dateStr.startsWith(monthParam));
+
+      return matchesTab && matchesStatus && matchesRisk && matchesSearch && matchesMonth;
     });
-  }, [activeTab, purchaseOrders, purchaseRequests, riskOnly, search, statusFilter]);
+  }, [activeTab, purchaseOrders, purchaseRequests, riskOnly, search, statusFilter, monthParam]);
 
   const tabCounts = useMemo(
     () => ({
@@ -218,9 +223,9 @@ export function PurchaseRequests() {
       ) : null}
 
       <SimpleGrid cols={{ base: 1, sm: 3 }}>
-        <Metric label={t('purchaseRequests.totalPr')} value={purchaseRequests.length} />
-        <Metric label={t('purchaseRequests.approvedOrPoReady')} value={approvedCount} color="teal" />
-        <Metric label={t('common.risk')} value={riskCount} color="red" />
+        <Metric label={t('purchaseRequests.totalPr')} value={purchaseRequests.length} color="blue" icon={<IconFileInvoice size={22} />} />
+        <Metric label={t('purchaseRequests.approvedOrPoReady')} value={approvedCount} color="teal" icon={<IconChecklist size={22} />} />
+        <Metric label={t('common.risk')} value={riskCount} color="red" icon={<IconAlertTriangle size={22} />} />
       </SimpleGrid>
 
       <FilterToolbar
@@ -269,8 +274,8 @@ export function PurchaseRequests() {
       </FilterToolbar>
 
       <Paper withBorder p={0}>
-        <ScrollArea>
-          <Table miw={1120} verticalSpacing="sm" highlightOnHover>
+        <ScrollArea className="data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
+          <Table miw={1280} verticalSpacing="sm" highlightOnHover>
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>PR</Table.Th>
@@ -302,9 +307,9 @@ export function PurchaseRequests() {
                       </Badge>
                       <FlowTagBadge compact tags={request.flow_tags} />
                     </Table.Td>
-                    <Table.Td>
+                    <Table.Td className="table-cell-truncate" style={{ maxWidth: '18rem' }}>
                       <Text fw={600}>{request.item_code}</Text>
-                      <Text size="sm" c="dimmed">
+                      <Text size="sm" c="dimmed" lineClamp={1} title={request.item_name}>
                         {request.item_name}
                       </Text>
                     </Table.Td>
@@ -313,7 +318,11 @@ export function PurchaseRequests() {
                         <NumberFormatter value={request.quantity} thousandSeparator /> {request.unit}
                       </Text>
                     </Table.Td>
-                    <Table.Td>{request.production_contract_number}</Table.Td>
+                    <Table.Td className="table-cell-truncate" style={{ maxWidth: '12rem' }}>
+                      <Text size="sm" lineClamp={1} title={request.production_contract_number}>
+                        {request.production_contract_number}
+                      </Text>
+                    </Table.Td>
                     <Table.Td>{request.warehouse_deadline_date}</Table.Td>
                     <Table.Td>{request.expected_arrival_date ?? '-'}</Table.Td>
                     <Table.Td>
@@ -363,15 +372,30 @@ export function PurchaseRequests() {
   );
 }
 
-function Metric({ color = 'blue', label, value }: { color?: string; label: string; value: number }) {
+function Metric({
+  color = 'blue',
+  icon,
+  label,
+  value,
+}: {
+  color?: string;
+  icon?: React.ReactNode;
+  label: string;
+  value: number;
+}) {
   return (
     <Paper withBorder p="md" className="metric-card">
-      <Text size="sm" c="dimmed">
-        {label}
-      </Text>
-      <Title order={2} c={color}>
-        {value}
-      </Title>
+      <Group justify="space-between" wrap="nowrap">
+        <div>
+          <Text className="metric-label" size="xs" fw={700} lts="0.05em" tt="uppercase" mb={4}>
+            {label}
+          </Text>
+          <Title order={1} fw={800} c={color} style={{ lineHeight: 1.1 }}>
+            {value}
+          </Title>
+        </div>
+        {icon && <span className={`metric-icon metric-icon-${color}`}>{icon}</span>}
+      </Group>
     </Paper>
   );
 }
@@ -588,7 +612,7 @@ function getPurchaseRequestStatusActions(status: PurchaseRequestStatus): Purchas
 function Info({ label, value }: { label: string; value: string }) {
   return (
     <Paper withBorder p="sm">
-      <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+      <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
         {label}
       </Text>
       <Text fw={600}>{value}</Text>
