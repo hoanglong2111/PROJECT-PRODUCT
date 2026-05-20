@@ -208,6 +208,7 @@ export type LogisticsAttachment = {
   entityId: string;
   entityType: string;
   fileName: string;
+  hblNumber: string | null;
   id: string;
   mimeType: string;
   size: number;

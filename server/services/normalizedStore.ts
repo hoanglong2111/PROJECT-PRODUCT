@@ -225,6 +225,7 @@ async function readTasks(client: DatabaseClient): Promise<LogisticsTask[]> {
   return tasksResult.rows.map((row) => ({
     task_id: stringValue(row.task_id),
     do_number: stringValue(row.do_number),
+    hbl_number: nullableStringValue(row.hbl_number),
     request_code: stringValue(row.request_code),
     po_number: nullableStringValue(row.po_number),
     production_contract_number: stringValue(row.production_contract_number),
@@ -327,9 +328,15 @@ async function replacePurchaseOrders(orders: PurchaseOrder[], client: DatabaseCl
 }
 
 async function replaceDeliveryOrders(orders: DeliveryOrder[], client: DatabaseClient) {
+  const preserved = await readDeliverySideTables(client);
+  const nextDeliveryOrderIds = new Set(orders.map((order) => order.id));
+
   await client.query('DELETE FROM delivery_order_source_lines');
   await client.query('DELETE FROM efms_containers');
   await client.query('DELETE FROM efms_transport_records');
+  await client.query('DELETE FROM efms_document_reviews');
+  await client.query('DELETE FROM efms_house_bills');
+  await client.query('DELETE FROM customs_declarations');
   await client.query('DELETE FROM finance_notes');
   await client.query('DELETE FROM finance_charge_lines');
   await client.query('DELETE FROM delivery_orders');
@@ -378,6 +385,8 @@ async function replaceDeliveryOrders(orders: DeliveryOrder[], client: DatabaseCl
       await insertDeliverySourceLine(line, order.id, client);
     }
   }
+
+  await restoreDeliverySideTables(preserved, nextDeliveryOrderIds, client);
 }
 
 async function replaceTasks(tasks: LogisticsTask[], client: DatabaseClient) {
@@ -387,11 +396,11 @@ async function replaceTasks(tasks: LogisticsTask[], client: DatabaseClient) {
     await client.query(
       `
         INSERT INTO logistics_tasks (
-          id, task_id, task_name, role, assignee_id, do_number, request_code,
+          id, task_id, task_name, role, assignee_id, hbl_number, do_number, request_code,
           po_number, production_contract_number, priority, status, progress, due_date,
           completed_at, blocked_reason, notes, is_required_for_do_closure, created_at, updated_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, NOW())
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, NOW())
       `,
       [
         `task-${task.task_id}`,
@@ -399,6 +408,7 @@ async function replaceTasks(tasks: LogisticsTask[], client: DatabaseClient) {
         task.task_name,
         task.role,
         task.assignee.user_id,
+        task.hbl_number,
         task.do_number,
         task.request_code,
         task.po_number,
@@ -412,6 +422,191 @@ async function replaceTasks(tasks: LogisticsTask[], client: DatabaseClient) {
         task.notes,
         task.is_required_for_do_closure,
         task.created_at,
+      ],
+    );
+  }
+}
+
+async function readDeliverySideTables(client: DatabaseClient) {
+  const [containers, charges, notes, houseBills, documentReviews, customs] = await Promise.all([
+    client.query<Row>('SELECT * FROM efms_containers'),
+    client.query<Row>('SELECT * FROM finance_charge_lines'),
+    client.query<Row>('SELECT * FROM finance_notes'),
+    client.query<Row>('SELECT * FROM efms_house_bills'),
+    client.query<Row>('SELECT * FROM efms_document_reviews'),
+    client.query<Row>('SELECT * FROM customs_declarations'),
+  ]);
+
+  return {
+    charges: charges.rows,
+    containers: containers.rows,
+    customs: customs.rows,
+    documentReviews: documentReviews.rows,
+    houseBills: houseBills.rows,
+    notes: notes.rows,
+  };
+}
+
+async function restoreDeliverySideTables(
+  preserved: Awaited<ReturnType<typeof readDeliverySideTables>>,
+  deliveryOrderIds: Set<string>,
+  client: DatabaseClient,
+) {
+  for (const row of preserved.containers.filter((item) => deliveryOrderIds.has(stringValue(item.delivery_order_id)))) {
+    await client.query(
+      `
+        INSERT INTO efms_containers (
+          id, delivery_order_id, container_type, container_number, seal_number, vehicle_type, vehicle_number
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        ON CONFLICT (id) DO NOTHING
+      `,
+      [
+        row.id,
+        row.delivery_order_id,
+        row.container_type,
+        row.container_number,
+        row.seal_number,
+        row.vehicle_type,
+        row.vehicle_number,
+      ],
+    );
+  }
+
+  for (const row of preserved.charges.filter((item) => deliveryOrderIds.has(stringValue(item.delivery_order_id)))) {
+    await client.query(
+      `
+        INSERT INTO finance_charge_lines (
+          id, delivery_order_id, charge_type, charge_code, description, amount, currency, is_locked,
+          invoiced_note_id, invoiced_at, created_at, updated_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        ON CONFLICT (id) DO NOTHING
+      `,
+      [
+        row.id,
+        row.delivery_order_id,
+        row.charge_type,
+        row.charge_code,
+        row.description,
+        row.amount,
+        row.currency,
+        row.is_locked,
+        row.invoiced_note_id,
+        row.invoiced_at,
+        row.created_at,
+        row.updated_at,
+      ],
+    );
+  }
+
+  for (const row of preserved.notes.filter((item) => deliveryOrderIds.has(stringValue(item.delivery_order_id)))) {
+    await client.query(
+      `
+        INSERT INTO finance_notes (
+          id, delivery_order_id, note_number, note_type, accounting_code, status,
+          charge_ids, sla_due_at, issued_at, sent_to_accounting_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        ON CONFLICT (id) DO NOTHING
+      `,
+      [
+        row.id,
+        row.delivery_order_id,
+        row.note_number,
+        row.note_type,
+        row.accounting_code,
+        row.status,
+        row.charge_ids,
+        row.sla_due_at,
+        row.issued_at,
+        row.sent_to_accounting_at,
+      ],
+    );
+  }
+
+  for (const row of preserved.houseBills.filter((item) => deliveryOrderIds.has(stringValue(item.delivery_order_id)))) {
+    await client.query(
+      `
+        INSERT INTO efms_house_bills (
+          id, delivery_order_id, hbl_number, shipper, consignee, place_of_receipt,
+          place_of_delivery, assigned_to, final_bl_confirmed_at, created_at, updated_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        ON CONFLICT (delivery_order_id, hbl_number) DO NOTHING
+      `,
+      [
+        row.id,
+        row.delivery_order_id,
+        row.hbl_number,
+        row.shipper,
+        row.consignee,
+        row.place_of_receipt,
+        row.place_of_delivery,
+        row.assigned_to,
+        row.final_bl_confirmed_at,
+        row.created_at,
+        row.updated_at,
+      ],
+    );
+  }
+
+  for (const row of preserved.documentReviews.filter((item) => deliveryOrderIds.has(stringValue(item.delivery_order_id)))) {
+    await client.query(
+      `
+        INSERT INTO efms_document_reviews (
+          id, delivery_order_id, hbl_number, status, draft_bl_attachment_id,
+          commercial_invoice_attachment_id, packing_list_attachment_id, final_bl_attachment_id,
+          cross_check_due_at, cross_checked_at, sla_status, notes, created_by, created_at, updated_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        ON CONFLICT (id) DO NOTHING
+      `,
+      [
+        row.id,
+        row.delivery_order_id,
+        row.hbl_number,
+        row.status,
+        row.draft_bl_attachment_id,
+        row.commercial_invoice_attachment_id,
+        row.packing_list_attachment_id,
+        row.final_bl_attachment_id,
+        row.cross_check_due_at,
+        row.cross_checked_at,
+        row.sla_status,
+        row.notes,
+        row.created_by,
+        row.created_at,
+        row.updated_at,
+      ],
+    );
+  }
+
+  for (const row of preserved.customs.filter((item) => deliveryOrderIds.has(stringValue(item.delivery_order_id)))) {
+    await client.query(
+      `
+        INSERT INTO customs_declarations (
+          id, delivery_order_id, declaration_number, channel, status, lane_status, telex_released,
+          telex_released_at, submitted_at, cleared_at, notes, updated_by, created_at, updated_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        ON CONFLICT (delivery_order_id) DO NOTHING
+      `,
+      [
+        row.id,
+        row.delivery_order_id,
+        row.declaration_number,
+        row.channel,
+        row.status,
+        row.lane_status,
+        row.telex_released,
+        row.telex_released_at,
+        row.submitted_at,
+        row.cleared_at,
+        row.notes,
+        row.updated_by,
+        row.created_at,
+        row.updated_at,
       ],
     );
   }
@@ -473,11 +668,11 @@ async function insertEfmsTransport(order: DeliveryOrder, client: DatabaseClient)
     `
       INSERT INTO efms_transport_records (
         id, delivery_order_id, incoterms, shipping_method, shipping_line, vessel_code,
-        booking_number, mbl_number, hbl_number, manifest_number, port_of_departure,
-        port_of_destination, cut_off_date, etd_planned, eta_planned, documents_list,
-        missing_documents, gross_weight, cbm
+        booking_number, mbl_number, mbl_type, hbl_number, manifest_number, port_of_departure,
+        port_of_destination, cut_off_date, etd_planned, eta_planned, actual_departure_at,
+        actual_arrival_at, documents_list, missing_documents, gross_weight, cbm
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
     `,
     [
       `efms-${order.id}`,
@@ -488,6 +683,7 @@ async function insertEfmsTransport(order: DeliveryOrder, client: DatabaseClient)
       order.logistics_shipping.vessel_code,
       `BOOK-${suffix}`,
       `MBL-${suffix}`,
+      'ORIGINAL',
       `HBL-${suffix}`,
       `MAN-${suffix}`,
       order.logistics_shipping.port_of_departure,
@@ -495,6 +691,8 @@ async function insertEfmsTransport(order: DeliveryOrder, client: DatabaseClient)
       order.logistics_shipping.cut_off_date,
       order.logistics_shipping.etd_planned,
       order.logistics_shipping.eta_planned,
+      null,
+      null,
       order.logistics_shipping.documents_list,
       order.logistics_shipping.missing_documents,
       Math.max(1, order.product_details.quantity * 12),

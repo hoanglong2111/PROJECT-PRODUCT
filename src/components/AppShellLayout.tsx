@@ -15,12 +15,14 @@ import {
   IconChecklist,
   IconChevronDown,
   IconExchange,
+  IconFileText,
   IconFileInvoice,
   IconGitBranch,
   IconLayoutDashboard,
   IconLogout,
   IconRefresh,
   IconSettings,
+  IconShip,
   IconShoppingCart,
   IconTruckDelivery,
   IconUserCircle,
@@ -40,9 +42,11 @@ const navigation: Array<{
   labelKey:
     | 'shell.dashboard'
     | 'shell.deliveryOrders'
+    | 'shell.efms'
     | 'shell.exchangeRates'
     | 'shell.purchaseOrders'
     | 'shell.purchaseRequests'
+    | 'shell.quotations'
     | 'shell.tasks'
     | 'shell.workflow';
   path: string;
@@ -59,10 +63,22 @@ const navigation: Array<{
     roles: ['ADMIN', 'PIC_MANAGER', 'SALE_STAFF', 'FINANCE_OFFICER'],
   },
   {
+    labelKey: 'shell.quotations',
+    path: '/quotations',
+    icon: IconFileText,
+    roles: ['ADMIN', 'PIC_MANAGER', 'SALE_STAFF'],
+  },
+  {
     labelKey: 'shell.deliveryOrders',
     path: '/delivery-orders',
     icon: IconTruckDelivery,
     roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'WAREHOUSE_STAFF'],
+  },
+  {
+    labelKey: 'shell.efms',
+    path: '/efms',
+    icon: IconShip,
+    roles: ['ADMIN', 'PIC_MANAGER', 'SALE_STAFF', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'FINANCE_OFFICER', 'WAREHOUSE_STAFF'],
   },
   {
     labelKey: 'shell.tasks',
@@ -137,7 +153,9 @@ export function AppShellLayout() {
                     queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
                     queryClient.invalidateQueries({ queryKey: ['purchase-requests'] }),
                     queryClient.invalidateQueries({ queryKey: ['purchase-orders'] }),
+                    queryClient.invalidateQueries({ queryKey: ['quotations'] }),
                     queryClient.invalidateQueries({ queryKey: ['delivery-orders'] }),
+                    queryClient.invalidateQueries({ queryKey: ['efms-control'] }),
                     queryClient.invalidateQueries({ queryKey: ['tasks'] }),
                     queryClient.invalidateQueries({ queryKey: ['exchange-rates'] }),
                     queryClient.invalidateQueries({ queryKey: ['global-search'] }),

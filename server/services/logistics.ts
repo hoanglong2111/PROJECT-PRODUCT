@@ -20,6 +20,7 @@ import type {
 import { PRIORITIES, REQUIRED_DOCUMENTS, SHIPPING_METHODS, TASK_STATUSES } from '../constants';
 import { pool } from '../db';
 import { ApiError } from '../errors';
+import { assertTaskUpdateAllowed } from './sop';
 import { readNormalizedSnapshot, writeNormalizedSnapshot } from './normalizedStore';
 import type {
   AppUserRow,
@@ -658,13 +659,15 @@ export async function updateDeliveryOrder(orderNumber: string, body: UpdateDeliv
   try {
     await client.query('BEGIN');
 
-    const [deliveryOrdersRaw, tasks, purchaseOrdersRaw] = await Promise.all([
+    const [deliveryOrdersRaw, tasks, purchaseOrdersRaw, purchaseRequestsRaw] = await Promise.all([
       readSnapshot<DeliveryOrder[]>('delivery_orders', client),
       readSnapshot<LogisticsTask[]>('tasks', client),
       readSnapshot<PurchaseOrder[]>('purchase_orders', client),
+      readSnapshot<PurchaseRequest[]>('purchase_requests', client),
     ]);
     const deliveryOrders = deliveryOrdersRaw.map(normalizeDeliveryOrder);
     const purchaseOrders = purchaseOrdersRaw.map(normalizePurchaseOrder);
+    const purchaseRequests = purchaseRequestsRaw.map(normalizePurchaseRequest);
 
     const orderIndex = deliveryOrders.findIndex((order) => order.order_info.order_number === orderNumber);
     if (orderIndex === -1) {
@@ -675,6 +678,7 @@ export async function updateDeliveryOrder(orderNumber: string, body: UpdateDeliv
     if (current.order_info.status === 'DELIVERED') {
       throw new ApiError(409, 'DO đã hoàn tất và bị khóa chỉnh sửa.');
     }
+    const customsGatePassed = await isDispatchGatePassed(current.id, client);
 
     const documentsList =
       body.documentsList !== undefined ? normalizeDocuments(body.documentsList) : current.logistics_shipping.documents_list;
@@ -695,6 +699,9 @@ export async function updateDeliveryOrder(orderNumber: string, body: UpdateDeliv
       body.warehouseDeadline !== undefined
         ? requiredDate(body.warehouseDeadline, 'warehouseDeadline')
         : current.warehouse_tracking.warehouse_deadline;
+    const delayDeadline = actualEntryDate
+      ? resolveOriginalWarehouseDeadline(current, purchaseRequests, warehouseDeadline)
+      : warehouseDeadline;
 
     const updatedOrderBase: DeliveryOrder = {
       ...current,
@@ -754,7 +761,7 @@ export async function updateDeliveryOrder(orderNumber: string, body: UpdateDeliv
         warehouse_deadline: warehouseDeadline,
         planned_entry_date: plannedEntryDate,
         actual_entry_date: actualEntryDate,
-        delay_days: calculateDelayDays(actualEntryDate ?? plannedEntryDate, warehouseDeadline),
+        delay_days: calculateDelayDays(actualEntryDate ?? plannedEntryDate, delayDeadline),
       },
       finance_tax: {
         ...current.finance_tax,
@@ -770,7 +777,7 @@ export async function updateDeliveryOrder(orderNumber: string, body: UpdateDeliv
     };
 
     const orderTasks = tasks.filter((task) => task.do_number === orderNumber);
-    const updatedOrder = withOperationalClosureState(updatedOrderBase, orderTasks);
+    const updatedOrder = withOperationalClosureState(updatedOrderBase, orderTasks, customsGatePassed);
     const updatedDeliveryOrders = deliveryOrders.map((order) =>
       order.order_info.order_number === orderNumber ? updatedOrder : order,
     );
@@ -800,6 +807,7 @@ export async function listDeliveryOrderAttachments(orderNumber: string) {
     entity_id: string;
     entity_type: string;
     file_name: string;
+    hbl_number: string | null;
     id: string;
     mime_type: string | null;
     size_bytes: string | null;
@@ -809,7 +817,7 @@ export async function listDeliveryOrderAttachments(orderNumber: string) {
   }>(
     `
       SELECT id, entity_type, entity_id, document_type, file_name, storage_url,
-             uploaded_by, uploaded_at, mime_type, size_bytes
+             uploaded_by, uploaded_at, mime_type, size_bytes, hbl_number
       FROM logistics_attachments
       WHERE entity_type = 'delivery_order'
         AND entity_id = $1
@@ -823,6 +831,7 @@ export async function listDeliveryOrderAttachments(orderNumber: string) {
     entityId: row.entity_id,
     entityType: row.entity_type,
     fileName: row.file_name,
+    hblNumber: row.hbl_number,
     id: row.id,
     mimeType: row.mime_type ?? 'application/octet-stream',
     size: Number(row.size_bytes ?? 0),
@@ -836,11 +845,13 @@ export async function attachDeliveryOrderDocument({
   auth,
   documentType,
   file,
+  hblNumber,
   orderNumber,
 }: {
   auth?: TokenPayload;
   documentType: string;
   file: { buffer: Buffer; fileName: string; mimeType: string };
+  hblNumber?: string | null;
   orderNumber: string;
 }) {
   const normalizedDocumentType = requiredString(documentType, 'documentType');
@@ -878,22 +889,25 @@ export async function attachDeliveryOrderDocument({
     if (current.order_info.status === 'DELIVERED') {
       throw new ApiError(409, 'DO đã hoàn tất và bị khóa chứng từ.');
     }
+    const customsGatePassed = await isDispatchGatePassed(current.id, client);
 
     const storageUrl = `data:${file.mimeType};base64,${file.buffer.toString('base64')}`;
     const attachmentId = `att-${randomUUID()}`;
+    const normalizedHblNumber = optionalString(hblNumber);
 
     await client.query(
       `
         INSERT INTO logistics_attachments (
-          id, entity_type, entity_id, document_type, file_name, storage_url,
+          id, entity_type, entity_id, document_type, hbl_number, file_name, storage_url,
           uploaded_by, mime_type, size_bytes
         )
-        VALUES ($1, 'delivery_order', $2, $3, $4, $5, $6, $7, $8)
+        VALUES ($1, 'delivery_order', $2, $3, $4, $5, $6, $7, $8, $9)
       `,
       [
         attachmentId,
         orderNumber,
         normalizedDocumentType,
+        normalizedHblNumber,
         file.fileName,
         storageUrl,
         auth?.sub ?? null,
@@ -920,7 +934,7 @@ export async function attachDeliveryOrderDocument({
       },
     };
     const orderTasks = tasks.filter((task) => task.do_number === orderNumber);
-    const updatedOrder = withOperationalClosureState(updatedBase, orderTasks);
+    const updatedOrder = withOperationalClosureState(updatedBase, orderTasks, customsGatePassed);
     const updatedDeliveryOrders = deliveryOrders.map((order) =>
       order.order_info.order_number === orderNumber ? updatedOrder : order,
     );
@@ -949,7 +963,7 @@ export async function attachDeliveryOrderDocument({
   }
 }
 
-export async function updateTask(taskId: string, body: UpdateTaskBody) {
+export async function updateTask(taskId: string, body: UpdateTaskBody, auth?: TokenPayload) {
   if (!taskId) {
     throw new ApiError(400, 'taskId là bắt buộc.');
   }
@@ -959,10 +973,13 @@ export async function updateTask(taskId: string, body: UpdateTaskBody) {
   try {
     await client.query('BEGIN');
 
-    const [tasks, deliveryOrdersRaw, purchaseOrdersRaw] = await Promise.all([
+    const [tasks, deliveryOrdersRaw, purchaseOrdersRaw, customsResult] = await Promise.all([
       readSnapshot<LogisticsTask[]>('tasks', client),
       readSnapshot<DeliveryOrder[]>('delivery_orders', client),
       readSnapshot<PurchaseOrder[]>('purchase_orders', client),
+      client.query<{ delivery_order_id: string; status: string; telex_released: boolean }>(
+        'SELECT delivery_order_id, status, telex_released FROM customs_declarations',
+      ),
     ]);
     const deliveryOrders = deliveryOrdersRaw.map(normalizeDeliveryOrder);
     const purchaseOrders = purchaseOrdersRaw.map(normalizePurchaseOrder);
@@ -973,6 +990,8 @@ export async function updateTask(taskId: string, body: UpdateTaskBody) {
     }
 
     const current = tasks[taskIndex];
+    assertTaskUpdateAllowed(current as unknown as Record<string, unknown>, auth);
+
     if (current.status === 'COMPLETED') {
       throw new ApiError(409, 'Task đã hoàn tất và bị khóa chỉnh sửa.');
     }
@@ -1007,7 +1026,10 @@ export async function updateTask(taskId: string, body: UpdateTaskBody) {
       }
 
       const relatedTasks = updatedTasks.filter((task) => task.do_number === updatedTask.do_number);
-      return withOperationalClosureState(order, relatedTasks);
+      const customsGatePassed = customsResult.rows.some(
+        (row) => row.delivery_order_id === order.id && row.status === 'CLEARED' && row.telex_released === true,
+      );
+      return withOperationalClosureState(order, relatedTasks, customsGatePassed);
     });
     const updatedPurchaseOrders = classifyPurchaseOrders(
       syncPurchaseOrderStatuses(purchaseOrders, updatedDeliveryOrders),
@@ -1400,6 +1422,7 @@ function buildDefaultDeliveryTasks({
     return {
       task_id: `TASK-${new Date().getFullYear()}-${String(nextTaskStart + index).padStart(6, '0')}`,
       do_number: orderNumber,
+      hbl_number: null,
       request_code: requestCode,
       po_number: poNumber,
       production_contract_number: productionContractNumber,
@@ -1429,12 +1452,17 @@ function summarizeLogisticsTasks(tasks: LogisticsTask[]): DeliveryOrder['task_su
   };
 }
 
-function withOperationalClosureState(deliveryOrder: DeliveryOrder, relatedTasks: LogisticsTask[]) {
+function withOperationalClosureState(
+  deliveryOrder: DeliveryOrder,
+  relatedTasks: LogisticsTask[],
+  customsGatePassed = false,
+) {
   const summary = summarizeLogisticsTasks(relatedTasks);
   const canClose =
     summary.required_tasks_remaining === 0 &&
     Boolean(deliveryOrder.warehouse_tracking.actual_entry_date) &&
-    deliveryOrder.logistics_shipping.missing_documents.length === 0;
+    deliveryOrder.logistics_shipping.missing_documents.length === 0 &&
+    customsGatePassed;
 
   let nextStatus = deliveryOrder.order_info.status;
   if (nextStatus !== 'CANCELLED') {
@@ -1453,6 +1481,37 @@ function withOperationalClosureState(deliveryOrder: DeliveryOrder, relatedTasks:
     },
     task_summary: summary,
   };
+}
+
+async function isDispatchGatePassed(deliveryOrderId: string, client: DatabaseClient) {
+  const result = await client.query<{ mbl_type: string | null; status: string; telex_released: boolean }>(
+    `
+      SELECT customs.status, customs.telex_released, transport.mbl_type
+      FROM customs_declarations customs
+      LEFT JOIN efms_transport_records transport ON transport.delivery_order_id = customs.delivery_order_id
+      WHERE customs.delivery_order_id = $1
+    `,
+    [deliveryOrderId],
+  );
+  const row = result.rows[0];
+  return (
+    row?.status === 'CLEARED' &&
+    (row.telex_released === true || ['SEAWAY_BILL', 'SURRENDERED'].includes(String(row.mbl_type ?? '')))
+  );
+}
+
+function resolveOriginalWarehouseDeadline(
+  deliveryOrder: DeliveryOrder,
+  purchaseRequests: PurchaseRequest[],
+  fallbackDeadline: string,
+) {
+  const sourceDeadlines = deliveryOrder.source_lines.flatMap((sourceLine) => {
+    const request = purchaseRequests.find((item) => item.requested_order_id === sourceLine.request_code);
+    const line = request?.line_items.find((item) => item.id === sourceLine.pr_line_id);
+    return line?.warehouse_deadline_date ? [line.warehouse_deadline_date] : [];
+  });
+
+  return sourceDeadlines.sort()[0] ?? fallbackDeadline;
 }
 
 function syncPurchaseOrderStatuses(purchaseOrders: PurchaseOrder[], deliveryOrders: DeliveryOrder[]) {

@@ -460,6 +460,7 @@ function buildTasks({
     return {
       task_id: `TASK-2026-${String(baseTaskId + taskIndex).padStart(6, '0')}`,
       do_number: doNumber,
+      hbl_number: null,
       request_code: prCode,
       po_number: poNumber,
       production_contract_number: productionContract,

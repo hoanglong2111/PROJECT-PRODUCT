@@ -38,6 +38,48 @@ export type UserRef = {
 
 export type PurchaseOrderStatus = 'SAP_SYNCED' | 'SAP_PENDING' | 'PARTIALLY_DELIVERED' | 'CLOSED';
 
+export type ShippingMode = 'AIR' | 'FCL' | 'LCL';
+
+export type QuotationStatus =
+  | 'DRAFT'
+  | 'PRELIMINARY_SENT'
+  | 'OFFICIAL_SENT'
+  | 'APPROVED'
+  | 'REJECTED'
+  | 'REVISION_REQUESTED'
+  | 'BOOKED';
+
+export type DocumentReviewStatus =
+  | 'WAITING_DOCUMENTS'
+  | 'READY_FOR_CHECK'
+  | 'MISMATCH'
+  | 'DRAFT_BL_CONFIRMED'
+  | 'FINAL_BL_CONFIRMED';
+
+export type FinanceChargeType = 'SELLING' | 'BUYING' | 'OBH';
+
+export type CustomsChannel = 'GREEN' | 'YELLOW' | 'RED';
+export type MblType = 'COPY' | 'ORIGINAL' | 'SEAWAY_BILL' | 'SURRENDERED';
+export type SlaStatus = 'ON_TRACK' | 'OVERDUE' | 'DONE';
+
+export type CustomsStatus =
+  | 'DRAFT'
+  | 'SUBMITTED'
+  | 'CLEARED'
+  | 'NEEDS_DOCUMENTS'
+  | 'INSPECTION'
+  | 'VIOLATION_HANDLING';
+
+export type CustomsLaneStatus =
+  | 'GREEN_CLEARANCE'
+  | 'YELLOW_NEED_SUPPLEMENT'
+  | 'RED_FIELD_INSPECTION'
+  | 'RED_VIOLATION_HANDLING'
+  | 'RELEASE_READY';
+
+export type AdvanceSettlementStatus = 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'SETTLED';
+export type DriveDossierStatus = 'READY' | 'PENDING_CONFIG' | 'BLOCKED' | 'SYNCED' | 'FAILED';
+
 export type BusinessFlowTag =
   | 'LINEAR'
   | 'BULK_PURCHASE'
@@ -97,6 +139,27 @@ export type PurchaseOrder = {
   linked_do_numbers: string[];
   warehouse_code: string;
   flow_tags: BusinessFlowTag[];
+};
+
+export type Quotation = {
+  id: string;
+  quoteNumber: string;
+  requestCode: string;
+  shippingMode: ShippingMode;
+  status: QuotationStatus;
+  preliminaryDueAt: string;
+  preliminarySentAt: string | null;
+  officialDueAt: string;
+  officialSentAt: string | null;
+  autoApproveAt: string | null;
+  customerResponseAt: string | null;
+  quoteAmount: number | string | null;
+  currency: string | null;
+  bookingNumber: string | null;
+  bookingConfirmedAt: string | null;
+  createdBy: string | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type PurchaseRequest = {
@@ -197,9 +260,174 @@ export type DeliveryOrder = {
   flow_tags: BusinessFlowTag[];
 };
 
+export type EfmsTransportRecord = {
+  id: string;
+  deliveryOrderId: string;
+  incoterms: string;
+  shippingMethod: DeliveryOrder['logistics_shipping']['shipping_method'];
+  shippingLine: string | null;
+  vesselCode: string | null;
+  bookingNumber: string | null;
+  mblNumber: string | null;
+  mblType: MblType | null;
+  hblNumber: string | null;
+  manifestNumber: string | null;
+  portOfDeparture: string;
+  portOfDestination: string;
+  cutOffDate: string | null;
+  etdPlanned: string | null;
+  etaPlanned: string | null;
+  actualDepartureAt: string | null;
+  actualArrivalAt: string | null;
+  documentsList: string[];
+  missingDocuments: string[];
+  grossWeight: number | string | null;
+  cbm: number | string | null;
+};
+
+export type EfmsContainer = {
+  id: string;
+  deliveryOrderId: string;
+  containerType: string;
+  containerNumber: string;
+  sealNumber: string | null;
+  vehicleType: string | null;
+  vehicleNumber: string | null;
+};
+
+export type EfmsHouseBill = {
+  id: string;
+  deliveryOrderId: string;
+  hblNumber: string;
+  shipper: string;
+  consignee: string;
+  placeOfReceipt: string | null;
+  placeOfDelivery: string | null;
+  assignedTo: string | null;
+  finalBlConfirmedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type DocumentReview = {
+  id: string;
+  deliveryOrderId: string;
+  hblNumber: string | null;
+  status: DocumentReviewStatus;
+  draftBlAttachmentId: string | null;
+  commercialInvoiceAttachmentId: string | null;
+  packingListAttachmentId: string | null;
+  finalBlAttachmentId: string | null;
+  crossCheckDueAt: string;
+  crossCheckedAt: string | null;
+  slaStatus: SlaStatus;
+  isOverdue: boolean;
+  notes: string;
+  createdBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type FinanceCharge = {
+  id: string;
+  deliveryOrderId: string;
+  chargeType: FinanceChargeType;
+  chargeCode: string;
+  description: string;
+  amount: number | string;
+  currency: string;
+  isLocked: boolean;
+  invoicedNoteId: string | null;
+  invoicedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type FinanceNote = {
+  id: string;
+  deliveryOrderId: string;
+  noteNumber: string;
+  noteType: string;
+  accountingCode: 'S' | 'B' | 'OBH';
+  status: string;
+  chargeIds: string[];
+  slaDueAt: string | null;
+  slaStatus: SlaStatus;
+  issuedAt: string | null;
+  sentToAccountingAt: string | null;
+};
+
+export type CustomsDeclaration = {
+  id: string;
+  deliveryOrderId: string;
+  declarationNumber: string | null;
+  channel: CustomsChannel | null;
+  status: CustomsStatus;
+  laneStatus: CustomsLaneStatus | null;
+  telexReleased: boolean;
+  telexReleasedAt: string | null;
+  submittedAt: string | null;
+  clearedAt: string | null;
+  notes: string;
+  updatedBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+  canDispatch: boolean;
+  nextAction: string;
+};
+
+export type AdvanceSettlement = {
+  id: string;
+  deliveryOrderId: string;
+  hblNumber: string | null;
+  settlementNumber: string;
+  requestedBy: string | null;
+  assignedRole: TaskRole;
+  amount: number | string;
+  currency: string;
+  purpose: string;
+  status: AdvanceSettlementStatus;
+  approvedBy: string | null;
+  settledBy: string | null;
+  requestedAt: string;
+  approvedAt: string | null;
+  settledAt: string | null;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type DriveDossier = {
+  id: string;
+  deliveryOrderId: string;
+  dossierNumber: string;
+  status: DriveDossierStatus;
+  requiredDocuments: string[];
+  missingDocuments: string[];
+  externalFolderUrl: string | null;
+  errorMessage: string | null;
+  requestedBy: string | null;
+  syncedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type EfmsControl = {
+  advanceSettlements: AdvanceSettlement[];
+  charges: FinanceCharge[];
+  containers: EfmsContainer[];
+  customs: CustomsDeclaration | null;
+  documentReviews: DocumentReview[];
+  financeNotes: FinanceNote[];
+  houseBills: EfmsHouseBill[];
+  latestDriveDossier: DriveDossier | null;
+  transport: EfmsTransportRecord | null;
+};
+
 export type LogisticsTask = {
   task_id: string;
   do_number: string;
+  hbl_number: string | null;
   request_code: string;
   po_number: string | null;
   production_contract_number: string;

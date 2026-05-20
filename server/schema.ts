@@ -104,6 +104,18 @@ export async function ensureSchemaAndSeed() {
     ALTER TABLE purchase_orders ADD COLUMN IF NOT EXISTS sap_synced_at TIMESTAMPTZ;
     ALTER TABLE logistics_attachments ADD COLUMN IF NOT EXISTS mime_type TEXT;
     ALTER TABLE logistics_attachments ADD COLUMN IF NOT EXISTS size_bytes INTEGER;
+    ALTER TABLE logistics_attachments ADD COLUMN IF NOT EXISTS hbl_number TEXT;
+    ALTER TABLE efms_transport_records ADD COLUMN IF NOT EXISTS mbl_type TEXT;
+    ALTER TABLE efms_transport_records ADD COLUMN IF NOT EXISTS actual_departure_at TIMESTAMPTZ;
+    ALTER TABLE efms_transport_records ADD COLUMN IF NOT EXISTS actual_arrival_at TIMESTAMPTZ;
+    ALTER TABLE efms_house_bills ADD COLUMN IF NOT EXISTS assigned_to TEXT;
+    ALTER TABLE efms_document_reviews ADD COLUMN IF NOT EXISTS sla_status TEXT NOT NULL DEFAULT 'ON_TRACK';
+    ALTER TABLE customs_declarations ADD COLUMN IF NOT EXISTS lane_status TEXT;
+    ALTER TABLE finance_charge_lines ADD COLUMN IF NOT EXISTS invoiced_note_id TEXT;
+    ALTER TABLE finance_charge_lines ADD COLUMN IF NOT EXISTS invoiced_at TIMESTAMPTZ;
+    ALTER TABLE finance_notes ADD COLUMN IF NOT EXISTS charge_ids TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[];
+    ALTER TABLE finance_notes ADD COLUMN IF NOT EXISTS sla_due_at TIMESTAMPTZ;
+    ALTER TABLE logistics_tasks ADD COLUMN IF NOT EXISTS hbl_number TEXT;
   `);
 
   const usersCount = await pool.query<{ count: string }>('SELECT COUNT(*) AS count FROM app_users');

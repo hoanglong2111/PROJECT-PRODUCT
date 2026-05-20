@@ -35,6 +35,31 @@ import {
   updatePurchaseRequestStatus,
   updateTask,
 } from './services/logistics';
+import {
+  confirmDocumentCrossCheck,
+  confirmFinalBl,
+  confirmQuotationBooking,
+  createAdvanceSettlement,
+  createCharge,
+  createContainer,
+  createDocumentReview,
+  createHouseBill,
+  createQuotation,
+  deleteCharge,
+  getCustoms,
+  getEfmsControl,
+  issueFinanceNote,
+  listCharges,
+  listQuotations,
+  listSlaAlerts,
+  sendFinanceNoteToAccounting,
+  syncDriveDossier,
+  updateAdvanceSettlementStatus,
+  updateCharge,
+  updateCustoms,
+  updateQuotationAction,
+  updateShippingInstruction,
+} from './services/sop';
 import type {
   AppUserRow,
   AuthenticatedRequest,
@@ -51,6 +76,7 @@ import type {
 
 type ParsedMultipartUpload = {
   documentType: string;
+  hblNumber: string | null;
   file: {
     buffer: Buffer;
     fileName: string;
@@ -284,6 +310,64 @@ app.get(
   },
 );
 
+app.get(
+  `${API_PREFIX}/quotations`,
+  authenticateRequest,
+  authorizeRole(readAllRoles),
+  async (_request, response) => {
+    const quotations = await listQuotations();
+    response.json({ data: quotations, errors: [] });
+  },
+);
+
+app.post(
+  `${API_PREFIX}/quotations`,
+  authenticateRequest,
+  authorizeRole(['ADMIN', 'PIC_MANAGER', 'SALE_STAFF']),
+  async (request: AuthenticatedRequest, response) => {
+    const quotation = await createQuotation(request.body, request.auth);
+    response.status(201).json({ data: quotation, errors: [] });
+  },
+);
+
+app.patch(
+  `${API_PREFIX}/quotations/:quotationId/action`,
+  authenticateRequest,
+  authorizeRole(['ADMIN', 'PIC_MANAGER', 'SALE_STAFF']),
+  async (request: AuthenticatedRequest, response) => {
+    const quotation = await updateQuotationAction(
+      decodeURIComponent(String(request.params.quotationId ?? '')),
+      request.body,
+      request.auth,
+    );
+    response.json({ data: quotation, errors: [] });
+  },
+);
+
+app.post(
+  `${API_PREFIX}/quotations/:quotationId/booking`,
+  authenticateRequest,
+  authorizeRole(['ADMIN', 'PIC_MANAGER', 'SALE_STAFF']),
+  async (request: AuthenticatedRequest, response) => {
+    const quotation = await confirmQuotationBooking(
+      decodeURIComponent(String(request.params.quotationId ?? '')),
+      request.body,
+      request.auth,
+    );
+    response.json({ data: quotation, errors: [] });
+  },
+);
+
+app.get(
+  `${API_PREFIX}/sla/alerts`,
+  authenticateRequest,
+  authorizeRole(readAllRoles),
+  async (_request, response) => {
+    const alerts = await listSlaAlerts();
+    response.json({ data: alerts, errors: [] });
+  },
+);
+
 app.post(
   `${API_PREFIX}/purchase-requests`,
   authenticateRequest,
@@ -424,9 +508,227 @@ app.post(
       auth: request.auth,
       documentType: upload.documentType,
       file: upload.file,
+      hblNumber: upload.hblNumber,
       orderNumber: decodeURIComponent(String(request.params.orderNumber ?? '')),
     });
     response.status(201).json({ data: result, errors: [] });
+  },
+);
+
+app.get(
+  `${API_PREFIX}/delivery-orders/:orderNumber/efms-control`,
+  authenticateRequest,
+  authorizeRole(readAllRoles),
+  async (request, response) => {
+    const result = await getEfmsControl(decodeURIComponent(String(request.params.orderNumber ?? '')));
+    response.json({ data: result, errors: [] });
+  },
+);
+
+app.post(
+  `${API_PREFIX}/delivery-orders/:orderNumber/advance-settlements`,
+  authenticateRequest,
+  authorizeRole(['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER']),
+  async (request: AuthenticatedRequest, response) => {
+    const result = await createAdvanceSettlement(
+      decodeURIComponent(String(request.params.orderNumber ?? '')),
+      request.body,
+      request.auth,
+    );
+    response.status(201).json({ data: result, errors: [] });
+  },
+);
+
+app.patch(
+  `${API_PREFIX}/advance-settlements/:settlementId/status`,
+  authenticateRequest,
+  authorizeRole(['ADMIN', 'PIC_MANAGER', 'FINANCE_OFFICER']),
+  async (request: AuthenticatedRequest, response) => {
+    const result = await updateAdvanceSettlementStatus(
+      decodeURIComponent(String(request.params.settlementId ?? '')),
+      request.body,
+      request.auth,
+    );
+    response.json({ data: result, errors: [] });
+  },
+);
+
+app.post(
+  `${API_PREFIX}/delivery-orders/:orderNumber/drive-dossier`,
+  authenticateRequest,
+  authorizeRole(['ADMIN', 'PIC_MANAGER', 'FINANCE_OFFICER', 'PORT_OFFICER']),
+  async (request: AuthenticatedRequest, response) => {
+    const result = await syncDriveDossier(
+      decodeURIComponent(String(request.params.orderNumber ?? '')),
+      request.auth,
+    );
+    response.status(201).json({ data: result, errors: [] });
+  },
+);
+
+app.patch(
+  `${API_PREFIX}/delivery-orders/:orderNumber/shipping-instruction`,
+  authenticateRequest,
+  authorizeRole(['ADMIN', 'PIC_MANAGER', 'SALE_STAFF', 'PORT_OFFICER']),
+  async (request: AuthenticatedRequest, response) => {
+    const result = await updateShippingInstruction(
+      decodeURIComponent(String(request.params.orderNumber ?? '')),
+      request.body,
+      request.auth,
+    );
+    response.json({ data: result, errors: [] });
+  },
+);
+
+app.post(
+  `${API_PREFIX}/delivery-orders/:orderNumber/hbls`,
+  authenticateRequest,
+  authorizeRole(['ADMIN', 'PIC_MANAGER', 'SALE_STAFF', 'PORT_OFFICER']),
+  async (request, response) => {
+    const result = await createHouseBill(decodeURIComponent(String(request.params.orderNumber ?? '')), request.body);
+    response.status(201).json({ data: result, errors: [] });
+  },
+);
+
+app.post(
+  `${API_PREFIX}/delivery-orders/:orderNumber/containers`,
+  authenticateRequest,
+  authorizeRole(['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER']),
+  async (request, response) => {
+    const result = await createContainer(decodeURIComponent(String(request.params.orderNumber ?? '')), request.body);
+    response.status(201).json({ data: result, errors: [] });
+  },
+);
+
+app.post(
+  `${API_PREFIX}/delivery-orders/:orderNumber/document-reviews`,
+  authenticateRequest,
+  authorizeRole(['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER']),
+  async (request: AuthenticatedRequest, response) => {
+    const result = await createDocumentReview(
+      decodeURIComponent(String(request.params.orderNumber ?? '')),
+      request.body,
+      request.auth,
+    );
+    response.status(201).json({ data: result, errors: [] });
+  },
+);
+
+app.post(
+  `${API_PREFIX}/document-reviews/:reviewId/cross-check`,
+  authenticateRequest,
+  authorizeRole(['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER']),
+  async (request, response) => {
+    const result = await confirmDocumentCrossCheck(
+      decodeURIComponent(String(request.params.reviewId ?? '')),
+      request.body,
+    );
+    response.json({ data: result, errors: [] });
+  },
+);
+
+app.post(
+  `${API_PREFIX}/document-reviews/:reviewId/final-bl`,
+  authenticateRequest,
+  authorizeRole(['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER']),
+  async (request: AuthenticatedRequest, response) => {
+    const result = await confirmFinalBl(
+      decodeURIComponent(String(request.params.reviewId ?? '')),
+      request.body,
+      request.auth,
+    );
+    response.json({ data: result, errors: [] });
+  },
+);
+
+app.get(
+  `${API_PREFIX}/delivery-orders/:orderNumber/charges`,
+  authenticateRequest,
+  authorizeRole(readAllRoles),
+  async (request, response) => {
+    const result = await listCharges(decodeURIComponent(String(request.params.orderNumber ?? '')));
+    response.json({ data: result, errors: [] });
+  },
+);
+
+app.post(
+  `${API_PREFIX}/delivery-orders/:orderNumber/charges`,
+  authenticateRequest,
+  authorizeRole(['ADMIN', 'PIC_MANAGER', 'FINANCE_OFFICER']),
+  async (request, response) => {
+    const result = await createCharge(decodeURIComponent(String(request.params.orderNumber ?? '')), request.body);
+    response.status(201).json({ data: result, errors: [] });
+  },
+);
+
+app.patch(
+  `${API_PREFIX}/charges/:chargeId`,
+  authenticateRequest,
+  authorizeRole(['ADMIN', 'PIC_MANAGER', 'FINANCE_OFFICER']),
+  async (request, response) => {
+    const result = await updateCharge(decodeURIComponent(String(request.params.chargeId ?? '')), request.body);
+    response.json({ data: result, errors: [] });
+  },
+);
+
+app.delete(
+  `${API_PREFIX}/charges/:chargeId`,
+  authenticateRequest,
+  authorizeRole(['ADMIN', 'PIC_MANAGER', 'FINANCE_OFFICER']),
+  async (request, response) => {
+    const result = await deleteCharge(decodeURIComponent(String(request.params.chargeId ?? '')));
+    response.json({ data: result, errors: [] });
+  },
+);
+
+app.post(
+  `${API_PREFIX}/delivery-orders/:orderNumber/finance-notes`,
+  authenticateRequest,
+  authorizeRole(['ADMIN', 'PIC_MANAGER', 'FINANCE_OFFICER']),
+  async (request: AuthenticatedRequest, response) => {
+    const result = await issueFinanceNote(
+      decodeURIComponent(String(request.params.orderNumber ?? '')),
+      request.body,
+      request.auth,
+    );
+    response.status(201).json({ data: result, errors: [] });
+  },
+);
+
+app.post(
+  `${API_PREFIX}/finance-notes/:noteId/send-to-accounting`,
+  authenticateRequest,
+  authorizeRole(['ADMIN', 'PIC_MANAGER', 'FINANCE_OFFICER']),
+  async (request: AuthenticatedRequest, response) => {
+    const result = await sendFinanceNoteToAccounting(
+      decodeURIComponent(String(request.params.noteId ?? '')),
+      request.auth,
+    );
+    response.json({ data: result, errors: [] });
+  },
+);
+
+app.get(
+  `${API_PREFIX}/delivery-orders/:orderNumber/customs`,
+  authenticateRequest,
+  authorizeRole(readAllRoles),
+  async (request, response) => {
+    const result = await getCustoms(decodeURIComponent(String(request.params.orderNumber ?? '')));
+    response.json({ data: result, errors: [] });
+  },
+);
+
+app.patch(
+  `${API_PREFIX}/delivery-orders/:orderNumber/customs`,
+  authenticateRequest,
+  authorizeRole(['ADMIN', 'PIC_MANAGER', 'CUSTOMS_OFFICER']),
+  async (request: AuthenticatedRequest, response) => {
+    const result = await updateCustoms(
+      decodeURIComponent(String(request.params.orderNumber ?? '')),
+      request.body,
+      request.auth,
+    );
+    response.json({ data: result, errors: [] });
   },
 );
 
@@ -444,6 +746,7 @@ app.patch(`${API_PREFIX}/tasks/:taskId`, authenticateRequest, authorizeRole(role
   const task = await updateTask(
     decodeURIComponent(String(request.params.taskId ?? '')),
     request.body as UpdateTaskBody,
+    (request as AuthenticatedRequest).auth,
   );
   response.json({ data: task, errors: [] });
 });
@@ -504,6 +807,7 @@ async function parseMultipartUpload(request: Request): Promise<ParsedMultipartUp
   const boundary = `--${boundaryMatch[1]}`;
   const parts = body.toString('binary').split(boundary).slice(1, -1);
   let documentType = '';
+  let hblNumber: string | null = null;
   let file: ParsedMultipartUpload['file'] | null = null;
 
   for (const rawPart of parts) {
@@ -523,6 +827,12 @@ async function parseMultipartUpload(request: Request): Promise<ParsedMultipartUp
       continue;
     }
 
+    if (name === 'hblNumber') {
+      const cleaned = Buffer.from(rawContent, 'binary').toString('utf8').trim();
+      hblNumber = cleaned.length > 0 ? cleaned : null;
+      continue;
+    }
+
     if (name === 'file') {
       const fileName = /filename="([^"]+)"/i.exec(rawHeaders)?.[1] ?? 'attachment';
       const mimeType = /content-type:\s*([^\r\n]+)/i.exec(rawHeaders)?.[1]?.trim() ?? 'application/octet-stream';
@@ -538,7 +848,7 @@ async function parseMultipartUpload(request: Request): Promise<ParsedMultipartUp
     throw new ApiError(400, 'documentType và file là bắt buộc.');
   }
 
-  return { documentType, file };
+  return { documentType, file, hblNumber };
 }
 
 start().catch((error: unknown) => {

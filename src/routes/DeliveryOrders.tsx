@@ -74,6 +74,8 @@ import {
   getDeliveryOrderRisks,
   getOperationalGates,
   getRiskColor,
+  type OperationalGate,
+  type OperationalRisk,
   type OperationalRiskCode,
 } from '../utils/operations';
 
@@ -222,7 +224,18 @@ export function DeliveryOrders() {
       <PageLoading
         title={t('deliveryOrders.title')}
         description={t('deliveryOrders.loadingDescription')}
-        tableColumns={['DO', 'PR/PO', t('common.supplier'), t('common.item'), t('common.route'), 'ETA', t('forms.warehouse'), t('shell.tasks'), t('common.documents'), t('common.status')]}
+        tableColumns={[
+          t('deliveryOrders.doColumn'),
+          t('deliveryOrders.prPoColumn'),
+          t('common.supplier'),
+          t('common.item'),
+          t('common.route'),
+          t('deliveryOrders.eta'),
+          t('forms.warehouse'),
+          t('shell.tasks'),
+          t('common.documents'),
+          t('common.status'),
+        ]}
       />
     );
   }
@@ -332,7 +345,7 @@ export function DeliveryOrders() {
           <Table miw={960} verticalSpacing="sm" highlightOnHover>
             <Table.Thead>
               <Table.Tr>
-                <Table.Th>DO</Table.Th>
+                <Table.Th>{t('deliveryOrders.doColumn')}</Table.Th>
                 <Table.Th>
                   {t('common.supplier')} / {t('common.item')}
                 </Table.Th>
@@ -392,7 +405,7 @@ export function DeliveryOrders() {
                         </div>
                       </Group>
                       <Text size="xs" c="dimmed" mt={4}>
-                        ETA {deliveryOrder.logistics_shipping.eta_planned ?? '-'}
+                        {t('deliveryOrders.eta')} {deliveryOrder.logistics_shipping.eta_planned ?? '-'}
                       </Text>
                     </Table.Td>
                     <Table.Td>
@@ -482,7 +495,7 @@ export function DeliveryOrders() {
 }
 
 function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: DeliveryOrder }) {
-  const { documentLabel, statusLabel, t } = useI18n();
+  const { documentLabel, statusLabel, t, taskRoleLabel } = useI18n();
   const gates = getOperationalGates(deliveryOrder);
   const risks = getDeliveryOrderRisks(deliveryOrder);
   const taskProgress =
@@ -556,7 +569,7 @@ function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: DeliveryOrder }
             <Stack gap="sm">
               <Info label={t('common.supplier')} value={deliveryOrder.sap_integration.supplier_name ?? t('deliveryOrders.supplierPending')} />
               <Info label={t('forms.incoterms')} value={deliveryOrder.logistics_shipping.incoterms} />
-              <Info label="ETD / ETA" value={`${deliveryOrder.logistics_shipping.etd_planned ?? '-'} / ${deliveryOrder.logistics_shipping.eta_planned ?? '-'}`} />
+              <Info label={t('deliveryOrders.etdEta')} value={`${deliveryOrder.logistics_shipping.etd_planned ?? '-'} / ${deliveryOrder.logistics_shipping.eta_planned ?? '-'}`} />
               <Info label={t('forms.plannedWarehouseEntry')} value={deliveryOrder.warehouse_tracking.planned_entry_date ?? '-'} />
             </Stack>
             <Timeline active={1} bulletSize={26} lineWidth={2}>
@@ -567,7 +580,8 @@ function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: DeliveryOrder }
               </Timeline.Item>
               <Timeline.Item title={statusLabel('IN_TRANSIT')}>
                 <Text size="sm" c="dimmed">
-                  {deliveryOrder.logistics_shipping.port_of_departure} to {deliveryOrder.logistics_shipping.port_of_destination}
+                  {deliveryOrder.logistics_shipping.port_of_departure} {t('deliveryOrders.routeConnector')}{' '}
+                  {deliveryOrder.logistics_shipping.port_of_destination}
                 </Text>
               </Timeline.Item>
               <Timeline.Item title={t('deliveryOrders.warehouseEntry')}>
@@ -588,7 +602,7 @@ function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: DeliveryOrder }
                     <div>
                       <Text fw={700}>{gateLabel(gate.id, t)}</Text>
                       <Text size="sm" c="dimmed">
-                        {gate.detail || '-'}
+                        {gateDetail(gate, t) || '-'}
                       </Text>
                     </div>
                     <Badge color={gate.passed ? 'teal' : 'orange'} variant="light">
@@ -596,7 +610,7 @@ function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: DeliveryOrder }
                     </Badge>
                   </Group>
                   <Text size="xs" c="dimmed" mt="xs">
-                    {t('common.owner')}: {gate.owner}
+                    {t('common.owner')}: {taskRoleLabel(gate.owner)}
                   </Text>
                 </Paper>
               ))}
@@ -622,10 +636,10 @@ function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: DeliveryOrder }
                         <Badge color={getRiskColor(risk.severity)} variant="light">
                           {riskLabel(risk.code, t)}
                         </Badge>
-                        <Text size="sm">{risk.detail}</Text>
+                        <Text size="sm">{riskDetail(risk, t)}</Text>
                       </Group>
                       <Text size="sm" c="dimmed">
-                        {risk.owner} · SLA {risk.sla}
+                        {taskRoleLabel(risk.owner)} · {t('deliveryOrders.sla', { sla: slaLabel(risk.sla, t) })}
                       </Text>
                     </Group>
                   ))
@@ -638,9 +652,12 @@ function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: DeliveryOrder }
             </Paper>
 
             <SimpleGrid cols={{ base: 1, md: 3 }}>
-              <Info label="eFMS Booking" value={deliveryOrder.order_info.tracking_number ?? deliveryOrder.order_info.order_number} />
-              <Info label="MBL / Vessel" value={`${deliveryOrder.logistics_shipping.shipping_line ?? '-'} / ${deliveryOrder.logistics_shipping.vessel_code ?? '-'}`} />
-              <Info label="POL / POD" value={`${deliveryOrder.logistics_shipping.port_of_departure} -> ${deliveryOrder.logistics_shipping.port_of_destination}`} />
+              <Info label={t('deliveryOrders.efmsBooking')} value={deliveryOrder.order_info.tracking_number ?? deliveryOrder.order_info.order_number} />
+              <Info label={t('deliveryOrders.mblVessel')} value={`${deliveryOrder.logistics_shipping.shipping_line ?? '-'} / ${deliveryOrder.logistics_shipping.vessel_code ?? '-'}`} />
+              <Info
+                label={t('deliveryOrders.polPod')}
+                value={`${deliveryOrder.logistics_shipping.port_of_departure} ${t('deliveryOrders.routeConnector')} ${deliveryOrder.logistics_shipping.port_of_destination}`}
+              />
               <Info label={t('deliveryOrders.ofAfDebitNote')} value={gates.find((gate) => gate.id === 'documents')?.passed ? t('deliveryOrders.ready') : t('deliveryOrders.waitingDocuments')} />
               <Info label={t('deliveryOrders.finalDebitNote')} value={gates.find((gate) => gate.id === 'finance')?.passed ? t('deliveryOrders.ready') : t('deliveryOrders.waitingOpsGates')} />
               <Info label={t('deliveryOrders.podArchive')} value={deliveryOrder.warehouse_tracking.actual_entry_date ? t('deliveryOrders.ready') : t('deliveryOrders.waitingWarehouse')} />
@@ -826,7 +843,7 @@ function OperationalGateSummary({
   gates: ReturnType<typeof getOperationalGates>;
   risks: ReturnType<typeof getDeliveryOrderRisks>;
 }) {
-  const { t } = useI18n();
+  const { t, taskRoleLabel } = useI18n();
   const passedCount = gates.filter((gate) => gate.passed).length;
   const delay = calcDelay({
     actualEntryDate: deliveryOrder.warehouse_tracking.actual_entry_date,
@@ -865,7 +882,9 @@ function OperationalGateSummary({
           </Text>
           <Title order={4}>{risks[0] ? riskLabel(risks[0].code, t) : t('deliveryOrders.readyForClosure')}</Title>
           <Text size="sm" c="dimmed">
-            {risks[0] ? `${risks[0].owner} · SLA ${risks[0].sla}` : t('deliveryOrders.noOpsRisk')}
+            {risks[0]
+              ? `${taskRoleLabel(risks[0].owner)} · ${t('deliveryOrders.sla', { sla: slaLabel(risks[0].sla, t) })}`
+              : t('deliveryOrders.noOpsRisk')}
           </Text>
         </div>
       </SimpleGrid>
@@ -897,6 +916,61 @@ function riskLabel(code: OperationalRiskCode, t: ReturnType<typeof useI18n>['t']
   };
 
   return labels[code];
+}
+
+function gateDetail(gate: OperationalGate, t: ReturnType<typeof useI18n>['t']) {
+  if (gate.id === 'documents') {
+    return gate.passed ? t('deliveryOrders.gateDocumentsReadyDetail') : gate.detail;
+  }
+  if (gate.id === 'customs') {
+    return gate.passed
+      ? t('deliveryOrders.gateCustomsReadyDetail')
+      : t('deliveryOrders.gateWaitingDocumentCrossCheckDetail');
+  }
+  if (gate.id === 'tasks') {
+    return gate.passed
+      ? t('deliveryOrders.gateRequiredTasksClearDetail')
+      : t('deliveryOrders.gateTasksBlockedDetail', extractTaskGateCounts(gate.detail));
+  }
+  if (gate.id === 'warehouse') {
+    const days = Number.parseInt(gate.detail, 10);
+    return gate.passed
+      ? t('deliveryOrders.gateWithinWarehouseDeadlineDetail')
+      : t('deliveryOrders.gateWarehouseLateDetail', { days: Number.isFinite(days) ? days : 0 });
+  }
+  if (gate.id === 'finance') {
+    return gate.passed ? t('deliveryOrders.gateFinanceProceedDetail') : t('deliveryOrders.gateFinanceWaitsDetail');
+  }
+  return gate.detail;
+}
+
+function riskDetail(risk: OperationalRisk, t: ReturnType<typeof useI18n>['t']) {
+  if (risk.code === 'BLOCKED_TASKS') {
+    const count = Number.parseInt(risk.detail, 10);
+    return t('deliveryOrders.riskBlockedTasksDetail', { count: Number.isFinite(count) ? count : 0 });
+  }
+  if (risk.code === 'REQUIRED_TASKS') {
+    const count = Number.parseInt(risk.detail, 10);
+    return t('deliveryOrders.riskRequiredTasksDetail', { count: Number.isFinite(count) ? count : 0 });
+  }
+  if (risk.code === 'FINANCE_NOT_READY') {
+    return t('deliveryOrders.financeBlockedDetail');
+  }
+  return risk.detail;
+}
+
+function slaLabel(sla: OperationalRisk['sla'], t: ReturnType<typeof useI18n>['t']) {
+  if (sla === 'Today') return t('deliveryOrders.slaToday');
+  if (sla === 'Before close') return t('deliveryOrders.slaBeforeClose');
+  return sla;
+}
+
+function extractTaskGateCounts(detail: string) {
+  const matches = detail.match(/\d+/g) ?? [];
+  return {
+    blocked: Number(matches[1] ?? 0),
+    required: Number(matches[0] ?? 0),
+  };
 }
 
 function Metric({ color = 'blue', label, value }: { color?: string; label: string; value: number }) {
