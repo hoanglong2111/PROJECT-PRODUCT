@@ -1,23 +1,26 @@
+import { lazy, Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
 
 import { RequireAuth } from './auth/RequireAuth';
 import { RequireRole } from './auth/RequireRole';
 import type { AppRole } from './auth/types';
 import { AppShellLayout } from './components/AppShellLayout';
-import { Dashboard } from './routes/Dashboard';
-import { DeliveryOrders } from './routes/DeliveryOrders';
-import { Efms } from './routes/Efms';
-import { ExchangeRates } from './routes/ExchangeRates';
-import { Login } from './routes/Login';
-import { NotFound } from './routes/NotFound';
-import { Profile } from './routes/Profile';
-import { PurchaseOrders } from './routes/PurchaseOrders';
-import { PurchaseRequests } from './routes/PurchaseRequests';
-import { Quotations } from './routes/Quotations';
-import { Settings } from './routes/Settings';
-import { Tasks } from './routes/Tasks';
-import { Unauthorized } from './routes/Unauthorized';
-import { Workflow } from './routes/Workflow';
+import { PageLoading } from './components/PageFeedback';
+
+const Dashboard = lazy(() => import('./routes/Dashboard').then((module) => ({ default: module.Dashboard })));
+const DeliveryOrders = lazy(() => import('./routes/DeliveryOrders').then((module) => ({ default: module.DeliveryOrders })));
+const Efms = lazy(() => import('./routes/Efms').then((module) => ({ default: module.Efms })));
+const ExchangeRates = lazy(() => import('./routes/ExchangeRates').then((module) => ({ default: module.ExchangeRates })));
+const Login = lazy(() => import('./routes/Login').then((module) => ({ default: module.Login })));
+const NotFound = lazy(() => import('./routes/NotFound').then((module) => ({ default: module.NotFound })));
+const Profile = lazy(() => import('./routes/Profile').then((module) => ({ default: module.Profile })));
+const PurchaseOrders = lazy(() => import('./routes/PurchaseOrders').then((module) => ({ default: module.PurchaseOrders })));
+const PurchaseRequests = lazy(() => import('./routes/PurchaseRequests').then((module) => ({ default: module.PurchaseRequests })));
+const Quotations = lazy(() => import('./routes/Quotations').then((module) => ({ default: module.Quotations })));
+const Settings = lazy(() => import('./routes/Settings').then((module) => ({ default: module.Settings })));
+const Tasks = lazy(() => import('./routes/Tasks').then((module) => ({ default: module.Tasks })));
+const Unauthorized = lazy(() => import('./routes/Unauthorized').then((module) => ({ default: module.Unauthorized })));
+const Workflow = lazy(() => import('./routes/Workflow').then((module) => ({ default: module.Workflow })));
 
 const purchaseRequestRoles: AppRole[] = ['ADMIN', 'PIC_MANAGER', 'SALE_STAFF'];
 const purchaseOrderRoles: AppRole[] = ['ADMIN', 'PIC_MANAGER', 'SALE_STAFF', 'FINANCE_OFFICER'];
@@ -28,80 +31,86 @@ const taskRoles: AppRole[] = ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_O
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/unauthorized" element={<Unauthorized />} />
+    <Suspense fallback={<RouteFallback />}>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/unauthorized" element={<Unauthorized />} />
 
-      <Route
-        element={
-          <RequireAuth>
-            <AppShellLayout />
-          </RequireAuth>
-        }
-      >
-        <Route index element={<Dashboard />} />
-        <Route path="workflow" element={<Workflow />} />
-        <Route path="exchange-rates" element={<ExchangeRates />} />
         <Route
-          path="purchase-requests"
           element={
-            <RequireRole allowedRoles={purchaseRequestRoles}>
-              <PurchaseRequests />
-            </RequireRole>
+            <RequireAuth>
+              <AppShellLayout />
+            </RequireAuth>
           }
-        />
-        <Route
-          path="quotations"
-          element={
-            <RequireRole allowedRoles={quotationRoles}>
-              <Quotations />
-            </RequireRole>
-          }
-        />
-        <Route
-          path="purchase-orders"
-          element={
-            <RequireRole allowedRoles={purchaseOrderRoles}>
-              <PurchaseOrders />
-            </RequireRole>
-          }
-        />
-        <Route
-          path="delivery-orders"
-          element={
-            <RequireRole allowedRoles={deliveryOrderRoles}>
-              <DeliveryOrders />
-            </RequireRole>
-          }
-        />
-        <Route
-          path="efms"
-          element={
-            <RequireRole allowedRoles={efmsRoles}>
-              <Efms />
-            </RequireRole>
-          }
-        />
-        <Route
-          path="efms/:orderNumber"
-          element={
-            <RequireRole allowedRoles={efmsRoles}>
-              <Efms />
-            </RequireRole>
-          }
-        />
-        <Route
-          path="tasks"
-          element={
-            <RequireRole allowedRoles={taskRoles}>
-              <Tasks />
-            </RequireRole>
-          }
-        />
-        <Route path="profile" element={<Profile />} />
-        <Route path="settings" element={<Settings />} />
-        <Route path="*" element={<NotFound />} />
-      </Route>
-    </Routes>
+        >
+          <Route index element={<Dashboard />} />
+          <Route path="workflow" element={<Workflow />} />
+          <Route path="exchange-rates" element={<ExchangeRates />} />
+          <Route
+            path="purchase-requests"
+            element={
+              <RequireRole allowedRoles={purchaseRequestRoles}>
+                <PurchaseRequests />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="quotations"
+            element={
+              <RequireRole allowedRoles={quotationRoles}>
+                <Quotations />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="purchase-orders"
+            element={
+              <RequireRole allowedRoles={purchaseOrderRoles}>
+                <PurchaseOrders />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="delivery-orders"
+            element={
+              <RequireRole allowedRoles={deliveryOrderRoles}>
+                <DeliveryOrders />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="efms"
+            element={
+              <RequireRole allowedRoles={efmsRoles}>
+                <Efms />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="efms/:orderNumber"
+            element={
+              <RequireRole allowedRoles={efmsRoles}>
+                <Efms />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="tasks"
+            element={
+              <RequireRole allowedRoles={taskRoles}>
+                <Tasks />
+              </RequireRole>
+            }
+          />
+          <Route path="profile" element={<Profile />} />
+          <Route path="settings" element={<Settings />} />
+          <Route path="*" element={<NotFound />} />
+        </Route>
+      </Routes>
+    </Suspense>
   );
+}
+
+function RouteFallback() {
+  return <PageLoading title="Đang tải" description="Đang chuẩn bị màn hình làm việc." />;
 }

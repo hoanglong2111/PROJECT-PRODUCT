@@ -15,6 +15,8 @@ type SnapshotKey = 'purchase_requests' | 'purchase_orders' | 'delivery_orders' |
 
 type Row = Record<string, unknown>;
 
+const MAX_BATCH_INSERT_PARAMS = 60_000;
+
 export async function readNormalizedSnapshot<T>(key: string, client: DatabaseClient): Promise<T> {
   if (key === 'purchase_requests') {
     return (await readPurchaseRequests(client)) as T;
@@ -133,20 +135,15 @@ async function readPurchaseOrders(client: DatabaseClient): Promise<PurchaseOrder
 }
 
 async function readDeliveryOrders(client: DatabaseClient): Promise<DeliveryOrder[]> {
-  const [ordersResult, transportResult, sourceLinesResult, tasks] = await Promise.all([
+  const [ordersResult, transportResult, sourceLinesResult, taskSummaryResult] = await Promise.all([
     client.query<Row>('SELECT * FROM delivery_orders ORDER BY created_at DESC, order_number DESC'),
     client.query<Row>('SELECT * FROM efms_transport_records ORDER BY id ASC'),
     client.query<Row>('SELECT * FROM delivery_order_source_lines ORDER BY id ASC'),
-    readTasks(client),
+    client.query<Row>('SELECT do_number, status, is_required_for_do_closure FROM logistics_tasks'),
   ]);
   const transportByOrder = new Map(transportResult.rows.map((row) => [stringValue(row.delivery_order_id), row]));
   const sourceLinesByOrder = groupBy(sourceLinesResult.rows, 'delivery_order_id');
-  const tasksByDo = new Map<string, LogisticsTask[]>();
-  for (const task of tasks) {
-    const current = tasksByDo.get(task.do_number) ?? [];
-    current.push(task);
-    tasksByDo.set(task.do_number, current);
-  }
+  const taskSummaryByDo = buildTaskSummaries(taskSummaryResult.rows);
 
   return ordersResult.rows.map((row) => {
     const id = stringValue(row.id);
@@ -210,7 +207,7 @@ async function readDeliveryOrders(client: DatabaseClient): Promise<DeliveryOrder
         tax_payment_deadline: null,
         insurance: null,
       },
-      task_summary: summarizeTasks(tasksByDo.get(orderNumber) ?? []),
+      task_summary: taskSummaryByDo.get(orderNumber) ?? emptyTaskSummary(),
       flow_tags: stringArrayValue(row.flow_tags) as DeliveryOrder['flow_tags'],
     };
   });
@@ -249,19 +246,35 @@ async function replacePurchaseRequests(requests: PurchaseRequest[], client: Data
   await client.query('DELETE FROM purchase_request_lines');
   await client.query('DELETE FROM purchase_requests');
 
-  for (const request of requests) {
-    await client.query(
-      `
-        INSERT INTO purchase_requests (
-          id, requested_order_id, item_code, item_name, quantity, unit, priority,
-          requested_order_date, adjusted_date, warehouse_deadline_date, production_contract_number,
-          requester_id, purchasing_manager_id, status, notes, actual_warehouse_entry_date,
-          supplier_expected_delivery_date, expected_arrival_date, delay_days, warehouse_code, flow_tags,
-          updated_at
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, NOW())
-      `,
-      [
+  const updatedAt = new Date();
+  await batchInsert(
+    client,
+    'purchase_requests',
+    [
+      'id',
+      'requested_order_id',
+      'item_code',
+      'item_name',
+      'quantity',
+      'unit',
+      'priority',
+      'requested_order_date',
+      'adjusted_date',
+      'warehouse_deadline_date',
+      'production_contract_number',
+      'requester_id',
+      'purchasing_manager_id',
+      'status',
+      'notes',
+      'actual_warehouse_entry_date',
+      'supplier_expected_delivery_date',
+      'expected_arrival_date',
+      'delay_days',
+      'warehouse_code',
+      'flow_tags',
+      'updated_at',
+    ],
+    requests.map((request) => [
         request.id,
         request.requested_order_id,
         request.item_code,
@@ -283,29 +296,68 @@ async function replacePurchaseRequests(requests: PurchaseRequest[], client: Data
         request.delay_days,
         request.warehouse_code,
         request.flow_tags,
-      ],
-    );
+        updatedAt,
+      ]),
+  );
 
-    for (const line of request.line_items) {
-      await insertPurchaseRequestLine(line, request.id, client);
-    }
-  }
+  await batchInsert(
+    client,
+    'purchase_request_lines',
+    [
+      'id',
+      'purchase_request_id',
+      'item_code',
+      'item_name',
+      'quantity',
+      'unit',
+      'warehouse_deadline_date',
+      'warehouse_code',
+      'production_contract_number',
+      'linked_po_numbers',
+      'linked_do_numbers',
+    ],
+    requests.flatMap((request) =>
+      request.line_items.map((line) => [
+        line.id,
+        request.id,
+        line.item_code,
+        line.item_name,
+        line.quantity,
+        line.unit,
+        line.warehouse_deadline_date,
+        line.warehouse_code,
+        line.production_contract_number,
+        line.linked_po_numbers,
+        line.linked_do_numbers,
+      ]),
+    ),
+  );
 }
 
 async function replacePurchaseOrders(orders: PurchaseOrder[], client: DatabaseClient) {
   await client.query('DELETE FROM purchase_order_lines');
   await client.query('DELETE FROM purchase_orders');
 
-  for (const order of orders) {
-    await client.query(
-      `
-        INSERT INTO purchase_orders (
-          id, po_number, supplier_code, supplier_name, status, order_date, currency,
-          total_amount, sap_sync_status, linked_do_numbers, warehouse_code, flow_tags, updated_at
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
-      `,
-      [
+  const updatedAt = new Date();
+  await batchInsert(
+    client,
+    'purchase_orders',
+    [
+      'id',
+      'po_number',
+      'supplier_code',
+      'supplier_name',
+      'status',
+      'order_date',
+      'currency',
+      'total_amount',
+      'sap_sync_status',
+      'linked_do_numbers',
+      'warehouse_code',
+      'flow_tags',
+      'updated_at',
+    ],
+    orders.map((order) => [
         order.id,
         order.po_number,
         order.supplier_code,
@@ -318,13 +370,40 @@ async function replacePurchaseOrders(orders: PurchaseOrder[], client: DatabaseCl
         order.linked_do_numbers,
         order.warehouse_code,
         order.flow_tags,
-      ],
-    );
+        updatedAt,
+      ]),
+  );
 
-    for (const line of order.line_items) {
-      await insertPurchaseOrderLine(line, order.id, client);
-    }
-  }
+  await batchInsert(
+    client,
+    'purchase_order_lines',
+    [
+      'id',
+      'purchase_order_id',
+      'source_pr_code',
+      'source_pr_line_id',
+      'item_code',
+      'item_name',
+      'quantity',
+      'unit',
+      'warehouse_deadline_date',
+      'warehouse_code',
+    ],
+    orders.flatMap((order) =>
+      order.line_items.map((line) => [
+        line.id,
+        order.id,
+        line.source_pr_code,
+        line.source_pr_line_id,
+        line.item_code,
+        line.item_name,
+        line.quantity,
+        line.unit,
+        line.warehouse_deadline_date,
+        line.warehouse_code,
+      ]),
+    ),
+  );
 }
 
 async function replaceDeliveryOrders(orders: DeliveryOrder[], client: DatabaseClient) {
@@ -341,18 +420,37 @@ async function replaceDeliveryOrders(orders: DeliveryOrder[], client: DatabaseCl
   await client.query('DELETE FROM finance_charge_lines');
   await client.query('DELETE FROM delivery_orders');
 
-  for (const order of orders) {
-    await client.query(
-      `
-        INSERT INTO delivery_orders (
-          id, order_number, request_code, po_number, tracking_number, purchase_contract_number,
-          status, notes, xnk_notes, item_code, item_name, quantity, unit, supplier_code,
-          supplier_name, sap_raw_date, sap_sync_status, warehouse_code, warehouse_deadline,
-          planned_entry_date, actual_entry_date, delay_days, flow_tags, updated_at
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, NOW())
-      `,
-      [
+  const updatedAt = new Date();
+  await batchInsert(
+    client,
+    'delivery_orders',
+    [
+      'id',
+      'order_number',
+      'request_code',
+      'po_number',
+      'tracking_number',
+      'purchase_contract_number',
+      'status',
+      'notes',
+      'xnk_notes',
+      'item_code',
+      'item_name',
+      'quantity',
+      'unit',
+      'supplier_code',
+      'supplier_name',
+      'sap_raw_date',
+      'sap_sync_status',
+      'warehouse_code',
+      'warehouse_deadline',
+      'planned_entry_date',
+      'actual_entry_date',
+      'delay_days',
+      'flow_tags',
+      'updated_at',
+    ],
+    orders.map((order) => [
         order.id,
         order.order_info.order_number,
         order.order_info.request_code,
@@ -376,15 +474,96 @@ async function replaceDeliveryOrders(orders: DeliveryOrder[], client: DatabaseCl
         order.warehouse_tracking.actual_entry_date,
         order.warehouse_tracking.delay_days,
         order.flow_tags,
-      ],
-    );
+        updatedAt,
+      ]),
+  );
 
-    await insertEfmsTransport(order, client);
+  await batchInsert(
+    client,
+    'efms_transport_records',
+    [
+      'id',
+      'delivery_order_id',
+      'incoterms',
+      'shipping_method',
+      'shipping_line',
+      'vessel_code',
+      'booking_number',
+      'mbl_number',
+      'mbl_type',
+      'hbl_number',
+      'manifest_number',
+      'port_of_departure',
+      'port_of_destination',
+      'cut_off_date',
+      'etd_planned',
+      'eta_planned',
+      'actual_departure_at',
+      'actual_arrival_at',
+      'documents_list',
+      'missing_documents',
+      'gross_weight',
+      'cbm',
+    ],
+    orders.map((order) => {
+      const suffix = order.order_info.order_number.slice(-6);
+      return [
+        `efms-${order.id}`,
+        order.id,
+        order.logistics_shipping.incoterms,
+        order.logistics_shipping.shipping_method,
+        order.logistics_shipping.shipping_line,
+        order.logistics_shipping.vessel_code,
+        `BOOK-${suffix}`,
+        `MBL-${suffix}`,
+        'ORIGINAL',
+        `HBL-${suffix}`,
+        `MAN-${suffix}`,
+        order.logistics_shipping.port_of_departure,
+        order.logistics_shipping.port_of_destination,
+        order.logistics_shipping.cut_off_date,
+        order.logistics_shipping.etd_planned,
+        order.logistics_shipping.eta_planned,
+        null,
+        null,
+        order.logistics_shipping.documents_list,
+        order.logistics_shipping.missing_documents,
+        Math.max(1, order.product_details.quantity * 12),
+        Math.max(1, Math.round(order.product_details.quantity / 18)),
+      ];
+    }),
+  );
 
-    for (const line of order.source_lines) {
-      await insertDeliverySourceLine(line, order.id, client);
-    }
-  }
+  await batchInsert(
+    client,
+    'delivery_order_source_lines',
+    [
+      'id',
+      'delivery_order_id',
+      'po_number',
+      'po_line_id',
+      'request_code',
+      'pr_line_id',
+      'item_code',
+      'item_name',
+      'quantity',
+      'unit',
+    ],
+    orders.flatMap((order) =>
+      order.source_lines.map((line) => [
+        line.id,
+        order.id,
+        line.po_number,
+        line.po_line_id,
+        line.request_code,
+        line.pr_line_id,
+        line.item_code,
+        line.item_name,
+        line.quantity,
+        line.unit,
+      ]),
+    ),
+  );
 
   await restoreDeliverySideTables(preserved, nextDeliveryOrderIds, client);
 }
@@ -392,17 +571,33 @@ async function replaceDeliveryOrders(orders: DeliveryOrder[], client: DatabaseCl
 async function replaceTasks(tasks: LogisticsTask[], client: DatabaseClient) {
   await client.query('DELETE FROM logistics_tasks');
 
-  for (const task of tasks) {
-    await client.query(
-      `
-        INSERT INTO logistics_tasks (
-          id, task_id, task_name, role, assignee_id, hbl_number, do_number, request_code,
-          po_number, production_contract_number, priority, status, progress, due_date,
-          completed_at, blocked_reason, notes, is_required_for_do_closure, created_at, updated_at
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, NOW())
-      `,
-      [
+  const updatedAt = new Date();
+  await batchInsert(
+    client,
+    'logistics_tasks',
+    [
+      'id',
+      'task_id',
+      'task_name',
+      'role',
+      'assignee_id',
+      'hbl_number',
+      'do_number',
+      'request_code',
+      'po_number',
+      'production_contract_number',
+      'priority',
+      'status',
+      'progress',
+      'due_date',
+      'completed_at',
+      'blocked_reason',
+      'notes',
+      'is_required_for_do_closure',
+      'created_at',
+      'updated_at',
+    ],
+    tasks.map((task) => [
         `task-${task.task_id}`,
         task.task_id,
         task.task_name,
@@ -422,9 +617,9 @@ async function replaceTasks(tasks: LogisticsTask[], client: DatabaseClient) {
         task.notes,
         task.is_required_for_do_closure,
         task.created_at,
-      ],
-    );
-  }
+        updatedAt,
+      ]),
+  );
 }
 
 async function readDeliverySideTables(client: DatabaseClient) {
@@ -452,16 +647,13 @@ async function restoreDeliverySideTables(
   deliveryOrderIds: Set<string>,
   client: DatabaseClient,
 ) {
-  for (const row of preserved.containers.filter((item) => deliveryOrderIds.has(stringValue(item.delivery_order_id)))) {
-    await client.query(
-      `
-        INSERT INTO efms_containers (
-          id, delivery_order_id, container_type, container_number, seal_number, vehicle_type, vehicle_number
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-        ON CONFLICT (id) DO NOTHING
-      `,
-      [
+  await batchInsert(
+    client,
+    'efms_containers',
+    ['id', 'delivery_order_id', 'container_type', 'container_number', 'seal_number', 'vehicle_type', 'vehicle_number'],
+    preserved.containers
+      .filter((item) => deliveryOrderIds.has(stringValue(item.delivery_order_id)))
+      .map((row) => [
         row.id,
         row.delivery_order_id,
         row.container_type,
@@ -469,21 +661,30 @@ async function restoreDeliverySideTables(
         row.seal_number,
         row.vehicle_type,
         row.vehicle_number,
-      ],
-    );
-  }
+      ]),
+    'ON CONFLICT (id) DO NOTHING',
+  );
 
-  for (const row of preserved.charges.filter((item) => deliveryOrderIds.has(stringValue(item.delivery_order_id)))) {
-    await client.query(
-      `
-        INSERT INTO finance_charge_lines (
-          id, delivery_order_id, charge_type, charge_code, description, amount, currency, is_locked,
-          invoiced_note_id, invoiced_at, created_at, updated_at
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-        ON CONFLICT (id) DO NOTHING
-      `,
-      [
+  await batchInsert(
+    client,
+    'finance_charge_lines',
+    [
+      'id',
+      'delivery_order_id',
+      'charge_type',
+      'charge_code',
+      'description',
+      'amount',
+      'currency',
+      'is_locked',
+      'invoiced_note_id',
+      'invoiced_at',
+      'created_at',
+      'updated_at',
+    ],
+    preserved.charges
+      .filter((item) => deliveryOrderIds.has(stringValue(item.delivery_order_id)))
+      .map((row) => [
         row.id,
         row.delivery_order_id,
         row.charge_type,
@@ -496,21 +697,28 @@ async function restoreDeliverySideTables(
         row.invoiced_at,
         row.created_at,
         row.updated_at,
-      ],
-    );
-  }
+      ]),
+    'ON CONFLICT (id) DO NOTHING',
+  );
 
-  for (const row of preserved.notes.filter((item) => deliveryOrderIds.has(stringValue(item.delivery_order_id)))) {
-    await client.query(
-      `
-        INSERT INTO finance_notes (
-          id, delivery_order_id, note_number, note_type, accounting_code, status,
-          charge_ids, sla_due_at, issued_at, sent_to_accounting_at
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-        ON CONFLICT (id) DO NOTHING
-      `,
-      [
+  await batchInsert(
+    client,
+    'finance_notes',
+    [
+      'id',
+      'delivery_order_id',
+      'note_number',
+      'note_type',
+      'accounting_code',
+      'status',
+      'charge_ids',
+      'sla_due_at',
+      'issued_at',
+      'sent_to_accounting_at',
+    ],
+    preserved.notes
+      .filter((item) => deliveryOrderIds.has(stringValue(item.delivery_order_id)))
+      .map((row) => [
         row.id,
         row.delivery_order_id,
         row.note_number,
@@ -521,21 +729,29 @@ async function restoreDeliverySideTables(
         row.sla_due_at,
         row.issued_at,
         row.sent_to_accounting_at,
-      ],
-    );
-  }
+      ]),
+    'ON CONFLICT (id) DO NOTHING',
+  );
 
-  for (const row of preserved.houseBills.filter((item) => deliveryOrderIds.has(stringValue(item.delivery_order_id)))) {
-    await client.query(
-      `
-        INSERT INTO efms_house_bills (
-          id, delivery_order_id, hbl_number, shipper, consignee, place_of_receipt,
-          place_of_delivery, assigned_to, final_bl_confirmed_at, created_at, updated_at
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-        ON CONFLICT (delivery_order_id, hbl_number) DO NOTHING
-      `,
-      [
+  await batchInsert(
+    client,
+    'efms_house_bills',
+    [
+      'id',
+      'delivery_order_id',
+      'hbl_number',
+      'shipper',
+      'consignee',
+      'place_of_receipt',
+      'place_of_delivery',
+      'assigned_to',
+      'final_bl_confirmed_at',
+      'created_at',
+      'updated_at',
+    ],
+    preserved.houseBills
+      .filter((item) => deliveryOrderIds.has(stringValue(item.delivery_order_id)))
+      .map((row) => [
         row.id,
         row.delivery_order_id,
         row.hbl_number,
@@ -547,22 +763,33 @@ async function restoreDeliverySideTables(
         row.final_bl_confirmed_at,
         row.created_at,
         row.updated_at,
-      ],
-    );
-  }
+      ]),
+    'ON CONFLICT (delivery_order_id, hbl_number) DO NOTHING',
+  );
 
-  for (const row of preserved.documentReviews.filter((item) => deliveryOrderIds.has(stringValue(item.delivery_order_id)))) {
-    await client.query(
-      `
-        INSERT INTO efms_document_reviews (
-          id, delivery_order_id, hbl_number, status, draft_bl_attachment_id,
-          commercial_invoice_attachment_id, packing_list_attachment_id, final_bl_attachment_id,
-          cross_check_due_at, cross_checked_at, sla_status, notes, created_by, created_at, updated_at
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-        ON CONFLICT (id) DO NOTHING
-      `,
-      [
+  await batchInsert(
+    client,
+    'efms_document_reviews',
+    [
+      'id',
+      'delivery_order_id',
+      'hbl_number',
+      'status',
+      'draft_bl_attachment_id',
+      'commercial_invoice_attachment_id',
+      'packing_list_attachment_id',
+      'final_bl_attachment_id',
+      'cross_check_due_at',
+      'cross_checked_at',
+      'sla_status',
+      'notes',
+      'created_by',
+      'created_at',
+      'updated_at',
+    ],
+    preserved.documentReviews
+      .filter((item) => deliveryOrderIds.has(stringValue(item.delivery_order_id)))
+      .map((row) => [
         row.id,
         row.delivery_order_id,
         row.hbl_number,
@@ -578,21 +805,32 @@ async function restoreDeliverySideTables(
         row.created_by,
         row.created_at,
         row.updated_at,
-      ],
-    );
-  }
+      ]),
+    'ON CONFLICT (id) DO NOTHING',
+  );
 
-  for (const row of preserved.customs.filter((item) => deliveryOrderIds.has(stringValue(item.delivery_order_id)))) {
-    await client.query(
-      `
-        INSERT INTO customs_declarations (
-          id, delivery_order_id, declaration_number, channel, status, lane_status, telex_released,
-          telex_released_at, submitted_at, cleared_at, notes, updated_by, created_at, updated_at
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-        ON CONFLICT (delivery_order_id) DO NOTHING
-      `,
-      [
+  await batchInsert(
+    client,
+    'customs_declarations',
+    [
+      'id',
+      'delivery_order_id',
+      'declaration_number',
+      'channel',
+      'status',
+      'lane_status',
+      'telex_released',
+      'telex_released_at',
+      'submitted_at',
+      'cleared_at',
+      'notes',
+      'updated_by',
+      'created_at',
+      'updated_at',
+    ],
+    preserved.customs
+      .filter((item) => deliveryOrderIds.has(stringValue(item.delivery_order_id)))
+      .map((row) => [
         row.id,
         row.delivery_order_id,
         row.declaration_number,
@@ -607,122 +845,48 @@ async function restoreDeliverySideTables(
         row.updated_by,
         row.created_at,
         row.updated_at,
-      ],
+      ]),
+    'ON CONFLICT (delivery_order_id) DO NOTHING',
+  );
+}
+
+async function batchInsert(
+  client: DatabaseClient,
+  table: string,
+  columns: string[],
+  rows: unknown[][],
+  conflictClause = '',
+) {
+  if (rows.length === 0) {
+    return;
+  }
+
+  const batchSize = Math.max(1, Math.floor(MAX_BATCH_INSERT_PARAMS / columns.length));
+  for (let index = 0; index < rows.length; index += batchSize) {
+    const batch = rows.slice(index, index + batchSize);
+    const values: unknown[] = [];
+    const placeholders = batch.map((row) => {
+      if (row.length !== columns.length) {
+        throw new Error(`Invalid batch insert row for ${table}: expected ${columns.length}, got ${row.length}.`);
+      }
+
+      return `(${row
+        .map((value) => {
+          values.push(value);
+          return `$${values.length}`;
+        })
+        .join(', ')})`;
+    });
+
+    await client.query(
+      `
+        INSERT INTO ${table} (${columns.join(', ')})
+        VALUES ${placeholders.join(', ')}
+        ${conflictClause}
+      `,
+      values,
     );
   }
-}
-
-async function insertPurchaseRequestLine(line: PurchaseRequestLineItem, purchaseRequestId: string, client: DatabaseClient) {
-  await client.query(
-    `
-      INSERT INTO purchase_request_lines (
-        id, purchase_request_id, item_code, item_name, quantity, unit,
-        warehouse_deadline_date, warehouse_code, production_contract_number,
-        linked_po_numbers, linked_do_numbers
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-    `,
-    [
-      line.id,
-      purchaseRequestId,
-      line.item_code,
-      line.item_name,
-      line.quantity,
-      line.unit,
-      line.warehouse_deadline_date,
-      line.warehouse_code,
-      line.production_contract_number,
-      line.linked_po_numbers,
-      line.linked_do_numbers,
-    ],
-  );
-}
-
-async function insertPurchaseOrderLine(line: PurchaseOrderLineItem, purchaseOrderId: string, client: DatabaseClient) {
-  await client.query(
-    `
-      INSERT INTO purchase_order_lines (
-        id, purchase_order_id, source_pr_code, source_pr_line_id, item_code, item_name,
-        quantity, unit, warehouse_deadline_date, warehouse_code
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-    `,
-    [
-      line.id,
-      purchaseOrderId,
-      line.source_pr_code,
-      line.source_pr_line_id,
-      line.item_code,
-      line.item_name,
-      line.quantity,
-      line.unit,
-      line.warehouse_deadline_date,
-      line.warehouse_code,
-    ],
-  );
-}
-
-async function insertEfmsTransport(order: DeliveryOrder, client: DatabaseClient) {
-  const suffix = order.order_info.order_number.slice(-6);
-  await client.query(
-    `
-      INSERT INTO efms_transport_records (
-        id, delivery_order_id, incoterms, shipping_method, shipping_line, vessel_code,
-        booking_number, mbl_number, mbl_type, hbl_number, manifest_number, port_of_departure,
-        port_of_destination, cut_off_date, etd_planned, eta_planned, actual_departure_at,
-        actual_arrival_at, documents_list, missing_documents, gross_weight, cbm
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
-    `,
-    [
-      `efms-${order.id}`,
-      order.id,
-      order.logistics_shipping.incoterms,
-      order.logistics_shipping.shipping_method,
-      order.logistics_shipping.shipping_line,
-      order.logistics_shipping.vessel_code,
-      `BOOK-${suffix}`,
-      `MBL-${suffix}`,
-      'ORIGINAL',
-      `HBL-${suffix}`,
-      `MAN-${suffix}`,
-      order.logistics_shipping.port_of_departure,
-      order.logistics_shipping.port_of_destination,
-      order.logistics_shipping.cut_off_date,
-      order.logistics_shipping.etd_planned,
-      order.logistics_shipping.eta_planned,
-      null,
-      null,
-      order.logistics_shipping.documents_list,
-      order.logistics_shipping.missing_documents,
-      Math.max(1, order.product_details.quantity * 12),
-      Math.max(1, Math.round(order.product_details.quantity / 18)),
-    ],
-  );
-}
-
-async function insertDeliverySourceLine(line: DeliveryOrder['source_lines'][number], deliveryOrderId: string, client: DatabaseClient) {
-  await client.query(
-    `
-      INSERT INTO delivery_order_source_lines (
-        id, delivery_order_id, po_number, po_line_id, request_code, pr_line_id,
-        item_code, item_name, quantity, unit
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-    `,
-    [
-      line.id,
-      deliveryOrderId,
-      line.po_number,
-      line.po_line_id,
-      line.request_code,
-      line.pr_line_id,
-      line.item_code,
-      line.item_name,
-      line.quantity,
-      line.unit,
-    ],
-  );
 }
 
 async function readUserRefs(client: DatabaseClient) {
@@ -786,12 +950,43 @@ function toDeliverySourceLine(row: Row): DeliveryOrder['source_lines'][number] {
   };
 }
 
-function summarizeTasks(tasks: LogisticsTask[]): DeliveryOrder['task_summary'] {
+function buildTaskSummaries(rows: Row[]) {
+  const summaries = new Map<string, DeliveryOrder['task_summary']>();
+
+  for (const row of rows) {
+    const doNumber = stringValue(row.do_number);
+    if (!doNumber) {
+      continue;
+    }
+
+    const summary = summaries.get(doNumber) ?? emptyTaskSummary();
+    const status = stringValue(row.status);
+    summary.total_tasks += 1;
+
+    if (status === 'COMPLETED') {
+      summary.completed_tasks += 1;
+    }
+
+    if (status === 'BLOCKED') {
+      summary.blocked_tasks += 1;
+    }
+
+    if (booleanValue(row.is_required_for_do_closure) && status !== 'COMPLETED') {
+      summary.required_tasks_remaining += 1;
+    }
+
+    summaries.set(doNumber, summary);
+  }
+
+  return summaries;
+}
+
+function emptyTaskSummary(): DeliveryOrder['task_summary'] {
   return {
-    total_tasks: tasks.length,
-    completed_tasks: tasks.filter((task) => task.status === 'COMPLETED').length,
-    blocked_tasks: tasks.filter((task) => task.status === 'BLOCKED').length,
-    required_tasks_remaining: tasks.filter((task) => task.is_required_for_do_closure && task.status !== 'COMPLETED').length,
+    total_tasks: 0,
+    completed_tasks: 0,
+    blocked_tasks: 0,
+    required_tasks_remaining: 0,
   };
 }
 

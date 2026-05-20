@@ -5,6 +5,7 @@ import {
   Drawer,
   Group,
   Loader,
+  Pagination,
   Paper,
   Progress,
   ScrollArea,
@@ -48,6 +49,8 @@ const priorityColor = {
   URGENT: 'red',
 } as const;
 
+const TASK_PAGE_SIZE = 120;
+
 export function Tasks() {
   const { flowTagLabel, priorityLabel, statusLabel, t, taskRoleLabel } = useI18n();
   const [searchParams] = useSearchParams();
@@ -56,6 +59,7 @@ export function Tasks() {
   const { value: focusedPr } = useEntityParam('pr');
   const { close: closeTaskParam, open: openTaskParam, value: focusedTask } = useEntityParam('task');
   const [selectedTask, setSelectedTask] = useState<LogisticsTask | null>(null);
+  const [page, setPage] = useState(1);
   const search = useWorkspaceStore((state) => state.taskSearch);
   const statusFilter = useWorkspaceStore((state) => state.taskStatusFilter);
   const roleFilter = useWorkspaceStore((state) => state.taskRoleFilter);
@@ -78,6 +82,10 @@ export function Tasks() {
   const tasks = tasksQuery.data ?? [];
   const deliveryOrders = deliveryOrdersQuery.data ?? [];
   const isFetching = tasksQuery.isFetching;
+  const deliveryOrderFlowTagsByNumber = useMemo(
+    () => new Map(deliveryOrders.map((order) => [order.order_info.order_number, order.flow_tags])),
+    [deliveryOrders],
+  );
 
   useEffect(() => {
     if (roleParam) {
@@ -111,8 +119,8 @@ export function Tasks() {
       const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
       const matchesRole = roleFilter === 'all' || task.role === roleFilter;
       const matchesRequired = !requiredOnly || task.is_required_for_do_closure;
-      const parentDeliveryOrder = deliveryOrders.find((order) => order.order_info.order_number === task.do_number);
-      const matchesFlow = flowFilter === 'all' || Boolean(parentDeliveryOrder?.flow_tags.includes(flowFilter));
+      const parentFlowTags = deliveryOrderFlowTagsByNumber.get(task.do_number) ?? [];
+      const matchesFlow = flowFilter === 'all' || parentFlowTags.includes(flowFilter);
       const matchesSearch = [
         task.task_id,
         task.task_name,
@@ -128,7 +136,26 @@ export function Tasks() {
 
       return matchesFlowContext && matchesStatus && matchesRole && matchesRequired && matchesFlow && matchesSearch;
     });
-  }, [deliveryOrders, flowFilter, focusedDo, focusedPr, requiredOnly, roleFilter, search, statusFilter, tasks]);
+  }, [deliveryOrderFlowTagsByNumber, flowFilter, focusedDo, focusedPr, requiredOnly, roleFilter, search, statusFilter, tasks]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [flowFilter, focusedDo, focusedPr, requiredOnly, roleFilter, search, statusFilter]);
+
+  const pageCount = Math.max(1, Math.ceil(filteredTasks.length / TASK_PAGE_SIZE));
+
+  useEffect(() => {
+    if (page > pageCount) {
+      setPage(pageCount);
+    }
+  }, [page, pageCount]);
+
+  const visibleTasks = useMemo(() => {
+    const startIndex = (page - 1) * TASK_PAGE_SIZE;
+    return filteredTasks.slice(startIndex, startIndex + TASK_PAGE_SIZE);
+  }, [filteredTasks, page]);
+  const pageStart = filteredTasks.length === 0 ? 0 : (page - 1) * TASK_PAGE_SIZE + 1;
+  const pageEnd = Math.min(filteredTasks.length, page * TASK_PAGE_SIZE);
 
   const today = dayjs().startOf('day');
   const isOverdue = (task: LogisticsTask) => task.status !== 'COMPLETED' && dayjs(task.due_date).isBefore(today, 'day');
@@ -291,7 +318,7 @@ export function Tasks() {
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {filteredTasks.map((task) => (
+              {visibleTasks.map((task) => (
                 <Table.Tr key={task.task_id}>
                   <Table.Td className="table-cell-truncate" style={{ maxWidth: '20rem' }}>
                     <Text fw={700} lineClamp={1} title={task.task_name}>{task.task_name}</Text>
@@ -356,6 +383,14 @@ export function Tasks() {
             </Table.Tbody>
           </Table>
         </ScrollArea>
+        {filteredTasks.length > TASK_PAGE_SIZE ? (
+          <Group justify="space-between" p="md">
+            <Text size="sm" c="dimmed">
+              {pageStart}-{pageEnd} / {filteredTasks.length}
+            </Text>
+            <Pagination total={pageCount} value={page} onChange={setPage} size="sm" />
+          </Group>
+        ) : null}
         {filteredTasks.length === 0 ? (
           <EmptyState title={t('tasks.emptyTitle')} description={t('tasks.emptyDescription')} />
         ) : null}

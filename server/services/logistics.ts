@@ -1320,6 +1320,12 @@ export function classifyPurchaseOrders(purchaseOrders: PurchaseOrder[], delivery
       purchaseOrdersByPr.set(prCode, (purchaseOrdersByPr.get(prCode) ?? 0) + 1);
     }
   }
+  const consolidatedDeliveryOrders = new Map(
+    deliveryOrders.map((deliveryOrder) => [
+      deliveryOrder.order_info.order_number,
+      new Set(deliveryOrder.source_lines.map((line) => line.po_number)).size > 1,
+    ]),
+  );
 
   return purchaseOrders.map((order) => {
     const tags = new Set<BusinessFlowTag>();
@@ -1336,13 +1342,7 @@ export function classifyPurchaseOrders(purchaseOrders: PurchaseOrder[], delivery
       tags.add('PARTIAL_DELIVERY');
     }
 
-    if (
-      deliveryOrders.some(
-        (deliveryOrder) =>
-          order.linked_do_numbers.includes(deliveryOrder.order_info.order_number) &&
-          new Set(deliveryOrder.source_lines.map((line) => line.po_number)).size > 1,
-      )
-    ) {
+    if (order.linked_do_numbers.some((orderNumber) => consolidatedDeliveryOrders.get(orderNumber))) {
       tags.add('CONTAINER_CONSOLIDATION');
     }
 
@@ -1519,14 +1519,18 @@ function resolveOriginalWarehouseDeadline(
 }
 
 function syncPurchaseOrderStatuses(purchaseOrders: PurchaseOrder[], deliveryOrders: DeliveryOrder[]) {
+  const deliveryOrderByNumber = new Map(
+    deliveryOrders.map((deliveryOrder) => [deliveryOrder.order_info.order_number, deliveryOrder]),
+  );
+
   return purchaseOrders.map((purchaseOrder) => {
     if (purchaseOrder.linked_do_numbers.length === 0) {
       return purchaseOrder;
     }
 
-    const linkedDeliveryOrders = deliveryOrders.filter((deliveryOrder) =>
-      purchaseOrder.linked_do_numbers.includes(deliveryOrder.order_info.order_number),
-    );
+    const linkedDeliveryOrders = purchaseOrder.linked_do_numbers
+      .map((orderNumber) => deliveryOrderByNumber.get(orderNumber))
+      .filter((deliveryOrder): deliveryOrder is DeliveryOrder => Boolean(deliveryOrder));
 
     if (linkedDeliveryOrders.length === 0) {
       return purchaseOrder;
