@@ -5,7 +5,6 @@ import {
   Drawer,
   Group,
   Loader,
-  Pagination,
   Paper,
   Progress,
   ScrollArea,
@@ -27,6 +26,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 
 import { EmptyState } from '../components/EmptyState';
 import { EntityLink } from '../components/EntityLink';
+import { ListPagination, useListPagination } from '../components/ListPagination';
 import { PageError, PageLoading } from '../components/PageFeedback';
 import { StatusBadge } from '../components/StatusBadge';
 import { UpdateTaskProgressForm } from '../components/UpdateOrderForms';
@@ -49,8 +49,6 @@ const priorityColor = {
   URGENT: 'red',
 } as const;
 
-const TASK_PAGE_SIZE = 120;
-
 export function Tasks() {
   const { flowTagLabel, priorityLabel, statusLabel, t, taskRoleLabel } = useI18n();
   const [searchParams] = useSearchParams();
@@ -59,7 +57,6 @@ export function Tasks() {
   const { value: focusedPr } = useEntityParam('pr');
   const { close: closeTaskParam, open: openTaskParam, value: focusedTask } = useEntityParam('task');
   const [selectedTask, setSelectedTask] = useState<LogisticsTask | null>(null);
-  const [page, setPage] = useState(1);
   const search = useWorkspaceStore((state) => state.taskSearch);
   const statusFilter = useWorkspaceStore((state) => state.taskStatusFilter);
   const roleFilter = useWorkspaceStore((state) => state.taskRoleFilter);
@@ -138,24 +135,14 @@ export function Tasks() {
     });
   }, [deliveryOrderFlowTagsByNumber, flowFilter, focusedDo, focusedPr, requiredOnly, roleFilter, search, statusFilter, tasks]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [flowFilter, focusedDo, focusedPr, requiredOnly, roleFilter, search, statusFilter]);
-
-  const pageCount = Math.max(1, Math.ceil(filteredTasks.length / TASK_PAGE_SIZE));
-
-  useEffect(() => {
-    if (page > pageCount) {
-      setPage(pageCount);
-    }
-  }, [page, pageCount]);
-
-  const visibleTasks = useMemo(() => {
-    const startIndex = (page - 1) * TASK_PAGE_SIZE;
-    return filteredTasks.slice(startIndex, startIndex + TASK_PAGE_SIZE);
-  }, [filteredTasks, page]);
-  const pageStart = filteredTasks.length === 0 ? 0 : (page - 1) * TASK_PAGE_SIZE + 1;
-  const pageEnd = Math.min(filteredTasks.length, page * TASK_PAGE_SIZE);
+  const {
+    page,
+    pageCount,
+    pageEnd,
+    pageStart,
+    setPage,
+    visibleItems: visibleTasks,
+  } = useListPagination(filteredTasks, [flowFilter, focusedDo, focusedPr, requiredOnly, roleFilter, search, statusFilter]);
 
   const today = dayjs().startOf('day');
   const isOverdue = (task: LogisticsTask) => task.status !== 'COMPLETED' && dayjs(task.due_date).isBefore(today, 'day');
@@ -383,14 +370,14 @@ export function Tasks() {
             </Table.Tbody>
           </Table>
         </ScrollArea>
-        {filteredTasks.length > TASK_PAGE_SIZE ? (
-          <Group justify="space-between" p="md">
-            <Text size="sm" c="dimmed">
-              {pageStart}-{pageEnd} / {filteredTasks.length}
-            </Text>
-            <Pagination total={pageCount} value={page} onChange={setPage} size="sm" />
-          </Group>
-        ) : null}
+        <ListPagination
+          page={page}
+          pageCount={pageCount}
+          pageEnd={pageEnd}
+          pageStart={pageStart}
+          setPage={setPage}
+          total={filteredTasks.length}
+        />
         {filteredTasks.length === 0 ? (
           <EmptyState title={t('tasks.emptyTitle')} description={t('tasks.emptyDescription')} />
         ) : null}

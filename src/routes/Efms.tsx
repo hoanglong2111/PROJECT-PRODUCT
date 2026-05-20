@@ -72,6 +72,7 @@ import {
   type TaskRole,
 } from '../api/logistics';
 import { EmptyState } from '../components/EmptyState';
+import { ListPagination, useListPagination } from '../components/ListPagination';
 import { StatusBadge } from '../components/StatusBadge';
 import { useI18n } from '../i18n';
 
@@ -175,6 +176,14 @@ function EfmsList() {
       return haystack.includes(normalizedSearch);
     });
   }, [deliveryOrders, search]);
+  const {
+    page,
+    pageCount,
+    pageEnd,
+    pageStart,
+    setPage,
+    visibleItems: visibleOrders,
+  } = useListPagination(filteredOrders, [search]);
 
   return (
     <Stack gap="lg">
@@ -212,7 +221,7 @@ function EfmsList() {
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {filteredOrders.map((order) => (
+            {visibleOrders.map((order) => (
               <Table.Tr key={order.id}>
                 <Table.Td>
                   <Text fw={700}>{order.order_info.order_number}</Text>
@@ -253,6 +262,14 @@ function EfmsList() {
         {filteredOrders.length === 0 ? (
           <EmptyState title={t('efms.emptyTitle')} description={t('efms.emptyDescription')} />
         ) : null}
+        <ListPagination
+          page={page}
+          pageCount={pageCount}
+          pageEnd={pageEnd}
+          pageStart={pageStart}
+          setPage={setPage}
+          total={filteredOrders.length}
+        />
       </Paper>
     </Stack>
   );

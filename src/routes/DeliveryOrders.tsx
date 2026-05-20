@@ -50,6 +50,7 @@ import { DelayBadge } from '../components/DelayBadge';
 import { EmptyState } from '../components/EmptyState';
 import { EntityLink } from '../components/EntityLink';
 import { FlowTagBadge } from '../components/FlowTagBadge';
+import { ListPagination, useListPagination } from '../components/ListPagination';
 import { PageError, PageLoading } from '../components/PageFeedback';
 import { SourceLineTable } from '../components/SourceLineTable';
 import { StatusBadge } from '../components/StatusBadge';
@@ -195,6 +196,14 @@ export function DeliveryOrders() {
       return statusMatchesTab && matchesFlow && matchesRisk && matchesSearch;
     });
   }, [activeTab, deliveryOrders, flowFilter, riskOnly, search, statusParam]);
+  const {
+    page,
+    pageCount,
+    pageEnd,
+    pageStart,
+    setPage,
+    visibleItems: visibleDeliveryOrders,
+  } = useListPagination(filteredDeliveryOrders, [activeTab, flowFilter, riskOnly, search, statusParam]);
 
   const tabCounts = useMemo(
     () => ({
@@ -372,7 +381,7 @@ export function DeliveryOrders() {
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {filteredDeliveryOrders.map((deliveryOrder) => {
+              {visibleDeliveryOrders.map((deliveryOrder) => {
                 const ShippingIcon = shippingIcon[deliveryOrder.logistics_shipping.shipping_method];
                 const delay = calcDelay({
                   actualEntryDate: deliveryOrder.warehouse_tracking.actual_entry_date,
@@ -486,6 +495,14 @@ export function DeliveryOrders() {
         {filteredDeliveryOrders.length === 0 ? (
           <EmptyState title={t('deliveryOrders.emptyTitle')} description={t('deliveryOrders.emptyDescription')} />
         ) : null}
+        <ListPagination
+          page={page}
+          pageCount={pageCount}
+          pageEnd={pageEnd}
+          pageStart={pageStart}
+          setPage={setPage}
+          total={filteredDeliveryOrders.length}
+        />
       </Paper>
 
       <Drawer opened={Boolean(selectedDeliveryOrder)} onClose={closeDetail} title={t('deliveryOrders.detailTitle')} position="right" size="xl">

@@ -32,6 +32,7 @@ import { EmptyState } from '../components/EmptyState';
 import { EntityLink } from '../components/EntityLink';
 import { FilterToolbar } from '../components/FilterToolbar';
 import { FlowTagBadge } from '../components/FlowTagBadge';
+import { ListPagination, useListPagination } from '../components/ListPagination';
 import { PageError, PageLoading } from '../components/PageFeedback';
 import { SourceLineTable } from '../components/SourceLineTable';
 import { StatusBadge } from '../components/StatusBadge';
@@ -135,6 +136,14 @@ export function PurchaseRequests() {
       return matchesTab && matchesStatus && matchesRisk && matchesSearch && matchesMonth;
     });
   }, [activeTab, purchaseOrders, purchaseRequests, riskOnly, search, statusFilter, monthParam]);
+  const {
+    page,
+    pageCount,
+    pageEnd,
+    pageStart,
+    setPage,
+    visibleItems: visiblePurchaseRequests,
+  } = useListPagination(filteredPurchaseRequests, [activeTab, monthParam, riskOnly, search, statusFilter]);
 
   const tabCounts = useMemo(
     () => ({
@@ -291,7 +300,7 @@ export function PurchaseRequests() {
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {filteredPurchaseRequests.map((request) => {
+              {visiblePurchaseRequests.map((request) => {
                 const delay = calcDelay({
                   actualEntryDate: request.actual_warehouse_entry_date,
                   plannedEntryDate: request.expected_arrival_date,
@@ -355,6 +364,14 @@ export function PurchaseRequests() {
         {filteredPurchaseRequests.length === 0 ? (
           <EmptyState title={t('purchaseRequests.emptyTitle')} description={t('purchaseRequests.emptyDescription')} />
         ) : null}
+        <ListPagination
+          page={page}
+          pageCount={pageCount}
+          pageEnd={pageEnd}
+          pageStart={pageStart}
+          setPage={setPage}
+          total={filteredPurchaseRequests.length}
+        />
       </Paper>
 
       <CreatePurchaseRequestDrawer

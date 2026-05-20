@@ -43,6 +43,7 @@ import {
   type ShippingMode,
 } from '../api/logistics';
 import { getApiErrorMessage } from '../api/http';
+import { ListPagination, useListPagination } from '../components/ListPagination';
 import { StatusBadge } from '../components/StatusBadge';
 import { useI18n, type MessageKey } from '../i18n';
 
@@ -90,6 +91,14 @@ export function Quotations() {
       return haystack.includes(normalizedSearch);
     });
   }, [quotations, search]);
+  const {
+    page,
+    pageCount,
+    pageEnd,
+    pageStart,
+    setPage,
+    visibleItems: visibleQuotations,
+  } = useListPagination(filteredQuotations, [search]);
 
   const selectedQuotation = selectedId
     ? filteredQuotations.find((item) => item.id === selectedId) ?? quotations.find((item) => item.id === selectedId) ?? null
@@ -174,7 +183,7 @@ export function Quotations() {
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {filteredQuotations.map((quotation) => {
+            {visibleQuotations.map((quotation) => {
               const slaInfo = getSlaInfo(quotation);
               const isOverdue = slaInfo?.dueAt ? dayjs(slaInfo.dueAt).isBefore(dayjs()) : false;
 
@@ -242,6 +251,14 @@ export function Quotations() {
             {t('quotations.emptyDescription')}
           </Text>
         ) : null}
+        <ListPagination
+          page={page}
+          pageCount={pageCount}
+          pageEnd={pageEnd}
+          pageStart={pageStart}
+          setPage={setPage}
+          total={filteredQuotations.length}
+        />
       </Paper>
 
       <Drawer

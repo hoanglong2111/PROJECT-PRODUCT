@@ -26,6 +26,7 @@ import { useSearchParams } from 'react-router-dom';
 import { createUser, fetchUsers, type CreateUserPayload } from '../api/system';
 import { APP_ROLES, type AppRole } from '../auth/types';
 import { useAuth } from '../auth/useAuth';
+import { ListPagination, useListPagination } from '../components/ListPagination';
 import { PageError, PageLoading } from '../components/PageFeedback';
 import { useI18n } from '../i18n';
 import {
@@ -55,6 +56,15 @@ export function Settings() {
     queryFn: fetchUsers,
     enabled: isAdmin,
   });
+  const users = usersQuery.data ?? [];
+  const {
+    page,
+    pageCount,
+    pageEnd,
+    pageStart,
+    setPage,
+    visibleItems: visibleUsers,
+  } = useListPagination(users);
 
   const form = useForm<CreateUserForm>({
     initialValues: {
@@ -274,7 +284,7 @@ export function Settings() {
               <Paper withBorder p="lg">
                 <Group justify="space-between" mb="md">
                   <Text fw={700}>{t('settings.accounts')}</Text>
-                  <Badge variant="light">{t('common.users', { count: usersQuery.data?.length ?? 0 })}</Badge>
+                  <Badge variant="light">{t('common.users', { count: users.length })}</Badge>
                 </Group>
                 <Table.ScrollContainer minWidth={780}>
                   <Table highlightOnHover verticalSpacing="sm">
@@ -288,7 +298,7 @@ export function Settings() {
                       </Table.Tr>
                     </Table.Thead>
                     <Table.Tbody>
-                      {(usersQuery.data ?? []).map((account) => (
+                      {visibleUsers.map((account) => (
                         <Table.Tr
                           className={highlightedAccount === account.id ? 'settings-account-row-highlight' : undefined}
                           key={account.id}
@@ -318,6 +328,14 @@ export function Settings() {
                     </Table.Tbody>
                   </Table>
                 </Table.ScrollContainer>
+                <ListPagination
+                  page={page}
+                  pageCount={pageCount}
+                  pageEnd={pageEnd}
+                  pageStart={pageStart}
+                  setPage={setPage}
+                  total={users.length}
+                />
               </Paper>
             </Stack>
           )}

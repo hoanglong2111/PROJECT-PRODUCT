@@ -21,6 +21,7 @@ import { useMemo, useState } from 'react';
 
 import { fetchExchangeRates } from '../api/system';
 import { EmptyState } from '../components/EmptyState';
+import { ListPagination, useListPagination } from '../components/ListPagination';
 import { PageError, PageLoading } from '../components/PageFeedback';
 import { useI18n } from '../i18n';
 
@@ -70,6 +71,14 @@ export function ExchangeRates() {
       return item.currency.includes(normalizedSearch) || label.includes(normalizedSearch);
     });
   }, [currencyLabel, rates, search]);
+  const {
+    page,
+    pageCount,
+    pageEnd,
+    pageStart,
+    setPage,
+    visibleItems: visibleRates,
+  } = useListPagination(filteredRates, [baseCurrency, search]);
 
   const quickRates = useMemo(
     () =>
@@ -265,7 +274,7 @@ export function ExchangeRates() {
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {filteredRates.map((item) => (
+                {visibleRates.map((item) => (
                   <Table.Tr key={item.currency}>
                     <Table.Td>
                       <Text fw={700}>{currencyLabel(item.currency)}</Text>
@@ -281,6 +290,14 @@ export function ExchangeRates() {
             </Table>
           </ScrollArea>
         )}
+        <ListPagination
+          page={page}
+          pageCount={pageCount}
+          pageEnd={pageEnd}
+          pageStart={pageStart}
+          setPage={setPage}
+          total={filteredRates.length}
+        />
       </Paper>
     </Stack>
   );

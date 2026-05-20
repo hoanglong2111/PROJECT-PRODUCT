@@ -27,6 +27,7 @@ import { CreatePurchaseOrderDrawer } from '../components/CreateOrderForms';
 import { EntityLink } from '../components/EntityLink';
 import { FilterToolbar } from '../components/FilterToolbar';
 import { FlowTagBadge } from '../components/FlowTagBadge';
+import { ListPagination, useListPagination } from '../components/ListPagination';
 import { PageError, PageLoading } from '../components/PageFeedback';
 import { StatusBadge } from '../components/StatusBadge';
 import { EmptyState } from '../components/EmptyState';
@@ -103,6 +104,14 @@ export function PurchaseOrders() {
       return matchesTab && matchesSearch && matchesMonth;
     });
   }, [activeTab, purchaseOrders, search, monthParam]);
+  const {
+    page,
+    pageCount,
+    pageEnd,
+    pageStart,
+    setPage,
+    visibleItems: visiblePurchaseOrders,
+  } = useListPagination(filteredPurchaseOrders, [activeTab, monthParam, search]);
 
   const tabCounts = useMemo(
     () => ({
@@ -221,7 +230,7 @@ export function PurchaseOrders() {
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {filteredPurchaseOrders.map((order) => (
+                {visiblePurchaseOrders.map((order) => (
                   <Table.Tr key={order.id}>
                     <Table.Td className="table-cell-truncate" style={{ maxWidth: '20rem' }}>
                       <Text fw={700} lineClamp={1} title={order.po_number}>{order.po_number}</Text>
@@ -278,6 +287,14 @@ export function PurchaseOrders() {
             </Table>
           </ScrollArea>
         )}
+        <ListPagination
+          page={page}
+          pageCount={pageCount}
+          pageEnd={pageEnd}
+          pageStart={pageStart}
+          setPage={setPage}
+          total={filteredPurchaseOrders.length}
+        />
       </Paper>
 
       <CreatePurchaseOrderDrawer

@@ -39,6 +39,7 @@ import {
 import { DelayBadge } from '../components/DelayBadge';
 import { EntityLink } from '../components/EntityLink';
 import { FlowTagBadge } from '../components/FlowTagBadge';
+import { ListPagination, useListPagination } from '../components/ListPagination';
 import { PageError, PageLoading } from '../components/PageFeedback';
 import { useI18n } from '../i18n';
 import { calcDelay } from '../utils/delay';
@@ -159,6 +160,14 @@ export function Workflow() {
   });
 
   const activeRows = visibleRows.length > 0 ? visibleRows : rows;
+  const {
+    page,
+    pageCount,
+    pageEnd,
+    pageStart,
+    setPage,
+    visibleItems: pagedRows,
+  } = useListPagination(activeRows, [activeTab, focusedDo, focusedPr]);
   const blockedTaskCount = tasks.filter((task) => task.status === 'BLOCKED').length;
   const missingDocumentCount = deliveryOrders.reduce(
     (total, deliveryOrder) => total + deliveryOrder.logistics_shipping.missing_documents.length,
@@ -267,7 +276,7 @@ export function Workflow() {
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {activeRows.map(({ deliveryOrder, linkedPurchaseOrders, purchaseRequest }) => {
+              {pagedRows.map(({ deliveryOrder, linkedPurchaseOrders, purchaseRequest }) => {
                 const linkedPo = deliveryOrder?.sap_integration.po_number ?? purchaseRequest.linked_po_numbers[0] ?? null;
                 const flowTags = Array.from(
                   new Set<BusinessFlowTag>([
@@ -384,6 +393,14 @@ export function Workflow() {
             </Table.Tbody>
           </Table>
         </ScrollArea>
+        <ListPagination
+          page={page}
+          pageCount={pageCount}
+          pageEnd={pageEnd}
+          pageStart={pageStart}
+          setPage={setPage}
+          total={activeRows.length}
+        />
       </Paper>
     </Stack>
   );
