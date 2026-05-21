@@ -1,5 +1,5 @@
 import type { PurchaseRequest } from '../../../src/models/logistics';
-import { createPurchaseRequest, updatePurchaseRequest, updatePurchaseRequestStatus } from '../../services/logistics';
+import { createPurchaseRequest, updatePurchaseRequest, updatePurchaseRequestStatus } from '../../services/logisticsPurchaseRequests';
 import { readSnapshot } from '../../services/logisticsSnapshots';
 import { normalizePurchaseRequest } from '../../services/logisticsTransforms';
 

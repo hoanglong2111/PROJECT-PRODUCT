@@ -35,7 +35,7 @@ Use the existing stack: React, TypeScript, Vite, React Router, TanStack Query, Z
 - Shared UI: `src/shared/components/*`
 - Delay: `src/shared/utils/delay.ts`
 - Shell: `src/shared/components/AppShellLayout.tsx`
-- Legacy `src/routes`, `src/components`, `src/hooks`, `src/stores`, and `src/utils` paths may exist only as compatibility re-exports.
+- Legacy `src/components`, `src/hooks`, `src/stores`, and `src/utils` paths may exist only as compatibility re-exports; route compatibility files have been removed.
 
 ## State Ownership
 

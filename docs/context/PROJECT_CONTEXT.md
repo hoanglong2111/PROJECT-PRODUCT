@@ -21,7 +21,7 @@ For detailed eFMS job flow, SI/Manifest/HBL/container fields, assignment, attach
 | App shell/routing | `src/app/App.tsx`, `src/app/routes.tsx`, `src/app/routeRoles.ts` |
 | Feature pages | `src/features/<feature>/page.tsx` with feature-local components/hooks/constants |
 | Shared frontend | `src/shared/api`, `src/shared/auth`, `src/shared/components`, `src/shared/i18n`, `src/shared/stores`, `src/shared/theme`, `src/shared/utils` |
-| Compatibility frontend exports | Legacy `src/api`, `src/auth`, `src/components`, `src/hooks`, `src/i18n`, `src/routes`, `src/stores`, `src/theme`, and `src/utils` paths |
+| Compatibility frontend exports | Legacy `src/api`, `src/auth`, `src/components`, `src/hooks`, `src/i18n`, `src/stores`, `src/theme`, and `src/utils` paths |
 | Backend bootstrap | `server/index.ts` |
 | Backend route/service modules | `server/modules/<domain>/routes.ts` and `service.ts` |
 | Shared backend services | `server/services/normalizedStore.ts`, `sop*.ts`, `logistics*.ts`, `exchangeRates.ts` |
@@ -96,7 +96,7 @@ Closing a detail surface must remove only its own entity param and preserve unre
 - Supplier, warehouse, and material master maintenance screens are not separated into dedicated modules yet.
 - External SAP is represented by local sync state/audit behavior, not a live SAP adapter.
 - DO closure readiness exists as validation/derived state, but an explicit close action remains future workflow work.
-- Legacy compatibility exports still exist while imports are migrated to `src/app`, `src/features`, and `src/shared`.
+- Some legacy compatibility exports still exist outside routing while imports are migrated to `src/app`, `src/features`, and `src/shared`.
 
 ## Canonical Docs
 

@@ -1,10 +1,6 @@
 import type { DeliveryOrder, PurchaseOrder } from '../../../src/models/logistics';
-import {
-  attachDeliveryOrderDocument,
-  createDeliveryOrder,
-  listDeliveryOrderAttachments,
-  updateDeliveryOrder,
-} from '../../services/logistics';
+import { createDeliveryOrder, updateDeliveryOrder } from '../../services/logistics';
+import { attachDeliveryOrderDocument, listDeliveryOrderAttachments } from '../../services/logisticsAttachments';
 import { readSnapshot } from '../../services/logisticsSnapshots';
 import {
   classifyDeliveryOrders,

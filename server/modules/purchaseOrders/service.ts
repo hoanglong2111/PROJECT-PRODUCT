@@ -1,5 +1,5 @@
 import type { DeliveryOrder, PurchaseOrder } from '../../../src/models/logistics';
-import { createPurchaseOrder, syncPurchaseOrderWithSap } from '../../services/logistics';
+import { createPurchaseOrder, syncPurchaseOrderWithSap } from '../../services/logisticsPurchaseOrders';
 import { readSnapshot } from '../../services/logisticsSnapshots';
 import { classifyPurchaseOrders, normalizeDeliveryOrder, normalizePurchaseOrder } from '../../services/logisticsTransforms';
 
