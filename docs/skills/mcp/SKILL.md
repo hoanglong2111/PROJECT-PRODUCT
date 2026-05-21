@@ -16,7 +16,7 @@ No MCP server exists yet. Treat this as the target contract.
 Current deploy reality:
 
 - FE is a Vite app built with `pnpm build` into `dist/`.
-- BE runs from `server/index.ts` with `pnpm start:be` or `pnpm dev:be`.
+- BE bootstraps from `server/index.ts` with `pnpm start:be` or `pnpm dev:be`; domain APIs are mounted from `server/modules/*`.
 - DB is PostgreSQL through `DATABASE_URL`.
 - Runtime schema uses normalized PostgreSQL logistics tables.
 - PR/PO/DO/tasks are physical business tables, with eFMS transport, finance notes, and task rows split by concern.

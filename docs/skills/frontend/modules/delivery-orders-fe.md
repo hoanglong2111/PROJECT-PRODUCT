@@ -1,6 +1,6 @@
 # Delivery Orders Frontend Module
 
-Use this when implementing `src/routes/DeliveryOrders.tsx`.
+Use this when implementing `src/features/delivery-orders/page.tsx`.
 
 ## Query
 

@@ -10,9 +10,22 @@ For detailed eFMS job flow, SI/Manifest/HBL/container fields, assignment, attach
 
 - Frontend: Vite, React, TypeScript, Mantine, Tabler Icons, React Router, TanStack Query, Zustand.
 - Backend: Express + normalized PostgreSQL tables in `server/`.
-- API client/types: `src/api/logistics.ts`.
+- API client/types: `src/api/logistics.ts` compatibility exports backed by `src/shared/api`.
 - Seed data: `server/seeds/logisticsSeed.ts`, loaded into normalized tables with `pnpm seed:logistics`.
 - MCP/RAG: not implemented yet.
+
+## Architecture Map
+
+| Area | Current location |
+|---|---|
+| App shell/routing | `src/app/App.tsx`, `src/app/routes.tsx`, `src/app/routeRoles.ts` |
+| Feature pages | `src/features/<feature>/page.tsx` with feature-local components/hooks/constants |
+| Shared frontend | `src/shared/api`, `src/shared/auth`, `src/shared/components`, `src/shared/i18n`, `src/shared/stores`, `src/shared/theme`, `src/shared/utils` |
+| Compatibility frontend exports | Legacy `src/api`, `src/auth`, `src/components`, `src/hooks`, `src/i18n`, `src/routes`, `src/stores`, `src/theme`, and `src/utils` paths |
+| Backend bootstrap | `server/index.ts` |
+| Backend route/service modules | `server/modules/<domain>/routes.ts` and `service.ts` |
+| Shared backend services | `server/services/normalizedStore.ts`, `sop*.ts`, `logistics*.ts`, `exchangeRates.ts` |
+
 
 ## Core Chain
 
@@ -78,13 +91,12 @@ Closing a detail surface must remove only its own entity param and preserve unre
 
 ## Current Gaps
 
-- No test framework yet.
-- No normalized PR/PO/DO/task tables yet.
-- No SAP sync action/audit log module yet.
-- No supplier, warehouse, material, document upload, or MCP modules yet.
-- No eFMS transport table for MBL/HBL/manifest/container data yet.
-- No customs lane workflow or two-touch finance-note module yet.
-- PR approval/reject and DO close gates are future workflow actions.
+- No dedicated test framework yet; verification is still `pnpm typecheck`, `pnpm build`, and manual smoke checks.
+- MCP/RAG integration remains design-stage documentation.
+- Supplier, warehouse, and material master maintenance screens are not separated into dedicated modules yet.
+- External SAP is represented by local sync state/audit behavior, not a live SAP adapter.
+- DO closure readiness exists as validation/derived state, but an explicit close action remains future workflow work.
+- Legacy compatibility exports still exist while imports are migrated to `src/app`, `src/features`, and `src/shared`.
 
 ## Canonical Docs
 
@@ -96,3 +108,5 @@ Closing a detail surface must remove only its own entity param and preserve unre
 - UI/UX: `docs/skills/ui-ux/SKILL.md`
 - ERP logistics UI: `docs/skills/ui-ux/erp-logistics-uiux.md`
 - Workflow: `docs/skills/workflow/SKILL.md`
+- Testing/QA: `docs/skills/testing-qa/SKILL.md`
+- MCP integration: `docs/skills/mcp/SKILL.md`

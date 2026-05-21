@@ -13,9 +13,11 @@ For SLA timers, customs lane behavior, eFMS transport data, SOP codes, and two-t
 
 ## Current Boundary
 
-- API lives in `server/index.ts`.
+- `server/index.ts` is bootstrap only: middleware, auth setup, route mounting, and listen/start.
+- API routes live in `server/modules/<domain>/routes.ts` with service wrappers in `service.ts`.
 - Persistence uses normalized PostgreSQL tables. Legacy helper names `readSnapshot`/`writeSnapshot` are backed by `server/services/normalizedStore.ts`.
-- Frontend calls through `src/api/logistics.ts`.
+- Shared backend behavior lives in `server/services/`, including `logistics*.ts`, `sop*.ts`, `exchangeRates.ts`, and reporting/transform helpers.
+- Frontend calls through `src/api/logistics.ts`, which is kept compatible while shared implementation lives under `src/shared/api`.
 - Keep legacy fields while moving write flows to `sourceLines[]`.
 
 ## API Style

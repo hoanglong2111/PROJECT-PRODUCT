@@ -26,13 +26,16 @@ Use the existing stack: React, TypeScript, Vite, React Router, TanStack Query, Z
 
 ## Source Map
 
-- Routes: `src/routes/*`
-- API/types: `src/api/logistics.ts`
-- Deep links: `src/hooks/useEntityParam.ts`
-- Shared state: `src/stores/workspaceStore.ts`
-- Shared UI: `src/components/*`
-- Delay: `src/utils/delay.ts`
-- Shell: `src/components/AppShellLayout.tsx`
+- App shell/routing: `src/app/App.tsx`, `src/app/routes.tsx`, `src/app/routeRoles.ts`
+- Feature route pages: `src/features/<feature>/page.tsx`
+- Feature-local UI/API/hooks/constants: `src/features/<feature>/components`, `api.ts`, `hooks.ts`, `constants.ts`
+- API/types compatibility: `src/api/logistics.ts`; shared API implementation lives under `src/shared/api`
+- Deep links: `src/shared/hooks/useEntityParam.ts`
+- Shared state: `src/shared/stores/workspaceStore.ts`
+- Shared UI: `src/shared/components/*`
+- Delay: `src/shared/utils/delay.ts`
+- Shell: `src/shared/components/AppShellLayout.tsx`
+- Legacy `src/routes`, `src/components`, `src/hooks`, `src/stores`, and `src/utils` paths may exist only as compatibility re-exports.
 
 ## State Ownership
 

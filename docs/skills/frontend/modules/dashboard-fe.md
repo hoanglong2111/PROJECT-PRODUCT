@@ -1,6 +1,6 @@
 # Dashboard Frontend Module
 
-Use this when implementing `src/routes/Dashboard.tsx`.
+Use this when implementing `src/features/dashboard/page.tsx`.
 
 ## Queries
 

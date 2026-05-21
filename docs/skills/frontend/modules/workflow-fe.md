@@ -1,6 +1,6 @@
 # Workflow Frontend Module
 
-Use this when implementing `src/routes/Workflow.tsx`.
+Use this when implementing `src/features/workflow/page.tsx`.
 
 ## Queries
 
