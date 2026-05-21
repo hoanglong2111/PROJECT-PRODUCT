@@ -11,13 +11,13 @@ Do not load all docs by default. Read the project context plus the smallest doma
 1. Read `docs/context/PROJECT_CONTEXT.md`.
 2. Read the specific file(s) mentioned by the request.
 3. Add one matching skill if needed:
-   - UI/UX: `docs/skills/ui-ux/UIUX_SKILL.md`
-   - Frontend: `docs/skills/frontend/FRONTEND_SKILL.md`
-   - Backend/API: `docs/skills/backend-api/BACKEND_API_SKILL.md`
-   - Data model: `docs/skills/data-model/DATA_MODEL_SKILL.md`
-   - Workflow: `docs/skills/workflow/WORKFLOW_BUSINESSFLOW_SKILL.md`
-   - Testing: `docs/skills/testing-qa/TESTING_QA_SKILL.md`
-   - MCP/RAG: `docs/skills/mcp/MCP_INTEGRATION_SKILL.md`
+   - UI/UX: `docs/skills/ui-ux/SKILL.md`
+   - Frontend: `docs/skills/frontend/SKILL.md`
+   - Backend/API: `docs/skills/backend-api/SKILL.md`
+   - Data model: `docs/skills/data-model/SKILL.md`
+   - Workflow: `docs/skills/workflow/SKILL.md`
+   - Testing: `docs/skills/testing-qa/SKILL.md`
+   - MCP/RAG: `docs/skills/mcp/SKILL.md`
 4. Edit only the requested scope.
 5. Update indexes or links when a new doc is created.
 

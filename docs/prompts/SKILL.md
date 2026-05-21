@@ -1,8 +1,30 @@
-# Skill Master Prompt
+---
+name: project-skill-creator
+description: Use when creating or updating concise project-local SKILL.md files for AI agents or subagents from a brief, workflow, tool rules, or project constraints.
+---
 
-Use this prompt template to create concise project-local `SKILL.md` files for AI agents/subagents.
+# Project Skill Creator
 
-## Input Template
+## Purpose
+
+Create or revise focused `SKILL.md` files that help an AI agent handle one reusable class of work in this project. The result should be practical, scoped, and easy for an agent to load without wasting context.
+
+## Use When
+
+- A user asks to create, update, review, or refine a skill.
+- Notes, prompts, workflows, or team conventions need to become a project-local `SKILL.md`.
+- An existing skill is too broad, too vague, missing frontmatter, or missing operational steps.
+- A subagent needs a clear guide for a repeated task.
+
+## Do Not Use When
+
+- The request is a normal feature, bug fix, test, or documentation change.
+- The user needs a plugin, connector, or external integration package instead of a skill.
+- The task only needs a one-off prompt and should not become reusable project guidance.
+
+## Inputs
+
+Accept either free-form requirements or this template:
 
 ```text
 Skill name:
@@ -19,23 +41,31 @@ Detail level:
 Language:
 ```
 
-## Generation Instruction
+If input is incomplete:
 
-Create a complete `SKILL.md` that helps an AI agent handle one focused class of work. The skill should be reusable, scoped, and operational.
+- infer non-critical details from the project context
+- list assumptions when they affect the skill
+- do not invent important business, API, security, or permission facts
+- ask only when a missing detail would make the skill unsafe or misleading
 
-If input is missing:
+## Workflow
 
-- infer non-critical details reasonably
-- list assumptions
-- do not invent important business/API/security facts
-- add `Missing Information` only when needed
+1. Identify the smallest useful scope for the skill. A good skill handles one focused class of work.
+2. Choose a lowercase kebab-case `name` that describes the capability without colliding with existing skills.
+3. Write a `description` that says exactly when to use the skill. This is the main activation signal.
+4. Create valid YAML frontmatter with required `name` and `description` fields.
+5. Draft the body as operational guidance, not general advice.
+6. Prefer checklists, short rules, and concrete steps over long prose.
+7. Move large examples, schemas, or reference material into separate referenced files only when needed.
+8. Keep the skill self-contained enough that an agent can use it without reading unrelated docs.
+9. Validate the result against the quality bar before returning or committing it.
 
 ## Required Structure
 
 ```markdown
 ---
 name: short-skill-name
-description: One sentence describing when to use this skill.
+description: Use when the agent should handle this specific class of work.
 ---
 
 # Skill Title
@@ -46,11 +76,11 @@ What this skill is for and what problem it solves.
 
 ## Use When
 
-Concrete triggers.
+Concrete triggers for using the skill.
 
 ## Do Not Use When
 
-Out-of-scope cases or better skills.
+Out-of-scope cases or better alternatives.
 
 ## Inputs
 
@@ -74,23 +104,35 @@ Rules, boundaries, assumptions, and escalation cases.
 
 ## Quality Bar
 
-Checklist for a good answer/artifact.
+Checklist for a good answer or artifact.
 ```
 
-## Writing Rules
+## Output
 
-- Keep the skill short enough to load often.
-- Prefer checklists and tables over long prose.
-- Include project-specific constraints when the skill is for a specific repo.
-- Point to references instead of duplicating large docs.
-- Make activation conditions clear.
-- Make unsafe or out-of-scope behavior explicit.
+When creating or updating a skill in a repository, edit the relevant `SKILL.md` directly. When the user only asks for content, return a complete Markdown file that can be saved as `SKILL.md`.
 
-## Quality Checklist
+Mention any important assumptions, missing information, or follow-up files that should be created. Keep the final response short and centered on what changed.
 
-- The description says exactly when to use the skill.
-- The workflow is actionable.
-- The output format is clear.
-- Tool usage is bounded.
-- Safety rules are specific.
-- The skill avoids broad generic advice.
+## Tools
+
+- Prefer `rg` or `rg --files` to locate existing skills and related instructions.
+- Read nearby docs before editing so the skill matches the project's conventions.
+- Use `apply_patch` for manual edits.
+- Do not create extra `README.md`, changelog, quick reference, or installation files unless the user explicitly asks.
+
+## Safety
+
+- Do not include secrets, credentials, private tokens, or machine-specific paths unless they are already required project conventions.
+- Do not invent business rules, API contracts, security requirements, or tool permissions.
+- Do not make the skill broad enough to trigger for unrelated work.
+- Do not claim a skill is installed or globally active unless its location and metadata support that claim.
+
+## Quality Bar
+
+- Frontmatter is valid YAML and includes `name` and `description`.
+- The description clearly states when the skill should be used.
+- The skill has one focused responsibility.
+- The workflow is actionable without requiring hidden context.
+- Inputs, outputs, tools, and safety rules are explicit.
+- The body is concise enough to load often.
+- The skill avoids broad generic advice and unrelated documentation.

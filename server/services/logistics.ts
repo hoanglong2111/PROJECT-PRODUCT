@@ -20,8 +20,27 @@ import type {
 import { PRIORITIES, REQUIRED_DOCUMENTS, SHIPPING_METHODS, TASK_STATUSES } from '../constants';
 import { pool } from '../db';
 import { ApiError } from '../errors';
+import { normalizeCurrencyCode } from './exchangeRates';
 import { assertTaskUpdateAllowed } from './sop';
-import { readNormalizedSnapshot, writeNormalizedSnapshot } from './normalizedStore';
+import { readSnapshot, writeSnapshot } from './logisticsSnapshots';
+import {
+  classifyDeliveryOrders,
+  classifyPurchaseOrders,
+  normalizeDeliveryOrder,
+  normalizePurchaseOrder,
+  normalizePurchaseRequest,
+} from './logisticsTransforms';
+
+export { readSnapshot, writeSnapshot } from './logisticsSnapshots';
+export {
+  classifyDeliveryOrders,
+  classifyPurchaseOrders,
+  normalizeDeliveryOrder,
+  normalizePurchaseOrder,
+  normalizePurchaseRequest,
+} from './logisticsTransforms';
+export { buildDashboardStats, buildGlobalSearchResults } from './logisticsReporting';
+export { fetchExchangeRates, normalizeCurrencyCode } from './exchangeRates';
 import type {
   AppUserRow,
   CreateDeliveryOrderBody,
@@ -29,10 +48,8 @@ import type {
   CreatePurchaseRequestBody,
   DashboardStats,
   DatabaseClient,
-  ExchangeRatesPayload,
   GlobalSearchResult,
   LogisticsAttachment,
-  OpenExchangeRatesResponse,
   TokenPayload,
   UpdateDeliveryOrderBody,
   UpdatePurchaseRequestBody,
@@ -1056,40 +1073,7 @@ export async function updateTask(taskId: string, body: UpdateTaskBody, auth?: To
   }
 }
 
-export async function fetchExchangeRates(base: string): Promise<ExchangeRatesPayload> {
-  const response = await fetch(`https://open.er-api.com/v6/latest/${encodeURIComponent(base)}`);
 
-  if (!response.ok) {
-    throw new ApiError(502, 'Không lấy được dữ liệu tỷ giá từ nhà cung cấp.');
-  }
-
-  const payload = (await response.json()) as OpenExchangeRatesResponse;
-
-  if (payload.result !== 'success' || !payload.rates || !payload.base_code) {
-    throw new ApiError(502, 'Nhà cung cấp tỷ giá trả dữ liệu không hợp lệ.');
-  }
-
-  const rates = Object.entries(payload.rates)
-    .map(([currency, rate]) => ({ currency, rate: Number(rate) }))
-    .filter((item) => Number.isFinite(item.rate))
-    .sort((left, right) => left.currency.localeCompare(right.currency));
-
-  return {
-    base: payload.base_code,
-    nextUpdateAt: payload.time_next_update_utc ?? null,
-    provider: 'open.er-api.com',
-    rates,
-    updatedAt: payload.time_last_update_utc ?? new Date().toISOString(),
-  };
-}
-
-export async function readSnapshot<T>(key: string, client: DatabaseClient = pool): Promise<T> {
-  return readNormalizedSnapshot<T>(key, client);
-}
-
-export async function writeSnapshot<T>(key: string, payload: T, client: DatabaseClient = pool) {
-  await writeNormalizedSnapshot(key, payload, client);
-}
 
 async function readUserRef(userId: string): Promise<UserRef> {
   const result = await pool.query<AppUserRow>('SELECT * FROM app_users WHERE id = $1 LIMIT 1', [userId]);
@@ -1106,78 +1090,6 @@ async function readUserRef(userId: string): Promise<UserRef> {
   };
 }
 
-export function normalizePurchaseRequest(request: PurchaseRequest): PurchaseRequest {
-  const legacyLine: PurchaseRequestLineItem = {
-    id: `legacy-${request.requested_order_id}-line-1`,
-    item_code: request.item_code,
-    item_name: request.item_name,
-    quantity: request.quantity,
-    unit: request.unit,
-    warehouse_deadline_date: request.warehouse_deadline_date,
-    warehouse_code: request.warehouse_code,
-    production_contract_number: request.production_contract_number,
-    linked_po_numbers: request.linked_po_numbers ?? [],
-    linked_do_numbers: request.linked_do_numbers ?? [],
-  };
-  const lineItems = Array.isArray(request.line_items) && request.line_items.length > 0 ? request.line_items : [legacyLine];
-
-  return {
-    ...request,
-    linked_po_numbers: request.linked_po_numbers ?? [],
-    linked_do_numbers: request.linked_do_numbers ?? [],
-    line_items: lineItems.map((lineItem) => ({
-      ...lineItem,
-      linked_po_numbers: lineItem.linked_po_numbers ?? [],
-      linked_do_numbers: lineItem.linked_do_numbers ?? [],
-    })),
-    flow_tags: request.flow_tags ?? ['LINEAR'],
-  };
-}
-
-export function normalizePurchaseOrder(order: PurchaseOrder): PurchaseOrder {
-  const sourcePrCode = order.source_pr_codes?.[0] ?? 'UNKNOWN_PR';
-  const legacyLine: PurchaseOrderLineItem = {
-    id: `legacy-${order.po_number}-line-1`,
-    source_pr_code: sourcePrCode,
-    source_pr_line_id: `legacy-${sourcePrCode}-line-1`,
-    item_code: 'LEGACY_ITEM',
-    item_name: 'Legacy PO line',
-    quantity: 1,
-    unit: 'lot',
-    warehouse_deadline_date: order.order_date,
-    warehouse_code: order.warehouse_code,
-  };
-
-  return {
-    ...order,
-    source_pr_codes: order.source_pr_codes ?? [],
-    linked_do_numbers: order.linked_do_numbers ?? [],
-    line_items: Array.isArray(order.line_items) && order.line_items.length > 0 ? order.line_items : [legacyLine],
-    flow_tags: order.flow_tags ?? ['LINEAR'],
-  };
-}
-
-export function normalizeDeliveryOrder(order: DeliveryOrder): DeliveryOrder {
-  const requestCode = order.order_info.request_code;
-  const poNumber = order.sap_integration.po_number ?? 'UNKNOWN_PO';
-  const legacySourceLine: DeliverySourceLine = {
-    id: `legacy-${order.order_info.order_number}-source-1`,
-    po_number: poNumber,
-    po_line_id: `legacy-${poNumber}-line-1`,
-    request_code: requestCode,
-    pr_line_id: `legacy-${requestCode}-line-1`,
-    item_code: order.sap_integration.actual_item_code ?? 'LEGACY_ITEM',
-    item_name: order.product_details.item_name_requested,
-    quantity: order.product_details.quantity,
-    unit: order.product_details.unit,
-  };
-
-  return {
-    ...order,
-    source_lines: Array.isArray(order.source_lines) && order.source_lines.length > 0 ? order.source_lines : [legacySourceLine],
-    flow_tags: order.flow_tags ?? ['LINEAR'],
-  };
-}
 
 function normalizePurchaseOrderSourceLines(
   body: CreatePurchaseOrderBody,
@@ -1313,82 +1225,6 @@ function calculatePoLineRemaining(
   return Math.max(0, lineItem.quantity - deliveredQuantity);
 }
 
-export function classifyPurchaseOrders(purchaseOrders: PurchaseOrder[], deliveryOrders: DeliveryOrder[]) {
-  const purchaseOrdersByPr = new Map<string, number>();
-  for (const order of purchaseOrders) {
-    for (const prCode of order.source_pr_codes) {
-      purchaseOrdersByPr.set(prCode, (purchaseOrdersByPr.get(prCode) ?? 0) + 1);
-    }
-  }
-  const consolidatedDeliveryOrders = new Map(
-    deliveryOrders.map((deliveryOrder) => [
-      deliveryOrder.order_info.order_number,
-      new Set(deliveryOrder.source_lines.map((line) => line.po_number)).size > 1,
-    ]),
-  );
-
-  return purchaseOrders.map((order) => {
-    const tags = new Set<BusinessFlowTag>();
-
-    if (order.source_pr_codes.length > 1) {
-      tags.add('BULK_PURCHASE');
-    }
-
-    if (order.source_pr_codes.some((prCode) => (purchaseOrdersByPr.get(prCode) ?? 0) > 1)) {
-      tags.add('SPLIT_PURCHASE');
-    }
-
-    if (order.linked_do_numbers.length > 1) {
-      tags.add('PARTIAL_DELIVERY');
-    }
-
-    if (order.linked_do_numbers.some((orderNumber) => consolidatedDeliveryOrders.get(orderNumber))) {
-      tags.add('CONTAINER_CONSOLIDATION');
-    }
-
-    if (tags.size === 0) {
-      tags.add('LINEAR');
-    }
-
-    return {
-      ...order,
-      flow_tags: Array.from(tags),
-    };
-  });
-}
-
-export function classifyDeliveryOrders(deliveryOrders: DeliveryOrder[], purchaseOrders: PurchaseOrder[]) {
-  const purchaseOrderMap = new Map(purchaseOrders.map((order) => [order.po_number, order]));
-
-  return deliveryOrders.map((deliveryOrder) => {
-    const tags = new Set<BusinessFlowTag>();
-    const poNumbers = new Set(deliveryOrder.source_lines.map((line) => line.po_number));
-    const prCodes = new Set(deliveryOrder.source_lines.map((line) => line.request_code));
-
-    if (poNumbers.size > 1 || prCodes.size > 1) {
-      tags.add('CONTAINER_CONSOLIDATION');
-    }
-
-    for (const poNumber of poNumbers) {
-      const order = purchaseOrderMap.get(poNumber);
-      if (order?.source_pr_codes.length && order.source_pr_codes.length > 1) {
-        tags.add('BULK_PURCHASE');
-      }
-      if (order?.linked_do_numbers.length && order.linked_do_numbers.length > 1) {
-        tags.add('PARTIAL_DELIVERY');
-      }
-    }
-
-    if (tags.size === 0) {
-      tags.add('LINEAR');
-    }
-
-    return {
-      ...deliveryOrder,
-      flow_tags: Array.from(tags),
-    };
-  });
-}
 
 function buildDefaultDeliveryTasks({
   existingTasks,
@@ -1673,15 +1509,6 @@ function optionalString(value: unknown) {
   return cleaned.length > 0 ? cleaned : null;
 }
 
-export function normalizeCurrencyCode(value: unknown, fieldName: string) {
-  const code = optionalString(value)?.toUpperCase();
-
-  if (!code || !/^[A-Z]{3}$/.test(code)) {
-    throw new ApiError(400, `${fieldName} phải là mã tiền tệ 3 ký tự, ví dụ USD.`);
-  }
-
-  return code;
-}
 
 function optionalNonNegativeNumber(value: unknown, fieldName: string) {
   if (value === null || value === undefined || value === '') {
@@ -1797,241 +1624,3 @@ function calculateDelayDays(basisDate: string | null, deadline: string) {
   return Math.max(0, Math.round((basis - target) / 86_400_000));
 }
 
-export function buildGlobalSearchResults({
-  deliveryOrders,
-  purchaseOrders,
-  purchaseRequests,
-  query,
-  tasks,
-  users,
-}: {
-  deliveryOrders: DeliveryOrder[];
-  purchaseOrders: PurchaseOrder[];
-  purchaseRequests: PurchaseRequest[];
-  query: string;
-  tasks: LogisticsTask[];
-  users: AppUserRow[];
-}): GlobalSearchResult[] {
-  const normalizedQuery = normalizeSearch(query);
-  const results: GlobalSearchResult[] = [];
-
-  for (const request of purchaseRequests) {
-    if (
-      !matchesSearch(normalizedQuery, [
-        request.requested_order_id,
-        request.item_code,
-        request.item_name,
-        request.production_contract_number,
-        request.requester.name,
-        request.purchasing_manager.name,
-        request.status,
-        ...(request.flow_tags ?? []),
-        ...request.line_items.flatMap((line) => [line.item_code, line.item_name]),
-      ])
-    ) {
-      continue;
-    }
-
-    results.push({
-      href: `/purchase-requests?pr=${encodeURIComponent(request.requested_order_id)}`,
-      id: request.id,
-      kind: 'purchase_request',
-      meta: request.priority,
-      status: request.status,
-      subtitle: `${request.item_code} - ${request.item_name}`,
-      title: request.requested_order_id,
-    });
-  }
-
-  for (const order of purchaseOrders) {
-    if (
-      !matchesSearch(normalizedQuery, [
-        order.po_number,
-        order.supplier_code,
-        order.supplier_name,
-        order.status,
-        order.sap_sync_status,
-        ...order.source_pr_codes,
-        ...order.linked_do_numbers,
-        ...(order.flow_tags ?? []),
-        ...order.line_items.flatMap((line) => [line.item_code, line.item_name, line.source_pr_code]),
-      ])
-    ) {
-      continue;
-    }
-
-    results.push({
-      href: `/purchase-orders?po=${encodeURIComponent(order.po_number)}`,
-      id: order.id,
-      kind: 'purchase_order',
-      meta: order.supplier_code,
-      status: order.status,
-      subtitle: `${order.supplier_name} - ${order.currency} ${order.total_amount.toLocaleString('en-US')}`,
-      title: order.po_number,
-    });
-  }
-
-  for (const order of deliveryOrders) {
-    if (
-      !matchesSearch(normalizedQuery, [
-        order.order_info.order_number,
-        order.order_info.request_code,
-        order.order_info.tracking_number,
-        order.order_info.status,
-        order.sap_integration.po_number,
-        order.sap_integration.supplier_code,
-        order.sap_integration.supplier_name,
-        order.product_details.item_name_requested,
-        ...(order.flow_tags ?? []),
-        ...order.source_lines.flatMap((line) => [line.po_number, line.request_code, line.item_code, line.item_name]),
-      ])
-    ) {
-      continue;
-    }
-
-    results.push({
-      href: `/delivery-orders?do=${encodeURIComponent(order.order_info.order_number)}`,
-      id: order.id,
-      kind: 'delivery_order',
-      meta: order.warehouse_tracking.warehouse_code,
-      status: order.order_info.status,
-      subtitle: `${order.order_info.request_code} - ETA ${order.logistics_shipping.eta_planned ?? 'N/A'}`,
-      title: order.order_info.order_number,
-    });
-  }
-
-  for (const task of tasks) {
-    if (
-      !matchesSearch(normalizedQuery, [
-        task.task_id,
-        task.task_name,
-        task.do_number,
-        task.request_code,
-        task.po_number,
-        task.role,
-        task.assignee.name,
-        task.status,
-        task.blocked_reason,
-      ])
-    ) {
-      continue;
-    }
-
-    results.push({
-      href: `/tasks?task=${encodeURIComponent(task.task_id)}`,
-      id: task.task_id,
-      kind: 'task',
-      meta: task.role,
-      status: task.status,
-      subtitle: `${task.assignee.name} - ${task.do_number}`,
-      title: task.task_name,
-    });
-  }
-
-  for (const user of users) {
-    if (!matchesSearch(normalizedQuery, [user.full_name, user.email, user.role, user.position, user.department])) {
-      continue;
-    }
-
-    results.push({
-      href: `/settings?section=accounts&account=${encodeURIComponent(user.id)}`,
-      id: user.id,
-      kind: 'account',
-      meta: user.department,
-      status: user.role,
-      subtitle: `${user.email} - ${user.department}`,
-      title: user.full_name,
-    });
-  }
-
-  return results.slice(0, 12);
-}
-
-function matchesSearch(normalizedQuery: string, values: Array<string | null | undefined>) {
-  return values.some((value) => normalizeSearch(value ?? '').includes(normalizedQuery));
-}
-
-function normalizeSearch(value: string) {
-  return value
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
-}
-
-export function buildDashboardStats({
-  purchaseRequests,
-  purchaseOrders,
-  deliveryOrders,
-  tasks,
-}: {
-  purchaseRequests: PurchaseRequest[];
-  purchaseOrders: PurchaseOrder[];
-  deliveryOrders: DeliveryOrder[];
-  tasks: LogisticsTask[];
-}): DashboardStats {
-  const deliveryStatusCounter = new Map<DeliveryOrder['order_info']['status'], number>();
-  const taskStatusCounter = new Map<LogisticsTask['status'], number>();
-  const taskRoleCounter = new Map<LogisticsTask['role'], { completed: number; total: number }>();
-  const monthCounter = new Map<string, { deliveryOrders: number; completedTasks: number }>();
-  const businessFlowCounter = new Map<BusinessFlowTag, number>();
-
-  for (const order of deliveryOrders) {
-    deliveryStatusCounter.set(
-      order.order_info.status,
-      (deliveryStatusCounter.get(order.order_info.status) ?? 0) + 1,
-    );
-
-    const month = order.logistics_shipping.eta_planned?.slice(0, 7) ?? 'No ETA';
-    const monthData = monthCounter.get(month) ?? { deliveryOrders: 0, completedTasks: 0 };
-    monthData.deliveryOrders += 1;
-    monthCounter.set(month, monthData);
-
-    for (const tag of order.flow_tags) {
-      businessFlowCounter.set(tag, (businessFlowCounter.get(tag) ?? 0) + 1);
-    }
-  }
-
-  for (const task of tasks) {
-    taskStatusCounter.set(task.status, (taskStatusCounter.get(task.status) ?? 0) + 1);
-
-    const roleData = taskRoleCounter.get(task.role) ?? { completed: 0, total: 0 };
-    roleData.total += 1;
-    if (task.status === 'COMPLETED') {
-      roleData.completed += 1;
-    }
-    taskRoleCounter.set(task.role, roleData);
-
-    if (task.completed_at) {
-      const month = task.completed_at.slice(0, 7);
-      const monthData = monthCounter.get(month) ?? { deliveryOrders: 0, completedTasks: 0 };
-      monthData.completedTasks += 1;
-      monthCounter.set(month, monthData);
-    }
-  }
-
-  return {
-    totals: {
-      purchaseRequests: purchaseRequests.length,
-      purchaseOrders: purchaseOrders.length,
-      deliveryOrders: deliveryOrders.length,
-      tasks: tasks.length,
-      blockedTasks: tasks.filter((task) => task.status === 'BLOCKED').length,
-    },
-    deliveryOrderStatus: Array.from(deliveryStatusCounter.entries()).map(([status, count]) => ({ status, count })),
-    taskStatus: Array.from(taskStatusCounter.entries()).map(([status, count]) => ({ status, count })),
-    taskRoleProgress: Array.from(taskRoleCounter.entries()).map(([role, payload]) => ({
-      role,
-      total: payload.total,
-      completed: payload.completed,
-      completionRate: payload.total > 0 ? Math.round((payload.completed / payload.total) * 100) : 0,
-    })),
-    monthlyThroughput: Array.from(monthCounter.entries())
-      .map(([month, payload]) => ({
-        month,
-        deliveryOrders: payload.deliveryOrders,
-        completedTasks: payload.completedTasks,
-      }))
-      .sort((left, right) => left.month.localeCompare(right.month)),
-    businessFlowCounts: Array.from(businessFlowCounter.entries()).map(([tag, count]) => ({ tag, count })),
-  };
-}

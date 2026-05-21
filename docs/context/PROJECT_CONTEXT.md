@@ -90,9 +90,9 @@ Closing a detail surface must remove only its own entity param and preserve unre
 
 - Operating model: `docs/context/OPERATING_MODEL.md`
 - eFMS Sea FCL Export workflow: `docs/domain/workflows/04_EFMS_SEA_FCL_EXPORT_WORKFLOW.md`
-- Data model: `docs/skills/data-model/DATA_MODEL_SKILL.md`
-- Backend/API: `docs/skills/backend-api/BACKEND_API_SKILL.md`
-- Frontend: `docs/skills/frontend/FRONTEND_SKILL.md`
-- UI/UX: `docs/skills/ui-ux/UIUX_SKILL.md`
-- ERP logistics UI: `docs/skills/ui-ux/ERP_LOGISTICS_UIUX_SKILL.md`
-- Workflow: `docs/skills/workflow/WORKFLOW_BUSINESSFLOW_SKILL.md`
+- Data model: `docs/skills/data-model/SKILL.md`
+- Backend/API: `docs/skills/backend-api/SKILL.md`
+- Frontend: `docs/skills/frontend/SKILL.md`
+- UI/UX: `docs/skills/ui-ux/SKILL.md`
+- ERP logistics UI: `docs/skills/ui-ux/erp-logistics-uiux.md`
+- Workflow: `docs/skills/workflow/SKILL.md`
