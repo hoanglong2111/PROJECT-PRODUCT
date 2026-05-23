@@ -92,9 +92,26 @@ export async function ensureSchemaAndSeed() {
       position TEXT NOT NULL,
       department TEXT NOT NULL,
       avatar_url TEXT,
+      phone_number TEXT,
+      work_location TEXT,
+      work_shift TEXT,
+      operation_focus TEXT,
+      default_warehouse_code TEXT,
+      preferred_module_path TEXT,
+      profile_note TEXT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+  `);
+
+  await pool.query(`
+    ALTER TABLE app_users ADD COLUMN IF NOT EXISTS phone_number TEXT;
+    ALTER TABLE app_users ADD COLUMN IF NOT EXISTS work_location TEXT;
+    ALTER TABLE app_users ADD COLUMN IF NOT EXISTS work_shift TEXT;
+    ALTER TABLE app_users ADD COLUMN IF NOT EXISTS operation_focus TEXT;
+    ALTER TABLE app_users ADD COLUMN IF NOT EXISTS default_warehouse_code TEXT;
+    ALTER TABLE app_users ADD COLUMN IF NOT EXISTS preferred_module_path TEXT;
+    ALTER TABLE app_users ADD COLUMN IF NOT EXISTS profile_note TEXT;
   `);
 
   await pool.query(migrationSql);

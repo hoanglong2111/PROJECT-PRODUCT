@@ -1,5 +1,6 @@
 import '@mantine/core/styles.css';
 import '@mantine/dates/styles.css';
+import './theme.css';
 import './styles.css';
 
 import { MantineProvider } from '@mantine/core';

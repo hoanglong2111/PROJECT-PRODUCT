@@ -25,5 +25,14 @@ export async function searchGlobal(query: string, auth: TokenPayload | undefined
   const purchaseOrders = classifyPurchaseOrders(purchaseOrdersRaw.map(normalizePurchaseOrder), deliveryOrdersRaw.map(normalizeDeliveryOrder));
   const deliveryOrders = classifyDeliveryOrders(deliveryOrdersRaw.map(normalizeDeliveryOrder), purchaseOrders);
 
-  return buildGlobalSearchResults({ deliveryOrders, purchaseOrders, purchaseRequests, query, tasks, users: usersResult.rows });
+  return buildGlobalSearchResults({
+    currentUserId: auth?.sub,
+    currentUserRole: auth?.role,
+    deliveryOrders,
+    purchaseOrders,
+    purchaseRequests,
+    query,
+    tasks,
+    users: usersResult.rows,
+  });
 }

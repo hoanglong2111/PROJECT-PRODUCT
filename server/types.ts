@@ -38,13 +38,20 @@ export type DashboardStats = {
 
 export type AppUserRow = {
   avatar_url: string | null;
+  default_warehouse_code?: string | null;
   department: string;
   email: string;
   full_name: string;
   id: string;
+  operation_focus?: string | null;
   password_hash: string;
+  phone_number?: string | null;
   position: string;
+  preferred_module_path?: string | null;
+  profile_note?: string | null;
   role: AppRole;
+  work_location?: string | null;
+  work_shift?: string | null;
 };
 
 export type CreateUserBody = {

@@ -5,9 +5,12 @@ import type {
   PurchaseOrder,
   PurchaseRequest,
 } from '../../src/models/logistics';
-import type { AppUserRow, DashboardStats, GlobalSearchResult } from '../types';
+import type { AppRole } from '../../src/shared/auth/types';
+import type { AppUserRow, DashboardStats, GlobalSearchKind, GlobalSearchResult } from '../types';
 
 export function buildGlobalSearchResults({
+  currentUserId,
+  currentUserRole,
   deliveryOrders,
   purchaseOrders,
   purchaseRequests,
@@ -15,6 +18,8 @@ export function buildGlobalSearchResults({
   tasks,
   users,
 }: {
+  currentUserId?: string;
+  currentUserRole?: AppRole;
   deliveryOrders: DeliveryOrder[];
   purchaseOrders: PurchaseOrder[];
   purchaseRequests: PurchaseRequest[];
@@ -23,143 +28,222 @@ export function buildGlobalSearchResults({
   users: AppUserRow[];
 }): GlobalSearchResult[] {
   const normalizedQuery = normalizeSearch(query);
-  const results: GlobalSearchResult[] = [];
+  const results: Array<GlobalSearchResult & { score: number; sequence: number }> = [];
 
-  for (const request of purchaseRequests) {
-    if (
-      !matchesSearch(normalizedQuery, [
-        request.requested_order_id,
-        request.item_code,
-        request.item_name,
-        request.production_contract_number,
-        request.requester.name,
-        request.purchasing_manager.name,
-        request.status,
-        ...(request.flow_tags ?? []),
-        ...request.line_items.flatMap((line) => [line.item_code, line.item_name]),
-      ])
-    ) {
-      continue;
+  const addResult = ({
+    kind,
+    result,
+    values,
+    weight = 0,
+  }: {
+    kind: GlobalSearchKind;
+    result: GlobalSearchResult;
+    values: Array<string | null | undefined>;
+    weight?: number;
+  }) => {
+    if (!canSearchKind(kind, currentUserRole)) {
+      return;
     }
 
-    results.push({
-      href: `/purchase-requests?pr=${encodeURIComponent(request.requested_order_id)}`,
-      id: request.id,
+    const score = scoreSearch(normalizedQuery, values);
+    if (score === 0) {
+      return;
+    }
+
+    results.push({ ...result, score: score + weight, sequence: results.length });
+  };
+
+  for (const request of purchaseRequests) {
+    const values = [
+      request.requested_order_id,
+      request.item_code,
+      request.item_name,
+      request.production_contract_number,
+      request.requester.name,
+      request.purchasing_manager.name,
+      request.status,
+      ...(request.flow_tags ?? []),
+      ...request.line_items.flatMap((line) => [line.item_code, line.item_name]),
+    ];
+
+    addResult({
       kind: 'purchase_request',
-      meta: request.priority,
-      status: request.status,
-      subtitle: `${request.item_code} - ${request.item_name}`,
-      title: request.requested_order_id,
+      values,
+      weight: 8,
+      result: {
+        href: `/purchase-requests?pr=${encodeURIComponent(request.requested_order_id)}`,
+        id: request.id,
+        kind: 'purchase_request',
+        meta: request.priority,
+        status: request.status,
+        subtitle: `${request.item_code} - ${request.item_name}`,
+        title: request.requested_order_id,
+      },
     });
   }
 
   for (const order of purchaseOrders) {
-    if (
-      !matchesSearch(normalizedQuery, [
-        order.po_number,
-        order.supplier_code,
-        order.supplier_name,
-        order.status,
-        order.sap_sync_status,
-        ...order.source_pr_codes,
-        ...order.linked_do_numbers,
-        ...(order.flow_tags ?? []),
-        ...order.line_items.flatMap((line) => [line.item_code, line.item_name, line.source_pr_code]),
-      ])
-    ) {
-      continue;
-    }
+    const values = [
+      order.po_number,
+      order.supplier_code,
+      order.supplier_name,
+      order.status,
+      order.sap_sync_status,
+      ...order.source_pr_codes,
+      ...order.linked_do_numbers,
+      ...(order.flow_tags ?? []),
+      ...order.line_items.flatMap((line) => [line.item_code, line.item_name, line.source_pr_code]),
+    ];
 
-    results.push({
-      href: `/purchase-orders?po=${encodeURIComponent(order.po_number)}`,
-      id: order.id,
+    addResult({
       kind: 'purchase_order',
-      meta: order.supplier_code,
-      status: order.status,
-      subtitle: `${order.supplier_name} - ${order.currency} ${order.total_amount.toLocaleString('en-US')}`,
-      title: order.po_number,
+      values,
+      weight: 7,
+      result: {
+        href: `/purchase-orders?po=${encodeURIComponent(order.po_number)}`,
+        id: order.id,
+        kind: 'purchase_order',
+        meta: order.supplier_code,
+        status: order.status,
+        subtitle: `${order.supplier_name} - ${order.currency} ${order.total_amount.toLocaleString('en-US')}`,
+        title: order.po_number,
+      },
     });
   }
 
   for (const order of deliveryOrders) {
-    if (
-      !matchesSearch(normalizedQuery, [
-        order.order_info.order_number,
-        order.order_info.request_code,
-        order.order_info.tracking_number,
-        order.order_info.status,
-        order.sap_integration.po_number,
-        order.sap_integration.supplier_code,
-        order.sap_integration.supplier_name,
-        order.product_details.item_name_requested,
-        ...(order.flow_tags ?? []),
-        ...order.source_lines.flatMap((line) => [line.po_number, line.request_code, line.item_code, line.item_name]),
-      ])
-    ) {
-      continue;
-    }
+    const values = [
+      order.order_info.order_number,
+      order.order_info.request_code,
+      order.order_info.tracking_number,
+      order.order_info.status,
+      order.sap_integration.po_number,
+      order.sap_integration.supplier_code,
+      order.sap_integration.supplier_name,
+      order.product_details.item_name_requested,
+      ...(order.flow_tags ?? []),
+      ...order.source_lines.flatMap((line) => [line.po_number, line.request_code, line.item_code, line.item_name]),
+    ];
 
-    results.push({
-      href: `/delivery-orders?do=${encodeURIComponent(order.order_info.order_number)}`,
-      id: order.id,
+    addResult({
       kind: 'delivery_order',
-      meta: order.warehouse_tracking.warehouse_code,
-      status: order.order_info.status,
-      subtitle: `${order.order_info.request_code} - ETA ${order.logistics_shipping.eta_planned ?? 'N/A'}`,
-      title: order.order_info.order_number,
+      values,
+      weight: 6,
+      result: {
+        href: `/delivery-orders?do=${encodeURIComponent(order.order_info.order_number)}`,
+        id: order.id,
+        kind: 'delivery_order',
+        meta: order.warehouse_tracking.warehouse_code,
+        status: order.order_info.status,
+        subtitle: `${order.order_info.request_code} - ETA ${order.logistics_shipping.eta_planned ?? 'N/A'}`,
+        title: order.order_info.order_number,
+      },
     });
   }
 
   for (const task of tasks) {
-    if (
-      !matchesSearch(normalizedQuery, [
-        task.task_id,
-        task.task_name,
-        task.do_number,
-        task.request_code,
-        task.po_number,
-        task.role,
-        task.assignee.name,
-        task.status,
-        task.blocked_reason,
-      ])
-    ) {
-      continue;
-    }
+    const values = [
+      task.task_id,
+      task.task_name,
+      task.do_number,
+      task.request_code,
+      task.po_number,
+      task.role,
+      task.assignee.name,
+      task.status,
+      task.blocked_reason,
+    ];
 
-    results.push({
-      href: `/tasks?task=${encodeURIComponent(task.task_id)}`,
-      id: task.task_id,
+    addResult({
       kind: 'task',
-      meta: task.role,
-      status: task.status,
-      subtitle: `${task.assignee.name} - ${task.do_number}`,
-      title: task.task_name,
+      values,
+      weight: 5,
+      result: {
+        href: `/tasks?task=${encodeURIComponent(task.task_id)}`,
+        id: task.task_id,
+        kind: 'task',
+        meta: task.role,
+        status: task.status,
+        subtitle: `${task.assignee.name} - ${task.do_number}`,
+        title: task.task_name,
+      },
     });
   }
 
   for (const user of users) {
-    if (!matchesSearch(normalizedQuery, [user.full_name, user.email, user.role, user.position, user.department])) {
-      continue;
-    }
+    const values = [user.full_name, user.email, user.role, user.position, user.department];
+    const href = currentUserRole === 'ADMIN' && user.id !== currentUserId
+      ? `/settings?section=accounts&account=${encodeURIComponent(user.id)}`
+      : '/profile';
 
-    results.push({
-      href: `/settings?section=accounts&account=${encodeURIComponent(user.id)}`,
-      id: user.id,
+    addResult({
       kind: 'account',
-      meta: user.department,
-      status: user.role,
-      subtitle: `${user.email} - ${user.department}`,
-      title: user.full_name,
+      values,
+      weight: 4,
+      result: {
+        href,
+        id: user.id,
+        kind: 'account',
+        meta: user.department,
+        status: user.role,
+        subtitle: `${user.email} - ${user.department}`,
+        title: user.full_name,
+      },
     });
   }
 
-  return results.slice(0, 12);
+  return results
+    .sort((left, right) => right.score - left.score || left.sequence - right.sequence)
+    .slice(0, 12)
+    .map((result) => ({
+      href: result.href,
+      id: result.id,
+      kind: result.kind,
+      meta: result.meta,
+      status: result.status,
+      subtitle: result.subtitle,
+      title: result.title,
+    }));
 }
 
-function matchesSearch(normalizedQuery: string, values: Array<string | null | undefined>) {
-  return values.some((value) => normalizeSearch(value ?? '').includes(normalizedQuery));
+const managerRoles: AppRole[] = ['ADMIN', 'PIC_MANAGER'];
+const salesRoles: AppRole[] = [...managerRoles, 'SALE_STAFF'];
+const operationsRoles: AppRole[] = [...managerRoles, 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'WAREHOUSE_STAFF'];
+
+const searchableRolesByKind: Record<GlobalSearchKind, AppRole[] | null> = {
+  account: null,
+  delivery_order: operationsRoles,
+  purchase_order: [...salesRoles, 'FINANCE_OFFICER'],
+  purchase_request: salesRoles,
+  task: [...operationsRoles, 'FINANCE_OFFICER'],
+};
+
+function canSearchKind(kind: GlobalSearchKind, role: AppRole | undefined) {
+  const allowedRoles = searchableRolesByKind[kind];
+  return !allowedRoles || (role ? allowedRoles.includes(role) : false);
 }
+
+function scoreSearch(normalizedQuery: string, values: Array<string | null | undefined>) {
+  let bestScore = 0;
+
+  for (const value of values) {
+    const normalizedValue = normalizeSearch(value ?? '');
+    if (!normalizedValue) {
+      continue;
+    }
+
+    if (normalizedValue === normalizedQuery) {
+      bestScore = Math.max(bestScore, 120);
+    } else if (normalizedValue.startsWith(normalizedQuery)) {
+      bestScore = Math.max(bestScore, 90);
+    } else if (normalizedValue.includes(normalizedQuery)) {
+      bestScore = Math.max(bestScore, 50);
+    }
+  }
+
+  return bestScore;
+}
+
 
 function normalizeSearch(value: string) {
   return value

@@ -1,6 +1,6 @@
 import type { AppRole } from '@shared/auth/types';
 import type { BusinessFlowTag, DeliveryOrder, Priority, TaskRole } from '@/models/logistics';
-import type { EventTheme, WorkspaceLanguage } from '@shared/preferences/WorkspacePreferencesContext';
+import type { AppearanceMode, DensityPreference, VisualTheme, WorkspaceLanguage } from '@shared/preferences/WorkspacePreferencesContext';
 
 export type ShippingMethod = DeliveryOrder['logistics_shipping']['shipping_method'];
 export type SearchKind = 'purchase_request' | 'purchase_order' | 'delivery_order' | 'task' | 'account';
@@ -73,16 +73,63 @@ export const shippingMethodLabels: Record<WorkspaceLanguage, Record<ShippingMeth
   },
 };
 
-export const eventThemeLabels: Record<WorkspaceLanguage, Record<EventTheme, string>> = {
+export const appearanceModeLabels: Record<WorkspaceLanguage, Record<AppearanceMode, string>> = {
+  en: {
+    auto: 'Auto',
+    dark: 'Dark',
+    light: 'Light',
+  },
+  vi: {
+    auto: 'Tự động',
+    dark: 'Tối',
+    light: 'Sáng',
+  },
+};
+
+export const visualThemeLabels: Record<WorkspaceLanguage, Record<VisualTheme, string>> = {
+  en: {
+    'blue-sight': 'Blue Sight',
+    'high-contrast': 'High Contrast',
+    standard: 'Standard',
+    'yellow-sight': 'Yellow Sight',
+  },
+  vi: {
+    'blue-sight': 'Blue Sight',
+    'high-contrast': 'Tương phản cao',
+    standard: 'Tiêu chuẩn',
+    'yellow-sight': 'Yellow Sight',
+  },
+};
+
+export const densityLabels: Record<WorkspaceLanguage, Record<DensityPreference, string>> = {
   en: {
     compact: 'Compact',
-    'risk-focus': 'Risk focus',
     standard: 'Standard',
   },
   vi: {
     compact: 'Gọn',
-    'risk-focus': 'Tập trung rủi ro',
     standard: 'Tiêu chuẩn',
+  },
+};
+
+export const departmentLabels: Record<WorkspaceLanguage, Record<string, string>> = {
+  en: {
+    Finance: 'Finance',
+    'Import Customs': 'Import Customs',
+    'IT Operations': 'IT Operations',
+    'Port Operations': 'Port Operations',
+    Purchasing: 'Purchasing',
+    'Sales Operations': 'Sales Operations',
+    Warehouse: 'Warehouse',
+  },
+  vi: {
+    Finance: 'Tài chính',
+    'Import Customs': 'Hải quan nhập khẩu',
+    'IT Operations': 'Vận hành CNTT',
+    'Port Operations': 'Vận hành cảng',
+    Purchasing: 'Thu mua',
+    'Sales Operations': 'Vận hành bán hàng',
+    Warehouse: 'Kho',
   },
 };
 

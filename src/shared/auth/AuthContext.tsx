@@ -1,14 +1,16 @@
 import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { AUTH_TOKEN_STORAGE_KEY, http, setHttpAuthToken } from '@shared/api/http';
-import type { AppRole, AuthUser } from './types';
+import type { AppRole, AuthUser, UpdateEmailPayload, UpdatePasswordPayload, UpdateProfilePayload } from './types';
 
 type AuthContextValue = {
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (params: { email: string; password: string }) => Promise<void>;
+  login: (params: { email: string; password: string }) => Promise<AuthUser>;
   logout: () => void;
-  updateProfile: (params: { avatarUrl: string | null; department: string; fullName: string }) => Promise<void>;
+  updateEmail: (params: UpdateEmailPayload) => Promise<AuthUser>;
+  updatePassword: (params: UpdatePasswordPayload) => Promise<void>;
+  updateProfile: (params: UpdateProfilePayload) => Promise<AuthUser>;
   user: AuthUser | null;
   hasAnyRole: (roles: AppRole[]) => boolean;
 };
@@ -55,19 +57,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     persistToken(payload.token);
     setHttpAuthToken(payload.token);
     setUser(payload.user);
+    return payload.user;
   }, []);
 
-  const updateProfile = useCallback(
-    async ({ avatarUrl, department, fullName }: { avatarUrl: string | null; department: string; fullName: string }) => {
-      const response = await http.patch<ApiResponse<AuthUser>>('/profile', {
-        avatarUrl,
-        department,
-        fullName,
-      });
-      setUser(response.data.data);
-    },
-    [],
-  );
+  const updateEmail = useCallback(async (params: UpdateEmailPayload) => {
+    const response = await http.patch<ApiResponse<AuthUser>>('/profile/email', params);
+    const updatedUser = response.data.data;
+    setUser(updatedUser);
+    return updatedUser;
+  }, []);
+
+  const updatePassword = useCallback(async (params: UpdatePasswordPayload) => {
+    await http.patch<ApiResponse<{ changed: boolean }>>('/profile/password', params);
+  }, []);
+
+  const updateProfile = useCallback(async (params: UpdateProfilePayload) => {
+    const response = await http.patch<ApiResponse<AuthUser>>('/profile', params);
+    const updatedUser = response.data.data;
+    setUser(updatedUser);
+    return updatedUser;
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -110,11 +119,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated: Boolean(user),
       login,
       logout,
+      updateEmail,
+      updatePassword,
       updateProfile,
       user,
       hasAnyRole: (roles) => (user ? roles.includes(user.role) : false),
     }),
-    [isLoading, login, logout, updateProfile, user],
+    [isLoading, login, logout, updateEmail, updatePassword, updateProfile, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

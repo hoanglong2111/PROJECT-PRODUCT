@@ -40,12 +40,19 @@ export function authorizeRole(roles: AppRole[]) {
 
 export function toAuthUser(user: AppUserRow): AuthUser {
   return {
-    id: user.id,
+    avatarUrl: user.avatar_url,
+    defaultWarehouseCode: user.default_warehouse_code ?? null,
+    department: user.department,
     email: user.email,
     fullName: user.full_name,
-    role: user.role,
+    id: user.id,
+    operationFocus: user.operation_focus ?? null,
+    phoneNumber: user.phone_number ?? null,
     position: user.position,
-    department: user.department,
-    avatarUrl: user.avatar_url,
+    preferredModulePath: user.preferred_module_path ?? null,
+    profileNote: user.profile_note ?? null,
+    role: user.role,
+    workLocation: user.work_location ?? null,
+    workShift: user.work_shift ?? null,
   };
 }

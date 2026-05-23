@@ -2,12 +2,20 @@ import { useMemo } from 'react';
 
 import type { BusinessFlowTag, Priority, TaskRole } from '@/models/logistics';
 import type { AppRole } from '@shared/auth/types';
-import { useWorkspacePreferences, type EventTheme, type WorkspaceLanguage } from '@shared/preferences/WorkspacePreferencesContext';
+import {
+  useWorkspacePreferences,
+  type AppearanceMode,
+  type DensityPreference,
+  type VisualTheme,
+  type WorkspaceLanguage,
+} from '@shared/preferences/WorkspacePreferencesContext';
 
 import {
+  appearanceModeLabels,
   currencyCountryLabels,
+  densityLabels,
+  departmentLabels,
   documentLabels,
-  eventThemeLabels,
   flowTagLabels,
   languageLabels,
   priorityLabels,
@@ -16,6 +24,7 @@ import {
   shippingMethodLabels,
   statusLabels,
   taskRoleLabels,
+  visualThemeLabels,
   type SearchKind,
   type ShippingMethod,
 } from './labels';
@@ -41,13 +50,16 @@ export function useI18n() {
 
     return {
       language,
+      appearanceModeLabel: (mode: AppearanceMode) => appearanceModeLabels[language][mode],
+      densityLabel: (density: DensityPreference) => densityLabels[language][density],
+      departmentLabel: (department: string) => departmentLabels[language][department] ?? department,
       currencyLabel: (currencyCode: string) => {
         const normalizedCode = currencyCode.toUpperCase();
         const country = currencyCountryLabels[language][normalizedCode];
         return country ? `${normalizedCode} (${country})` : normalizedCode;
       },
       documentLabel: (documentName: string) => documentLabels[language][documentName] ?? documentName,
-      eventThemeLabel: (theme: EventTheme) => eventThemeLabels[language][theme],
+      visualThemeLabel: (theme: VisualTheme) => visualThemeLabels[language][theme],
       flowTagLabel: (tag: BusinessFlowTag) => flowTagLabels[language][tag],
       formatNumber: (value: number) => value.toLocaleString(language === 'vi' ? 'vi-VN' : 'en-US'),
       languageLabel: (value: WorkspaceLanguage) => languageLabels[language][value],

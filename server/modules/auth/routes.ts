@@ -2,7 +2,7 @@ import { Router } from 'express';
 
 import { authenticateRequest } from '../../auth';
 import type { AuthenticatedRequest } from '../../types';
-import { authenticateUser, readCurrentUser, updateProfile } from './service';
+import { authenticateUser, readCurrentUser, updateEmail, updatePassword, updateProfile } from './service';
 
 export function createAuthRouter() {
   const router = Router();
@@ -29,6 +29,26 @@ export function createAuthRouter() {
 
   router.patch('/profile', authenticateRequest, async (request: AuthenticatedRequest, response) => {
     const result = await updateProfile(request.auth?.sub, request.body);
+    if ('error' in result) {
+      response.status(result.status).json({ data: null, errors: [{ message: result.error }] });
+      return;
+    }
+
+    response.json({ data: result.data, errors: [] });
+  });
+
+  router.patch('/profile/email', authenticateRequest, async (request: AuthenticatedRequest, response) => {
+    const result = await updateEmail(request.auth?.sub, request.body);
+    if ('error' in result) {
+      response.status(result.status).json({ data: null, errors: [{ message: result.error }] });
+      return;
+    }
+
+    response.json({ data: result.data, errors: [] });
+  });
+
+  router.patch('/profile/password', authenticateRequest, async (request: AuthenticatedRequest, response) => {
+    const result = await updatePassword(request.auth?.sub, request.body);
     if ('error' in result) {
       response.status(result.status).json({ data: null, errors: [{ message: result.error }] });
       return;
