@@ -17,11 +17,16 @@
   "workspace": {
     "skillsPath": "docs/skills",
     "contextPath": "docs/context",
+    "harnessPath": ".agents/harness",
+    "memoryPath": ".agents/memory.md",
     "tempDir": ".agents/scratch",
     "agentInstructions": "AGENTS.md"
   },
   "skills": {
     "readOrder": [
+      ".agents/memory.md"
+    ],
+    "conditionalRead": [
       "docs/context/PROJECT_CONTEXT.md",
       "docs/context/OPERATING_MODEL.md"
     ],
@@ -34,6 +39,24 @@
       "workflow": "docs/skills/workflow/SKILL.md",
       "testingQa": "docs/skills/testing-qa/SKILL.md",
       "mcp": "docs/skills/mcp/SKILL.md"
+    }
+  },
+  "contextLoading": {
+    "mode": "on-demand",
+    "bootstrapRead": [
+      ".agents/agent-config.json",
+      ".agents/memory.md",
+      "AGENTS.md"
+    ],
+    "selectContextPackBeforeReadingBroadDocs": true,
+    "loadOnlyFocusedSkill": true,
+    "askWhenContextPackAmbiguous": true,
+    "askWhenSkillAmbiguous": true,
+    "doNotReadAllSkillsByDefault": true,
+    "doNotReadOldLogsByDefault": true,
+    "conditionalDocs": {
+      "projectContext": "Read when product scope, route/module meaning, GD1 vocabulary, or feature behavior matters.",
+      "operatingModel": "Read only for workflow, SLA, SAP/eFMS, customs, finance notes, closure gates, or state transitions."
     }
   },
   "logging": {
@@ -60,6 +83,36 @@
       "apiKeys",
       "connectionStrings",
       "privateCredentials"
+    ]
+  },
+  "memory": {
+    "enabled": true,
+    "path": ".agents/memory.md",
+    "targetTokens": "500-1000",
+    "readBeforeLogs": true,
+    "readLogsOnlyWhenRelevant": true,
+    "compactWhenBloated": true,
+    "updateRule": "Only record durable decisions, recurring preferences, scope boundaries, and shortcuts. Do not duplicate per-question logs."
+  },
+  "clarification": {
+    "askWhenInsufficientContext": true,
+    "offerOptionsWhenMultiplePaths": true,
+    "optionCount": "2-3",
+    "markRecommendedOption": true,
+    "waitForUserSelectionWhen": [
+      "scope changes",
+      "timeline changes",
+      "architecture choices",
+      "data model choices",
+      "business rule ambiguity",
+      "UX direction choices",
+      "verification cost changes"
+    ],
+    "proceedWithoutAskingWhen": [
+      "trivial",
+      "reversible",
+      "low-risk",
+      "matches existing project pattern"
     ]
   },
   "safety": {

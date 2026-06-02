@@ -1,0 +1,145 @@
+{
+  "version": 1,
+  "contextPacks": [
+    {
+      "id": "frontend_feature",
+      "description": "React/Mantine feature screens, shared frontend components, routes, and frontend API wiring.",
+      "triggerWhen": [
+        "React feature page",
+        "shared frontend component",
+        "frontend API wiring",
+        "route or deep-link behavior"
+      ],
+      "readFirst": [
+        ".agents/agent-config.json",
+        ".agents/memory.md",
+        "AGENTS.md",
+        "docs/skills/frontend/SKILL.md"
+      ],
+      "optionalWhenRelevant": [
+        "docs/context/PROJECT_CONTEXT.md",
+        "docs/context/OPERATING_MODEL.md",
+        "docs/skills/ui-ux/SKILL.md",
+        "docs/skills/ui-ux-debug/SKILL.md"
+      ],
+      "scanHints": [
+        "src/features",
+        "src/shared/api",
+        "src/shared/components",
+        "src/app/routes.tsx"
+      ]
+    },
+    {
+      "id": "backend_api",
+      "description": "Express routes, backend services, validation, auth, idempotency, audit, and API contracts.",
+      "triggerWhen": [
+        "Express route",
+        "backend service",
+        "API contract",
+        "auth, audit, idempotency, or integration write behavior"
+      ],
+      "readFirst": [
+        ".agents/agent-config.json",
+        ".agents/memory.md",
+        "AGENTS.md",
+        "docs/context/PROJECT_CONTEXT.md",
+        "docs/context/OPERATING_MODEL.md",
+        "docs/skills/backend-api/SKILL.md"
+      ],
+      "optionalWhenRelevant": [
+        "docs/database/GD1_DOCUMENT_ERD.md",
+        "docs/modules/integrations/erp-wms-outbox.md"
+      ],
+      "scanHints": [
+        "server/modules",
+        "server/services",
+        "server/index.ts"
+      ]
+    },
+    {
+      "id": "data_model",
+      "description": "ERD, migration planning, table mapping, and GD1 runtime schema gaps.",
+      "triggerWhen": [
+        "database schema",
+        "ERD",
+        "migration planning",
+        "table or state mapping"
+      ],
+      "readFirst": [
+        ".agents/agent-config.json",
+        ".agents/memory.md",
+        "AGENTS.md",
+        "docs/context/PROJECT_CONTEXT.md",
+        "docs/context/OPERATING_MODEL.md",
+        "docs/skills/data-model/SKILL.md",
+        "docs/database/GD1_DOCUMENT_ERD.md"
+      ],
+      "optionalWhenRelevant": [
+        "docs/database/PHASE1_PROCUREMENT_IMPORT_ERD.md",
+        "docs/database/DATABASE_ANALYSIS_REPORT.md"
+      ],
+      "scanHints": [
+        "server/migrations",
+        "server/services",
+        "docs/database"
+      ]
+    },
+    {
+      "id": "workflow_docs",
+      "description": "Business workflow, SLA, actor/state mapping, module docs, and acceptance criteria.",
+      "triggerWhen": [
+        "business workflow",
+        "SLA",
+        "actor or state rules",
+        "acceptance criteria"
+      ],
+      "readFirst": [
+        ".agents/agent-config.json",
+        ".agents/memory.md",
+        "AGENTS.md",
+        "docs/context/PROJECT_CONTEXT.md",
+        "docs/context/OPERATING_MODEL.md",
+        "docs/skills/workflow/SKILL.md"
+      ],
+      "optionalWhenRelevant": [
+        "docs/modules/procurement",
+        "docs/modules/shipments",
+        "docs/modules/tasks"
+      ],
+      "scanHints": [
+        "docs/context",
+        "docs/modules",
+        "src/features/workflow"
+      ]
+    },
+    {
+      "id": "mcp_dev_harness",
+      "description": "MCP, readiness checks, deploy automation, product AI harness, and development harness coordination.",
+      "triggerWhen": [
+        "development agent harness",
+        "MCP readiness",
+        "deploy automation",
+        "agent context loading or memory rules"
+      ],
+      "readFirst": [
+        ".agents/agent-config.json",
+        ".agents/memory.md",
+        "AGENTS.md",
+        ".agents/harness/README.md",
+        "docs/skills/mcp/SKILL.md",
+        "docs/modules/platform/dev-ai-harness.md"
+      ],
+      "optionalWhenRelevant": [
+        "docs/modules/platform/ai-harness.md",
+        "docs/future/mcp-ops/deployment-mcp-and-db-plan.md",
+        "server/mcp/deployServer.ts"
+      ],
+      "scanHints": [
+        ".agents",
+        "server/mcp",
+        "server/ai",
+        "docs/modules/platform"
+      ]
+    }
+  ]
+}

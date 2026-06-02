@@ -11,7 +11,7 @@ Expose KBFE GD1 operational context to AI agents safely. Agents may inspect enti
 
 ## Current State
 
-No production MCP server exists yet. Treat this as the target contract.
+A first MCP server, a read-only GD1 Product AI Harness MVP, and a declarative Development AI Harness exist. The product harness can run deterministic rules or an OpenAI-compatible external model adapter, but write actions are not production-enabled yet. The development harness under `.agents/harness/` coordinates IDE/build agents, context packs, workflows, and verification checks.
 
 Current deploy reality:
 
@@ -21,6 +21,9 @@ Current deploy reality:
 - Runtime schema may still use older names such as `delivery_orders`; GD1 docs use `shipment`.
 - Deployment and DB normalization plan: `docs/future/mcp-ops/deployment-mcp-and-db-plan.md`.
 - GD1 ERD: `docs/database/GD1_DOCUMENT_ERD.md`.
+- Product AI harness runtime: `server/ai`, `server/modules/ai/routes.ts`, `server/mcp/deployServer.ts`.
+- Development AI harness: `.agents/harness/`, `AGENTS.md`, `docs/modules/platform/dev-ai-harness.md`.
+- External model env: `AI_PROVIDER=openai_compatible`, `AI_API_KEY`, `AI_SMALL_MODEL`, `AI_LARGE_MODEL`, optional `AI_BASE_URL`.
 
 ## Resources
 
@@ -42,6 +45,8 @@ kbfe://deploy/db-schema
 kbfe://deploy/db-counts
 kbfe://deploy/health
 kbfe://audit/{entity_type}/{entity_id}
+kbfe://ai/harness/metrics
+kbfe://ai/harness/risk-triage
 ```
 
 Legacy compatibility resources may expose `delivery-orders/{do_number}` while runtime uses older names.
@@ -59,6 +64,9 @@ Read tools:
 - `get_gd1_risks`
 - `inspect_shipment_milestones`
 - `inspect_landed_cost_status`
+- `run_gd1_harness`
+- `get_harness_metrics`
+- `clear_harness_cache`
 
 Write tools, only after backend authorization and audit exist:
 

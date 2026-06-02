@@ -1,0 +1,131 @@
+{
+  "version": 1,
+  "workflows": [
+    {
+      "id": "feature_build",
+      "description": "Build a scoped product feature or enhancement.",
+      "defaultContextPack": "frontend_feature",
+      "steps": [
+        {
+          "id": "scope",
+          "action": "State assumptions, target files, and success criteria."
+        },
+        {
+          "id": "inspect",
+          "action": "Read the focused context pack and use rg to locate existing patterns."
+        },
+        {
+          "id": "implement",
+          "action": "Make the smallest scoped code or doc changes that satisfy the request."
+        },
+        {
+          "id": "verify",
+          "action": "Run the relevant checks.",
+          "checks": ["pnpm typecheck", "pnpm build"]
+        },
+        {
+          "id": "log",
+          "action": "Write the per-question log under .agents/logs."
+        },
+        {
+          "id": "summarize",
+          "action": "Report changed files, verification result, and remaining risk."
+        }
+      ]
+    },
+    {
+      "id": "bugfix",
+      "description": "Fix a reported defect with minimal change.",
+      "defaultContextPack": "backend_api",
+      "steps": [
+        {
+          "id": "reproduce",
+          "action": "Reproduce or explain why reproduction is not possible in the current environment."
+        },
+        {
+          "id": "inspect",
+          "action": "Locate the smallest failing path and related contracts."
+        },
+        {
+          "id": "fix",
+          "action": "Patch only the failing behavior."
+        },
+        {
+          "id": "verify",
+          "action": "Run focused checks first, then broader checks if risk warrants it.",
+          "checks": ["pnpm typecheck"]
+        },
+        {
+          "id": "log_and_summarize",
+          "action": "Log the work and summarize the fix."
+        }
+      ]
+    },
+    {
+      "id": "review",
+      "description": "Review code, docs, or architecture for risks and missing verification.",
+      "defaultContextPack": "workflow_docs",
+      "steps": [
+        {
+          "id": "read_scope",
+          "action": "Read the changed files and relevant source-of-truth docs."
+        },
+        {
+          "id": "findings",
+          "action": "List bugs, regressions, missing tests, and contract risks first."
+        },
+        {
+          "id": "questions",
+          "action": "List blocking questions or assumptions."
+        },
+        {
+          "id": "summary",
+          "action": "Summarize only after findings."
+        }
+      ]
+    },
+    {
+      "id": "readiness_check",
+      "description": "Check repository, backend, frontend, DB, or deploy readiness.",
+      "defaultContextPack": "mcp_dev_harness",
+      "steps": [
+        {
+          "id": "inspect_config",
+          "action": "Read AGENTS.md, agent-config, MCP skill, and deploy/readiness docs."
+        },
+        {
+          "id": "run_checks",
+          "action": "Run non-destructive readiness checks.",
+          "checks": ["pnpm typecheck", "pnpm build", "MCP check_repo_readiness when available"]
+        },
+        {
+          "id": "report",
+          "action": "Report pass/fail, blockers, and next safe action."
+        }
+      ]
+    },
+    {
+      "id": "docs_alignment",
+      "description": "Align instructions, module docs, context docs, and skills after scope changes.",
+      "defaultContextPack": "workflow_docs",
+      "steps": [
+        {
+          "id": "map_docs",
+          "action": "Find all references to the concept being renamed or split."
+        },
+        {
+          "id": "patch_docs",
+          "action": "Patch only the docs needed to remove ambiguity."
+        },
+        {
+          "id": "verify_refs",
+          "action": "Use rg to verify new labels and old ambiguous references."
+        },
+        {
+          "id": "log",
+          "action": "Write the per-question log."
+        }
+      ]
+    }
+  ]
+}

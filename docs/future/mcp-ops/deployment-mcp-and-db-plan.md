@@ -208,6 +208,8 @@ Recommended first MCP resources:
 - `kbfe://deploy/db-counts`
 - `kbfe://deploy/health`
 - `kbfe://risk-queue`
+- `kbfe://ai/harness/metrics`
+- `kbfe://ai/harness/risk-triage`
 
 Write MCP tools should wait until backend audit and idempotency are complete.
 
@@ -270,6 +272,9 @@ Implemented tools:
 - `run_db_migration`
 - `deploy_frontend`
 - `deploy_backend`
+- `run_gd1_harness`
+- `get_harness_metrics`
+- `clear_harness_cache`
 
 Deploy triggers are webhook-based. Set these only when the target platform or CI workflow is ready:
 
@@ -280,6 +285,18 @@ DEPLOY_WEBHOOK_TOKEN=<optional-webhook-token>
 ```
 
 `run_db_migration`, `deploy_frontend`, and `deploy_backend` are guarded. They return a dry-run response unless the MCP caller passes `confirm=true`.
+
+GD1 AI harness model enrichment is optional and read-only:
+
+```text
+AI_PROVIDER=openai_compatible
+AI_BASE_URL=https://api.openai.com/v1
+AI_API_KEY=<provider-api-key>
+AI_SMALL_MODEL=<small-model-name>
+AI_LARGE_MODEL=<large-model-name>
+```
+
+Use `llmMode=off` for deterministic rules only, `llmMode=auto` for env-driven model enrichment, or `llmMode=force` to call the external model even when routing selected the rules tier.
 
 ## Deploy Order
 

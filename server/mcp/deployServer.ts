@@ -84,7 +84,7 @@ function asRecord(value: unknown): Record<string, unknown> {
 
 function safePreview(name: string, value: string | undefined): string {
   if (!value) return 'missing';
-  if (name.includes('SECRET') || name.includes('TOKEN') || name.includes('DATABASE_URL')) return 'set';
+  if (name.includes('SECRET') || name.includes('TOKEN') || name.includes('DATABASE_URL') || name.includes('API_KEY')) return 'set';
   if (value.length <= 80) return value;
   return `${value.slice(0, 77)}...`;
 }

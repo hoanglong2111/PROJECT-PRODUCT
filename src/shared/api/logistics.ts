@@ -757,5 +757,3 @@ export async function fetchGlobalPoStageTasks() {
   const response = await http.get<ApiResponse<Gd1PoStageTask[]>>('/tasks/po');
   return response.data.data;
 }
-
-

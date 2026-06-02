@@ -23,6 +23,46 @@ Load:
 - Persistence uses PostgreSQL tables, but current runtime may still use `delivery_orders` for the GD1 shipment concept.
 - Keep compatibility fields until frontend and backend migrate together.
 
+## Local Dev Watcher Troubleshooting
+
+When `pnpm dev:be` fails with:
+
+```text
+Error: ENOSPC: System limit for number of file watchers reached
+```
+
+treat it as Linux inotify watcher exhaustion, not a route/module bug. The path in the stack trace is usually just the file that `tsx watch` failed to register.
+
+Immediate workaround:
+
+```bash
+pnpm start:be
+```
+
+This starts `server/index.ts` without watch mode.
+
+Local machine fix:
+
+```bash
+sudo sysctl fs.inotify.max_user_watches=524288
+sudo sysctl fs.inotify.max_user_instances=1024
+```
+
+Persistent local machine fix:
+
+```bash
+printf "fs.inotify.max_user_watches=524288\nfs.inotify.max_user_instances=1024\n" | sudo tee /etc/sysctl.d/99-kbfe-inotify.conf
+sudo sysctl --system
+```
+
+After applying the OS-level fix, retry:
+
+```bash
+pnpm dev:be
+```
+
+Do not refactor backend routes or reduce imports to fix this error unless the watcher limit has already been ruled out.
+
 ## API Style
 
 Prefer REST with stable frontend contracts:

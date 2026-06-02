@@ -11,7 +11,7 @@ This folder groups current GD1 documentation by implementation module.
 | Tasks | `tasks/po-stage-tasks.md` | `src/features/tasks`, `server/modules/tasks`, `server/services/poStageTasks.ts` |
 | Dashboard / Workflow | `dashboard-workflow/README.md` | `src/features/dashboard`, `src/features/workflow`, `server/modules/dashboard` |
 | Integrations | `integrations/erp-wms-outbox.md` | `server/services/reliability.ts`, `server/services/logisticsPurchaseOrders.ts`, `server/services/milestones.ts` |
-| Platform | `platform/README.md` | `server/modules/auth`, `server/modules/users`, `server/modules/search`, `server/modules/health`, `src/features/settings`, `src/features/profile` |
+| Platform | `platform/README.md`, `platform/ai-harness.md`, `platform/dev-ai-harness.md` | `server/modules/auth`, `server/modules/users`, `server/modules/search`, `server/modules/health`, `server/modules/ai`, `server/ai`, `.agents/harness`, `src/features/settings`, `src/features/profile` |
 
 ## Boundaries
 
