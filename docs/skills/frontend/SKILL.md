@@ -1,9 +1,9 @@
 ---
 name: kbfe-frontend
-description: Use when implementing or refactoring KBFE React frontend code: routes, Mantine screens, TanStack Query, Zustand filters, entity deep links, PR/PO/DO/task UI, and backend API migration.
+description: Use when implementing or refactoring KBFE GD1 React frontend code: routes, Mantine screens, TanStack Query, Zustand filters, entity deep links, PR/PO/Shipment/milestone/task UI, and backend API migration.
 ---
 
-# KBFE Frontend Skill
+# KBFE GD1 Frontend Skill
 
 ## Stack
 
@@ -12,30 +12,30 @@ Use the existing stack: React, TypeScript, Vite, React Router, TanStack Query, Z
 ## Load Order
 
 1. `docs/context/PROJECT_CONTEXT.md`
-2. A focused domain or data-model doc
-3. This file
-4. Only the matching architecture/pattern/module reference
-
-| Need | Reference |
-|---|---|
-| Routing/deep links | `architecture/routing.md`, `patterns/entity-deep-links.md` |
-| Local/server state | `architecture/state-management.md`, `architecture/data-fetching.md` |
-| Mutations/forms | `architecture/forms-validation.md`, `patterns/query-mutations.md` |
-| Tables/drawers/tabs/states | files under `patterns/` |
-| Page specifics | matching file under `modules/` |
+2. `docs/context/OPERATING_MODEL.md`
+3. A focused domain or data-model doc
+4. This file
+5. Only the matching architecture/pattern/module reference
 
 ## Source Map
 
 - App shell/routing: `src/app/App.tsx`, `src/app/routes.tsx`, `src/app/routeRoles.ts`
 - Feature route pages: `src/features/<feature>/page.tsx`
 - Feature-local UI/API/hooks/constants: `src/features/<feature>/components`, `api.ts`, `hooks.ts`, `constants.ts`
-- API/types compatibility: `src/api/logistics.ts`; shared API implementation lives under `src/shared/api`
+- API/types compatibility: `src/api/logistics.ts`; shared implementation lives under `src/shared/api`
 - Deep links: `src/shared/hooks/useEntityParam.ts`
 - Shared state: `src/shared/stores/workspaceStore.ts`
-- Shared UI: `src/shared/components/*`
-- Delay: `src/shared/utils/delay.ts`
-- Shell: `src/shared/components/AppShellLayout.tsx`
-- Legacy `src/components`, `src/hooks`, `src/stores`, and `src/utils` paths may exist only as compatibility re-exports; route compatibility files have been removed.
+
+## GD1 Screen Model
+
+| Screen | Must keep visible |
+|---|---|
+| Dashboard | PR approval queue, PO delivery risk, shipment risk, task workload, landed-cost attention. |
+| Workflow | PR -> PO -> Shipment -> milestones -> tasks/cost traceability. |
+| PR | PR lines, approval status, required date, conversion progress, linked PO. |
+| PO | supplier, revision, status, source PR lines, shipment progress, landed cost. |
+| Shipment | legacy route may be `/delivery-orders`; show shipment lines, mode, milestones, documents, customs, costs. |
+| Tasks | PO-stage task, assignee, status, due date, blocker, linked milestone. |
 
 ## State Ownership
 
@@ -44,39 +44,53 @@ Use the existing stack: React, TypeScript, Vite, React Router, TanStack Query, Z
 - URL query params own shareable entity context.
 - Local component state owns transient UI state only.
 
-## Query And Mutation Rules
+## Query Keys
 
-- Use stable keys: `['purchase-requests']`, `['purchase-orders']`, `['delivery-orders']`, `['tasks']`.
-- Include filters in keys when backend list filtering is added.
-- Mutations invalidate affected entity lists plus dashboard/workflow where relevant.
-- Show loading and normalized API errors.
+Use stable keys:
+
+- `['purchase-requests']`
+- `['purchase-orders']`
+- `['shipments']`
+- `['shipment-milestones', shipmentId]`
+- `['tasks']`
+- `['task-templates']`
+
+Legacy `['delivery-orders']` can remain until code migrates.
 
 ## Deep Links
 
-Use `pr`, `po`, `do`, `task` query params. Closing detail should remove only its own param. Use `EntityLink` for cross-entity navigation and disabled links for missing ids.
+Preferred GD1 params:
 
-## Screen Rules
+- `pr`
+- `po`
+- `shipment`
+- `task`
 
-| Screen | Must keep visible |
-|---|---|
-| Dashboard | cross-module metrics, risk queue, business flow distribution |
-| Workflow | PR/PO/DO/task relationship, all five business-flow tabs |
-| PR | line items, flow tags, fulfillment/risk filters, linked PO/DO |
-| PO | source PR lines, supplier, SAP state, linked DO, flow tags |
-| DO | source lines, shipment/container behavior, flow filter, risk/doc/task state |
-| Tasks | role/status/required filters, progress, blockers, parent links |
+Legacy `do` params may remain while the runtime still uses delivery-order naming. Closing detail should remove only its own param. Cross-entity links should preserve unrelated params.
+
+## Mutations
+
+Mutation UI must show validation, loading, error, success, and invalidation.
+
+High-value invalidations:
+
+- PR submit/approve/reject/convert: PR, PO, workflow, dashboard.
+- PO send/confirm/revise: PO, tasks, workflow, dashboard.
+- Shipment create/milestone update: shipment, PO, tasks, workflow, dashboard.
+- Cost create/update: shipment, PO, dashboard.
+- Task update: tasks, PO, shipment, workflow, dashboard.
 
 ## UX And Accessibility
 
 - Every icon-only action needs `aria-label` and tooltip.
-- Use `calcDelay` until backend returns canonical delay fields.
-- Show concrete risk reasons, not only risk severity.
+- Use concrete risk reasons, not only color.
 - Keep empty/loading/error states for async screens.
-- Keep dense ERP layout readable on mobile via horizontal scroll.
+- Dense ERP tables should remain usable on mobile through horizontal scroll.
+- Do not expose write actions before backend validation exists unless explicitly building mock scope.
 
 ## Done
 
-- `pnpm typecheck` passes.
+- `pnpm typecheck` passes for code changes.
 - Query params and cross-entity links still work.
 - New write UI has validation, loading, error, success, and invalidation.
-- No new shared abstraction unless behavior repeats.
+- GD1 naming is used in new UI text; legacy names are compatibility-only.

@@ -1,24 +1,27 @@
 ---
 name: kbfe-backend-api
-description: Use when designing or implementing KBFE backend services, REST APIs, validation, persistence, SAP sync boundaries, and frontend mock-to-real API migration.
+description: Use when designing or implementing KBFE GD1 backend services, REST APIs, validation, persistence, ERP sync boundaries, and frontend API migration.
 ---
 
-# KBFE Backend/API Skill
+# KBFE GD1 Backend/API Skill
 
 ## Goal
 
-Backend is the source of truth for PR, PO, DO, tasks, deadlines, documents, finance/tax, SAP sync state, and business-flow validation.
+Backend is the source of truth for GD1 PR approval, PO lifecycle, shipment milestones, quantity validation, landed cost, PO-stage tasks, SLA state, ERP sync, and audit.
 
-For SLA timers, customs lane behavior, eFMS transport data, SOP codes, and two-touch finance-note rules, keep API behavior aligned with `docs/context/OPERATING_MODEL.md` and `docs/domain/workflows/04_EFMS_SEA_FCL_EXPORT_WORKFLOW.md`.
+Load:
+
+1. `docs/context/PROJECT_CONTEXT.md`
+2. `docs/context/OPERATING_MODEL.md`
+3. `docs/database/GD1_DOCUMENT_ERD.md`
+4. Relevant module workflow docs under `docs/modules/`
 
 ## Current Boundary
 
-- `server/index.ts` is bootstrap only: middleware, auth setup, route mounting, and listen/start.
-- API routes live in `server/modules/<domain>/routes.ts` with service wrappers in `service.ts`.
-- Persistence uses normalized PostgreSQL tables. Legacy helper names `readSnapshot`/`writeSnapshot` are backed by `server/services/normalizedStore.ts`.
-- Shared backend behavior lives in `server/services/`, including `logistics*.ts`, `sop*.ts`, `exchangeRates.ts`, and reporting/transform helpers.
-- Frontend calls through `src/api/logistics.ts`, which is kept compatible while shared implementation lives under `src/shared/api`.
-- Keep legacy fields while moving write flows to `sourceLines[]`.
+- `server/index.ts` is bootstrap only.
+- API routes live in `server/modules/<domain>/routes.ts`.
+- Persistence uses PostgreSQL tables, but current runtime may still use `delivery_orders` for the GD1 shipment concept.
+- Keep compatibility fields until frontend and backend migrate together.
 
 ## API Style
 
@@ -26,106 +29,122 @@ Prefer REST with stable frontend contracts:
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET/POST/PATCH` | `/api/purchase-requests` | PR list/create/update |
-| `GET/POST` | `/api/purchase-orders` | PO list/create from PR source lines |
-| `GET/POST/PATCH` | `/api/delivery-orders` | DO list/create/update from PO source lines |
-| `GET/PATCH` | `/api/tasks` | Task list/update |
-| `GET` | `/api/dashboard/stats` | Metrics and `businessFlowCounts` |
-| `GET` | `/api/search` | Global entity search |
-| `GET/POST` | `/api/users` | User list/create |
+| `GET/POST/PATCH` | `/api/v1/purchase-requests` | PR list/create/update |
+| `POST` | `/api/v1/purchase-requests/{id}/submit` | Submit PR for approval |
+| `POST` | `/api/v1/purchase-requests/{id}/approve` | Approve PR step |
+| `POST` | `/api/v1/purchase-requests/{id}/reject` | Reject PR |
+| `POST` | `/api/v1/purchase-requests/{id}/convert-to-po` | Convert approved PR lines |
+| `GET/POST/PATCH` | `/api/v1/purchase-orders` | PO list/create/update |
+| `PUT` | `/api/v1/purchase-orders/{id}/revise` | Create PO revision |
+| `POST` | `/api/v1/purchase-orders/{id}/send` | Mark PO sent |
+| `POST` | `/api/v1/purchase-orders/{id}/confirm` | Supplier confirmation |
+| `GET/POST/PATCH` | `/api/v1/shipments` | Shipment list/create/update |
+| `PATCH` | `/api/v1/shipments/{id}/milestones/{code}` | Update milestone |
+| `POST` | `/api/v1/shipments/{id}/documents` | Upload milestone document |
+| `POST` | `/api/v1/shipments/{id}/costs` | Add landed-cost component |
+| `GET` | `/api/v1/tasks` | My tasks |
+| `GET/POST/PATCH` | `/api/v1/task-templates` | Task template management |
 
-Future actions:
-
-- PR submit/approve/reject.
-- PO/DO SAP sync.
-- Document upload.
-- eFMS booking/container update.
-- eFMS Manifest, Shipping Instruction, and HBL update.
-- Job attachment and KBI Drive dossier upload.
-- Customs declaration lane update.
-- Debit Note OF/AF and Final Debit Note issuance.
-- DO close gate.
-- Audit/event log.
-
-## Query Filters
-
-Support filters matching UI workflows:
-
-- `search`, `status`, `priority`, `role`, `assignee_id`
-- `risk_only`, `required_only`
-- `pr`, `po`, `do`
-- `warehouse_code`
-- `date_from`, `date_to`
-- later: `page`, `page_size`, `sort`
+Legacy route names such as `/api/delivery-orders` may exist while migration is incomplete.
 
 ## Write Payloads
 
-PO create:
+Shipment create:
 
 ```ts
 {
-  sourceLines: [{ prCode, prLineId, quantity }],
-  supplierCode,
-  supplierName,
-  totalAmount,
-  currency,
-  warehouseCode
+  mode: 'SEA' | 'AIR',
+  forwarder_id?: string,
+  carrier?: string,
+  vessel_flight?: string,
+  bl_awb_no?: string,
+  container_no?: string[],
+  pol?: string,
+  pod?: string,
+  etd?: string,
+  eta?: string,
+  po_lines: [{ purchase_order_line_id: string, qty_shipped: number, lot_no?: string }]
 }
 ```
 
-DO create:
+Milestone update:
 
 ```ts
 {
-  sourceLines: [{ poNumber, poLineId, quantity }],
-  shippingMethod,
-  warehouseDeadline,
-  documentsList
+  actual_date: 'YYYY-MM-DD',
+  note?: string,
+  source?: 'MANUAL' | 'API' | 'EMAIL',
+  documents?: [{ file_ref: string, doc_type: 'INVOICE' | 'PACKING_LIST' | 'BL' | 'CO' | 'CUSTOMS_DECL' | 'AWB' | 'OTHER' }]
 }
 ```
 
-Legacy payloads (`sourcePrCode`, `poNumber`, `requestCode`) may still create simple 1-1-1 records.
+Cost create:
+
+```ts
+{
+  cost_type: 'FREIGHT' | 'INSURANCE' | 'CUSTOMS_DUTY' | 'VAT' | 'LOCAL_CHARGES' | 'DEMURRAGE' | 'OTHER',
+  amount: number,
+  currency_code: string,
+  exchange_rate: number,
+  alloc_method: 'BY_VALUE' | 'BY_WEIGHT' | 'BY_QTY',
+  invoice_ref?: string
+}
+```
 
 ## Validation
 
 Backend must enforce:
 
-- PR can create PO only when `APPROVED` or partially sourced with remaining quantity.
-- PO source quantities cannot exceed remaining PR line quantities, including duplicate lines in the same payload.
-- DO source quantities cannot exceed remaining PO line quantities, including duplicate lines in the same payload.
-- DO header quantity must match source line total when `sourceLines[]` is used.
-- `DELIVERED` requires `actual_entry_date`.
-- Missing Invoice, Packing List, or B/L blocks customs readiness.
-- Final B/L confirmation requires Draft B/L, Commercial Invoice, Packing List, and quotation data to match.
-- Shipping Instruction requires gross weight and CBM greater than 0.
-- HBL must be linked to the DO/eFMS job before final document closure.
-- LCL booking may auto-continue as accepted after 2 hours of customer silence.
-- Selling charges cannot be edited or deleted after confirmation; Buying charges can be adjusted by authorized users.
-- Debit Note OF/AF and Final Debit Note must remain separate finance events.
-- Task progress/status/blocker rules from data model skill.
+- PR status transitions from the GD1 operating model.
+- Approval route exists before PR submit.
+- PR line `qty_converted` never exceeds `qty_requested`.
+- PO line source quantity never exceeds remaining PR line quantity.
+- PO revision increments after `SENT` or `CONFIRMED` edits.
+- Shipment line quantity never exceeds PO tolerance.
+- Shipment creation generates exactly 10 milestones.
+- Milestone code/sequence uniqueness.
+- `EDO_DELIVERY.actual_date` is required for shipment `DELIVERED`.
+- Cost amount and exchange rate are non-negative/positive as defined in ERD.
+- Landed cost recalculates after cost changes.
+- Task `DONE` and `BLOCKED` metadata rules.
 
 ## Derived Fields
 
 Backend should calculate:
 
-- delay/risk fields
-- task completion summary
-- document readiness
-- document match state
-- SLA overdue state for quotation, port verification, and Debit Note OF/AF issuance
-- PR/PO/DO `flow_tags`
-- dashboard `businessFlowCounts`
+- PR total amount and conversion progress
+- PO shipped/received/fulfillment progress
+- shipment status from milestone actual dates
+- milestone progress and missing-document state
+- landed cost allocation
+- task overdue/blocker state
+- SLA overdue state
+- dashboard risk reasons
 
-## SAP And Audit
+## ERP, Events, And Audit
 
-- Keep external SAP behind a service/adapter.
-- Persist sync attempts with status, request metadata, response metadata, error, actor/scheduler, timestamps.
-- Do not overwrite local operational fields without conflict handling.
-- Audit all status changes, writes, document changes, task changes, sync attempts, and close attempts.
+- Confirmed PO syncs to ERP.
+- PO revision emits ERP update or outbox event.
+- `EDO_DELIVERY.actual_date` emits `shipment.arrived_at_warehouse`.
+- Persist audit for approval, PO revision, shipment milestone, cost, task status, ERP sync, and manual override.
+
+## Production Reliability Contract
+
+Backend implementation must treat these as production gates:
+
+- Transactional outbox: enqueue ERP, WMS/GD2, and internal events in the same transaction as the state change. Publisher delivery to Kafka/RabbitMQ/REST is separate from the business write.
+- Idempotency: create-style POST APIs must require or receive `Idempotency-Key`, persist request hash/result, replay completed identical requests, and return conflict for key reuse with a different payload.
+- Optimistic locking: versioned update APIs should require the caller's expected `version` or `If-Match` equivalent and reject stale writes.
+- Immutable audit/state logs: approval actions, PO revisions, milestone updates, cost changes, task status changes, and manual overrides must write append-only records with before/after snapshots.
+- Integration input capture: webhook, polling, email parsing, and SFTP batch ingestion should store raw/inbox events idempotently before applying canonical milestone/status updates.
+- Scheduler jobs: SLA scans, overdue task detection, carrier polling, aggregate refresh, and outbox publishing should have observable job metadata and retry state.
+- Landed-cost allocation: add/update/delete of shipment costs must run in a transaction and recalculate affected PO-line allocations by `BY_VALUE`, `BY_WEIGHT`, or `BY_QTY`.
+- Tenant isolation: every production query/mutation must be scoped by `tenant_id`; hardcoded tenant fallbacks are development-only.
 
 ## Done
 
-- API validates all business rules.
-- Errors distinguish validation, permission, not found, and integration failure.
+- API validates GD1 business rules.
+- Errors distinguish validation, permission, not found, state conflict, and integration failure.
 - Frontend types remain compatible.
-- Mutations update linked PR/PO/DO/task state consistently.
+- Mutations update related PR/PO/shipment/task/dashboard state consistently.
+- Reliability gates above are either implemented for the touched route or explicitly documented as pending before production release.

@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 
 import type { DeliveryOrder, LogisticsTask, PurchaseOrder } from '../../src/models/logistics';
 import { REQUIRED_DOCUMENTS } from '../constants';
@@ -116,6 +116,7 @@ export async function attachDeliveryOrderDocument({
     const customsGatePassed = await isDispatchGatePassed(current.id, client);
 
     const storageUrl = `data:${file.mimeType};base64,${file.buffer.toString('base64')}`;
+    const checksumSha256 = createHash('sha256').update(file.buffer).digest('hex');
     const attachmentId = `att-${randomUUID()}`;
     const normalizedHblNumber = optionalString(hblNumber);
 
@@ -123,9 +124,9 @@ export async function attachDeliveryOrderDocument({
       `
         INSERT INTO logistics_attachments (
           id, entity_type, entity_id, document_type, hbl_number, file_name, storage_url,
-          uploaded_by, mime_type, size_bytes
+          uploaded_by, mime_type, size_bytes, storage_provider, encryption_algorithm, checksum_sha256
         )
-        VALUES ($1, 'delivery_order', $2, $3, $4, $5, $6, $7, $8, $9)
+        VALUES ($1, 'delivery_order', $2, $3, $4, $5, $6, $7, $8, $9, 'DATABASE_DATA_URL', NULL, $10)
       `,
       [
         attachmentId,
@@ -137,6 +138,7 @@ export async function attachDeliveryOrderDocument({
         auth?.sub ?? null,
         file.mimeType,
         file.buffer.length,
+        checksumSha256,
       ],
     );
 

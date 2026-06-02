@@ -4,14 +4,14 @@ Use this when designing or changing the Tasks route.
 
 ## Purpose
 
-Tasks translate DO state into owned work by role and assignee. The page should make blockers, due dates, and closure-required tasks obvious.
+Tasks translate PO stages into owned work. The page should make blockers, due dates, stage context, and milestone links obvious.
 
 ## Default Layout
 
-- Page header with completion badge.
-- Optional flow-context banner for `?do=` or `?pr=`.
-- Metrics: total tasks, blocked, overdue.
-- Toolbar: search, status filter, role filter, required-only switch, shown count.
+- Page header with workload badge.
+- Optional context banner for `?po=`, `?shipment=`, or `?task=`.
+- Metrics: total tasks, blocked, overdue, due soon.
+- Toolbar: search, status filter, role filter, PO-stage filter, overdue-only switch.
 - Main table.
 - Task detail drawer.
 
@@ -19,44 +19,30 @@ Tasks translate DO state into owned work by role and assignee. The page should m
 
 Recommended columns:
 
-- task name + task id.
-- DO + PR.
+- task name.
+- PO + PO stage.
+- linked shipment milestone.
 - role.
 - assignee.
-- priority.
 - status.
-- progress.
 - due date.
-- blocker.
+- blocker note.
 - row action.
 
 ## Detail Drawer
 
 Show:
 
-- task name, DO, PR.
-- workflow/DO/PR/PO links.
-- progress.
-- role and assignee.
-- priority.
-- due date.
-- PO.
-- required-for-closure.
-- blocker reason.
-- notes/activity when available.
+- task name and stage.
+- PO link.
+- linked shipment/milestone.
+- assignee/role.
+- status/due date.
+- blocker note.
+- activity/audit when available.
 
 ## Risk UX
 
-- Blocked tasks get red badges with reason.
+- Blocked tasks get red badge with reason.
 - Overdue tasks get red due date treatment.
-- Required tasks should be easy to filter.
-
-## Future Actions
-
-When mutations exist:
-
-- assign/reassign.
-- update progress.
-- mark waiting/blocked.
-- complete task.
-- add note.
+- Auto-closed milestone tasks should show source milestone.

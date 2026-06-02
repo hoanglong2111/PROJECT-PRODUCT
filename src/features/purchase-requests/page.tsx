@@ -18,6 +18,8 @@ import {
   TextInput,
   Title,
   Tooltip,
+  Textarea,
+  Timeline,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -44,6 +46,11 @@ import {
   type PurchaseRequest,
   type PurchaseRequestStatus,
   updatePurchaseRequestStatus,
+  submitPurchaseRequestForApproval,
+  fetchPurchaseRequestApprovalSteps,
+  approvePurchaseRequestStep,
+  rejectPurchaseRequestStep,
+  type Gd1ApprovalStep,
 } from '@shared/api/logistics';
 import { useAuth } from '@shared/auth/useAuth';
 import { useEntityParam } from '@shared/hooks/useEntityParam';
@@ -417,6 +424,204 @@ function Metric({
   );
 }
 
+function Gd1PrApprovalMatrix({
+  request,
+  onUpdated,
+}: {
+  request: PurchaseRequest;
+  onUpdated?: (request: PurchaseRequest) => void;
+}) {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { t, statusLabel } = useI18n();
+  const [note, setNote] = useState('');
+
+  const stepsQuery = useQuery({
+    queryKey: ['purchase-request-approval-steps', request.requested_order_id],
+    queryFn: () => fetchPurchaseRequestApprovalSteps(request.requested_order_id),
+    enabled: !!request.requested_order_id,
+  });
+
+  const submitMutation = useMutation({
+    mutationFn: () => submitPurchaseRequestForApproval(request.requested_order_id),
+    onSuccess: () => {
+      setNote('');
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['purchase-requests'] }),
+        queryClient.invalidateQueries({ queryKey: ['purchase-request-approval-steps', request.requested_order_id] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
+      ]);
+    },
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: ({ stepId, note }: { stepId: string; note?: string }) => approvePurchaseRequestStep(stepId, note),
+    onSuccess: () => {
+      setNote('');
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['purchase-requests'] }),
+        queryClient.invalidateQueries({ queryKey: ['purchase-request-approval-steps', request.requested_order_id] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
+      ]);
+    },
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: ({ stepId, note }: { stepId: string; note?: string }) => rejectPurchaseRequestStep(stepId, note),
+    onSuccess: () => {
+      setNote('');
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['purchase-requests'] }),
+        queryClient.invalidateQueries({ queryKey: ['purchase-request-approval-steps', request.requested_order_id] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
+      ]);
+    },
+  });
+
+  const steps = stepsQuery.data ?? [];
+  const activePendingStep = useMemo(() => steps.find(s => s.status === 'PENDING'), [steps]);
+
+  const canApproveActiveStep = useMemo(() => {
+    if (!activePendingStep || !user) return false;
+    const userRoleStr = user.role as string;
+    return (
+      userRoleStr === 'ADMIN' ||
+      (activePendingStep.approver_role === 'DEPARTMENT_MANAGER' && userRoleStr === 'PIC_MANAGER') ||
+      (activePendingStep.approver_role === 'CFO' && userRoleStr === 'FINANCE_OFFICER') ||
+      (activePendingStep.approver_role === 'CEO' && userRoleStr === 'ADMIN')
+    );
+  }, [activePendingStep, user]);
+
+  if (request.status === 'NEW') {
+    return (
+      <Paper withBorder p="md" className="ops-panel-risk">
+        <Stack gap="xs">
+          <Text fw={700}>{t('purchaseRequests.approvalFlowTitle')}</Text>
+          <Text size="sm" c="dimmed">
+            {t('purchaseRequests.approvalFlowDescription')}
+          </Text>
+          {submitMutation.isError && (
+            <Alert color="red">
+              {getApiErrorMessage(submitMutation.error)}
+            </Alert>
+          )}
+          <Button
+            onClick={() => submitMutation.mutate()}
+            loading={submitMutation.isPending}
+            variant="filled"
+            color="blue"
+            fullWidth
+            mt={4}
+          >
+            {t('purchaseRequests.submitApproval')}
+          </Button>
+        </Stack>
+      </Paper>
+    );
+  }
+
+  if (request.status === 'CANCELLED') {
+    return null;
+  }
+
+  return (
+    <Paper withBorder p="md" className="ops-panel">
+      <Stack gap="md">
+        <Text fw={700}>{t('purchaseRequests.approvalStatusTitle')}</Text>
+
+        {stepsQuery.isLoading ? (
+          <Group justify="center" p="md">
+            <Loader size="sm" />
+            <Text size="sm" c="dimmed">{t('purchaseRequests.approvalLoading')}</Text>
+          </Group>
+        ) : steps.length === 0 ? (
+          <Text size="sm" c="dimmed">{t('purchaseRequests.approvalEmpty')}</Text>
+        ) : (
+          <Timeline active={steps.filter(s => s.status === 'APPROVED').length} bulletSize={22} lineWidth={2}>
+            {steps.map((step) => {
+              const isStepActive = activePendingStep?.id === step.id;
+              const isApproved = step.status === 'APPROVED';
+              const isRejected = step.status === 'REJECTED';
+
+              let color = 'gray';
+              if (isApproved) color = 'teal';
+              if (isRejected) color = 'red';
+              if (isStepActive) color = 'blue';
+
+              return (
+                <Timeline.Item
+                  key={step.id}
+                  title={t('purchaseRequests.approvalStep', { step: step.step_order, role: step.approver_role })}
+                  bullet={
+                    isApproved ? <IconCheck size={12} /> : isRejected ? <IconX size={12} /> : undefined
+                  }
+                  color={color}
+                >
+                  <Text size="xs" c="dimmed" mt={4}>
+                    {t('purchaseRequests.approvalStatusLabel')} <Badge size="xs" color={color} variant="light">{statusLabel(step.status)}</Badge>
+                  </Text>
+                  {step.decision_at && (
+                    <Text size="xs" c="dimmed">
+                      {t('purchaseRequests.approvalTimeLabel')} {new Date(step.decision_at).toLocaleString()}
+                    </Text>
+                  )}
+                  {step.note && (
+                    <Text size="sm" c="dimmed" fs="italic" mt={2} style={{ wordBreak: 'break-all' }}>
+                      {t('purchaseRequests.approvalNoteLabel')} "{step.note}"
+                    </Text>
+                  )}
+
+                  {isStepActive && canApproveActiveStep && (
+                    <Paper withBorder p="sm" mt="sm" style={{ backgroundColor: 'var(--mantine-color-dark-8)' }}>
+                      <Stack gap="xs">
+                        <Text size="xs" fw={700}>{t('purchaseRequests.approvalYouAreApprover')}</Text>
+                        <Textarea
+                          placeholder={t('purchaseRequests.approvalNotePlaceholder')}
+                          value={note}
+                          onChange={(e) => setNote(e.currentTarget.value)}
+                          rows={2}
+                          size="xs"
+                        />
+                        {(approveMutation.isError || rejectMutation.isError) && (
+                          <Alert color="red">
+                            {getApiErrorMessage(approveMutation.error || rejectMutation.error)}
+                          </Alert>
+                        )}
+                        <Group gap="xs" justify="flex-end">
+                          <Button
+                            size="xs"
+                            color="red"
+                            variant="light"
+                            onClick={() => rejectMutation.mutate({ stepId: step.id, note })}
+                            loading={rejectMutation.isPending}
+                            disabled={approveMutation.isPending}
+                          >
+                            {t('purchaseRequests.reject')}
+                          </Button>
+                          <Button
+                            size="xs"
+                            color="teal"
+                            variant="filled"
+                            onClick={() => approveMutation.mutate({ stepId: step.id, note })}
+                            loading={approveMutation.isPending}
+                            disabled={rejectMutation.isPending}
+                          >
+                            {t('purchaseRequests.approve')}
+                          </Button>
+                        </Group>
+                      </Stack>
+                    </Paper>
+                  )}
+                </Timeline.Item>
+              );
+            })}
+          </Timeline>
+        )}
+      </Stack>
+    </Paper>
+  );
+}
+
 function PurchaseRequestDetail({
   canManagePurchaseRequests,
   onUpdated,
@@ -480,6 +685,8 @@ function PurchaseRequestDetail({
         <Info label={t('common.requester')} value={`${request.requester.name} - ${request.requester.department}`} />
         <Info label={t('common.buyer')} value={`${request.purchasing_manager.name} - ${request.purchasing_manager.department}`} />
       </SimpleGrid>
+
+      <Gd1PrApprovalMatrix request={request} onUpdated={onUpdated} />
 
       <PurchaseRequestStatusActions request={request} onUpdated={onUpdated} statusLabel={statusLabel} />
 

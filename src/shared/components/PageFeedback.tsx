@@ -108,7 +108,7 @@ export function PageLoading({
 
 export function FullPageLoading({ description, title }: { description: string; title: string }) {
   return (
-    <Center h="100vh" p="md">
+    <Center h="100dvh" p="md">
       <Paper withBorder p="xl" maw={520} w="100%">
         <Stack gap="md" align="center">
           <Skeleton height={44} circle />

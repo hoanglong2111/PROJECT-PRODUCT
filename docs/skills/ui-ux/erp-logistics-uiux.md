@@ -1,27 +1,19 @@
 ---
 name: erp-logistics-uiux-doc-builder
-description: Use to generate or refactor ERP/SCM/logistics UI/UX specs and React implementations for PR, PO, DO, Tasks, Supplier, Warehouse, Workflow, SAP sync, and warehouse risk.
+description: Use to generate or refactor ERP/SCM/logistics UI/UX specs and React implementations for GD1 PR, Approval, PO, Shipment, Milestones, Tasks, Supplier, Workflow, ERP sync, and landed-cost risk.
 ---
 
-# ERP Logistics UI/UX Documentation Builder
+# GD1 ERP Logistics UI/UX Documentation Builder
 
 ## Scope
 
-Use this for ERP logistics screens and docs around:
+Use this for GD1 ERP logistics screens and docs around:
 
 ```text
-PR -> PO -> DO -> Documents -> Tasks -> Warehouse Entry -> Closure
+PR -> Approval -> PO -> Shipment -> 10 Milestones -> Documents + Costs -> ERP/GRN Sync
 ```
 
-Keep UI language Vietnamese unless asked otherwise. Keep field names, route names, component names, and acronyms (`PR`, `PO`, `DO`, `SAP`, `ETA`, `ETD`) in English.
-
-## Business Flow Tags
-
-- `LINEAR`: 1 PR -> 1 PO -> 1 DO
-- `BULK_PURCHASE`: N PR -> 1 PO -> 1 DO
-- `SPLIT_PURCHASE`: 1 PR -> N PO -> N DO
-- `PARTIAL_DELIVERY`: 1 PR -> 1 PO -> N DO
-- `CONTAINER_CONSOLIDATION`: N PR -> N PO -> 1 DO, where DO is shipment/container
+Keep UI language Vietnamese unless asked otherwise. Keep field names, route names, component names, and acronyms (`PR`, `PO`, `ETA`, `ETD`, `ATD`, `ATA`, `B/L`, `AWB`) in English.
 
 ## Tech Contract
 
@@ -32,96 +24,76 @@ Use existing project stack only:
 - TanStack Query for server state.
 - Zustand for UI filters/preferences.
 - React Router query params for shareable context.
-- Axios/API helpers through `src/api/*`.
-
-State ownership:
-
-- Server data: TanStack Query.
-- Filters/preferences: Zustand.
-- Entity focus: URL query params.
-- Temporary form/UI state: component state.
+- Axios/API helpers through `src/api/*` or `src/shared/api`.
 
 ## ERP Design Rules
 
 - Dense, quiet, operational, scan-first.
-- Tables for lists; drawers/tabs for detail.
+- Tables for lists; drawers/tabs/timelines for detail.
 - Cards only for metrics, repeated items, drawers/modals, framed tools.
-- Do not nest cards inside cards.
 - Every action must map to an entity and workflow step.
 - Disabled actions need visible reason.
 - Every icon-only action needs tooltip and `aria-label`.
 
-## Semantic Color
-
-| Meaning | Color |
-|---|---|
-| completed/synced/delivered | teal |
-| active/in progress | blue/cyan |
-| pending/waiting/near deadline | yellow/orange |
-| blocked/missing/late/failed | red |
-| cancelled/unknown | gray/dark |
-
-Pair color with text; never rely on color alone.
-
 ## Deep Links
 
-Supported context params:
+Preferred GD1 context params:
 
 ```text
 /purchase-requests?pr=...
 /purchase-orders?po=...
-/delivery-orders?do=...
-/delivery-orders?pr=...
-/tasks?do=...
+/delivery-orders?shipment=...
+/tasks?po=...
 /tasks?task=...
-/workflow?do=...
+/workflow?shipment=...
 /workflow?pr=...
 ```
 
-Closing detail removes only its own param. Cross-entity links use `EntityLink`.
+Legacy `do` params may remain until runtime route migration.
 
 ## Screen Requirements
 
 PR:
 
-- Show line items, source/fulfillment status, flow tags, deadline risk, linked PO/DO.
-- Filters: all, ready for PO, partially sourced, fully sourced, split purchase, risk.
+- Show PR lines, approval state, required date, total amount, conversion progress, linked PO.
+- Filters: all, pending approval, approved, rejected, partially converted, converted, cancelled.
 
 PO:
 
-- Show supplier, SAP status, source PR lines, linked DO, flow tags.
-- Filters: all, single source, bulk PR, awaiting DO, partial delivery, closed, SAP issues.
+- Show supplier, revision, source PR lines, status, ETA/ETD, shipment progress, landed-cost summary.
+- Filters: all, sent, confirmed, in production, ready to ship, shipped, received, cancelled.
 
-DO:
+Shipment:
 
-- Treat multi-source DO as shipment/container.
-- Show source lines, route, ETA, warehouse deadline, docs, tasks, SAP state, risk, flow tags.
-- Filters: all, single, partial, container, issues.
+- Show PO lines, mode, forwarder, B/L/AWB, route, ETA/ATA, customs stream, milestone progress, missing documents, cost status.
+- Detail tabs: Overview, Lines, Milestones, Documents, Customs, Costs, Tasks, Audit.
 
 Tasks:
 
-- Show parent DO/PR/PO, role, assignee, progress, due date, blocker, required flag.
-- Filters: status, role, required-only, context PR/DO, flow tag.
+- Show PO stage, task name, assignee, due date, blocker, linked milestone, status.
+- Filters: assignee, status, PO stage, overdue, blocked.
 
 Workflow:
 
-- Show compact PR -> PO -> DO -> docs/tasks/warehouse chain.
-- Tabs: all, 1-1-1, bulk, split, partial, container, issues.
+- Show compact PR -> PO -> Shipment -> milestone/cost/task chain.
+- Preserve entity ids, direct links, and risk reasons.
 
 Dashboard:
 
-- Show counts, risk queue, flow distribution, and quick links into filtered Workflow.
+- Show approval queue, shipment risk, PO ETA risk, task workload, cost allocation attention, and SLA breach list.
 
 ## Risk UX
 
 Risk reasons must be concrete:
 
+- approval overdue
+- PO ETA passed without ATD
+- milestone overdue
 - missing required document
-- ETA/planned entry after warehouse deadline
-- actual entry late
-- required task incomplete
-- task blocked
-- SAP sync incomplete/failed
+- shipment line exceeds tolerance
+- landed cost pending allocation
+- task blocked or overdue
+- customs stream yellow/red
 
 ## Done
 

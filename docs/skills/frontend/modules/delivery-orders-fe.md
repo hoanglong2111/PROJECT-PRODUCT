@@ -1,57 +1,83 @@
-# Delivery Orders Frontend Module
+# Shipment Frontend Module
 
-Use this when implementing `src/features/delivery-orders/page.tsx`.
+Use this when implementing the legacy `src/features/delivery-orders/page.tsx` route or a future shipment route.
+
+## Naming
+
+GD1 canonical name is `Shipment`. Current runtime and route may still say Delivery Orders or DO. Treat that as compatibility only.
 
 ## Query
 
-Use `fetchDeliveryOrders` with query key `delivery-orders`.
+Current compatibility:
+
+- `fetchDeliveryOrders` with query key `delivery-orders`
+
+Target GD1:
+
+- `fetchShipments` with query key `shipments`
+- `fetchShipmentMilestones`
+- `fetchShipmentCosts`
 
 ## State
 
 Use Zustand for:
 
-- `doSearch`
-- `doStatusFilter`
-- `doRiskOnly`
+- `shipmentSearch`
+- `shipmentStatusFilter`
+- `shipmentRiskOnly`
+- `shipmentModeFilter`
 
 Use URL params:
 
-- `do`
-- `pr`
-
-Use local state:
-
-- selected DO id.
+- preferred: `shipment`
+- legacy: `do`
+- context: `pr`, `po`
 
 ## Filtering
 
 Search dimensions:
 
-- DO number.
-- PR code.
-- PO number.
-- supplier name.
-- item name.
+- shipment number
+- PO number
+- PR number
+- supplier/forwarder
+- B/L or AWB
+- container number
+- vessel/flight
 
 Risk is:
 
-- warehouse delay.
-- blocked tasks.
-- missing documents.
-- SAP sync not `SYNCED`.
+- overdue/missing milestone actual date
+- missing required document
+- customs yellow/red
+- cost allocation pending
+- linked task blocked/overdue
+- ETA passed without ATD
 
 ## Detail
 
-Selected detail is inline below the table today. Keep route-param selection synchronized with selected id.
+Use tabs:
 
-Future detail tabs should be added incrementally without breaking the table.
+- Overview
+- Lines
+- Milestones
+- Documents
+- Customs
+- Costs
+- Tasks
+- Audit
 
-## Future Mutations
+Selected detail should remain synchronized with route params.
 
-- update status.
-- sync SAP.
-- upload documents.
-- update planned/actual warehouse entry.
-- close DO.
+## Mutations
 
-Mutations should invalidate DO, tasks, workflow, dashboard, and related PR/PO.
+Target actions:
+
+- create shipment from PO lines
+- update milestone actual date
+- upload milestone document
+- add/update shipment cost
+- update customs stream
+- trigger/inspect warehouse-arrival event
+
+Invalidate shipment, PO, tasks, workflow, dashboard after mutations.

@@ -31,6 +31,20 @@ export function getApiErrorMessage(error: unknown, fallback = 'Could not determi
   return fallback;
 }
 
+http.interceptors.request.use((config) => {
+  const method = config.method?.toUpperCase();
+  if (method === 'POST') {
+    const headers = config.headers;
+    if (headers && !headers['Idempotency-Key']) {
+      headers['Idempotency-Key'] =
+        typeof crypto !== 'undefined' && 'randomUUID' in crypto
+          ? crypto.randomUUID()
+          : `idem-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    }
+  }
+  return config;
+});
+
 if (typeof window !== 'undefined') {
   setHttpAuthToken(window.localStorage.getItem(AUTH_TOKEN_STORAGE_KEY));
 }

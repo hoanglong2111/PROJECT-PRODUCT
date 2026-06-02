@@ -1,10 +1,12 @@
 # Deployment Flow, MCP, and DB Plan
 
+This file describes the current runtime/deployment shape. For GD1 product schema and vocabulary, use `docs/context/PROJECT_CONTEXT.md` and `docs/database/GD1_DOCUMENT_ERD.md`.
+
 ## Current Runtime Shape
 
 The app now uses normalized PostgreSQL tables as the runtime database shape. `logistics_snapshots` is no longer created or seeded by the backend boot path.
 
-Core tables:
+Current runtime core tables:
 
 - `purchase_requests`
 - `purchase_request_lines`
@@ -19,6 +21,8 @@ Core tables:
 - `finance_charge_lines`
 - `finance_notes`
 - `audit_logs`
+
+GD1 mapping note: runtime `delivery_orders` is the current compatibility table for the GD1 `shipment` concept until an explicit migration is implemented.
 
 `server/services/logistics.ts` still exposes helper names `readSnapshot` and `writeSnapshot` internally to avoid a broad service rewrite, but those helpers now call `server/services/normalizedStore.ts` and read/write normalized tables.
 
@@ -285,5 +289,5 @@ DEPLOY_WEBHOOK_TOKEN=<optional-webhook-token>
 4. Deploy BE with `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGIN`.
 5. Verify `/api/health`.
 6. Deploy FE with `VITE_API_URL`.
-7. Verify login and PR/PO/DO/Tasks routes.
+7. Verify login and PR/PO/Shipment/Tasks routes. The Shipment board may still be served by the legacy `/delivery-orders` route.
 8. Add MCP server for readiness checks and operational inspection.

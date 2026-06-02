@@ -6,14 +6,21 @@ Use this when changing TanStack Query usage, API clients, mock data, or cache in
 
 Data is loaded from backend API helpers in `src/api/logistics.ts`; no client-side mock fallback is used.
 
-Current query keys:
+Current compatibility query keys:
 
 - `purchase-requests`
 - `purchase-orders`
-- `delivery-orders`
+- `delivery-orders` as legacy shipment data
 - `tasks`
 - `dashboard-stats`
 - `global-search`
+
+Target GD1 query keys:
+
+- `shipments`
+- `shipment-milestones`
+- `shipment-costs`
+- `task-templates`
 
 ## Fetching Rules
 
@@ -24,30 +31,32 @@ Current query keys:
 
 ## Future API Client
 
-When backend exists, add a client layer:
+Target modules:
 
 ```text
 src/api/client.ts
 src/api/purchaseRequests.ts
 src/api/purchaseOrders.ts
-src/api/deliveryOrders.ts
+src/api/shipments.ts
 src/api/tasks.ts
+src/api/taskTemplates.ts
 ```
 
 Avoid direct `axios` calls from route components.
 
 ## Invalidation Rules
 
-- PR mutation invalidates PR list/detail, workflow, dashboard.
-- PO mutation invalidates PO list/detail, related PRs, workflow, dashboard.
-- DO mutation invalidates DO list/detail, related PR/PO, tasks, workflow, dashboard.
-- Task mutation invalidates tasks, related DO, workflow, dashboard.
-- PO/DO creation with `sourceLines[]` must invalidate PR, PO, DO, tasks, dashboard stats, and global search because relationship and remaining-quantity views all change.
+- PR mutation invalidates PR list/detail, PO, workflow, dashboard.
+- PO mutation invalidates PO list/detail, related PRs, shipments, tasks, workflow, dashboard.
+- Shipment mutation invalidates shipment list/detail, related PO, tasks, workflow, dashboard.
+- Milestone mutation invalidates shipment, milestones, tasks, PO, dashboard.
+- Cost mutation invalidates shipment, costs, related PO landed-cost views, dashboard.
+- Task mutation invalidates tasks, related PO, shipment, workflow, dashboard.
 
 ## Error Handling
 
 Render:
 
-- validation errors near forms.
-- not-found entity context in a warning/empty state.
-- integration failures as Alert with specific reason.
+- validation errors near forms
+- not-found entity context in warning/empty state
+- integration failures as Alert with specific reason

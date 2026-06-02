@@ -20,14 +20,15 @@ Use this when implementing detail sections with Mantine Tabs.
 - Do not fetch independent heavy data for hidden tabs unless needed.
 - Use route/query state for selected tab only if users need shareable tab URLs.
 
-## DO Target Tabs
+## Shipment Target Tabs
 
 - `overview`
-- `logistics`
+- `lines`
+- `milestones`
 - `documents`
-- `warehouse`
-- `closure`
-- `finance`
+- `customs`
+- `costs`
+- `tasks`
 - `audit`
 
 ## Accessibility

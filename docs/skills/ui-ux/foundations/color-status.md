@@ -23,9 +23,10 @@ Use this for badges, alerts, table row emphasis, and risk states.
 
 Good:
 
-- `Late 3d`
+- `Approval overdue`
+- `ETA passed`
 - `2 missing docs`
-- `SYNC_INCOMPLETE`
+- `Cost pending`
 - `1 blocked task`
 
 Avoid:
@@ -36,4 +37,4 @@ Avoid:
 
 ## Cross-Module Consistency
 
-The same status should look the same on Dashboard, Workflow, PR, PO, DO, and Tasks. If a module needs special emphasis, add a reason label rather than changing the status language.
+The same status should look the same on Dashboard, Workflow, PR, PO, Shipment, and Tasks. If a module needs special emphasis, add a reason label rather than changing the status language.

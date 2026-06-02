@@ -9,29 +9,33 @@ Use this when changing routes, deep links, navigation, or page-level context.
 /workflow          -> Workflow
 /purchase-requests -> PurchaseRequests
 /purchase-orders   -> PurchaseOrders
-/delivery-orders   -> DeliveryOrders
+/delivery-orders   -> Legacy Shipment board route
 /tasks             -> Tasks
 ```
 
-Routes are defined in `src/app/routes.tsx`; `src/app/App.tsx` composes the router shell and guards. `src/App.tsx` is a compatibility re-export.
+Routes are defined in `src/app/routes.tsx`.
 
 ## Query Param Contract
 
-Use query params for shareable entity context:
+Preferred GD1 params:
 
 - `pr`
 - `po`
-- `do`
+- `shipment`
 - `task`
+
+Legacy compatibility:
+
+- `do` can remain while runtime still uses delivery-order naming.
 
 Examples:
 
 ```text
 /purchase-requests?pr=PR-2026-000145
-/purchase-orders?po=PO-4500098123
-/delivery-orders?do=DO-2026-000087
+/purchase-orders?po=PO-2026-000145
+/delivery-orders?shipment=SHP-2026-000087
 /tasks?task=TASK-2026-000553
-/workflow?do=DO-2026-000087
+/workflow?shipment=SHP-2026-000087
 ```
 
 ## Rules
@@ -43,9 +47,9 @@ Examples:
 
 ## Adding A Route
 
-1. Add the route component in `src/features/<feature>/page.tsx` and export it from `src/features/<feature>/index.ts`.
+1. Add the route component in `src/features/<feature>/page.tsx` and export it.
 2. Register the lazy import in `src/app/routes.tsx`.
-3. Add or reuse role sets in `src/app/routeRoles.ts` when the route is protected.
-4. Add navigation in `AppShellLayout` if it is primary.
+3. Add or reuse role sets in `src/app/routeRoles.ts` when protected.
+4. Add navigation in `AppShellLayout` if primary.
 5. Add route/deep-link behavior to docs if the page owns entity context.
 6. Add a UI/UX module spec and FE module spec.

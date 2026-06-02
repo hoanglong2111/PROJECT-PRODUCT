@@ -6,7 +6,7 @@ Use motion to clarify state changes, not to decorate operational screens.
 
 - Use subtle hover feedback on table rows and action buttons.
 - Use normal Drawer/Modal transitions from Mantine.
-- Use Progress animation only when it represents changing task completion.
+- Use Progress animation only when it represents changing task/milestone completion.
 - Use Skeletons for loading lists and detail panes.
 - Keep focus outlines visible.
 
@@ -27,9 +27,9 @@ Workflow:
 
 - focused entity rows may highlight briefly when deep-linked.
 
-Delivery Orders:
+Shipment:
 
-- status transition feedback can be subtle in the detail header.
+- milestone transition feedback can be subtle in the detail header.
 
 Tasks:
 

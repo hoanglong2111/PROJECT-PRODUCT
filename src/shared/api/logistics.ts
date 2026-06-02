@@ -36,6 +36,12 @@ import type {
   TaskRole,
   TaskStatus,
   UserRef,
+  Gd1ApprovalStep,
+  Gd1PoStageTask,
+  Gd1ShipmentMilestone,
+  Gd1ShipmentCost,
+  Gd1PoStatus,
+  Gd1MilestoneCode,
 } from '@/models/logistics';
 
 export type {
@@ -75,6 +81,12 @@ export type {
   TaskRole,
   TaskStatus,
   UserRef,
+  Gd1ApprovalStep,
+  Gd1PoStageTask,
+  Gd1ShipmentMilestone,
+  Gd1ShipmentCost,
+  Gd1PoStatus,
+  Gd1MilestoneCode,
 };
 
 type ApiResponse<T> = {
@@ -630,3 +642,120 @@ export async function updateLogisticsTask(taskId: string, payload: UpdateTaskPay
   const response = await http.patch<ApiResponse<LogisticsTask>>(`/tasks/${encodeURIComponent(taskId)}`, payload);
   return response.data.data;
 }
+
+// --- GD1 PR Approval chain endpoints ---
+export async function submitPurchaseRequestForApproval(requestedOrderId: string) {
+  const response = await http.post<ApiResponse<{ success: boolean }>>(
+    `/purchase-requests/${encodeURIComponent(requestedOrderId)}/submit`
+  );
+  return response.data.data;
+}
+
+export async function fetchPurchaseRequestApprovalSteps(requestedOrderId: string) {
+  const response = await http.get<ApiResponse<Gd1ApprovalStep[]>>(
+    `/purchase-requests/${encodeURIComponent(requestedOrderId)}/approval-steps`
+  );
+  return response.data.data;
+}
+
+export async function approvePurchaseRequestStep(stepId: string, note?: string) {
+  const response = await http.post<ApiResponse<{ success: boolean }>>(
+    `/purchase-requests/steps/${encodeURIComponent(stepId)}/approve`,
+    { note }
+  );
+  return response.data.data;
+}
+
+export async function rejectPurchaseRequestStep(stepId: string, note?: string) {
+  const response = await http.post<ApiResponse<{ success: boolean }>>(
+    `/purchase-requests/steps/${encodeURIComponent(stepId)}/reject`,
+    { note }
+  );
+  return response.data.data;
+}
+
+// --- GD1 PO stage & PO-stage tasks endpoints ---
+export async function advancePurchaseOrderStage(poNumber: string, stage: Gd1PoStatus) {
+  const response = await http.patch<ApiResponse<{ success: boolean }>>(
+    `/purchase-orders/${encodeURIComponent(poNumber)}/stage`,
+    { stage }
+  );
+  return response.data.data;
+}
+
+export async function fetchPurchaseOrderStageTasks(poNumber: string) {
+  const response = await http.get<ApiResponse<Gd1PoStageTask[]>>(
+    `/purchase-orders/${encodeURIComponent(poNumber)}/tasks`
+  );
+  return response.data.data;
+}
+
+// --- GD1 Shipment milestones & landed cost endpoints ---
+export async function fetchShipmentMilestones(orderNumber: string) {
+  const response = await http.get<ApiResponse<Gd1ShipmentMilestone[]>>(
+    `/delivery-orders/${encodeURIComponent(orderNumber)}/milestones`
+  );
+  return response.data.data;
+}
+
+export async function updateShipmentMilestone(
+  orderNumber: string,
+  milestoneCode: string,
+  payload: { actualDate: string | null; note?: string; source?: string }
+) {
+  const response = await http.patch<ApiResponse<{ success: boolean }>>(
+    `/delivery-orders/${encodeURIComponent(orderNumber)}/milestones/${encodeURIComponent(milestoneCode)}`,
+    payload
+  );
+  return response.data.data;
+}
+
+export async function fetchShipmentCosts(orderNumber: string) {
+  const response = await http.get<ApiResponse<Gd1ShipmentCost[]>>(
+    `/delivery-orders/${encodeURIComponent(orderNumber)}/costs`
+  );
+  return response.data.data;
+}
+
+export async function addShipmentCost(
+  orderNumber: string,
+  payload: {
+    costType: string;
+    amount: number;
+    currencyCode: string;
+    exchangeRate: number;
+    allocMethod: string;
+    invoiceRef?: string | null;
+  }
+) {
+  const response = await http.post<ApiResponse<Gd1ShipmentCost>>(
+    `/delivery-orders/${encodeURIComponent(orderNumber)}/costs`,
+    payload
+  );
+  return response.data.data;
+}
+
+export async function deleteShipmentCost(costId: string) {
+  const response = await http.delete<ApiResponse<{ success: boolean }>>(
+    `/delivery-orders/costs/${encodeURIComponent(costId)}`
+  );
+  return response.data.data;
+}
+
+export async function updatePoStageTask(
+  taskId: string,
+  payload: { status: string; note?: string }
+) {
+  const response = await http.patch<ApiResponse<{ success: boolean }>>(
+    `/tasks/po/${encodeURIComponent(taskId)}`,
+    payload
+  );
+  return response.data.data;
+}
+
+export async function fetchGlobalPoStageTasks() {
+  const response = await http.get<ApiResponse<Gd1PoStageTask[]>>('/tasks/po');
+  return response.data.data;
+}
+
+

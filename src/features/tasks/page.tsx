@@ -1,5 +1,6 @@
 import {
   ActionIcon,
+  Alert,
   Badge,
   Button,
   Drawer,
@@ -17,13 +18,16 @@ import {
   TextInput,
   Title,
   Tooltip,
+  Tabs,
+  Checkbox,
 } from '@mantine/core';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { IconAlertTriangle, IconChecklist, IconClock, IconEye, IconGitBranch, IconSearch, IconUserCheck } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
+import { getApiErrorMessage } from '@shared/api/http';
 import { EmptyState } from '@shared/components/EmptyState';
 import { EntityLink } from '@shared/components/EntityLink';
 import { ListPagination, useListPagination } from '@shared/components/ListPagination';
@@ -37,6 +41,9 @@ import {
   type LogisticsTask,
   type TaskRole,
   type TaskStatus,
+  fetchGlobalPoStageTasks,
+  updatePoStageTask,
+  type Gd1PoStageTask,
 } from '@shared/api/logistics';
 import { useEntityParam } from '@shared/hooks/useEntityParam';
 import { useI18n } from '@shared/i18n';
@@ -48,6 +55,153 @@ const priorityColor = {
   HIGH: 'orange',
   URGENT: 'red',
 } as const;
+
+function Gd1PoTasksBoard() {
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+
+  const tasksQuery = useQuery({
+    queryKey: ['po-stage-tasks'],
+    queryFn: fetchGlobalPoStageTasks,
+  });
+
+  const completeMutation = useMutation({
+    mutationFn: ({ taskId, status }: { taskId: string; status: string }) =>
+      updatePoStageTask(taskId, { status }),
+    onSuccess: () => {
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['po-stage-tasks'] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
+      ]);
+    },
+  });
+
+  const tasks = tasksQuery.data ?? [];
+
+  const filteredTasks = useMemo(() => {
+    const normalizedSearch = search.toLowerCase().trim();
+    return tasks.filter((task) => {
+      const matchesSearch =
+        task.task_name.toLowerCase().includes(normalizedSearch) ||
+        task.purchase_order_id.toLowerCase().includes(normalizedSearch) ||
+        task.assignee_id.toLowerCase().includes(normalizedSearch);
+
+      const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [search, statusFilter, tasks]);
+
+  if (tasksQuery.isError) {
+    return (
+      <Alert color="red" title="Lỗi tải danh sách checklist">
+        {getApiErrorMessage(tasksQuery.error)}
+      </Alert>
+    );
+  }
+
+  return (
+    <Stack gap="md">
+      <Paper withBorder p="md">
+        <Group gap="md">
+          <TextInput
+            placeholder="Tìm theo tên task, số PO hoặc vai trò..."
+            value={search}
+            onChange={(e) => setSearch(e.currentTarget.value)}
+            style={{ flex: 1 }}
+            leftSection={<IconSearch size={16} />}
+          />
+          <Select
+            value={statusFilter}
+            onChange={(val) => setStatusFilter(val || 'all')}
+            data={[
+              { label: 'Tất cả trạng thái', value: 'all' },
+              { label: 'Chưa làm (PENDING)', value: 'PENDING' },
+              { label: 'Đang làm (IN_PROGRESS)', value: 'IN_PROGRESS' },
+              { label: 'Hoàn thành (DONE)', value: 'DONE' },
+            ]}
+          />
+        </Group>
+      </Paper>
+
+      {tasksQuery.isLoading ? (
+        <Group justify="center" p="xl">
+          <Loader size="md" />
+          <Text c="dimmed">Đang tải danh sách checklist...</Text>
+        </Group>
+      ) : filteredTasks.length === 0 ? (
+        <EmptyState title="Không tìm thấy công việc nào" description="Không có công việc checklist PO nào khớp với bộ lọc của bạn." />
+      ) : (
+        <Paper withBorder p="0" style={{ overflow: 'hidden' }}>
+          <Table verticalSpacing="sm" highlightOnHover>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th style={{ width: 40 }}></Table.Th>
+                <Table.Th>Công việc checklist PO</Table.Th>
+                <Table.Th>Mã PO</Table.Th>
+                <Table.Th>Chặng</Table.Th>
+                <Table.Th>Vai trò</Table.Th>
+                <Table.Th>Hạn hoàn thành</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {filteredTasks.map((task) => {
+                const isCompleted = task.status === 'DONE';
+                return (
+                  <Table.Tr
+                    key={task.id}
+                    style={{ backgroundColor: isCompleted ? 'rgba(46, 125, 50, 0.02)' : undefined }}
+                  >
+                    <Table.Td>
+                      <Checkbox
+                        checked={isCompleted}
+                        onChange={(e) =>
+                          completeMutation.mutate({
+                            taskId: task.id,
+                            status: e.currentTarget.checked ? 'DONE' : 'PENDING',
+                          })
+                        }
+                        color="teal"
+                      />
+                    </Table.Td>
+                    <Table.Td>
+                      <Text fw={600} size="sm" style={{ textDecoration: isCompleted ? 'line-through' : 'none' }}>
+                        {task.task_name}
+                      </Text>
+                      {task.note && (
+                        <Text size="xs" c="dimmed" fs="italic">
+                          Ghi chú: {task.note}
+                        </Text>
+                      )}
+                    </Table.Td>
+                    <Table.Td>
+                      <EntityLink type="po" id={task.purchase_order_id} />
+                    </Table.Td>
+                    <Table.Td>
+                      <Badge color="gray" variant="light">
+                        {task.po_stage}
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Badge color="blue" variant="light">
+                        {task.assignee_id}
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="xs" className="tabular-nums">
+                        {task.due_date ? new Date(task.due_date).toLocaleDateString() : '-'}
+                      </Text>
+                    </Table.Td>
+                  </Table.Tr>
+                );
+              })}
+            </Table.Tbody>
+          </Table>
+        </Paper>
+      )}
+    </Stack>
+  );
+}
 
 export function Tasks() {
   const { flowTagLabel, priorityLabel, statusLabel, t, taskRoleLabel } = useI18n();
@@ -197,191 +351,210 @@ export function Tasks() {
         </Badge>
       </Group>
 
-      {focusedDo || focusedPr ? (
-        <Paper withBorder p="md" className="flow-context">
-          <Group justify="space-between">
-            <Text size="sm">
-              {t('tasks.context', { kind: focusedDo ? 'DO' : 'PR', id: focusedDo ?? focusedPr })}
-            </Text>
-            <Button
-              component={Link}
-              to={`/workflow?${focusedDo ? `do=${focusedDo}` : `pr=${focusedPr}`}`}
-              size="xs"
-              variant="light"
-              leftSection={<IconGitBranch size={14} />}
-            >
-              {t('purchaseRequests.openFlow')}
-            </Button>
-          </Group>
-        </Paper>
-      ) : null}
+      <Tabs defaultValue="closure">
+        <Tabs.List mb="md">
+          <Tabs.Tab value="closure" leftSection={<IconChecklist size={16} />}>
+            {t('tasks.tabClosureTasks')}
+          </Tabs.Tab>
+          <Tabs.Tab value="po_checkpoints" leftSection={<IconGitBranch size={16} />}>
+            {t('tasks.tabPoCheckpoints')}
+          </Tabs.Tab>
+        </Tabs.List>
 
-      <SimpleGrid cols={{ base: 1, sm: 3 }}>
-        <Metric label={t('tasks.totalTasks')} value={tasks.length} color="blue" icon={<IconChecklist size={22} />} />
-        <Metric label={t('tasks.blocked')} value={blockedCount} color="red" icon={<IconAlertTriangle size={22} />} />
-        <Metric label={t('tasks.overdue')} value={overdueCount} color="orange" icon={<IconClock size={22} />} />
-      </SimpleGrid>
+        <Tabs.Panel value="closure">
+          <Stack gap="lg">
+            {focusedDo || focusedPr ? (
+              <Paper withBorder p="md" className="flow-context">
+                <Group justify="space-between">
+                  <Text size="sm">
+                    {t('tasks.context', { kind: focusedDo ? 'DO' : 'PR', id: focusedDo ?? focusedPr })}
+                  </Text>
+                  <Button
+                    component={Link}
+                    to={`/workflow?${focusedDo ? `do=${focusedDo}` : `pr=${focusedPr}`}`}
+                    size="xs"
+                    variant="light"
+                    leftSection={<IconGitBranch size={14} />}
+                  >
+                    {t('purchaseRequests.openFlow')}
+                  </Button>
+                </Group>
+              </Paper>
+            ) : null}
 
-      <Paper withBorder p="md">
-        <SimpleGrid cols={{ base: 1, md: 6 }}>
-          <TextInput
-            label={t('common.search')}
-            placeholder={t('tasks.searchPlaceholder')}
-            leftSection={<IconSearch size={16} />}
-            value={search}
-            onChange={(event) => setSearch(event.currentTarget.value)}
-          />
-          <Select
-            label={t('common.status')}
-            value={statusFilter}
-            onChange={(value) => setStatusFilter((value ?? 'all') as TaskStatus | 'all')}
-            data={[
-              { label: t('common.allStatuses'), value: 'all' },
-              { label: statusLabel('TODO'), value: 'TODO' },
-              { label: statusLabel('IN_PROGRESS'), value: 'IN_PROGRESS' },
-              { label: statusLabel('WAITING'), value: 'WAITING' },
-              { label: statusLabel('BLOCKED'), value: 'BLOCKED' },
-              { label: statusLabel('COMPLETED'), value: 'COMPLETED' },
-              { label: statusLabel('CANCELLED'), value: 'CANCELLED' },
-            ]}
-          />
-          <Select
-            label={t('common.role')}
-            value={roleFilter}
-            onChange={(value) => setRoleFilter((value ?? 'all') as TaskRole | 'all')}
-            data={[
-              { label: t('common.allRoles'), value: 'all' },
-              { label: taskRoleLabel('PIC Manager'), value: 'PIC Manager' },
-              { label: taskRoleLabel('Sale Staff'), value: 'Sale Staff' },
-              { label: taskRoleLabel('Port Officer'), value: 'Port Officer' },
-              { label: taskRoleLabel('Customs Officer'), value: 'Customs Officer' },
-              { label: taskRoleLabel('Finance Officer'), value: 'Finance Officer' },
-              { label: taskRoleLabel('Warehouse Staff'), value: 'Warehouse Staff' },
-            ]}
-          />
-          <Select
-            label={t('common.flow')}
-            value={flowFilter}
-            onChange={(value) => setFlowFilter((value ?? 'all') as BusinessFlowTag | 'all')}
-            data={[
-              { label: t('common.all'), value: 'all' },
-              { label: flowTagLabel('LINEAR'), value: 'LINEAR' },
-              { label: flowTagLabel('BULK_PURCHASE'), value: 'BULK_PURCHASE' },
-              { label: flowTagLabel('SPLIT_PURCHASE'), value: 'SPLIT_PURCHASE' },
-              { label: flowTagLabel('PARTIAL_DELIVERY'), value: 'PARTIAL_DELIVERY' },
-              { label: flowTagLabel('CONTAINER_CONSOLIDATION'), value: 'CONTAINER_CONSOLIDATION' },
-            ]}
-          />
-          <Switch
-            className="filter-switch"
-            checked={requiredOnly}
-            onChange={(event) => setRequiredOnly(event.currentTarget.checked)}
-            label={t('tasks.filterRequiredOnly')}
-          />
-          <Group className="filter-actions" gap="xs">
-            {isFetching ? <Loader size="sm" /> : null}
-            <Text size="sm" c="dimmed">
-              {t('common.shown', { count: filteredTasks.length })}
-            </Text>
-          </Group>
-        </SimpleGrid>
-      </Paper>
+            <SimpleGrid cols={{ base: 1, sm: 3 }}>
+              <Metric label={t('tasks.totalTasks')} value={tasks.length} color="blue" icon={<IconChecklist size={22} />} />
+              <Metric label={t('tasks.blocked')} value={blockedCount} color="red" icon={<IconAlertTriangle size={22} />} />
+              <Metric label={t('tasks.overdue')} value={overdueCount} color="orange" icon={<IconClock size={22} />} />
+            </SimpleGrid>
 
-      <Paper withBorder p={0}>
-        <ScrollArea className="data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
-          <Table miw={1320} verticalSpacing="sm" highlightOnHover>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>{t('common.task')}</Table.Th>
-                <Table.Th>DO</Table.Th>
-                <Table.Th>{t('common.role')}</Table.Th>
-                <Table.Th>{t('common.assignee')}</Table.Th>
-                <Table.Th>{t('forms.priority')}</Table.Th>
-                <Table.Th>{t('common.status')}</Table.Th>
-                <Table.Th>{t('tasks.progress')}</Table.Th>
-                <Table.Th>{t('tasks.dueDate')}</Table.Th>
-                <Table.Th>{t('common.blocker')}</Table.Th>
-                <Table.Th />
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {visibleTasks.map((task) => (
-                <Table.Tr key={task.task_id}>
-                  <Table.Td className="table-cell-truncate" style={{ maxWidth: '20rem' }}>
-                    <Text fw={700} lineClamp={1} title={task.task_name}>{task.task_name}</Text>
-                    <Text size="xs" c="dimmed">
-                      {task.task_id}
-                    </Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Text size="sm" fw={600}>
-                      {task.do_number}
-                    </Text>
-                    <Text size="xs" c="dimmed">
-                      {task.request_code}
-                    </Text>
-                  </Table.Td>
-                  <Table.Td>{taskRoleLabel(task.role)}</Table.Td>
-                  <Table.Td>
-                    <Text size="sm" fw={600}>
-                      {task.assignee.name}
-                    </Text>
-                    <Text size="xs" c="dimmed">
-                      {task.assignee.department}
-                    </Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Badge color={priorityColor[task.priority]} variant="light">
-                      {priorityLabel(task.priority)}
-                    </Badge>
-                  </Table.Td>
-                  <Table.Td>
-                    <StatusBadge status={task.status} />
-                  </Table.Td>
-                  <Table.Td>
-                    <Progress value={task.progress} color={task.progress === 100 ? 'teal' : 'blue'} size="sm" mb={4} />
-                    <Text size="xs" c="dimmed">
-                      {task.progress}%
-                    </Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Text c={isOverdue(task) ? 'red' : undefined}>
-                      {task.due_date}
-                    </Text>
-                  </Table.Td>
-                  <Table.Td className="table-cell-truncate" style={{ maxWidth: '18rem' }}>
-                    {task.blocked_reason ? (
-                      <Badge color="red" title={task.blocked_reason}>{task.blocked_reason}</Badge>
-                    ) : (
-                      <Text size="sm" c="dimmed">
-                        -
-                      </Text>
-                    )}
-                  </Table.Td>
-                  <Table.Td>
-                    <Tooltip label={t('tasks.openDetail')}>
-                      <ActionIcon variant="subtle" aria-label={t('tasks.openDetail')} onClick={() => openTask(task)}>
-                        <IconEye size={18} />
-                      </ActionIcon>
-                    </Tooltip>
-                  </Table.Td>
-                </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
-        </ScrollArea>
-        <ListPagination
-          page={page}
-          pageCount={pageCount}
-          pageEnd={pageEnd}
-          pageStart={pageStart}
-          setPage={setPage}
-          total={filteredTasks.length}
-        />
-        {filteredTasks.length === 0 ? (
-          <EmptyState title={t('tasks.emptyTitle')} description={t('tasks.emptyDescription')} />
-        ) : null}
-      </Paper>
+            <Paper withBorder p="md">
+              <SimpleGrid cols={{ base: 1, md: 6 }}>
+                <TextInput
+                  label={t('common.search')}
+                  placeholder={t('tasks.searchPlaceholder')}
+                  leftSection={<IconSearch size={16} />}
+                  value={search}
+                  onChange={(event) => setSearch(event.currentTarget.value)}
+                />
+                <Select
+                  label={t('common.status')}
+                  value={statusFilter}
+                  onChange={(value) => setStatusFilter((value ?? 'all') as TaskStatus | 'all')}
+                  data={[
+                    { label: t('common.allStatuses'), value: 'all' },
+                    { label: statusLabel('TODO'), value: 'TODO' },
+                    { label: statusLabel('IN_PROGRESS'), value: 'IN_PROGRESS' },
+                    { label: statusLabel('WAITING'), value: 'WAITING' },
+                    { label: statusLabel('BLOCKED'), value: 'BLOCKED' },
+                    { label: statusLabel('COMPLETED'), value: 'COMPLETED' },
+                    { label: statusLabel('CANCELLED'), value: 'CANCELLED' },
+                  ]}
+                />
+                <Select
+                  label={t('common.role')}
+                  value={roleFilter}
+                  onChange={(value) => setRoleFilter((value ?? 'all') as TaskRole | 'all')}
+                  data={[
+                    { label: t('common.allRoles'), value: 'all' },
+                    { label: taskRoleLabel('PIC Manager'), value: 'PIC Manager' },
+                    { label: taskRoleLabel('Sale Staff'), value: 'Sale Staff' },
+                    { label: taskRoleLabel('Port Officer'), value: 'Port Officer' },
+                    { label: taskRoleLabel('Customs Officer'), value: 'Customs Officer' },
+                    { label: taskRoleLabel('Finance Officer'), value: 'Finance Officer' },
+                    { label: taskRoleLabel('Warehouse Staff'), value: 'Warehouse Staff' },
+                  ]}
+                />
+                <Select
+                  label={t('common.flow')}
+                  value={flowFilter}
+                  onChange={(value) => setFlowFilter((value ?? 'all') as BusinessFlowTag | 'all')}
+                  data={[
+                    { label: t('common.all'), value: 'all' },
+                    { label: flowTagLabel('LINEAR'), value: 'LINEAR' },
+                    { label: flowTagLabel('BULK_PURCHASE'), value: 'BULK_PURCHASE' },
+                    { label: flowTagLabel('SPLIT_PURCHASE'), value: 'SPLIT_PURCHASE' },
+                    { label: flowTagLabel('PARTIAL_DELIVERY'), value: 'PARTIAL_DELIVERY' },
+                    { label: flowTagLabel('CONTAINER_CONSOLIDATION'), value: 'CONTAINER_CONSOLIDATION' },
+                  ]}
+                />
+                <Switch
+                  className="filter-switch"
+                  checked={requiredOnly}
+                  onChange={(event) => setRequiredOnly(event.currentTarget.checked)}
+                  label={t('tasks.filterRequiredOnly')}
+                />
+                <Group className="filter-actions" gap="xs">
+                  {isFetching ? <Loader size="sm" /> : null}
+                  <Text size="sm" c="dimmed">
+                    {t('common.shown', { count: filteredTasks.length })}
+                  </Text>
+                </Group>
+              </SimpleGrid>
+            </Paper>
+
+            <Paper withBorder p={0}>
+              <ScrollArea className="data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
+                <Table miw={1320} verticalSpacing="sm" highlightOnHover>
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th>{t('common.task')}</Table.Th>
+                      <Table.Th>DO</Table.Th>
+                      <Table.Th>{t('common.role')}</Table.Th>
+                      <Table.Th>{t('common.assignee')}</Table.Th>
+                      <Table.Th>{t('forms.priority')}</Table.Th>
+                      <Table.Th>{t('common.status')}</Table.Th>
+                      <Table.Th>{t('tasks.progress')}</Table.Th>
+                      <Table.Th>{t('tasks.dueDate')}</Table.Th>
+                      <Table.Th>{t('common.blocker')}</Table.Th>
+                      <Table.Th />
+                    </Table.Tr>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {visibleTasks.map((task) => (
+                      <Table.Tr key={task.task_id}>
+                        <Table.Td className="table-cell-truncate" style={{ maxWidth: '20rem' }}>
+                          <Text fw={700} lineClamp={1} title={task.task_name}>{task.task_name}</Text>
+                          <Text size="xs" c="dimmed">
+                            {task.task_id}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text size="sm" fw={600}>
+                            {task.do_number}
+                          </Text>
+                          <Text size="xs" c="dimmed">
+                            {task.request_code}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>{taskRoleLabel(task.role)}</Table.Td>
+                        <Table.Td>
+                          <Text size="sm" fw={600}>
+                            {task.assignee.name}
+                          </Text>
+                          <Text size="xs" c="dimmed">
+                            {task.assignee.department}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Badge color={priorityColor[task.priority]} variant="light">
+                            {priorityLabel(task.priority)}
+                          </Badge>
+                        </Table.Td>
+                        <Table.Td>
+                          <StatusBadge status={task.status} />
+                        </Table.Td>
+                        <Table.Td>
+                          <Progress value={task.progress} color={task.progress === 100 ? 'teal' : 'blue'} size="sm" mb={4} />
+                          <Text size="xs" c="dimmed">
+                            {task.progress}%
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text c={isOverdue(task) ? 'red' : undefined}>
+                            {task.due_date}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td className="table-cell-truncate" style={{ maxWidth: '18rem' }}>
+                          {task.blocked_reason ? (
+                            <Badge color="red" title={task.blocked_reason}>{task.blocked_reason}</Badge>
+                          ) : (
+                            <Text size="sm" c="dimmed">
+                              -
+                            </Text>
+                          )}
+                        </Table.Td>
+                        <Table.Td>
+                          <Tooltip label={t('tasks.openDetail')}>
+                            <ActionIcon variant="subtle" aria-label={t('tasks.openDetail')} onClick={() => openTask(task)}>
+                              <IconEye size={18} />
+                            </ActionIcon>
+                          </Tooltip>
+                        </Table.Td>
+                      </Table.Tr>
+                    ))}
+                  </Table.Tbody>
+                </Table>
+              </ScrollArea>
+              <ListPagination
+                page={page}
+                pageCount={pageCount}
+                pageEnd={pageEnd}
+                pageStart={pageStart}
+                setPage={setPage}
+                total={filteredTasks.length}
+              />
+              {filteredTasks.length === 0 ? (
+                <EmptyState title={t('tasks.emptyTitle')} description={t('tasks.emptyDescription')} />
+              ) : null}
+            </Paper>
+          </Stack>
+        </Tabs.Panel>
+
+        <Tabs.Panel value="po_checkpoints">
+          <Gd1PoTasksBoard />
+        </Tabs.Panel>
+      </Tabs>
 
       <Drawer opened={Boolean(focusedTask && selectedTask)} onClose={closeDrawer} title={t('tasks.detailTitle')} position="right" size="lg">
         {selectedTask ? <TaskDetail task={selectedTask} onUpdated={setSelectedTask} /> : null}

@@ -13,7 +13,7 @@ Debug KBFE screens as both a senior UI/UX designer and frontend engineer. The go
 
 - A screen looks visually noisy, text-heavy, misaligned, sparse, or hard to scan.
 - A Mantine/React component behaves incorrectly across desktop, mobile, theme, density, or language.
-- Layout breaks with long PR/PO/DO/task codes, Vietnamese labels, badges, buttons, tables, tabs, drawers, or forms.
+- Layout breaks with long PR/PO/shipment/task codes, Vietnamese labels, badges, buttons, tables, tabs, drawers, or forms.
 - Search/filter/table/detail UX does not support the operational task quickly enough.
 - A theme, design token, status color, loading/empty/error state, or accessibility behavior regresses.
 - The user asks for UI/UX review, polish, redesign, bugfix, or "debug UI".
@@ -69,7 +69,7 @@ Gather only what is needed:
 - Keep operational pages compact, dense, and scannable.
 - Use tables, filters, metrics, drawers, tabs, badges, alerts, progress, and timelines before decorative cards.
 - Do not nest cards inside cards.
-- Pair status colors with explicit text like `Missing B/L`, `Late 3d`, `Blocked`, or `SYNC_FAILED`.
+- Pair status colors with explicit text like `Missing B/L`, `ETA passed`, `Blocked`, or `Cost pending`.
 - Preserve route query params and entity deep links.
 - Keep admin-only and role-gated UI hidden when the role cannot use it.
 - Use `ActionIcon` only with tooltip and `aria-label`.

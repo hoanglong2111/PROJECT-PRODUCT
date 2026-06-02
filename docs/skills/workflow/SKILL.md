@@ -1,41 +1,32 @@
 ---
 name: workflow-businessflow-builder
-description: Use to turn business requirements, entity docs, ERP/SCM/logistics notes, or UI/API specs into workflow and business-flow documentation with actors, states, rules, UI touchpoints, backend mapping, and QA checks.
+description: Use to turn GD1 business requirements, entity docs, ERP/SCM/logistics notes, or UI/API specs into workflow documentation with actors, states, rules, UI touchpoints, backend mapping, SLA, and QA checks.
 ---
 
-# Workflow Businessflow Builder
+# GD1 Workflow Businessflow Builder
 
 ## Purpose
 
 Create workflow docs that answer: who does what, when, with which data, on which screen/API, and what blocks completion.
 
-For KBFE logistics relay, hard rules, SLA timers, SAP/eFMS, customs lanes, and finance-note sequencing, use `docs/context/OPERATING_MODEL.md` as the operating truth.
+For GD1, the baseline flow is:
+
+```text
+PR -> Approval -> PO -> Shipment -> 10 Milestones -> Documents + Landed Cost -> ERP/GRN Sync
+```
+
+Use `docs/context/OPERATING_MODEL.md` for state machines, hard rules, SLA timers, and integration events.
 
 ## Use When
 
-- Creating PR/PO/DO/task workflow docs.
-- Converting business notes into implementation-ready flow.
+- Creating PR, approval, PO, shipment, milestone, landed-cost, or task workflow docs.
+- Converting GD1 business notes into implementation-ready flow.
 - Building swimlanes, state transitions, UI/API mapping, or QA acceptance.
-- Documenting risk, deadline, escalation, or closure-gate rules.
-
-Do not use for pure code debugging, visual UI design, or database schema work unless workflow is the main input.
-
-## Required Inputs
-
-At least one:
-
-- business description
-- entity doc
-- actors/roles
-- states
-- business rules
-- UI/API notes
-
-Add assumptions when actor/state/API details are missing.
+- Documenting risk, deadline, escalation, task blockers, missing documents, over-shipment, or landed-cost allocation.
 
 ## Output Shape
 
-For large flows, produce sections:
+For large flows, produce:
 
 - scope/non-scope
 - trigger and completion criteria
@@ -49,29 +40,29 @@ For large flows, produce sections:
 - data dependencies
 - notifications/escalation
 - QA acceptance
-- AI/RAG notes if useful
+- assumptions and conflicts
 
 ## Workflow Method
 
-1. Extract entities, actors, states, deadlines, tasks, rules.
+1. Extract GD1 entities, actors, states, deadlines, tasks, rules.
 2. Define start, end, and closure gate.
 3. Write high-level flow before screen detail.
 4. Separate happy path from exceptions.
 5. Map each step to UI, API/service, and data mutation.
-6. Add risk/escalation rules for deadlines, blockers, missing docs, or SAP sync.
-7. Add SLA timers, hard rules, and finance/document gates from the operating model when relevant.
+6. Add risk/escalation rules for deadlines, blockers, missing docs, shipment delay, over-shipment, or approval timeout.
+7. Add SLA timers from `docs/context/OPERATING_MODEL.md`.
 8. Add QA checks.
 9. List assumptions and conflicts.
 
-## KBFE Flow Tags
+## GD1 Flow Tags
 
-Use these canonical tags:
+Use these tags in docs and UI filters when helpful:
 
-- `LINEAR`: 1 PR -> 1 PO -> 1 DO
-- `BULK_PURCHASE`: N PR -> 1 PO -> 1 DO
-- `SPLIT_PURCHASE`: 1 PR -> N PO -> N DO
-- `PARTIAL_DELIVERY`: 1 PR -> 1 PO -> N DO
-- `CONTAINER_CONSOLIDATION`: N PR -> N PO -> 1 DO
+- `LINEAR`: 1 PR -> 1 PO -> 1 Shipment
+- `SPLIT_PURCHASE`: 1 PR -> N PO
+- `PARTIAL_CONVERSION`: PR line partially converted to PO
+- `PARTIAL_SHIPMENT`: 1 PO line -> N Shipments
+- `CONSOLIDATED_SHIPMENT`: N PO lines -> 1 Shipment
 
 ## Quality Bar
 

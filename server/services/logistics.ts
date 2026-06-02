@@ -11,6 +11,7 @@ import { pool } from '../db';
 import { ApiError } from '../errors';
 import { normalizeCurrencyCode } from './exchangeRates';
 import { readSnapshot, writeSnapshot } from './logisticsSnapshots';
+import { createMilestonesForShipment } from './milestones';
 import {
   addDays,
   appendUnique,
@@ -240,6 +241,7 @@ export async function createDeliveryOrder(body: CreateDeliveryOrderBody) {
       writeSnapshot('delivery_orders', classifiedDeliveryOrders, client),
       writeSnapshot('tasks', [...deliveryTasks, ...tasks], client),
     ]);
+    await createMilestonesForShipment(deliveryOrder.id, null, client);
     await client.query('COMMIT');
 
     return deliveryOrder;

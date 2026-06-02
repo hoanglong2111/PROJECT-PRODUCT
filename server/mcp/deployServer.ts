@@ -26,7 +26,12 @@ type EnvCheck = {
 };
 
 const repoRoot = fileURLToPath(new URL('../../', import.meta.url));
-const migrationUrl = new URL('../migrations/001_normalized_logistics_schema.sql', import.meta.url);
+const migrationUrls = [
+  new URL('../migrations/001_normalized_logistics_schema.sql', import.meta.url),
+  new URL('../migrations/002_gd1_core_tables.sql', import.meta.url),
+  new URL('../migrations/003_gd1_field_additions.sql', import.meta.url),
+  new URL('../migrations/004_reliability_integration_foundation.sql', import.meta.url),
+];
 const protocolVersion = '2024-11-05';
 
 const requiredRuntimeEnv = ['VITE_API_URL', 'CORS_ORIGIN', 'DATABASE_URL', 'JWT_SECRET'];
@@ -57,6 +62,20 @@ const normalizedTables = [
   'finance_charge_lines',
   'finance_notes',
   'audit_logs',
+  'shipment_milestones',
+  'shipment_costs',
+  'po_task_templates',
+  'po_stage_tasks',
+  'approval_matrix_configs',
+  'approval_steps',
+  'idempotency_keys',
+  'outbox_events',
+  'inbox_events',
+  'integration_configs',
+  'integration_raw_events',
+  'scheduler_jobs',
+  'dashboard_aggregate_snapshots',
+  'state_transition_logs',
 ];
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -234,23 +253,24 @@ async function checkRepoReadiness(includeBuild: boolean) {
 }
 
 async function runDbMigration(confirm: boolean) {
-  const migrationSql = await readFile(migrationUrl, 'utf8');
-
   if (!confirm) {
     return {
       ok: false,
       dryRun: true,
-      message: 'Set confirm=true to apply the allowlisted normalized logistics migration.',
-      migrationFile: fileURLToPath(migrationUrl),
+      message: 'Set confirm=true to apply the allowlisted normalized logistics and GD1 migrations.',
+      migrationFiles: migrationUrls.map((url) => fileURLToPath(url)),
     };
   }
 
-  await pool.query(migrationSql);
+  for (const migrationUrl of migrationUrls) {
+    const migrationSql = await readFile(migrationUrl, 'utf8');
+    await pool.query(migrationSql);
+  }
 
   return {
     ok: true,
     dryRun: false,
-    migrationFile: fileURLToPath(migrationUrl),
+    migrationFiles: migrationUrls.map((url) => fileURLToPath(url)),
   };
 }
 
@@ -300,6 +320,89 @@ async function triggerDeploy(target: 'frontend' | 'backend', confirm: boolean) {
     status: response.status,
     bodyPreview,
   };
+}
+
+async function getPendingTasks() {
+  try {
+    const exists = await pool.query(`
+      SELECT EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_schema = 'public' AND table_name = 'logistics_tasks'
+      )
+    `);
+    if (!exists.rows[0]?.exists) {
+      return { message: 'Table logistics_tasks does not exist. Run db migrations or seed first.' };
+    }
+    const result = await pool.query(`
+      SELECT task_id, task_name, role, do_number, status, progress, due_date, is_required_for_do_closure
+      FROM logistics_tasks
+      WHERE status != 'COMPLETED'
+      ORDER BY due_date ASC
+      LIMIT 100
+    `);
+    return { pendingTasks: result.rows };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+async function getLogisticsRisks() {
+  try {
+    const tablesCheck = await pool.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' 
+        AND table_name IN ('delivery_orders', 'efms_document_reviews', 'purchase_orders')
+    `);
+    const existing = new Set(tablesCheck.rows.map(r => r.table_name));
+    if (!existing.has('delivery_orders')) {
+      return { message: 'Required logistics tables do not exist. Run db migrations or seed first.' };
+    }
+
+    const lateDos = await pool.query(`
+      SELECT order_number, warehouse_deadline, planned_entry_date, actual_entry_date, delay_days, status
+      FROM delivery_orders
+      WHERE (actual_entry_date IS NULL AND planned_entry_date > warehouse_deadline)
+         OR (actual_entry_date IS NULL AND NOW()::date > warehouse_deadline)
+         OR (actual_entry_date > warehouse_deadline)
+      LIMIT 50
+    `);
+
+    let docIssues: any[] = [];
+    if (existing.has('efms_document_reviews')) {
+      const docResult = await pool.query(`
+        SELECT delivery_order_id, hbl_number, status, sla_status, notes
+        FROM efms_document_reviews
+        WHERE status IN ('WAITING_DOCUMENTS', 'MISMATCH')
+        LIMIT 50
+      `);
+      docIssues = docResult.rows;
+    }
+
+    let sapSyncIssues: any[] = [];
+    if (existing.has('purchase_orders')) {
+      const sapResult = await pool.query(`
+        SELECT po_number AS reference, sap_sync_status, status, 'PO' AS entity_type
+        FROM purchase_orders
+        WHERE sap_sync_status IN ('FAILED', 'PENDING')
+        UNION
+        SELECT order_number AS reference, sap_sync_status, status, 'DO' AS entity_type
+        FROM delivery_orders
+        WHERE sap_sync_status IN ('FAILED', 'PENDING')
+        LIMIT 50
+      `);
+      sapSyncIssues = sapResult.rows;
+    }
+
+    return {
+      lateDeliveryOrders: lateDos.rows,
+      documentIssues: docIssues,
+      sapSyncIssues: sapSyncIssues,
+      generatedAt: new Date().toISOString()
+    };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : String(error) };
+  }
 }
 
 function jsonText(value: unknown): ToolResult {
@@ -358,6 +461,14 @@ async function readResource(uri: string) {
     };
   }
 
+  if (uri === 'kbfe://logistics/risk-queue') {
+    return getLogisticsRisks();
+  }
+
+  if (uri === 'kbfe://logistics/tasks/pending') {
+    return getPendingTasks();
+  }
+
   throw new Error(`Unknown resource: ${uri}`);
 }
 
@@ -397,6 +508,18 @@ function listResources() {
       uri: 'kbfe://risk-queue',
       name: 'Deploy Risk Queue',
       description: 'Known deploy risks and guardrails.',
+      mimeType: 'application/json',
+    },
+    {
+      uri: 'kbfe://logistics/risk-queue',
+      name: 'Logistics Risk Queue',
+      description: 'LIVE shipment delays, document mismatch and pending SAP sync risks.',
+      mimeType: 'application/json',
+    },
+    {
+      uri: 'kbfe://logistics/tasks/pending',
+      name: 'Pending Logistics Tasks',
+      description: 'LIVE pending or overdue logistics tasks blocking DO closure.',
       mimeType: 'application/json',
     },
   ];
@@ -443,7 +566,7 @@ function listTools() {
     },
     {
       name: 'run_db_migration',
-      description: 'Apply the allowlisted normalized logistics migration when confirm=true.',
+      description: 'Apply the allowlisted normalized logistics and GD1 migrations when confirm=true.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -474,6 +597,16 @@ function listTools() {
         additionalProperties: false,
       },
     },
+    {
+      name: 'list_pending_tasks',
+      description: 'Query live pending logistics tasks blocking DO closure from PostgreSQL.',
+      inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    },
+    {
+      name: 'get_logistics_risks',
+      description: 'Query live actual/forecasted shipment, document mismatch and pending SAP sync risks from PostgreSQL.',
+      inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    },
   ];
 }
 
@@ -489,6 +622,8 @@ async function callTool(name: string, rawArgs: unknown): Promise<ToolResult> {
     if (name === 'run_db_migration') return jsonText(await runDbMigration(Boolean(args.confirm)));
     if (name === 'deploy_frontend') return jsonText(await triggerDeploy('frontend', Boolean(args.confirm)));
     if (name === 'deploy_backend') return jsonText(await triggerDeploy('backend', Boolean(args.confirm)));
+    if (name === 'list_pending_tasks') return jsonText(await getPendingTasks());
+    if (name === 'get_logistics_risks') return jsonText(await getLogisticsRisks());
 
     return errorText(`Unknown tool: ${name}`);
   } catch (error) {

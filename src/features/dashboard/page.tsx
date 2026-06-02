@@ -605,15 +605,15 @@ function MetricCard({
   return (
     <Paper withBorder p="md" className="metric-card">
       <Group justify="space-between" wrap="nowrap">
-        <div>
-          <Text className="metric-label" size="xs" fw={700} lts="0.05em" tt="uppercase" mb={4}>
+        <div style={{ position: 'relative', zIndex: 3 }}>
+          <Text className="metric-label" size="xs" fw={600} lts="0.03em" mb={4}>
             {label}
           </Text>
-          <Title order={1} fw={800} c={color} style={{ lineHeight: 1.1 }}>
+          <Title order={1} fw={800} c={color} className="tabular-nums" style={{ lineHeight: 1.1 }}>
             <NumberFormatter value={value} thousandSeparator />
           </Title>
         </div>
-        <span className={`metric-icon metric-icon-${color}`}>{icon}</span>
+        <span className={`metric-icon metric-icon-${color}`} style={{ position: 'relative', zIndex: 3 }}>{icon}</span>
       </Group>
     </Paper>
   );

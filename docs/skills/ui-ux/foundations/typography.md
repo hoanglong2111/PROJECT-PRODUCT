@@ -20,11 +20,11 @@ Use this to keep text hierarchy consistent across operational screens.
 
 ## Copy Density
 
-- Use short labels: `ETA`, `Deadline`, `Supplier`, `Risk`, `Tasks`.
+- Use short labels: `ETA`, `ETD`, `ATD`, `ATA`, `Supplier`, `Risk`, `Tasks`, `Cost`.
 - Use one-sentence helper text under major page titles only.
 - Avoid teaching users how to use obvious UI controls in visible app copy.
 
 ## Data Text
 
-- Codes such as `PR-2026-000145`, `PO-4500098123`, `DO-2026-000087` should be visually stable and easy to scan.
+- Codes such as `PR-2026-000145`, `PO-2026-000145`, and `SHP-2026-000087` should be visually stable and easy to scan.
 - Pair business codes with a second line when useful: supplier, item, status, or date.

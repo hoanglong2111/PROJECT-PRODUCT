@@ -331,23 +331,23 @@ export const documentLabels: Record<WorkspaceLanguage, Record<string, string>> =
     'B/L': 'B/L',
     CO: 'CO',
     Invoice: 'Hóa đơn',
-    'Packing List': 'Packing list',
+    'Packing List': 'Phiếu đóng gói',
   },
 };
 
 export const searchKindLabels: Record<WorkspaceLanguage, Record<SearchKind, string>> = {
   en: {
     account: 'Account',
-    delivery_order: 'DO',
-    purchase_order: 'PO',
-    purchase_request: 'PR',
+    delivery_order: 'Shipment',
+    purchase_order: 'Purchase Order',
+    purchase_request: 'Purchase Request',
     task: 'Task',
   },
   vi: {
     account: 'Tài khoản',
-    delivery_order: 'DO',
-    purchase_order: 'PO',
-    purchase_request: 'PR',
+    delivery_order: 'Lô hàng',
+    purchase_order: 'Đơn mua hàng',
+    purchase_request: 'Yêu cầu mua hàng',
     task: 'Công việc',
   },
 };

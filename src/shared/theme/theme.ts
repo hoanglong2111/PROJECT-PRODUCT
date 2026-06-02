@@ -3,11 +3,11 @@ import { createTheme, rem } from '@mantine/core';
 export const theme = createTheme({
   primaryColor: 'teal',
   fontFamily:
-    'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    '"Geist", "Inter", ui-sans-serif, system-ui, sans-serif',
   headings: {
     fontFamily:
-      'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-    fontWeight: '700',
+      '"Geist", "Inter", ui-sans-serif, system-ui, sans-serif',
+    fontWeight: '600',
   },
   defaultRadius: 'md',
   components: {

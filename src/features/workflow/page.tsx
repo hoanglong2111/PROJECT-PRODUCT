@@ -318,12 +318,21 @@ export function Workflow() {
                       <FlowTagBadge compact tags={flowTags} />
                     </Table.Td>
                     <Table.Td className="table-cell-truncate" style={{ maxWidth: '22rem' }}>
-                      <Text size="sm" fw={600} lineClamp={1} title={linkedPo ?? t('workflow.poPending')}>
-                        {linkedPo ?? t('workflow.poPending')}
-                      </Text>
-                      <Text size="sm" c="dimmed">
-                        {deliveryOrder?.order_info.order_number ?? t('workflow.waitingForDo')}
-                      </Text>
+                      <Group gap="xs" wrap="nowrap" align="center">
+                        <Badge size="xs" color="teal" variant="light">PR</Badge>
+                        <IconArrowRight size={12} />
+                        {linkedPo ? (
+                          <Badge size="xs" color="blue" variant="light">PO: {linkedPo}</Badge>
+                        ) : (
+                          <Badge size="xs" color="gray" variant="light">PO: PENDING</Badge>
+                        )}
+                        <IconArrowRight size={12} />
+                        {deliveryOrder ? (
+                          <Badge size="xs" color="orange" variant="light">DO: {deliveryOrder.order_info.order_number}</Badge>
+                        ) : (
+                          <Badge size="xs" color="gray" variant="light">DO: WAITING</Badge>
+                        )}
+                      </Group>
                     </Table.Td>
                     <Table.Td>
                       <StageBadge deliveryOrder={deliveryOrder} purchaseRequest={purchaseRequest} />

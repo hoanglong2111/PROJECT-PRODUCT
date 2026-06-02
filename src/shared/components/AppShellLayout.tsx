@@ -120,6 +120,9 @@ export function AppShellLayout() {
       navbar={{ width: 272, breakpoint: 'sm', collapsed: { mobile: !mobileOpened, desktop: !desktopOpened } }}
       padding="lg"
     >
+      <a href="#main-content" className="skip-link">
+        {t('shell.skipToContent')}
+      </a>
       <AppShell.Header>
         <Group h="100%" px="lg" justify="space-between" wrap="nowrap">
           <Group gap="sm" wrap="nowrap">
@@ -212,7 +215,7 @@ export function AppShellLayout() {
 
       <AppShell.Navbar p="md">{links}</AppShell.Navbar>
 
-      <AppShell.Main>
+      <AppShell.Main id="main-content" tabIndex={-1} style={{ outline: 'none' }}>
         <RouteErrorBoundary>
           <Outlet />
         </RouteErrorBoundary>

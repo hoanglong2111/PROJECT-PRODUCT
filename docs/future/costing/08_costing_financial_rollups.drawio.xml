@@ -1,0 +1,94 @@
+<mxfile host="app.diagrams.net" modified="2026-05-29T10:10:30.644Z" agent="Codex" version="24.0.0">
+  <diagram id="08_costing_financial_rollups" name="08_costing_financial_rollups">
+    <mxGraphModel dx="950" dy="1355" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="950" pageHeight="1355" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="ent-tenant" value="&lt;b&gt;tenant&lt;/b&gt;&lt;br align=&quot;left&quot;/&gt;&lt;font style=&quot;font-size:10px&quot;&gt;UUID id PK&lt;br align=&quot;left&quot;/&gt;VARCHAR code UK&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#f8fafc;strokeColor=#334155;fontColor=#0f172a;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="250" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="ent-item" value="&lt;b&gt;item&lt;/b&gt;&lt;br align=&quot;left&quot;/&gt;&lt;font style=&quot;font-size:10px&quot;&gt;UUID id PK&lt;br align=&quot;left&quot;/&gt;UUID tenant_id FK&lt;br align=&quot;left&quot;/&gt;VARCHAR item_code&lt;br align=&quot;left&quot;/&gt;VARCHAR name&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#f8fafc;strokeColor=#334155;fontColor=#0f172a;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="350" y="40" width="250" height="108" as="geometry" />
+        </mxCell>
+        <mxCell id="ent-bom_header" value="&lt;b&gt;bom_header&lt;/b&gt;&lt;br align=&quot;left&quot;/&gt;&lt;font style=&quot;font-size:10px&quot;&gt;UUID id PK&lt;br align=&quot;left&quot;/&gt;UUID tenant_id FK&lt;br align=&quot;left&quot;/&gt;UUID item_id FK&lt;br align=&quot;left&quot;/&gt;VARCHAR version&lt;br align=&quot;left&quot;/&gt;VARCHAR status&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#f8fafc;strokeColor=#334155;fontColor=#0f172a;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="660" y="40" width="250" height="126" as="geometry" />
+        </mxCell>
+        <mxCell id="ent-purchase_order" value="&lt;b&gt;purchase_order&lt;/b&gt;&lt;br align=&quot;left&quot;/&gt;&lt;font style=&quot;font-size:10px&quot;&gt;UUID id PK&lt;br align=&quot;left&quot;/&gt;UUID tenant_id FK&lt;br align=&quot;left&quot;/&gt;VARCHAR po_no UK&lt;br align=&quot;left&quot;/&gt;CHAR currency_code FK&lt;br align=&quot;left&quot;/&gt;NUMERIC exchange_rate&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#f8fafc;strokeColor=#334155;fontColor=#0f172a;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="295" width="250" height="126" as="geometry" />
+        </mxCell>
+        <mxCell id="ent-purchase_order_line" value="&lt;b&gt;purchase_order_line&lt;/b&gt;&lt;br align=&quot;left&quot;/&gt;&lt;font style=&quot;font-size:10px&quot;&gt;UUID id PK&lt;br align=&quot;left&quot;/&gt;UUID purchase_order_id FK&lt;br align=&quot;left&quot;/&gt;UUID item_id FK&lt;br align=&quot;left&quot;/&gt;NUMERIC qty_ordered&lt;br align=&quot;left&quot;/&gt;NUMERIC unit_price&lt;br align=&quot;left&quot;/&gt;NUMERIC landed_cost_alloc&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#f8fafc;strokeColor=#334155;fontColor=#0f172a;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="350" y="295" width="250" height="144" as="geometry" />
+        </mxCell>
+        <mxCell id="ent-shipment" value="&lt;b&gt;shipment&lt;/b&gt;&lt;br align=&quot;left&quot;/&gt;&lt;font style=&quot;font-size:10px&quot;&gt;UUID id PK&lt;br align=&quot;left&quot;/&gt;UUID tenant_id FK&lt;br align=&quot;left&quot;/&gt;VARCHAR shipment_no UK&lt;br align=&quot;left&quot;/&gt;VARCHAR status&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#f8fafc;strokeColor=#334155;fontColor=#0f172a;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="660" y="295" width="250" height="108" as="geometry" />
+        </mxCell>
+        <mxCell id="ent-shipment_line" value="&lt;b&gt;shipment_line&lt;/b&gt;&lt;br align=&quot;left&quot;/&gt;&lt;font style=&quot;font-size:10px&quot;&gt;UUID id PK&lt;br align=&quot;left&quot;/&gt;UUID shipment_id FK&lt;br align=&quot;left&quot;/&gt;UUID purchase_order_line_id FK&lt;br align=&quot;left&quot;/&gt;NUMERIC qty_shipped&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#f8fafc;strokeColor=#334155;fontColor=#0f172a;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="550" width="250" height="108" as="geometry" />
+        </mxCell>
+        <mxCell id="ent-shipment_cost" value="&lt;b&gt;shipment_cost&lt;/b&gt;&lt;br align=&quot;left&quot;/&gt;&lt;font style=&quot;font-size:10px&quot;&gt;UUID id PK&lt;br align=&quot;left&quot;/&gt;UUID shipment_id FK&lt;br align=&quot;left&quot;/&gt;VARCHAR cost_type&lt;br align=&quot;left&quot;/&gt;NUMERIC amount&lt;br align=&quot;left&quot;/&gt;CHAR currency_code FK&lt;br align=&quot;left&quot;/&gt;NUMERIC exchange_rate&lt;br align=&quot;left&quot;/&gt;VARCHAR alloc_method&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#f8fafc;strokeColor=#334155;fontColor=#0f172a;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="350" y="550" width="250" height="162" as="geometry" />
+        </mxCell>
+        <mxCell id="ent-goods_receipt_note" value="&lt;b&gt;goods_receipt_note&lt;/b&gt;&lt;br align=&quot;left&quot;/&gt;&lt;font style=&quot;font-size:10px&quot;&gt;UUID id PK&lt;br align=&quot;left&quot;/&gt;UUID tenant_id FK&lt;br align=&quot;left&quot;/&gt;VARCHAR grn_no UK&lt;br align=&quot;left&quot;/&gt;VARCHAR status&lt;br align=&quot;left&quot;/&gt;TIMESTAMPTZ posted_at&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#f8fafc;strokeColor=#334155;fontColor=#0f172a;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="660" y="550" width="250" height="126" as="geometry" />
+        </mxCell>
+        <mxCell id="ent-grn_line" value="&lt;b&gt;grn_line&lt;/b&gt;&lt;br align=&quot;left&quot;/&gt;&lt;font style=&quot;font-size:10px&quot;&gt;UUID id PK&lt;br align=&quot;left&quot;/&gt;UUID grn_id FK&lt;br align=&quot;left&quot;/&gt;UUID purchase_order_line_id FK&lt;br align=&quot;left&quot;/&gt;UUID item_id FK&lt;br align=&quot;left&quot;/&gt;NUMERIC qty_received&lt;br align=&quot;left&quot;/&gt;NUMERIC qty_accepted&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#f8fafc;strokeColor=#334155;fontColor=#0f172a;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="805" width="250" height="144" as="geometry" />
+        </mxCell>
+        <mxCell id="ent-item_cost" value="&lt;b&gt;item_cost&lt;/b&gt;&lt;br align=&quot;left&quot;/&gt;&lt;font style=&quot;font-size:10px&quot;&gt;UUID id PK&lt;br align=&quot;left&quot;/&gt;UUID item_id FK&lt;br align=&quot;left&quot;/&gt;DATE cost_date&lt;br align=&quot;left&quot;/&gt;NUMERIC standard_cost&lt;br align=&quot;left&quot;/&gt;NUMERIC actual_cost&lt;br align=&quot;left&quot;/&gt;VARCHAR cost_method&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#f8fafc;strokeColor=#334155;fontColor=#0f172a;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="350" y="805" width="250" height="144" as="geometry" />
+        </mxCell>
+        <mxCell id="ent-cost_rollup" value="&lt;b&gt;cost_rollup&lt;/b&gt;&lt;br align=&quot;left&quot;/&gt;&lt;font style=&quot;font-size:10px&quot;&gt;UUID id PK&lt;br align=&quot;left&quot;/&gt;UUID item_id FK&lt;br align=&quot;left&quot;/&gt;UUID bom_id FK&lt;br align=&quot;left&quot;/&gt;DATE rollup_date&lt;br align=&quot;left&quot;/&gt;NUMERIC material_cost&lt;br align=&quot;left&quot;/&gt;NUMERIC labor_cost&lt;br align=&quot;left&quot;/&gt;NUMERIC overhead_cost&lt;br align=&quot;left&quot;/&gt;NUMERIC total_cost&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#f8fafc;strokeColor=#334155;fontColor=#0f172a;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="660" y="805" width="250" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="ent-landed_cost_rollup" value="&lt;b&gt;landed_cost_rollup&lt;/b&gt;&lt;br align=&quot;left&quot;/&gt;&lt;font style=&quot;font-size:10px&quot;&gt;UUID id PK&lt;br align=&quot;left&quot;/&gt;UUID shipment_cost_id FK&lt;br align=&quot;left&quot;/&gt;UUID grn_line_id FK&lt;br align=&quot;left&quot;/&gt;UUID item_id FK&lt;br align=&quot;left&quot;/&gt;NUMERIC allocated_cost&lt;br align=&quot;left&quot;/&gt;TIMESTAMPTZ posted_at&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#f8fafc;strokeColor=#334155;fontColor=#0f172a;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1060" width="250" height="144" as="geometry" />
+        </mxCell>
+        <mxCell id="rel-1" value="owns" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#64748b;fontColor=#334155;fontSize=10;" edge="1" parent="1" source="ent-tenant" target="ent-purchase_order">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel-2" value="contains" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#64748b;fontColor=#334155;fontSize=10;" edge="1" parent="1" source="ent-purchase_order" target="ent-purchase_order_line">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel-3" value="ordered" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#64748b;fontColor=#334155;fontSize=10;" edge="1" parent="1" source="ent-item" target="ent-purchase_order_line">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel-4" value="contains" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#64748b;fontColor=#334155;fontSize=10;" edge="1" parent="1" source="ent-shipment" target="ent-shipment_line">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel-5" value="shipped_by" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#64748b;fontColor=#334155;fontSize=10;" edge="1" parent="1" source="ent-purchase_order_line" target="ent-shipment_line">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel-6" value="costs" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#64748b;fontColor=#334155;fontSize=10;" edge="1" parent="1" source="ent-shipment" target="ent-shipment_cost">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel-7" value="received_as" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#64748b;fontColor=#334155;fontSize=10;" edge="1" parent="1" source="ent-purchase_order_line" target="ent-grn_line">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel-8" value="contains" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#64748b;fontColor=#334155;fontSize=10;" edge="1" parent="1" source="ent-goods_receipt_note" target="ent-grn_line">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel-9" value="received" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#64748b;fontColor=#334155;fontSize=10;" edge="1" parent="1" source="ent-item" target="ent-grn_line">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel-10" value="costed" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#64748b;fontColor=#334155;fontSize=10;" edge="1" parent="1" source="ent-item" target="ent-item_cost">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel-11" value="rolled_up" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#64748b;fontColor=#334155;fontSize=10;" edge="1" parent="1" source="ent-item" target="ent-cost_rollup">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel-12" value="costed_bom" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#64748b;fontColor=#334155;fontSize=10;" edge="1" parent="1" source="ent-bom_header" target="ent-cost_rollup">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel-13" value="allocated" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#64748b;fontColor=#334155;fontSize=10;" edge="1" parent="1" source="ent-shipment_cost" target="ent-landed_cost_rollup">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel-14" value="received_cost" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#64748b;fontColor=#334155;fontSize=10;" edge="1" parent="1" source="ent-grn_line" target="ent-landed_cost_rollup">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel-15" value="costed" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#64748b;fontColor=#334155;fontSize=10;" edge="1" parent="1" source="ent-item" target="ent-landed_cost_rollup">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

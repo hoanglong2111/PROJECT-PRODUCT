@@ -14,10 +14,10 @@ AppShell
 
 ## Sidebar
 
-- Keep primary modules visible: Dashboard, Workflow, Purchase Requests, Purchase Orders, Delivery Orders, Tasks.
+- Keep primary modules visible: Dashboard, Workflow, Purchase Requests, Purchase Orders, Shipments/Delivery Orders, Tasks.
 - Use icon + label for primary nav items.
 - Highlight the active route clearly.
-- Keep future secondary modules grouped below primary modules: Suppliers, Warehouses, Materials, Users, Settings.
+- Keep future secondary modules grouped below primary modules: Suppliers, Items, Departments, Users, Settings.
 - Avoid deep nesting; operational users need fast module switching.
 
 ## Header
@@ -40,8 +40,6 @@ Use a footer/status strip only for durable system information:
 - last refresh time.
 - environment.
 - background job status.
-
-Avoid marketing or legal-style footers inside the application workspace.
 
 ## Invariants
 

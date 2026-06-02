@@ -1,0 +1,77 @@
+{
+  "project": "KBFE Logistics Control Tower",
+  "agent": {
+    "activeModel": "Codex / project agent",
+    "temperature": 0.2,
+    "maxTokens": 8192,
+    "language": "vi",
+    "responseStyle": "concise-but-actionable",
+    "tokenUsageDisplay": {
+      "enabled": true,
+      "showInputTokens": true,
+      "showOutputTokens": true,
+      "showTotalTokens": true,
+      "displayLocation": "final-response-summary"
+    }
+  },
+  "workspace": {
+    "skillsPath": "docs/skills",
+    "contextPath": "docs/context",
+    "tempDir": ".agents/scratch",
+    "agentInstructions": "AGENTS.md"
+  },
+  "skills": {
+    "readOrder": [
+      "docs/context/PROJECT_CONTEXT.md",
+      "docs/context/OPERATING_MODEL.md"
+    ],
+    "active": {
+      "frontend": "docs/skills/frontend/SKILL.md",
+      "backendApi": "docs/skills/backend-api/SKILL.md",
+      "dataModel": "docs/skills/data-model/SKILL.md",
+      "uiUx": "docs/skills/ui-ux/SKILL.md",
+      "uiUxDebug": "docs/skills/ui-ux-debug/SKILL.md",
+      "workflow": "docs/skills/workflow/SKILL.md",
+      "testingQa": "docs/skills/testing-qa/SKILL.md",
+      "mcp": "docs/skills/mcp/SKILL.md"
+    }
+  },
+  "logging": {
+    "enabled": true,
+    "mode": "per-question",
+    "directory": ".agents/logs",
+    "filePattern": "YYYY-MM-DD/HHMMSS-short-topic.md",
+    "template": ".agents/QUESTION_LOG_TEMPLATE.md",
+    "include": [
+      "timestamp",
+      "userRequest",
+      "intent",
+      "tokenUsage",
+      "contextFilesRead",
+      "commandsRun",
+      "filesChanged",
+      "verification",
+      "finalSummary"
+    ],
+    "redact": [
+      ".env",
+      "tokens",
+      "passwords",
+      "apiKeys",
+      "connectionStrings",
+      "privateCredentials"
+    ]
+  },
+  "safety": {
+    "dryRunByDefault": true,
+    "interactiveConfirmationRequired": true,
+    "authorizedWriteScope": [
+      "AGENTS.md",
+      "src/",
+      "server/",
+      "docs/",
+      ".agents/",
+      ".codex/"
+    ]
+  }
+}

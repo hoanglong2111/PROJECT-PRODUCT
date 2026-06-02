@@ -4,15 +4,15 @@ Use this when implementing `src/features/purchase-orders/page.tsx`.
 
 ## Query
 
-Use `fetchPurchaseOrders` with query key `purchase-orders`.
+Use `fetchPurchaseOrders` with query key `purchase-orders`. Target GD1 data should include source PR lines, revision, supplier confirmation, ETA/ETD, shipment progress, and landed-cost summary.
 
 ## State
 
 Current state:
 
-- local search string.
-- selected PO.
-- drawer open state.
+- local search string
+- selected PO
+- drawer open state
 
 URL param:
 
@@ -22,25 +22,48 @@ URL param:
 
 Search dimensions:
 
-- PO number.
-- supplier code.
-- supplier name.
-- source PR codes.
-- linked DO numbers.
+- `po_no`
+- supplier
+- source PR
+- item lines
+- shipment number
+- supplier reference
+
+Core filters:
+
+- sent
+- confirmed
+- in production
+- ready to ship
+- shipped
+- received
+- cancelled
+- revision pending supplier reconfirmation
 
 ## Detail
 
 Drawer opens when:
 
-- user clicks row action.
-- route contains matching `?po=`.
+- user clicks row action
+- route contains matching `?po=`
 
-Show source PR and linked DO via `EntityLink`.
+Show:
 
-## Future Mutations
+- PO header, revision, supplier, terms
+- source PR lines
+- PO lines and quantities
+- linked shipments
+- landed cost allocation
+- PO-stage tasks
 
-- retry SAP sync.
-- inspect sync logs.
-- close/refresh PO fulfillment.
+## Mutations
 
-Invalidate PO, related PR, related DO, workflow, and dashboard after mutations.
+Target actions:
+
+- send PO
+- confirm supplier response
+- revise PO
+- cancel PO
+- create shipment from selected PO lines
+
+Invalidate PO, PR, shipment, tasks, workflow, dashboard after mutations.

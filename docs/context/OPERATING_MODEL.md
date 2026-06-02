@@ -1,80 +1,175 @@
-# Logistics Operating Model
+# GD1 Operating Model
 
-This document consolidates the source dossier for the KBFE Digital Logistics Control Tower. It is the canonical project-wide reference for operating flow, hard business rules, SLA timers, and data blocks.
+This document is the project-wide operating truth for GD1 Procurement & Import Tracking. It summarizes the workflow, hard rules, SLA timers, and closure criteria from `GD1_Technical_Requirements.docx`.
 
-For the detailed eFMS job workflow and SOP code mapping, use `docs/domain/workflows/04_EFMS_SEA_FCL_EXPORT_WORKFLOW.md`.
+For the table/type/constraint design, use `docs/database/GD1_DOCUMENT_ERD.md`.
 
-## Source Dossier
+## Business Goal
 
-The operating model was synthesized from 11 source artifacts:
+GD1 replaces Excel/email tracking for PR/PO and import shipments. The platform must trace demand back to PR lines, show where each shipment is, enforce SOP deadlines, calculate landed cost by PO line, and emit ERP/WMS integration events at the correct gates.
 
-| Source group | Count | Content |
-|---|---:|---|
-| Entity schemas | 2 | Purchase Request and Delivery Order |
-| System document | 1 | eFMS Sea FCL Export logistics data management |
-| People/work document | 1 | Task Management |
-| Process and architecture PDFs | 2 | SOP and Digital Logistics Control Tower |
-| Mindmaps and flowcharts | 4 | PR to warehouse entry, SOP, and responsibility assignment |
-| Video | 1 | Supply-chain relay and domino-delay effect |
+## End-To-End Flow
 
-## Business Scope
+```text
+1. PR
+   Buyer/requester creates purchase request manually or from template.
 
-KBFE describes a Digital Logistics Control Tower for international logistics and supply-chain operations, with Sea FCL Export as the current reference process.
+2. Approval
+   Approval matrix resolves approvers by department and value.
 
-The control tower monitors the physical movement of goods while keeping operational and financial data synchronized with SAP ERP. The target is to reduce manual entry, synchronize vendor and PO identifiers, and preserve a traceable chain from production demand to warehouse receipt and final finance closure.
+3. PO
+   Buyer converts approved PR lines into one or more supplier POs.
 
-## Core Processes
+4. Shipment
+   Logistics creates SEA/AIR shipment from one or more PO lines.
 
-| Process | Summary |
+5. Milestones
+   Shipment advances through 10 standard milestones from booking to EDO/delivery.
+
+6. Cost
+   Finance records shipment costs and allocates landed cost to PO lines.
+
+7. ERP/WMS
+   Confirmed PO syncs to ERP. Delivered shipment emits warehouse-arrival event for later WMS/GRN work.
+```
+
+## Actors
+
+| Actor | GD1 responsibility |
 |---|---|
-| Demand management | Production creates PRs with `warehouse_deadline_date` as the critical promise date. |
-| Coordination and logistics | DOs carry route, customs, port, warehouse, and task execution data. |
-| Transport booking | Sale/logistics confirms quotation and reserves carrier space. |
-| Customs clearance | Customs declaration follows green/yellow/red lane handling. |
-| Delivery and cost closure | Final delivery, POD upload, and finance note issuance close the chain. |
+| Requester / Buyer | Create PR, revise rejected PR, convert PR lines to PO, send PO, update supplier confirmation. |
+| Approver / Manager | Approve/reject PR according to approval matrix and escalation timeout. |
+| Logistics | Create shipment, maintain forwarder/carrier, update milestones, manage B/L or AWB and delivery schedule. |
+| Customs Broker / Customs | Prepare draft declaration, submit official declaration, record customs stream and clearance. |
+| Finance | Enter landed cost components, issue/track settlement work, support ERP accounting sync. |
+| Admin | Maintain approval matrix and PO-stage task templates. |
 
-## Operating Relay
+## State Machines
 
-The process works as a relay across operational roles. Any late handoff can create downstream delay against the warehouse deadline.
+### PR
 
-| Stage | Owner | Operational responsibility |
+| State | Entry condition | Allowed next states |
 |---|---|---|
-| 1. Production and purchasing | PIC Manager / Purchasing | Create PR, create PO, sync SAP, and generate linked DO. |
-| 2. Logistics and sales | Sale Staff | Validate shipment information, respond with preliminary quotation within 1 hour, issue official quotation or booking within 8 hours. |
-| 3. Port operation | Port Officer | Cross-check Draft B/L, Commercial Invoice, and Packing List within 1 hour, finalize B/L, and issue international freight Debit Note. |
-| 4. Customs | Customs Officer | Submit declaration and handle customs lane result. Green clears immediately, yellow requires documents, red requires field inspection. |
-| 5. Delivery and accounting | Warehouse / Finance | Verify Telex Release gate, deliver goods, upload POD to cloud storage, issue Final Debit Note, and calculate `delay_days`. |
+| `DRAFT` | New PR or rejected PR revised | `SUBMITTED`, `CANCELLED` |
+| `SUBMITTED` | Requester submits PR | `PARTIALLY_APPROVED`, `APPROVED`, `REJECTED`, `CANCELLED` |
+| `PARTIALLY_APPROVED` | Some approval steps completed | `APPROVED`, `REJECTED`, `CANCELLED` |
+| `APPROVED` | Final approval completed | `CONVERTED`, `CLOSED`, `CANCELLED` |
+| `REJECTED` | Any approver rejects | `DRAFT`, `CANCELLED` |
+| `CONVERTED` | All PR line quantities converted to PO | `CLOSED` |
+| `CLOSED` | No further sourcing needed | terminal |
+| `CANCELLED` | Cancelled by requester/manager | terminal |
+
+### PO
+
+| State | Entry condition | Allowed next states |
+|---|---|---|
+| `DRAFT` | PO created from PR lines or manually | `SENT`, `CANCELLED` |
+| `SENT` | PO sent to supplier | `CONFIRMED`, `CANCELLED` |
+| `CONFIRMED` | Supplier confirms PO | `IN_PRODUCTION`, `READY_TO_SHIP`, `CANCELLED` |
+| `IN_PRODUCTION` | Supplier reports production | `READY_TO_SHIP`, `CANCELLED` |
+| `READY_TO_SHIP` | Supplier reports cargo ready | `SHIPPED` |
+| `SHIPPED` | Linked shipment reaches `ATD` | `RECEIVED` |
+| `RECEIVED` | Quantity received meets tolerance | `CLOSED` |
+| `CLOSED` | Payment/archive complete | terminal |
+| `CANCELLED` | Cancelled with reason | terminal |
+
+### Shipment
+
+| State | Trigger milestone |
+|---|---|
+| `BOOKING_PENDING` | Shipment created |
+| `BOOKING_CONFIRMED` | `BOOKING_CONFIRMED` actual date |
+| `CARGO_READY` | `CARGO_READY` actual date |
+| `PICKED_UP` | `PICK_UP` actual date |
+| `BL_ISSUED` | `BL_ISSUED` actual date |
+| `GATE_IN_POL` | `GATE_IN_POL` actual date |
+| `IN_TRANSIT` | `ATD` actual date |
+| `CUSTOMS_DRAFT` | `CUSTOM_DRAFT_SUBMITTED` actual date |
+| `ARRIVED` | `AN_ATA` actual date |
+| `CUSTOMS_CLEARED` | `CUSTOM_CLEARED` actual date |
+| `DELIVERED` | `EDO_DELIVERY` actual date |
+| `CANCELLED` | Cancel before in-transit or by manager exception |
+
+## Standard 10 Milestones
+
+| Seq | Code | Data gate |
+|---:|---|---|
+| 1 | `BOOKING_CONFIRMED` | Booking confirmation, forwarder/carrier. |
+| 2 | `CARGO_READY` | Supplier cargo readiness. |
+| 3 | `PICK_UP` | Pickup evidence, truck/vehicle if available. |
+| 4 | `BL_ISSUED` | B/L or AWB, CI, Packing List. |
+| 5 | `GATE_IN_POL` | Gate-in at port of loading. |
+| 6 | `ATD` | Actual departure. |
+| 7 | `CUSTOM_DRAFT_SUBMITTED` | Draft/submitted customs declaration. |
+| 8 | `AN_ATA` | Arrival Notice and actual arrival. |
+| 9 | `CUSTOM_CLEARED` | Customs stream and clearance result. |
+| 10 | `EDO_DELIVERY` | EDO/D/O, delivery, POD, warehouse arrival event. |
 
 ## Hard Rules
 
 | Rule | System behavior |
 |---|---|
-| Silence is acceptance | For LCL cargo, if the customer does not respond within 2 hours, the system records acceptance so booking can continue. |
-| Document cross-check | Draft B/L, Commercial Invoice, and Packing List must match each other and the quotation before Final B/L confirmation. |
-| Two-touch cost separation | International freight Debit Note OF/AF is issued first and remains separate from final inland/local charges. |
-| Finance data lock | Selling charges are system-locked against edit/delete after confirmation. Buying charges may be adjusted by authorized users. |
+| PR quantity control | `qty_converted` per PR line cannot exceed `qty_requested`. |
+| Partial PR conversion | A PR can stay approved while some line quantity remains unconverted. |
+| PO revision | Editing a PO after `SENT` or `CONFIRMED` creates `revision + 1` and requires supplier reconfirmation. |
+| PO over shipment | Sum of shipment line quantity per PO line cannot exceed ordered quantity plus `tolerance_over_pct`. |
+| PO received tolerance | A PO line can close when received quantity meets `qty_ordered * (1 - tolerance_under_pct)`. |
+| Landed cost | Shipment cost allocation recalculates PO line landed cost whenever cost or allocation method changes. |
+| Task blocking | A PO cannot advance when current-stage task is `BLOCKED` if hard-block mode is enabled. |
+| Milestone auto-close | A linked task becomes `DONE` when its shipment milestone receives `actual_date`. |
+| Audit | Task status changes, approval actions, PO revisions, milestone updates, and cost changes must be auditable. |
+| Idempotency | POST create APIs must deduplicate retries with `Idempotency-Key`; same key with different payload is a conflict. |
+| Optimistic locking | Updates to versioned transactional entities must reject stale client versions. |
+| Integration reliability | ERP, WMS/GD2, and internal integration events must be enqueued through a transactional outbox before external delivery. |
 
 ## SLA Timers
 
-| Timer | Trigger |
+| Stage | Action | SLA / due rule |
+|---|---|---|
+| Intake and quotation | Preliminary response | Within 1 hour. |
+| Intake and quotation | Send quotation | Within 8 hours. |
+| Intake and quotation | Booking after AIR/FCL confirmation | Within 4 hours. |
+| Documents | Review Draft B/L, CI, PL | Within 2 hours after draft received. |
+| Documents | Debit Note OF/AF | Within 3 hours after Final B/L or AWB. |
+| Documents | Arrival Notice | At least 2 days before ATA. |
+| Customs | Draft declaration | At least 3 days before ETA. |
+| Customs | Official declaration after KBI confirmation | Within 2 hours. |
+| Release and delivery | Check release | 2 days before ETA. |
+| Release and delivery | KBI delivery schedule response | Within 2 hours. |
+| Settlement | Upload dossier and Final Debit Note | Within 5 days after ATA. |
+
+Use business hours and tenant holiday calendars when those support tables exist. Until then, document whether timers use calendar time or business time.
+
+## Integration Events
+
+| Event | Direction | Trigger |
+|---|---|---|
+| PO Created | Platform -> ERP | PO status becomes `CONFIRMED`. |
+| PO Revised | Platform -> ERP | PO revision is created. |
+| GRN Created | Platform -> ERP | Future GD2 GRN finalized. |
+| Supplier Invoice | ERP -> Platform | Invoice posted in ERP. |
+| Payment Confirmed | ERP -> Platform | Payment reconciled. |
+| `shipment.arrived_at_warehouse` | GD1 -> GD2 WMS | Shipment milestone `EDO_DELIVERY` gets actual date. |
+
+## Integration And Automation Rules
+
+| Area | Operating rule |
 |---|---|
-| 1 hour | Respond with preliminary quotation information. |
-| 8 hours | Send official quotation or complete booking hold. |
-| 1 hour | Port Officer verifies document consistency. |
-| 1 hour | Issue Debit Note OF/AF after receiving complete information. |
+| Outbox | Any PO confirmation, PO revision, ERP sync request, or warehouse-arrival event is written to outbox in the same transaction as the business state change. A separate publisher may deliver to Kafka, RabbitMQ, REST ERP, or another broker. |
+| Inbox/raw events | Partner webhook, polling, email, and SFTP inputs are captured idempotently before applying milestone/status changes. Raw payloads are retained for replay and audit. |
+| Webhook | Forwarder realtime events enter through HTTPS POST endpoints and map to canonical 10 milestone codes. Manual user updates remain authoritative when there is a conflict. |
+| Carrier polling | Carrier REST polling runs on a configurable cadence, normally every 4 hours, to refresh ETA/ETD/vessel/flight and milestone evidence. |
+| Email/SFTP fallback | IMAP rule-based extraction and daily SFTP CSV batches are fallback channels when partner APIs are unavailable. |
+| Scheduler | SLA and task scans run at least every 15 minutes once the background worker is enabled; overdue work triggers in-app/email/Slack-style notification channels as configured. |
+| Dashboard read models | High-volume dashboards use materialized views, aggregate tables, or snapshot rows instead of recalculating cross-module metrics on every request. |
 
-## Data Blocks
+## Dashboard Outcomes
 
-| Block | Main data |
-|---|---|
-| PR and DO coordination | `requested_order_id`, production contract, priority, packaging specification, ETD/ETA route data. |
-| eFMS transport | MBL, HBL, manifest, booking number, POL/POD, container, seal number, and vehicle type. |
-| Charges and notes | Selling, Buying, OBH, Debit Note code S, Credit Note code B, Invoice, and accounting push data. |
-| Task Management | PIC Manager, Sale, Port, and Customs task ownership with `progress` from 0 to 100 and `completed_at` timestamp. |
+GD1 dashboards should expose:
 
-## Derived Outcomes
-
-- `delay_days` is calculated by comparing actual warehouse entry date against the original `warehouse_deadline_date`.
-- Missing or mismatched documents block customs readiness and final B/L confirmation.
-- Blocked or incomplete required tasks prevent DO closure.
-- SAP synchronization state must remain visible on PR, PO, and DO surfaces.
+- PRs pending approval and overdue approval steps.
+- POs past ETA without `ATD`.
+- Shipments by in-transit, delayed, at-customs, delivered.
+- Missing milestone documents.
+- Landed cost pending allocation.
+- Task workload, overdue tasks, blocked tasks.

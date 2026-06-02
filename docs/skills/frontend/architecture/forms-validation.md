@@ -6,63 +6,81 @@ Use this when adding create/edit/approval/progress/update forms.
 
 The app is mostly read-only. Write UI should be added only with backend/API validation or explicit mock mutation scope.
 
-## Form Libraries
-
-Use Mantine form utilities when forms become non-trivial. Keep simple controlled inputs local for tiny forms.
-
 ## Validation Ownership
 
 Frontend validates for UX:
 
-- required fields.
-- date format.
-- number range.
-- obvious blocked states.
+- required fields
+- date format
+- number range
+- obvious blocked states
 
 Backend validates for truth:
 
-- business rules.
-- permissions.
-- status transitions.
-- SAP and closure gates.
+- business rules
+- permissions
+- status transitions
+- quantity limits
+- ERP/integration gates
 
-## Form Patterns
+## GD1 Form Patterns
 
 PR form:
 
-- line-item material demand.
-- quantity/unit.
-- production contract.
-- deadline.
-- requester/buyer.
+- title/requester/department
+- line item selector
+- quantity/unit
+- required date
+- target price/currency
+- preferred supplier
 
-PO create form:
+Approval form:
 
-- source PR line selector.
-- remaining quantity per PR line.
-- multi-select for bulk purchase and split purchase.
-- supplier, currency, amount, warehouse.
+- approve/reject
+- comment/reason
+- visible escalation timeout
 
-DO create form:
+PO create/revise form:
 
-- source PO line selector.
-- remaining quantity per PO line.
-- multi-select for partial delivery and container consolidation.
-- shipping, ETA/ETD, documents, warehouse deadline.
+- source PR line selector
+- remaining quantity per PR line
+- supplier
+- PO type SEA/AIR/DOMESTIC
+- incoterm/payment term
+- expected ETD/ETA
+- tolerance fields when editable
+
+Shipment create form:
+
+- source PO line selector
+- remaining shippable quantity per PO line
+- mode SEA/AIR
+- forwarder/carrier
+- B/L or AWB
+- route/dates
+- container numbers
+
+Milestone update form:
+
+- milestone code
+- actual date
+- source
+- note
+- supporting documents
+
+Shipment cost form:
+
+- cost type
+- amount/currency/exchange rate
+- allocation method
+- invoice reference
 
 Task update form:
 
-- progress.
-- status.
-- blocked reason.
-- note.
-
-DO close form:
-
-- actual entry date.
-- required tasks.
-- documents.
-- finance/tax blockers.
+- status
+- assignee/reassign reason
+- due date
+- blocker note
 
 ## Rules
 

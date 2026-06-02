@@ -5,6 +5,8 @@ import { deliveryOrders, logisticsTasks, purchaseOrders, purchaseRequests } from
 import { pool } from './db';
 import type { AppUserRow } from './types';
 import { writeNormalizedSnapshot } from './services/normalizedStore';
+import { seedStandardTemplates } from './services/poStageTasks';
+import { seedStandardApprovalMatrix } from './services/approval';
 
 const seedUsers: Array<Omit<AppUserRow, 'password_hash'> & { password: string }> = [
   {
@@ -135,6 +137,15 @@ export async function ensureSchemaAndSeed() {
     ALTER TABLE logistics_tasks ADD COLUMN IF NOT EXISTS hbl_number TEXT;
   `);
 
+  const migration002Sql = await readFile(new URL('./migrations/002_gd1_core_tables.sql', import.meta.url), 'utf8');
+  await pool.query(migration002Sql);
+
+  const migration003Sql = await readFile(new URL('./migrations/003_gd1_field_additions.sql', import.meta.url), 'utf8');
+  await pool.query(migration003Sql);
+
+  const migration004Sql = await readFile(new URL('./migrations/004_reliability_integration_foundation.sql', import.meta.url), 'utf8');
+  await pool.query(migration004Sql);
+
   const usersCount = await pool.query<{ count: string }>('SELECT COUNT(*) AS count FROM app_users');
   if (Number(usersCount.rows[0]?.count ?? 0) === 0) {
     for (const user of seedUsers) {
@@ -167,4 +178,8 @@ export async function ensureSchemaAndSeed() {
       client.release();
     }
   }
+
+  // Seed GD1 templates and approval matrix standard records
+  await seedStandardTemplates();
+  await seedStandardApprovalMatrix();
 }

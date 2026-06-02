@@ -244,3 +244,95 @@ export type OpenExchangeRatesResponse = {
 export type DatabaseClient = {
   query: <T extends QueryResultRow = QueryResultRow>(queryText: string, values?: unknown[]) => Promise<QueryResult<T>>;
 };
+
+// ============================================================================
+// GD1 API DTO LAYER
+// ============================================================================
+
+export type Gd1CreatePrBody = {
+  prNo: string;
+  title: string;
+  departmentId?: string | null;
+  priority: 'NORMAL' | 'HIGH' | 'URGENT';
+  requiredDate: string;
+  notes?: string | null;
+  currencyCode: string;
+  lineItems: Array<{
+    itemId: string;
+    qtyRequested: number;
+    unit: string;
+    targetPrice?: number | null;
+    requiredDate: string;
+    preferredSupplierId?: string | null;
+    note?: string | null;
+  }>;
+};
+
+export type Gd1CreatePoBody = {
+  poNo: string;
+  supplierId: string;
+  poType: 'SEA' | 'AIR' | 'DOMESTIC';
+  incoterm: string;
+  paymentTerm: string;
+  currencyCode: string;
+  exchangeRate: number;
+  expectedEtd?: string | null;
+  expectedEta?: string | null;
+  toleranceOverPct?: number;
+  toleranceUnderPct?: number;
+  notes?: string | null;
+  sourceLines: Array<{
+    prLineId: string;
+    qtyOrdered: number;
+  }>;
+};
+
+export type Gd1UpdateMilestoneBody = {
+  actualDate?: string | null;
+  note?: string | null;
+  source?: 'MANUAL' | 'API' | 'EMAIL';
+};
+
+export type Gd1CreateCostBody = {
+  costType: 'FREIGHT' | 'INSURANCE' | 'CUSTOMS_DUTY' | 'VAT' | 'LOCAL_CHARGES' | 'DEMURRAGE' | 'OTHER';
+  amount: number;
+  currencyCode: string;
+  exchangeRate: number;
+  allocMethod: 'BY_VALUE' | 'BY_WEIGHT' | 'BY_QTY';
+  invoiceRef?: string | null;
+};
+
+export type Gd1CreateTaskBody = {
+  poStage: 'SENT' | 'CONFIRMED' | 'IN_PRODUCTION' | 'READY_TO_SHIP' | 'SHIPPED' | 'RECEIVED' | 'CLOSED' | 'CANCELLED';
+  taskName: string;
+  taskTemplateId?: string | null;
+  assigneeId: string;
+  dueDate?: string | null;
+  linkedShipmentMilestone?: string | null;
+  note?: string | null;
+};
+
+export type Gd1CreateTemplateBody = {
+  poType: 'SEA' | 'AIR' | 'DOMESTIC' | 'ALL';
+  poStage: 'SENT' | 'CONFIRMED' | 'IN_PRODUCTION' | 'READY_TO_SHIP' | 'SHIPPED' | 'RECEIVED' | 'CLOSED' | 'CANCELLED';
+  taskName: string;
+  defaultAssigneeRole: 'BUYER' | 'LOGISTICS' | 'FINANCE' | 'CUSTOMS_BROKER';
+  slaHours: number;
+  linkedMilestone?: string | null;
+  isActive?: boolean;
+  sortOrder?: number;
+};
+
+export type Gd1CreateApprovalConfigBody = {
+  appliesTo: 'PR' | 'PO' | 'BOTH';
+  departmentId?: string | null;
+  minAmount: number;
+  maxAmount?: number | null;
+  currencyCode: string;
+  stepOrder: number;
+  approverRole: 'DEPARTMENT_MANAGER' | 'DIVISION_DIRECTOR' | 'CEO' | 'CFO';
+  approverUserId?: string | null;
+  escalationTimeoutHours: number;
+  isActive?: boolean;
+};
+

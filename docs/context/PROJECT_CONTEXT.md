@@ -1,68 +1,146 @@
 # KBFE Project Context
 
-KBFE is an ERP logistics control tower for purchase demand, PO sourcing, Sea FCL Export shipment tracking, warehouse deadline risk, document readiness, customs handling, finance note closure, and task closure.
+KBFE is the Kim Binh Supply Chain Platform for GD1: Procurement & Import Tracking. GD1 digitizes the flow from purchase demand to warehouse arrival for imported and domestic procurement:
 
-For project-wide business rules, SLA timers, the operating relay, SAP/eFMS scope, customs lanes, and finance-note sequencing, use `docs/context/OPERATING_MODEL.md`.
+```text
+PR -> Approval -> PO -> Import Shipment -> 10 Milestones -> Documents + Landed Cost -> ERP/GRN Sync
+```
 
-For detailed eFMS job flow, SI/Manifest/HBL/container fields, assignment, attachments, Google Drive dossier, and SOP codes, use `docs/domain/workflows/04_EFMS_SEA_FCL_EXPORT_WORKFLOW.md`.
+The current codebase still contains older Logistics Control Tower runtime names such as `delivery_orders`. For new documentation, data model planning, UI/API design, and migration planning, use the GD1 vocabulary below. If code still uses a legacy runtime name, document the mapping instead of silently renaming it.
+
+## Source Of Truth
+
+| Need | Canonical document |
+|---|---|
+| GD1 scope, modules, states, business rules | `docs/context/PROJECT_CONTEXT.md` and `docs/context/OPERATING_MODEL.md` |
+| GD1 table/type/constraint design | `docs/database/GD1_DOCUMENT_ERD.md` |
+| GD1 reduced ERD overview | `docs/database/PHASE1_PROCUREMENT_IMPORT_ERD.md` |
+| Runtime schema analysis and migration gap | `docs/database/DATABASE_ANALYSIS_REPORT.md` |
+| Procurement modules | `docs/modules/procurement/` |
+| Shipment modules | `docs/modules/shipments/` |
+| PO-stage task workflow | `docs/modules/tasks/po-stage-tasks.md` |
+| Integration events | `docs/modules/integrations/erp-wms-outbox.md` |
 
 ## Stack
 
 - Frontend: Vite, React, TypeScript, Mantine, Tabler Icons, React Router, TanStack Query, Zustand.
-- Backend: Express + normalized PostgreSQL tables in `server/`.
+- Backend: Express + PostgreSQL tables in `server/`.
 - API client/types: `src/api/logistics.ts` compatibility exports backed by `src/shared/api`.
-- Seed data: `server/seeds/logisticsSeed.ts`, loaded into normalized tables with `pnpm seed:logistics`.
-- MCP/RAG: not implemented yet.
+- Seed data: `server/seeds/logisticsSeed.ts`, loaded with `pnpm seed:logistics`.
+- MCP/RAG: future planning documentation under `docs/future/mcp-ops/`.
 
 ## Architecture Map
 
 | Area | Current location |
 |---|---|
 | App shell/routing | `src/app/App.tsx`, `src/app/routes.tsx`, `src/app/routeRoles.ts` |
-| Feature pages | `src/features/<feature>/page.tsx` with feature-local components/hooks/constants |
+| Feature pages | `src/features/<feature>/page.tsx` |
 | Shared frontend | `src/shared/api`, `src/shared/auth`, `src/shared/components`, `src/shared/i18n`, `src/shared/stores`, `src/shared/theme`, `src/shared/utils` |
-| Compatibility frontend exports | Legacy `src/api`, `src/auth`, `src/components`, `src/hooks`, `src/i18n`, `src/stores`, `src/theme`, and `src/utils` paths |
+| Compatibility frontend exports | legacy `src/api`, `src/auth`, `src/components`, `src/hooks`, `src/i18n`, `src/stores`, `src/theme`, `src/utils` paths |
 | Backend bootstrap | `server/index.ts` |
-| Backend route/service modules | `server/modules/<domain>/routes.ts` and `service.ts` |
+| Backend modules | `server/modules/<domain>/routes.ts` and `service.ts` |
 | Shared backend services | `server/services/normalizedStore.ts`, `sop*.ts`, `logistics*.ts`, `exchangeRates.ts` |
 
+## GD1 Product Scope
 
-## Core Chain
+In scope:
+
+- Manual/template PR creation.
+- Multi-level approval workflow by department and PR/PO value.
+- PR to PO conversion, including partial conversion and split by supplier.
+- PO SEA/AIR/DOMESTIC lifecycle, supplier confirmation, and revision/versioning.
+- Import shipment creation from one or more PO lines.
+- 10 shipment milestones from booking confirmation to EDO and delivery.
+- Document upload per shipment milestone.
+- Landed cost per PO line, allocated by value, weight, or quantity.
+- SLA enforcement for FDS-KBI SOP stages.
+- PO-stage task assignment, templates, overdue detection, and milestone auto-close.
+- ERP sync for PO and GRN, with REST/SFTP fallback planning.
+- Forwarder/carrier tracking as best-effort API/webhook/email/manual updates.
+- Production reliability foundation for idempotency, optimistic locking, append-only audit, transactional outbox, integration inbox/raw events, scheduler metadata, and dashboard aggregate read models.
+
+Out of scope for GD1:
+
+- Bin/rack warehouse location management.
+- WMS putaway/scanning and full GRN warehouse operation.
+- BOM, production orders, MRP, and purchase demand forecasting.
+
+## Core Entities
+
+| GD1 entity | Table in GD1 document | Purpose |
+|---|---|---|
+| Purchase Request | `purchase_request`, `purchase_request_line` | Demand header and item lines, approval, required date, estimated value. |
+| Approval Matrix | `approval_matrix_config` | Department/value based approval chain and escalation timeout. |
+| Purchase Order | `purchase_order`, `purchase_order_line` | Supplier order, revision, terms, ETA/ETD, ordered/shipped/received quantities. |
+| Shipment | `shipment`, `shipment_line` | Import lot linked to one or more PO lines, mode, forwarder, B/L/AWB, route, dates, customs stream. |
+| Milestone | `shipment_milestone` | 10 runtime checkpoints with planned/actual dates and source. |
+| Cost | `shipment_cost` | Freight, insurance, duty, VAT, local charges, demurrage, and allocation method. |
+| Task | `po_stage_task`, `po_task_template` | Owned work generated per PO type and PO stage, optionally linked to shipment milestone. |
+
+## Production Reliability Context
+
+These requirements are part of the GD1 production baseline, not optional polish:
+
+| Capability | GD1 purpose | Runtime/data requirement |
+|---|---|---|
+| Transactional outbox | Do not lose ERP/WMS/internal events when the destination is unavailable. | Business writes that trigger integration must enqueue an outbox event in the same DB transaction. PO `CONFIRMED` and PO revision target ERP; `EDO_DELIVERY` targets GD2/WMS as `shipment.arrived_at_warehouse`. |
+| Idempotency | Prevent duplicate creates when users retry or double-submit. | Mutating create APIs must require or attach an `Idempotency-Key` and persist request hash/result for replay or conflict detection. |
+| Optimistic locking | Prevent stale browser tabs from overwriting newer PR/PO/shipment/task changes. | Core transactional entities must carry `version`; update APIs should reject stale versions before writing. |
+| Immutable audit/state log | Preserve who changed what and when for critical PR/PO/shipment/task/cost changes. | Audit and state-transition records are append-only snapshots with before/after payloads. |
+| State machine and scheduler | Enforce SOP state transitions and detect overdue SLA/task work. | PR, PO, shipment, and task transitions must follow `OPERATING_MODEL.md`; scheduler metadata supports 15-minute SLA/task scans and 4-hour carrier polling. |
+| Landed-cost allocation | Keep PO-line landed cost accurate after every shipment cost change. | Costs allocate to PO lines by `BY_VALUE`, `BY_WEIGHT`, or `BY_QTY` and recalculate after add/update/delete. |
+| Integration fallback | Keep shipment milestones current even when partners differ in capability. | Prefer webhook, fall back to REST polling, then IMAP email parsing or SFTP/CSV batch capture with raw event storage. |
+| Aggregate read models | Keep dashboards fast under operational volume. | Supplier, shipment, and task dashboards should read from aggregate/materialized tables or snapshots once query volume grows. |
+
+## Canonical Chain
 
 ```text
-PR -> PO -> DO -> Booking -> Documents -> Customs -> Delivery/POD -> Finance Notes -> Warehouse Entry
+purchase_request
+  -> purchase_request_line
+  -> purchase_order_line
+  -> shipment_line
+  -> shipment
+  -> shipment_milestone
+  -> shipment_cost
+  -> landed_cost_alloc on purchase_order_line
 ```
 
-Supported PR/PO/DO business-flow tags:
+## GD1 States
 
-| Tag | Shape |
-|---|---|
-| `LINEAR` | 1 PR -> 1 PO -> 1 DO |
-| `BULK_PURCHASE` | N PR -> 1 PO -> 1 DO |
-| `SPLIT_PURCHASE` | 1 PR -> N PO -> N DO |
-| `PARTIAL_DELIVERY` | 1 PR -> 1 PO -> N DO |
-| `CONTAINER_CONSOLIDATION` | N PR -> N PO -> 1 DO, where DO acts as shipment/container |
+PR:
+
+```text
+DRAFT -> SUBMITTED -> PARTIALLY_APPROVED -> APPROVED -> CONVERTED -> CLOSED
+REJECTED -> DRAFT
+CANCELLED
+```
+
+PO:
+
+```text
+DRAFT -> SENT -> CONFIRMED -> IN_PRODUCTION -> READY_TO_SHIP -> SHIPPED -> RECEIVED -> CLOSED
+CANCELLED
+```
+
+Shipment:
+
+```text
+BOOKING_PENDING -> BOOKING_CONFIRMED -> CARGO_READY -> PICKED_UP -> BL_ISSUED
+-> GATE_IN_POL -> IN_TRANSIT -> CUSTOMS_DRAFT -> ARRIVED -> CUSTOMS_CLEARED -> DELIVERED
+CANCELLED
+```
 
 ## Routes
 
-| Route | Purpose |
+| Route | GD1 purpose |
 |---|---|
-| `/` | Dashboard metrics, risk queue, flow distribution. |
-| `/workflow` | PR/PO/DO relationship view. |
-| `/purchase-requests` | PR list, source status, detail drawer. |
-| `/purchase-orders` | PO list, source PR lines, SAP state, linked DO. |
-| `/delivery-orders` | DO operations board, source lines, documents, tasks. |
-| `/tasks` | Task ownership, progress, blockers, closure requirements. |
+| `/` | GD1 dashboard: PR pending, PO delivery risk, shipment risk, task workload, landed-cost attention. |
+| `/workflow` | Trace PR -> PO -> Shipment -> milestones/tasks/cost. |
+| `/purchase-requests` | PR list/detail, approval status, line conversion readiness. |
+| `/purchase-orders` | PO list/detail, revision, supplier confirmation, source PR lines, shipment progress. |
+| `/delivery-orders` | Legacy route name for Shipment board until route migration is done. |
+| `/tasks` | PO-stage tasks, assignee workload, overdue/blocker management. |
 | `/settings` | Theme, language, admin account management. |
-
-## Entity Essentials
-
-| Entity | Key fields |
-|---|---|
-| PR | `requested_order_id`, `line_items`, `warehouse_deadline_date`, `linked_po_numbers`, `linked_do_numbers`, `flow_tags` |
-| PO | `po_number`, `source_pr_codes`, `line_items`, `supplier_*`, `linked_do_numbers`, `sap_sync_status`, `flow_tags` |
-| DO | `order_info.order_number`, `source_lines`, `sap_integration`, `logistics_shipping`, `warehouse_tracking`, `task_summary`, `flow_tags` |
-| Task | `task_id`, `do_number`, `request_code`, `po_number`, `role`, `status`, `progress`, `is_required_for_do_closure` |
 
 ## Deep Links
 
@@ -70,43 +148,22 @@ Use query params for shareable context:
 
 ```text
 /purchase-requests?pr=PR-2026-000145
-/purchase-orders?po=PO-4500098123
-/delivery-orders?do=DO-2026-000087
+/purchase-orders?po=PO-2026-000145
+/delivery-orders?shipment=SHP-2026-000087
 /delivery-orders?pr=PR-2026-000145
-/tasks?do=DO-2026-000087
+/tasks?po=PO-2026-000145
 /tasks?task=TASK-2026-000553
-/workflow?do=DO-2026-000087
+/workflow?shipment=SHP-2026-000087
 /workflow?pr=PR-2026-000145
 ```
 
-Closing a detail surface must remove only its own entity param and preserve unrelated query params.
-
-## Risk Rules
-
-- Compare actual warehouse entry against warehouse deadline when actual exists.
-- Otherwise compare planned/expected entry against deadline as forecast risk.
-- DO risk includes late/forecast-late entry, missing required documents, blocked tasks, and incomplete SAP sync.
-- Mismatched Draft B/L, Commercial Invoice, Packing List, or quotation data blocks Final B/L confirmation.
-- Required Port Officer verification and finance-note SLA timers should surface as operational risk when overdue.
+Legacy `do` query params may remain while code still uses `delivery_orders`; new docs and APIs should prefer `shipment`.
 
 ## Current Gaps
 
-- No dedicated test framework yet; verification is still `pnpm typecheck`, `pnpm build`, and manual smoke checks.
-- MCP/RAG integration remains design-stage documentation.
-- Supplier, warehouse, and material master maintenance screens are not separated into dedicated modules yet.
-- External SAP is represented by local sync state/audit behavior, not a live SAP adapter.
-- DO closure readiness exists as validation/derived state, but an explicit close action remains future workflow work.
-- Some legacy compatibility exports still exist outside routing while imports are migrated to `src/app`, `src/features`, and `src/shared`.
-
-## Canonical Docs
-
-- Operating model: `docs/context/OPERATING_MODEL.md`
-- eFMS Sea FCL Export workflow: `docs/domain/workflows/04_EFMS_SEA_FCL_EXPORT_WORKFLOW.md`
-- Data model: `docs/skills/data-model/SKILL.md`
-- Backend/API: `docs/skills/backend-api/SKILL.md`
-- Frontend: `docs/skills/frontend/SKILL.md`
-- UI/UX: `docs/skills/ui-ux/SKILL.md`
-- ERP logistics UI: `docs/skills/ui-ux/erp-logistics-uiux.md`
-- Workflow: `docs/skills/workflow/SKILL.md`
-- Testing/QA: `docs/skills/testing-qa/SKILL.md`
-- MCP integration: `docs/skills/mcp/SKILL.md`
+- Runtime tables are not yet fully aligned with GD1 singular table names and states.
+- `delivery_orders` currently represents the shipment concept in code; migration should be explicit.
+- Approval workflow, PO versioning, shipment milestones, task templates, landed cost allocation, and GD1 SLA runtime need implementation or migration.
+- Reliability foundations may exist before full workers/controllers are complete; Kafka/RabbitMQ publisher, provider webhooks, carrier pollers, IMAP/SFTP connectors, RLS tenant enforcement, and AES object-storage integration must be tracked separately before production cutover.
+- Master data for supplier, item, department, tenant, incoterm, and currency is referenced by GD1 but not fully modeled in the GD1 document.
+- No dedicated test framework yet; verification remains `pnpm typecheck`, `pnpm build`, and manual smoke checks.

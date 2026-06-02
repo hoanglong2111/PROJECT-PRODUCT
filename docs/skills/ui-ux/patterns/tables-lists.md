@@ -5,7 +5,7 @@ Use tables for dense operational records. Use lists/cards only when the entity c
 ## Table Anatomy
 
 - Identifier column first.
-- Relationship columns near the identifier: PR/PO/DO links.
+- Relationship columns near the identifier: PR/PO/Shipment links.
 - Operational state next: status, risk, owner.
 - Time/deadline columns close to risk.
 - Row action at the far right.

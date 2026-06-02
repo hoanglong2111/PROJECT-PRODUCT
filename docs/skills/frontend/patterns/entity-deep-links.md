@@ -6,13 +6,13 @@ Use this when implementing cross-entity navigation or query-param selected detai
 
 Use `src/hooks/useEntityParam.ts` for:
 
-- opening entity context.
-- closing entity context.
-- preserving unrelated query params.
+- opening entity context
+- closing entity context
+- preserving unrelated query params
 
 ## Cross-Entity Component
 
-Use `EntityLink` for links between PR, PO, DO, Task, and Workflow.
+Use `EntityLink` for links between PR, PO, Shipment, Task, and Workflow.
 
 ## Expected Behavior
 
@@ -25,12 +25,13 @@ Use `EntityLink` for links between PR, PO, DO, Task, and Workflow.
 
 ```text
 PR detail -> PO links
-PR detail -> DO links
 PO detail -> source PR links
-PO detail -> linked DO links
-DO detail -> workflow/PR/PO/task links
-Task detail -> workflow/DO/PR/PO links
+PO detail -> linked shipment links
+Shipment detail -> workflow/PR/PO/task links
+Task detail -> workflow/PO/shipment links
 ```
+
+Legacy `DO` links may route to `/delivery-orders?do=...` until migration.
 
 ## Tests To Add Later
 

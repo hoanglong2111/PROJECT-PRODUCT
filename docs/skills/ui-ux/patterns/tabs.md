@@ -4,8 +4,9 @@ Use tabs for related detail sections inside one selected entity, not as a replac
 
 ## Good Uses
 
-- DO detail: Overview, Logistics, Documents, Warehouse, Closure, Finance, Audit.
-- PR detail: Overview, Linked Records, Approval, Notes, Audit.
+- Shipment detail: Overview, Lines, Milestones, Documents, Customs, Costs, Tasks, Audit.
+- PO detail: Overview, Lines, Shipments, Tasks, Costs, Audit.
+- PR detail: Overview, Lines, Approval, Linked POs, Notes, Audit.
 - Task detail: Overview, Activity, Related Entity.
 
 ## Rules
@@ -18,9 +19,10 @@ Use tabs for related detail sections inside one selected entity, not as a replac
 ## Tab Content
 
 - Overview: summary and next action.
+- Milestones: shipment timeline and actual dates.
 - Documents: checklist/readiness/upload when supported.
-- Closure: task progress and gate blockers.
-- Finance: tax, fee, insurance, payment deadlines.
+- Costs: landed-cost components and allocation.
+- Tasks: stage task progress and blockers.
 - Audit: status/field changes.
 
 ## Responsive

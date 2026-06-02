@@ -1,14 +1,16 @@
 # Calendar And Date Pattern
 
-Use this when designing deadline, ETA/ETD, due date, warehouse entry, or planning views.
+Use this when designing required dates, ETA/ETD, ATD/ATA, milestone actuals, task due dates, or planning views.
 
 ## Date Semantics
 
-- `warehouse_deadline_date`: production requirement deadline.
-- `expected_arrival_date`: forecast arrival/entry for PR.
-- `eta_planned`: expected arrival at port/destination.
-- `planned_entry_date`: forecast warehouse entry.
-- `actual_entry_date`: actual warehouse entry.
+- `required_date`: PR or PR line needed date.
+- `expected_etd`: expected PO/shipment departure.
+- `expected_eta`: expected PO/shipment arrival.
+- `etd`, `eta`: shipment estimated departure/arrival.
+- `atd`, `ata`: shipment actual departure/arrival.
+- `planned_date`: milestone planned date.
+- `actual_date`: milestone actual date.
 - `due_date`: task completion deadline.
 
 ## Display Rules
@@ -22,10 +24,11 @@ Use this when designing deadline, ETA/ETD, due date, warehouse entry, or plannin
 
 Use calendar layout for:
 
+- approval due dates.
+- shipment ETA/ATA schedule.
 - customs workload by date.
-- warehouse entry planning.
+- milestone due dates.
 - task due-date planning.
-- shipment ETA schedule.
 
 Calendar cells should show counts and risk severity, not long descriptions.
 

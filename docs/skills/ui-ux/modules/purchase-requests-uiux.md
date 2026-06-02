@@ -4,14 +4,14 @@ Use this when designing or changing the Purchase Requests route.
 
 ## Purpose
 
-PR pages help users inspect production/material demand, approval state, buyer ownership, warehouse deadline, and linked PO/DO records.
+PR pages help users inspect demand, approval state, required date, estimated value, and conversion to PO.
 
 ## Default Layout
 
-- Page header with `Inspect workflow` action.
-- Optional flow-context banner for `?pr=`.
-- Metrics: total PR, approved/PO-ready, delay risk.
-- Toolbar: search, status filter, delay-risk switch, shown count.
+- Page header with Workflow action.
+- Optional context banner for `?pr=`.
+- Metrics: total PR, pending approval, approved, partially converted.
+- Toolbar: search, status filter, approval filter, conversion filter.
 - Main table.
 - Detail drawer.
 
@@ -20,13 +20,12 @@ PR pages help users inspect production/material demand, approval state, buyer ow
 Recommended columns:
 
 - PR code + priority.
-- item code + item name.
-- quantity + unit.
-- production contract.
-- warehouse deadline.
-- expected arrival.
-- buyer.
-- status.
+- title.
+- requester/department.
+- required date.
+- total amount + currency.
+- approval status.
+- conversion progress.
 - risk.
 - row action.
 
@@ -34,27 +33,15 @@ Recommended columns:
 
 Show:
 
-- PR code, item, status.
-- item/quantity/contract/warehouse.
-- requested date, deadline, supplier expected, expected arrival.
-- delay calculation panel.
-- requester and purchasing manager.
-- linked PO/DO/workflow/tasks.
-- notes.
+- PR header.
+- line items.
+- approval chain/status.
+- conversion progress.
+- linked POs.
+- notes/audit.
 
 ## Risk UX
 
-- Forecast late uses light red/orange.
-- Actual late uses stronger red.
-- No ETA should be visible but not alarming unless near deadline logic exists.
-
-## Future Actions
-
-When mutations exist, add:
-
-- create/edit PR.
-- submit approval.
-- approve/reject.
-- convert to PO.
-
-Do not show active write actions before backend validation exists.
+- Approval overdue is red.
+- Rejected needs clear next action: revise or cancel.
+- Partial conversion is not an error; show remaining quantity.

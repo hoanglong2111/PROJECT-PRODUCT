@@ -16,10 +16,24 @@ import {
   TextInput,
   Title,
   Tooltip,
+  Tabs,
+  Select,
+  Checkbox,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { IconAlertTriangle, IconCircleCheck, IconEye, IconPlugConnected, IconPlus, IconRefresh, IconSearch, IconShoppingCart } from '@tabler/icons-react';
+import {
+  IconAlertTriangle,
+  IconCircleCheck,
+  IconEye,
+  IconPlugConnected,
+  IconPlus,
+  IconRefresh,
+  IconSearch,
+  IconShoppingCart,
+  IconChecklist,
+  IconGitBranch,
+} from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
@@ -33,7 +47,17 @@ import { StatusBadge } from '@shared/components/StatusBadge';
 import { EmptyState } from '@shared/components/EmptyState';
 import { SourceLineTable } from '@shared/components/SourceLineTable';
 import { getApiErrorMessage } from '@shared/api/http';
-import { fetchPurchaseOrders, fetchPurchaseRequests, syncPurchaseOrderSap, type PurchaseOrder } from '@shared/api/logistics';
+import {
+  fetchPurchaseOrders,
+  fetchPurchaseRequests,
+  syncPurchaseOrderSap,
+  type PurchaseOrder,
+  advancePurchaseOrderStage,
+  fetchPurchaseOrderStageTasks,
+  type Gd1PoStageTask,
+  type Gd1PoStatus,
+  updatePoStageTask,
+} from '@shared/api/logistics';
 import { useAuth } from '@shared/auth/useAuth';
 import { useEntityParam } from '@shared/hooks/useEntityParam';
 import { useI18n } from '@shared/i18n';
@@ -340,6 +364,181 @@ function Metric({
   );
 }
 
+function Gd1PoStageControlPanel({
+  order,
+  onUpdated,
+}: {
+  order: PurchaseOrder;
+  onUpdated?: (order: PurchaseOrder) => void;
+}) {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { t } = useI18n();
+  const [selectedStage, setSelectedStage] = useState<Gd1PoStatus | ''>('');
+
+  const canManageStage = user?.role === 'ADMIN' || user?.role === 'PIC_MANAGER';
+
+  const mutation = useMutation({
+    mutationFn: (stage: Gd1PoStatus) => advancePurchaseOrderStage(order.po_number, stage),
+    onSuccess: () => {
+      setSelectedStage('');
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['purchase-orders'] }),
+        queryClient.invalidateQueries({ queryKey: ['purchase-order-tasks', order.po_number] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
+      ]);
+    },
+  });
+
+  if (!canManageStage) return null;
+
+  return (
+    <Paper withBorder p="md" className="ops-panel">
+      <Stack gap="xs">
+        <Text fw={700}>{t('purchaseOrders.stageUpdateTitle')}</Text>
+        <Text size="sm" c="dimmed">
+          {t('purchaseOrders.stageUpdateDescription')}
+        </Text>
+        <Group align="flex-end" gap="xs">
+          <Select
+            label={t('purchaseOrders.selectNextStage')}
+            placeholder={t('purchaseOrders.selectStagePlaceholder')}
+            data={[
+              { label: t('purchaseOrders.stageSentNCC'), value: 'SENT' },
+              { label: t('purchaseOrders.stageConfirmedNCC'), value: 'CONFIRMED' },
+              { label: t('purchaseOrders.stageReadyToShip'), value: 'READY_TO_SHIP' },
+              { label: t('purchaseOrders.stageShipped'), value: 'SHIPPED' },
+              { label: t('purchaseOrders.stageReceived'), value: 'RECEIVED' },
+              { label: t('purchaseOrders.stageClosed'), value: 'CLOSED' },
+            ]}
+            value={selectedStage}
+            onChange={(val) => setSelectedStage((val || '') as Gd1PoStatus | '')}
+            style={{ flex: 1 }}
+          />
+          <Button
+            onClick={() => selectedStage && mutation.mutate(selectedStage)}
+            loading={mutation.isPending}
+            disabled={!selectedStage}
+            color="blue"
+          >
+            {t('common.save')}
+          </Button>
+        </Group>
+        {mutation.isError && (
+          <Alert color="red" mt="xs">
+            {getApiErrorMessage(mutation.error)}
+          </Alert>
+        )}
+      </Stack>
+    </Paper>
+  );
+}
+
+function Gd1PoStageChecklist({ order }: { order: PurchaseOrder }) {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { t } = useI18n();
+
+  const tasksQuery = useQuery({
+    queryKey: ['purchase-order-tasks', order.po_number],
+    queryFn: () => fetchPurchaseOrderStageTasks(order.po_number),
+    enabled: !!order.po_number,
+  });
+
+  const completeMutation = useMutation({
+    mutationFn: ({ taskId, status }: { taskId: string; status: string }) =>
+      updatePoStageTask(taskId, { status }),
+    onSuccess: () => {
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['purchase-order-tasks', order.po_number] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
+      ]);
+    },
+  });
+
+  const tasks = tasksQuery.data ?? [];
+
+  return (
+    <Paper withBorder p="md">
+      <Stack gap="md">
+        <Group justify="space-between">
+          <Group gap="xs">
+            <IconChecklist size={20} />
+            <Text fw={700}>{t('purchaseOrders.stageChecklistTitle')}</Text>
+          </Group>
+          <Badge color="blue" variant="light">
+            {t('purchaseOrders.stageChecklistCompleted', {
+              completed: tasks.filter((t) => t.status === 'DONE').length,
+              total: tasks.length,
+            })}
+          </Badge>
+        </Group>
+
+        {tasksQuery.isLoading ? (
+          <Group justify="center" p="md">
+            <Loader size="sm" />
+            <Text size="sm" c="dimmed">{t('purchaseOrders.stageChecklistLoading')}</Text>
+          </Group>
+        ) : tasks.length === 0 ? (
+          <Text size="sm" c="dimmed">
+            {t('purchaseOrders.stageChecklistEmpty')}
+          </Text>
+        ) : (
+          <Stack gap="xs">
+            {tasks.map((task) => {
+              const isCompleted = task.status === 'DONE';
+              return (
+                <Paper
+                  key={task.id}
+                  withBorder
+                  p="sm"
+                  style={{
+                    backgroundColor: isCompleted ? 'rgba(46, 125, 50, 0.05)' : undefined,
+                    borderColor: isCompleted ? 'var(--mantine-color-teal-outline)' : undefined,
+                  }}
+                >
+                  <Group justify="space-between" wrap="nowrap">
+                    <Group gap="sm" style={{ flex: 1 }}>
+                      <Checkbox
+                        checked={isCompleted}
+                        onChange={(e) =>
+                          completeMutation.mutate({
+                            taskId: task.id,
+                            status: e.currentTarget.checked ? 'DONE' : 'PENDING',
+                          })
+                        }
+                        color="teal"
+                      />
+                      <div>
+                        <Text fw={600} size="sm" style={{ textDecoration: isCompleted ? 'line-through' : 'none' }}>
+                          {task.task_name}
+                        </Text>
+                        <Group gap="xs" mt={4}>
+                          <Badge size="xs" color="gray" variant="light">
+                            Chặng: {task.po_stage}
+                          </Badge>
+                          <Badge size="xs" color="blue" variant="light">
+                            Vai trò: {task.assignee_id}
+                          </Badge>
+                          {task.due_date && (
+                            <Text size="xs" c="dimmed">
+                              Hạn: {new Date(task.due_date).toLocaleDateString()}
+                            </Text>
+                          )}
+                        </Group>
+                      </div>
+                    </Group>
+                  </Group>
+                </Paper>
+              );
+            })}
+          </Stack>
+        )}
+      </Stack>
+    </Paper>
+  );
+}
+
 function PurchaseOrderDetail({ onUpdated, order }: { onUpdated?: (order: PurchaseOrder) => void; order: PurchaseOrder }) {
   const { formatNumber, statusLabel, t } = useI18n();
   const queryClient = useQueryClient();
@@ -407,6 +606,10 @@ function PurchaseOrderDetail({ onUpdated, order }: { onUpdated?: (order: Purchas
         <Info label={t('forms.totalAmount')} value={`${formatNumber(order.total_amount)} ${order.currency}`} />
         <Info label={t('purchaseOrders.sap')} value={statusLabel(order.sap_sync_status)} />
       </SimpleGrid>
+
+      <Gd1PoStageControlPanel order={order} onUpdated={onUpdated} />
+
+      <Gd1PoStageChecklist order={order} />
 
       <SourceLineTable lines={order.line_items} />
 

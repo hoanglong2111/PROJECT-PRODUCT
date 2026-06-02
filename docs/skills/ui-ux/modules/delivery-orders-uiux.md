@@ -1,64 +1,58 @@
-# Delivery Orders UI/UX Module
+# Shipment UI/UX Module
 
-Use this when designing or changing the Delivery Orders route.
+Use this when designing or changing the legacy Delivery Orders route or future Shipment route.
 
 ## Purpose
 
-DO is the shipment control tower. It should show where the lô hàng is, whether documents/SAP/tasks are ready, and whether warehouse deadline is at risk.
+Shipment is the GD1 import tracking board. It should show where the shipment is, which milestone is next, whether documents/customs/costs/tasks are ready, and which action is blocking progress.
 
 ## Default Layout
 
-- Page header with `Inspect workflow` action.
-- Optional flow-context banner for `?do=` or `?pr=`.
-- Metrics: active DO, risk queue, completed tasks.
-- Toolbar: search, status filter, risk-only switch, shown count.
+- Page header with Workflow action.
+- Optional context banner for `?shipment=`, `?po=`, or legacy `?do=`.
+- Metrics: active shipments, delayed milestones, customs attention, cost pending.
+- Toolbar: search, status filter, mode filter, risk-only switch.
 - Wide operations table.
-- Selected DO detail surface.
+- Selected shipment detail surface.
 
 ## Table Columns
 
 Recommended columns:
 
-- DO number + tracking.
-- PR/PO links.
-- supplier + SAP sync status.
-- item + quantity.
-- route + shipping method.
-- ETA.
-- warehouse deadline + delay.
-- task progress.
-- documents readiness.
+- shipment number.
+- linked PO lines.
+- mode.
+- forwarder/carrier.
+- B/L or AWB.
+- route.
+- ETA/ATA.
+- milestone progress.
+- customs stream.
+- cost state.
+- task/doc risk.
 - status.
 - row action.
 
 ## Detail Surface
 
-Current detail has Overview, Documents, Closure. Future target tabs:
+Tabs:
 
-- Overview.
-- Logistics.
-- Documents.
-- Warehouse.
-- Closure.
-- Finance.
-- Audit.
+- Overview
+- Lines
+- Milestones
+- Documents
+- Customs
+- Costs
+- Tasks
+- Audit
 
 ## Risk UX
 
-Surface risk in three places:
-
-- list row.
-- detail alert.
-- closure tab.
-
 Risk reasons:
 
-- missing documents.
-- blocked required tasks.
-- forecast/actual warehouse delay.
-- SAP sync incomplete/failed.
-- tax deadline or finance blocker when implemented.
-
-## Divergent Views
-
-DO may later support map, timeline, or calendar view. Keep table as the default operations board unless a role-specific workflow needs otherwise.
+- milestone overdue.
+- ETA passed without ATD.
+- missing milestone document.
+- customs yellow/red.
+- landed cost pending.
+- blocked or overdue linked task.

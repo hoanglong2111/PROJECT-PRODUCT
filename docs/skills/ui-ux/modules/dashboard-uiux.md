@@ -4,49 +4,37 @@ Use this when designing or changing the Dashboard route.
 
 ## Purpose
 
-The Dashboard is the control tower entry point. It should answer:
+The Dashboard is the GD1 control tower entry point. It should answer:
 
-- How many PR/PO/DO/tasks are active?
-- Which records need attention first?
-- Which module should the user open next?
+- Which PRs are waiting for approval?
+- Which POs are late or awaiting supplier confirmation?
+- Which shipments are delayed or blocked at milestones/customs?
+- Which tasks are overdue or blocked?
+- Which shipment costs need allocation?
 
 ## Layout
 
-- Page header: `Logistics control tower` with concise operational subtitle.
+- Compact page header.
 - Primary action: open Workflow.
-- Metrics row: PR count, PO count, active DO, blocked tasks.
-- Alert: only when risk exists.
-- Main split: risk queue and operational module links.
+- Metrics row: pending PR approvals, active POs, active shipments, blocked/overdue tasks.
+- Risk queue table.
+- Module links.
 
 ## Risk Queue
 
-Show DO rows with:
+Show rows with:
 
-- DO number.
-- linked PO.
-- ETA.
-- warehouse deadline.
-- delay badge.
-- blocker badges for tasks/documents.
+- entity type and code
+- owner/assignee
+- current state
+- due date or ETA
+- concrete reason
+- route action
 
-Do not show every possible field. The dashboard should triage, not replace the DO board.
-
-## Module Links
-
-Module links should explain what each route helps inspect:
-
-- Workflow: full entity chain.
-- PR: demand and deadline.
-- PO: SAP/supplier/source PR.
-- DO: logistics/documents/closure.
-- Tasks: assignee/progress/blockers.
-
-## Motion
-
-Use subtle loading skeletons. Avoid animated charts until real metrics and trends exist.
+Reasons include approval overdue, ETA passed without ATD, missing document, customs yellow/red, blocked task, cost pending.
 
 ## Done Checklist
 
-- Risk count and risk rows match the underlying DO/task/document data.
+- Risk count and risk rows match underlying GD1 data.
 - Module links preserve expected routes.
 - Empty/no-risk state does not look broken.

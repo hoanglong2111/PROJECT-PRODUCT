@@ -7,7 +7,7 @@ export function Unauthorized() {
   const { t } = useI18n();
 
   return (
-    <Center h="100vh" p="md">
+    <Center h="100dvh" p="md">
       <Paper withBorder p="xl" maw={520}>
         <Stack>
           <Title order={2}>{t('unauthorized.title')}</Title>

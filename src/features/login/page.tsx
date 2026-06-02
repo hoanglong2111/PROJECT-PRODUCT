@@ -38,12 +38,13 @@ export function Login() {
   const fromPath = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? '/';
 
   return (
-    <Stack h="100vh" align="center" justify="center" p="md">
-      <Paper withBorder p="xl" w="100%" maw={440}>
+    <Stack className="login-page-shell" align="center" justify="center" p="md">
+      <Paper className="login-card" p="xl" w="100%" maw={440}>
         <Stack>
-          <div>
-            <Title order={2}>{t('login.title')}</Title>
-            <Text c="dimmed" size="sm" mt={4}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+            <img src="/brand/kbi-logo.png" alt="KBI" style={{ height: '3.5rem', width: 'auto', objectFit: 'contain', marginBottom: '0.5rem' }} />
+            <Title order={2} ta="center" style={{ width: '100%' }}>{t('login.title')}</Title>
+            <Text c="dimmed" size="sm" ta="center">
               {t('login.description')}
             </Text>
           </div>

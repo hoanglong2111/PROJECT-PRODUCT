@@ -7,14 +7,12 @@ Use this when changing Zustand state, local component state, filters, or selecte
 Use the smallest state owner that works:
 
 - URL query params: shareable entity context.
-- TanStack Query: server/mock data.
+- TanStack Query: server data.
 - Zustand: cross-page UI filters and compact state.
 - React local state: drawer open state, selected row id, temporary UI state.
 - Form state: create/edit/approval/update forms.
 
 ## Zustand Rules
-
-Current store: `src/stores/workspaceStore.ts`.
 
 Good Zustand use:
 
@@ -35,16 +33,21 @@ Use query params for selected entity because users share links and move between 
 Examples:
 
 - selected PR: `?pr=...`
-- selected DO: `?do=...`
+- selected PO: `?po=...`
+- selected shipment: `?shipment=...`
 - selected task: `?task=...`
+- legacy selected DO: `?do=...`
 
 ## Derived State
 
 Compute close to the component when cheap:
 
-- filtered rows.
-- counts.
-- completed task ratio.
-- visible risk rows.
+- filtered rows
+- counts
+- approval progress
+- conversion progress
+- milestone progress
+- task ratios
+- visible risk rows
 
 Move derived state to backend/API once real services exist.

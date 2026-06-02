@@ -21,19 +21,18 @@ Cross-entity links should preserve operational context:
 
 - PR opens `/purchase-requests?pr=...`
 - PO opens `/purchase-orders?po=...`
-- DO opens `/delivery-orders?do=...`
+- Shipment opens `/delivery-orders?shipment=...` while route is legacy
 - Task opens `/tasks?task=...`
-- Workflow opens `/workflow?do=...` or `/workflow?pr=...`
+- Workflow opens `/workflow?shipment=...`, `/workflow?po=...`, or `/workflow?pr=...`
 
 ## Command Copy
 
 Good:
 
 - `Inspect workflow`
-- `Open DO board`
-- `View closure tasks`
-- `Sync SAP`
+- `Open shipment board`
+- `View stage tasks`
+- `Update milestone`
+- `Allocate cost`
 
-Avoid:
-
-- vague labels like `Go`, `View`, `Click here`.
+Avoid vague labels like `Go`, `View`, or `Click here`.

@@ -6,6 +6,7 @@ Use drawers for inspection and lightweight edits. Use modals for confirmation or
 
 - PR detail.
 - PO detail.
+- Shipment detail.
 - Task detail.
 - Quick linked-record inspection.
 
@@ -20,9 +21,10 @@ Drawer content should include:
 ## Modal Uses
 
 - approve/reject confirmation.
-- close DO checklist.
-- destructive or irreversible operations.
-- SAP retry confirmation if it can create side effects.
+- cancel confirmation.
+- PO revision confirmation.
+- shipment milestone confirmation when it triggers downstream events.
+- ERP retry confirmation if it can create side effects.
 
 ## Rules
 
