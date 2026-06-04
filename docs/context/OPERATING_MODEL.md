@@ -1,6 +1,8 @@
 # GD1 Operating Model
 
-This document is the project-wide operating truth for GD1 Procurement & Import Tracking. It summarizes the workflow, hard rules, SLA timers, and closure criteria from `GD1_Technical_Requirements.docx`.
+This document is the project-wide operating truth for GD1 Procurement & Import Tracking. It summarizes the workflow, hard rules, SLA timers, and closure criteria from `GD1_Technical_Requirements.docx` and the FDS-KBI SOP (`SOP_FDS_KBI_R7.docx`, FDS-MD-SOP.KBI-2605.01).
+
+For the FDS-KBI freight-forwarding SOP (intake, quotation, booking, Ops handover, document exchange, settlement, issue resolution, and FDS personnel directory), see `docs/modules/workflow/fds-kbi-sop.md`.
 
 For the table/type/constraint design, use `docs/database/GD1_DOCUMENT_ERD.md`.
 

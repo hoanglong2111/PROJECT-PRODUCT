@@ -13,6 +13,7 @@ The current codebase still contains older Logistics Control Tower runtime names 
 | Need | Canonical document |
 |---|---|
 | GD1 scope, modules, states, business rules | `docs/context/PROJECT_CONTEXT.md` and `docs/context/OPERATING_MODEL.md` |
+| FDS-KBI freight-forwarding SOP (intake, quotation, Ops, settlement, issue resolution) | `docs/modules/workflow/fds-kbi-sop.md` (source: `SOP_FDS_KBI_R7.docx`) |
 | GD1 table/type/constraint design | `docs/database/GD1_DOCUMENT_ERD.md` |
 | GD1 reduced ERD overview | `docs/database/PHASE1_PROCUREMENT_IMPORT_ERD.md` |
 | Runtime schema analysis and migration gap | `docs/database/DATABASE_ANALYSIS_REPORT.md` |

@@ -2,6 +2,8 @@
 
 This document replaces the older Sea FCL Export-specific workflow for GD1 documentation. GD1 covers import shipment tracking for SEA and AIR, with forwarder/carrier updates, milestone documents, landed cost, SLA timers, and ERP/WMS handoff.
 
+The FDS-KBI freight-forwarding SOP (`SOP_FDS_KBI_R7.docx`, FDS-MD-SOP.KBI-2605.01) is the authoritative source for FDS ↔ KBI workflows including intake, quotation, booking, Ops handover, document exchange, settlement, and issue resolution. See `docs/modules/workflow/fds-kbi-sop.md` for the full SOP mapping.
+
 ```text
 PO confirmed -> Shipment created -> 10 milestones -> Documents -> Costs -> EDO delivery -> warehouse arrival event
 ```
