@@ -2,7 +2,7 @@
 
 This directory contains the declarative harness used by IDE/development agents while building the KBFE repository.
 
-It is intentionally separate from `server/ai/harness`, which is the product/runtime harness for GD1 operational copilots.
+It is intentionally separate from `backend/ai/harness`, which is the product/runtime harness for GD1 operational copilots.
 
 ## Files
 
@@ -24,8 +24,12 @@ It is intentionally separate from `server/ai/harness`, which is the product/runt
 7. Run the workflow verification checks.
 8. Record the question in `.agents/logs/YYYY-MM-DD/`.
 
+Frontend and backend are standalone packages. Run package checks with `pnpm --dir frontend ...` or `pnpm --dir backend ...`; the repository root intentionally has no runtime `package.json`.
+
 ## Boundary
 
 - This harness coordinates repository development work.
 - It may call MCP tools or product harness endpoints for read-only context.
 - It must not bypass project safety rules, backend auth, idempotency, audit, or user approval.
+
+Note: `.agents/agent-config.json` is the canonical configuration source for agent bootstrap and conditional-doc rules; other harness docs should reference it rather than duplicate settings.

@@ -39,11 +39,8 @@ Gather only what is needed:
 - Always start with `docs/context/PROJECT_CONTEXT.md` for route/entity context.
 - Read `docs/skills/ui-ux/SKILL.md` for KBFE product feel and component expectations.
 - For implementation changes, read `docs/skills/frontend/SKILL.md`.
-- For page-specific issues, read only the matching `docs/skills/ui-ux/modules/<page>-uiux.md` or relevant pattern/foundation file:
-  - page layout: `foundations/page-anatomy.md`
-  - shell: `foundations/app-shell.md`
-  - text/spacing/color: `foundations/typography.md`, `spacing-grid.md`, `color-status.md`
-  - tables/search/buttons/tabs/drawers: `patterns/*`
+- For page-specific issues, read the matching feature page under `frontend/src/features/<feature>/page.tsx` and shared components under `frontend/src/shared/components/`.
+- For design foundations, refer to the status/risk color table and component choices in `docs/skills/ui-ux/SKILL.md`.
 
 ## Debug Workflow
 
@@ -62,7 +59,7 @@ Gather only what is needed:
    - workflow: deep links, filters, role visibility, next action, risk reason
 5. Choose the smallest fix that restores scanability and behavior. Prefer existing Mantine components, shared helpers, tokens, and local patterns.
 6. Implement conservatively. Do not introduce new UI libraries, broad abstractions, or unrelated redesigns.
-7. Verify with `pnpm typecheck` and `pnpm build`. For visual or responsive changes, run the dev server when allowed and inspect key viewports/theme modes.
+7. Verify with `pnpm --dir frontend typecheck` and `pnpm --dir frontend build`. For visual or responsive changes, run the dev server when allowed and inspect key viewports/theme modes.
 
 ## UI/UX Fix Rules
 
@@ -97,7 +94,7 @@ For implementation work:
 - Prefer `rg` / `rg --files` for search.
 - Use existing React, Mantine, Tabler Icons, TanStack Query, Zustand, and CSS variable architecture.
 - Use `apply_patch` for manual edits when available; otherwise edit scoped project files carefully.
-- Run `pnpm typecheck` and `pnpm build` before final response.
+- Run `pnpm --dir frontend typecheck` and `pnpm --dir frontend build` before final response.
 
 ## Safety
 

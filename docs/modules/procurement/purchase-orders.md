@@ -61,4 +61,4 @@ Core actions:
 - revise PO after supplier send/confirm
 - list/update PO-stage tasks
 
-Backend routes currently live under `server/modules/purchaseOrders`, with shared logic in `server/services/logisticsPurchaseOrders.ts`, `server/services/poStageTasks.ts`, and `server/services/reliability.ts`.
+Backend HTTP handling lives in `backend/routes/purchase-orders.routes.ts` and `backend/controllers/purchase-orders.controller.ts`. Business orchestration lives in `backend/services/purchase-orders.service.ts` and `backend/services/purchase-order-workflow.service.ts`; persistence lives in `backend/models/logisticsPurchaseOrders.ts`, `backend/models/poStageTasks.ts`, and `backend/models/reliability.ts`.

@@ -4,7 +4,7 @@ Use this when changing TanStack Query usage, API clients, mock data, or cache in
 
 ## Current State
 
-Data is loaded from backend API helpers in `src/api/logistics.ts`; no client-side mock fallback is used.
+Data is loaded from backend API helpers in `frontend/src/api/logistics.ts`; no client-side mock fallback is used.
 
 Current compatibility query keys:
 
@@ -34,12 +34,12 @@ Target GD1 query keys:
 Target modules:
 
 ```text
-src/api/client.ts
-src/api/purchaseRequests.ts
-src/api/purchaseOrders.ts
-src/api/shipments.ts
-src/api/tasks.ts
-src/api/taskTemplates.ts
+frontend/src/api/client.ts
+frontend/src/api/purchaseRequests.ts
+frontend/src/api/purchaseOrders.ts
+frontend/src/api/shipments.ts
+frontend/src/api/tasks.ts
+frontend/src/api/taskTemplates.ts
 ```
 
 Avoid direct `axios` calls from route components.

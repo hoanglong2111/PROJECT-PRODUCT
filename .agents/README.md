@@ -39,8 +39,8 @@ Example configuration:
     "dryRunByDefault": true,
     "interactiveConfirmationRequired": true,
     "authorizedWriteScope": [
-      "src/",
-      "server/",
+      "frontend/",
+      "backend/",
       "docs/",
       ".agents/"
     ]
@@ -74,7 +74,7 @@ Rules:
 
 ### `harness/`
 
-Declarative development harness for IDE agents. It defines agent roles, workflows, context packs, and prompt templates for building the repository. This is distinct from `server/ai/harness`, which is the product/runtime harness for GD1 operational copilots.
+Declarative development harness for IDE agents. It defines agent roles, workflows, context packs, and prompt templates for building the repository. This is distinct from the product/runtime harness target under `backend/ai/harness`.
 
 ### `memory/`
 

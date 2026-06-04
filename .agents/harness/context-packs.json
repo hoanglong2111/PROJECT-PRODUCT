@@ -23,10 +23,10 @@
         "docs/skills/ui-ux-debug/SKILL.md"
       ],
       "scanHints": [
-        "src/features",
-        "src/shared/api",
-        "src/shared/components",
-        "src/app/routes.tsx"
+        "frontend/src/features",
+        "frontend/src/shared/api",
+        "frontend/src/shared/components",
+        "frontend/src/app/routes.tsx"
       ]
     },
     {
@@ -51,9 +51,11 @@
         "docs/modules/integrations/erp-wms-outbox.md"
       ],
       "scanHints": [
-        "server/modules",
-        "server/services",
-        "server/index.ts"
+        "backend/routes",
+        "backend/controllers",
+        "backend/services",
+        "backend/models",
+        "backend/server.ts"
       ]
     },
     {
@@ -79,8 +81,8 @@
         "docs/database/DATABASE_ANALYSIS_REPORT.md"
       ],
       "scanHints": [
-        "server/migrations",
-        "server/services",
+        "backend/migrations",
+        "backend/models",
         "docs/database"
       ]
     },
@@ -109,7 +111,64 @@
       "scanHints": [
         "docs/context",
         "docs/modules",
-        "src/features/workflow"
+        "frontend/src/features/workflow"
+      ]
+    },
+    {
+      "id": "testing_qa",
+      "description": "Test strategy, QA checklists, regression coverage, build validation, and release readiness checks.",
+      "triggerWhen": [
+        "test strategy",
+        "QA checklist",
+        "regression coverage",
+        "build validation",
+        "release readiness",
+        "adding tests"
+      ],
+      "readFirst": [
+        ".agents/agent-config.json",
+        ".agents/memory.md",
+        "AGENTS.md",
+        "docs/skills/testing-qa/SKILL.md"
+      ],
+      "optionalWhenRelevant": [
+        "docs/context/PROJECT_CONTEXT.md",
+        "docs/context/OPERATING_MODEL.md",
+        "docs/skills/frontend/SKILL.md",
+        "docs/skills/backend-api/SKILL.md"
+      ],
+      "scanHints": [
+        "frontend/src/**/*.test.*",
+        "backend/tests/**/*.test.*",
+        "docs/skills/testing-qa"
+      ]
+    },
+    {
+      "id": "i18n_translation",
+      "description": "i18n translation workflow, adding new language keys, auditing hardcoded strings, and maintaining EN/VI dictionaries.",
+      "triggerWhen": [
+        "i18n",
+        "translation",
+        "hardcoded string",
+        "language key",
+        "add translation",
+        "missing translation"
+      ],
+      "readFirst": [
+        ".agents/agent-config.json",
+        ".agents/memory.md",
+        "AGENTS.md",
+        "docs/skills/i18n-translation/SKILL.md"
+      ],
+      "optionalWhenRelevant": [
+        "docs/context/PROJECT_CONTEXT.md",
+        "docs/skills/frontend/SKILL.md",
+        "docs/skills/ui-ux/SKILL.md"
+      ],
+      "scanHints": [
+        "frontend/src/shared/i18n",
+        "frontend/src/features",
+        "frontend/src/shared/components"
       ]
     },
     {
@@ -132,12 +191,12 @@
       "optionalWhenRelevant": [
         "docs/modules/platform/ai-harness.md",
         "docs/future/mcp-ops/deployment-mcp-and-db-plan.md",
-        "server/mcp/deployServer.ts"
+        "backend/mcp/deployServer.ts"
       ],
       "scanHints": [
         ".agents",
-        "server/mcp",
-        "server/ai",
+        "backend/mcp",
+        "backend/ai",
         "docs/modules/platform"
       ]
     }

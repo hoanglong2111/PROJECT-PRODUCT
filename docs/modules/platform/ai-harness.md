@@ -18,8 +18,8 @@ The current implementation is dry-run. It always runs deterministic agents first
 
 | Harness | Serves | Current location |
 |---|---|---|
-| Product AI Harness | Users operating KBFE screens such as PO and Shipment triage | `server/ai`, `server/modules/ai`, `src/shared/components/Gd1HarnessPanel.tsx` |
-| Development AI Harness | AI agents in IDE/build workflows that help develop this repository | `.agents/harness`, `AGENTS.md`, `docs/skills`, `server/mcp/deployServer.ts` |
+| Product AI Harness | Users operating KBFE screens such as PO and Shipment triage | `backend/ai`, `backend/routes/ai.routes.ts`, `frontend/src/shared/components/Gd1HarnessPanel.tsx` |
+| Development AI Harness | AI agents in IDE/build workflows that help develop this repository | `.agents/harness`, `AGENTS.md`, `docs/skills`, `backend/mcp/deployServer.ts` |
 
 Do not use this product harness as the source of truth for development-agent behavior. It may expose useful read-only GD1 context to development agents, but it is not the coordinator for repository edits.
 
@@ -27,18 +27,18 @@ Do not use this product harness as the source of truth for development-agent beh
 
 | Layer | Location |
 |---|---|
-| Orchestrator | `server/ai/harness/orchestrator.ts` |
-| Model routing | `server/ai/harness/modelRouter.ts` |
-| Context compression | `server/ai/harness/contextPacker.ts` |
-| Cache | `server/ai/harness/cache.ts` |
-| Metrics | `server/ai/harness/metrics.ts` |
-| External model adapter | `server/ai/llm/modelAdapter.ts` |
-| Prompt templates | `server/ai/prompts/registry.ts` |
-| PR suggestion agent | `server/ai/agents/prSuggestionAgent.ts` |
-| SLA detection agent | `server/ai/agents/slaDetectionAgent.ts` |
-| Task generation agent | `server/ai/agents/taskGenerationAgent.ts` |
-| REST route | `server/modules/ai/routes.ts` |
-| MCP entrypoint | `server/mcp/deployServer.ts` |
+| Orchestrator | `backend/ai/harness/orchestrator.ts` |
+| Model routing | `backend/ai/harness/modelRouter.ts` |
+| Context compression | `backend/ai/harness/contextPacker.ts` |
+| Cache | `backend/ai/harness/cache.ts` |
+| Metrics | `backend/ai/harness/metrics.ts` |
+| External model adapter | `backend/ai/llm/modelAdapter.ts` |
+| Prompt templates | `backend/ai/prompts/registry.ts` |
+| PR suggestion agent | `backend/ai/agents/prSuggestionAgent.ts` |
+| SLA detection agent | `backend/ai/agents/slaDetectionAgent.ts` |
+| Task generation agent | `backend/ai/agents/taskGenerationAgent.ts` |
+| REST route target | `backend/routes/ai.routes.ts` |
+| MCP entrypoint | `backend/mcp/deployServer.ts` |
 
 ## REST API
 
@@ -81,10 +81,10 @@ Tools:
 
 ## Frontend Touchpoints
 
-The dry-run harness is surfaced in the app through `src/shared/components/Gd1HarnessPanel.tsx`:
+The dry-run harness is surfaced in the app through `frontend/src/shared/components/Gd1HarnessPanel.tsx`:
 
-- `src/features/purchase-orders/page.tsx`: PO detail drawer uses `entityType=purchase_order`.
-- `src/features/delivery-orders/page.tsx`: Shipment OPS tab uses `entityType=delivery_order`.
+- `frontend/src/features/purchase-orders/page.tsx`: PO detail drawer uses `entityType=purchase_order`.
+- `frontend/src/features/delivery-orders/page.tsx`: Shipment OPS tab uses `entityType=delivery_order`.
 
 The panel displays action recommendations, SLA risks, task drafts, cache state, model route, and LLM status. It does not create tasks, update milestones, approve PR/PO, or sync ERP.
 

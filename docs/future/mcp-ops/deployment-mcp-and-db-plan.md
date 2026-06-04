@@ -24,23 +24,25 @@ Current runtime core tables:
 
 GD1 mapping note: runtime `delivery_orders` is the current compatibility table for the GD1 `shipment` concept until an explicit migration is implemented.
 
-`server/services/logistics.ts` still exposes helper names `readSnapshot` and `writeSnapshot` internally to avoid a broad service rewrite, but those helpers now call `server/services/normalizedStore.ts` and read/write normalized tables.
+`backend/models/logistics.ts` still exposes helper names `readSnapshot` and `writeSnapshot` internally to avoid a broad service rewrite, but those helpers now call `backend/models/normalizedStore.ts` and read/write normalized tables.
 
 ## Seed Strategy
 
 Seed normalized logistics data:
 
 ```bash
-pnpm seed:logistics
+pnpm --dir backend build
+pnpm --dir backend seed:logistics
 ```
 
 Rebuild only normalized seed tables from scratch:
 
 ```bash
-RESET_NORMALIZED_SEED=1 pnpm seed:logistics
+pnpm --dir backend build
+RESET_NORMALIZED_SEED=1 pnpm --dir backend seed:logistics
 ```
 
-The seed creates the normalized schema from `server/migrations/001_normalized_logistics_schema.sql` and imports fixtures from `server/seeds/logisticsSeed.ts`.
+The seed creates the normalized schema from `backend/migrations/001_normalized_logistics_schema.sql` and imports fixtures from `backend/seeds/logisticsSeed.ts`.
 
 ## Deploy Topology
 
@@ -79,13 +81,13 @@ Deploy FE to a static web host/CDN:
 Build command:
 
 ```bash
-pnpm build
+pnpm --dir frontend build
 ```
 
 Publish directory:
 
 ```text
-dist/
+frontend/dist/
 ```
 
 Required FE env:
@@ -107,7 +109,8 @@ Deploy BE to a Node runtime service:
 Start command:
 
 ```bash
-pnpm start:be
+pnpm --dir backend build
+pnpm --dir backend start
 ```
 
 Required BE env:
@@ -143,10 +146,11 @@ Deploy DB to managed PostgreSQL:
 Bootstrap DB:
 
 ```bash
-pnpm seed:logistics
+pnpm --dir backend build
+pnpm --dir backend seed:logistics
 ```
 
-For production, seed should be replaced by migrations plus real import/onboarding data. The normalized migration is already in `server/migrations/001_normalized_logistics_schema.sql`.
+For production, seed should be replaced by migrations plus real import/onboarding data. The normalized migration is already in `backend/migrations/001_normalized_logistics_schema.sql`.
 
 ## MCP Server Goes Where
 
@@ -250,7 +254,8 @@ For this project, the safest first version is:
 This repo includes a first deploy MCP server:
 
 ```bash
-pnpm mcp:deploy
+pnpm --dir backend build
+pnpm --dir backend mcp:deploy
 ```
 
 Implemented resources:
@@ -302,7 +307,7 @@ Use `llmMode=off` for deterministic rules only, `llmMode=auto` for env-driven mo
 
 1. Create managed PostgreSQL.
 2. Set `DATABASE_URL`.
-3. Run `pnpm seed:logistics` or migration/import job.
+3. Run `pnpm --dir backend build && pnpm --dir backend seed:logistics` or migration/import job.
 4. Deploy BE with `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGIN`.
 5. Verify `/api/health`.
 6. Deploy FE with `VITE_API_URL`.

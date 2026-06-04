@@ -26,10 +26,6 @@
     "readOrder": [
       ".agents/memory.md"
     ],
-    "conditionalRead": [
-      "docs/context/PROJECT_CONTEXT.md",
-      "docs/context/OPERATING_MODEL.md"
-    ],
     "active": {
       "frontend": "docs/skills/frontend/SKILL.md",
       "backendApi": "docs/skills/backend-api/SKILL.md",
@@ -38,7 +34,8 @@
       "uiUxDebug": "docs/skills/ui-ux-debug/SKILL.md",
       "workflow": "docs/skills/workflow/SKILL.md",
       "testingQa": "docs/skills/testing-qa/SKILL.md",
-      "mcp": "docs/skills/mcp/SKILL.md"
+      "mcp": "docs/skills/mcp/SKILL.md",
+      "i18nTranslation": "docs/skills/i18n-translation/SKILL.md"
     }
   },
   "contextLoading": {
@@ -120,11 +117,10 @@
     "interactiveConfirmationRequired": true,
     "authorizedWriteScope": [
       "AGENTS.md",
-      "src/",
-      "server/",
+      "frontend/",
+      "backend/",
       "docs/",
-      ".agents/",
-      ".codex/"
+      ".agents/"
     ]
   }
 }

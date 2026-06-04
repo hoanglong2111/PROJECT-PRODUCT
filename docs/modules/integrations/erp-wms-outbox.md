@@ -14,12 +14,12 @@ GD1 integration is reliability-first: business writes enqueue integration events
 
 | Capability | Current owner |
 |---|---|
-| Idempotency | `server/services/reliability.ts`, `idempotency_keys` |
-| Outbox events | `server/services/reliability.ts`, `outbox_events` |
-| State transitions | `server/services/reliability.ts`, `state_transition_logs` |
-| Audit | `server/services/reliability.ts`, `audit_logs` |
-| PO ERP sync | `server/services/logisticsPurchaseOrders.ts` |
-| Warehouse arrival event | `server/services/milestones.ts` |
+| Idempotency | `backend/middlewares/idempotency.ts`, `backend/models/idempotency.ts`, `idempotency_keys` |
+| Outbox events | `backend/models/reliability.ts`, `outbox_events` |
+| State transitions | `backend/models/reliability.ts`, `state_transition_logs` |
+| Audit | `backend/models/reliability.ts`, `audit_logs` |
+| PO ERP sync | `backend/models/logisticsPurchaseOrders.ts` |
+| Warehouse arrival event | `backend/models/milestones.ts` |
 
 ## Pending Before Production
 

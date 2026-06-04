@@ -2,7 +2,7 @@
 
 This module defines the harness used to coordinate AI agents while building, refactoring, documenting, testing, and readiness-checking the KBFE repository.
 
-It is separate from the GD1 Product AI Harness in `server/ai`. The product harness helps KBFE users triage PO/shipment work inside the app. The development harness helps IDE agents such as Codex, Claude, Cursor, Gemini, or MCP-connected tools build the project with less duplicated context and fewer unsafe changes.
+It is separate from the GD1 Product AI Harness in `backend/ai`. The product harness helps KBFE users triage PO/shipment work inside the app. The development harness helps IDE agents such as Codex, Claude, Cursor, Gemini, or MCP-connected tools build the project with less duplicated context and fewer unsafe changes.
 
 ## Purpose
 
@@ -11,7 +11,7 @@ The development harness coordinates:
 - agent routing for frontend, backend, data model, workflow, testing, docs, and MCP/deploy tasks
 - compact context packs so IDE agents do not reload the whole repository
 - prompt templates and behavioral guardrails for repeatable work
-- verification loops such as `pnpm typecheck`, `pnpm build`, route smoke checks, and MCP readiness checks
+- package-scoped verification loops such as `pnpm --dir frontend verify`, `pnpm --dir backend verify`, route smoke checks, and MCP readiness checks
 - per-question logs and redaction rules
 - safe handoff between planning, implementation, verification, and final summary
 
@@ -25,7 +25,7 @@ The development harness coordinates:
 | Per-question logs | `.agents/logs/` |
 | Focused skills | `docs/skills/` |
 | Product context | `docs/context/PROJECT_CONTEXT.md`, `docs/context/OPERATING_MODEL.md` |
-| MCP automation tools | `server/mcp/deployServer.ts` |
+| MCP automation tools | `backend/mcp/deployServer.ts` |
 | MCP/deploy plan | `docs/future/mcp-ops/deployment-mcp-and-db-plan.md` |
 
 ## Operating Flow
@@ -46,8 +46,8 @@ User goal in IDE
 
 | Work type | Primary guide | Typical checks |
 |---|---|---|
-| Frontend feature or UI fix | `docs/skills/frontend/SKILL.md`, `docs/skills/ui-ux/SKILL.md` | `pnpm typecheck`, `pnpm build`, manual UI smoke |
-| Backend/API change | `docs/skills/backend-api/SKILL.md` | `pnpm typecheck`, route smoke check |
+| Frontend feature or UI fix | `docs/skills/frontend/SKILL.md`, `docs/skills/ui-ux/SKILL.md` | `pnpm --dir frontend verify`, manual UI smoke |
+| Backend/API change | `docs/skills/backend-api/SKILL.md` | `pnpm --dir backend verify`, route smoke check |
 | Data model or migration planning | `docs/skills/data-model/SKILL.md` | ERD/doc consistency, migration review |
 | Workflow/business process | `docs/skills/workflow/SKILL.md` | state/rule/SLA consistency |
 | Test/QA/review | `docs/skills/testing-qa/SKILL.md` | focused test or build checks |

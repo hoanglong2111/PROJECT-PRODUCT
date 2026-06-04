@@ -56,7 +56,7 @@
       "id": "mcp",
       "label": "MCP Tools",
       "role": "automation_and_readiness_layer",
-      "surfaces": ["server/mcp/deployServer.ts"],
+      "surfaces": ["backend/mcp/deployServer.ts"],
       "responsibilities": [
         "inspect repository readiness",
         "inspect environment variable names without revealing values",
@@ -73,7 +73,7 @@
       "id": "product_ai_harness",
       "label": "GD1 Product AI Harness",
       "role": "read_only_product_context_provider",
-      "surfaces": ["server/ai", "POST /api/ai/harness", "run_gd1_harness"],
+      "surfaces": ["backend/ai", "POST /api/ai/harness", "run_gd1_harness"],
       "responsibilities": [
         "summarize GD1 risks",
         "draft operational recommendations",

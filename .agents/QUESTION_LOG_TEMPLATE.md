@@ -3,6 +3,8 @@
 - Date:
 - Time:
 - Agent:
+- Context Pack:
+- Workflow:
 - User request:
 - Intent:
 
@@ -21,6 +23,12 @@
 ## Verification
 
 - 
+
+## Token Usage
+
+- Input:
+- Output:
+- Total:
 
 ## Final Summary
 

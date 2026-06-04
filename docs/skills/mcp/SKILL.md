@@ -15,13 +15,13 @@ A first MCP server, a read-only GD1 Product AI Harness MVP, and a declarative De
 
 Current deploy reality:
 
-- FE is a Vite app built with `pnpm build` into `dist/`.
-- BE bootstraps from `server/index.ts` with `pnpm start:be` or `pnpm dev:be`.
+- FE is a standalone Vite package built with `pnpm --dir frontend build` into `frontend/dist/`.
+- BE runs source with `pnpm --dir backend dev`, or builds and starts production JS with `pnpm --dir backend build && pnpm --dir backend start`.
 - DB is PostgreSQL through `DATABASE_URL`.
 - Runtime schema may still use older names such as `delivery_orders`; GD1 docs use `shipment`.
 - Deployment and DB normalization plan: `docs/future/mcp-ops/deployment-mcp-and-db-plan.md`.
 - GD1 ERD: `docs/database/GD1_DOCUMENT_ERD.md`.
-- Product AI harness runtime: `server/ai`, `server/modules/ai/routes.ts`, `server/mcp/deployServer.ts`.
+- Product AI harness runtime target: `backend/ai`, `backend/routes/ai.routes.ts`, `backend/mcp/deployServer.ts`.
 - Development AI harness: `.agents/harness/`, `AGENTS.md`, `docs/modules/platform/dev-ai-harness.md`.
 - External model env: `AI_PROVIDER=openai_compatible`, `AI_API_KEY`, `AI_SMALL_MODEL`, `AI_LARGE_MODEL`, optional `AI_BASE_URL`.
 

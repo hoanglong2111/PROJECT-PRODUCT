@@ -24,22 +24,24 @@ The current codebase still contains older Logistics Control Tower runtime names 
 ## Stack
 
 - Frontend: Vite, React, TypeScript, Mantine, Tabler Icons, React Router, TanStack Query, Zustand.
-- Backend: Express + PostgreSQL tables in `server/`.
-- API client/types: `src/api/logistics.ts` compatibility exports backed by `src/shared/api`.
-- Seed data: `server/seeds/logisticsSeed.ts`, loaded with `pnpm seed:logistics`.
+- Backend: standalone Express + PostgreSQL package in `backend/`, organized into layered MVC folders.
+- API client/types: `frontend/src/api/logistics.ts` compatibility exports backed by `frontend/src/shared/api`.
+- Seed data: `backend/seeds/logisticsSeed.ts`, loaded after build with `pnpm --dir backend seed:logistics`.
 - MCP/RAG: future planning documentation under `docs/future/mcp-ops/`.
 
 ## Architecture Map
 
 | Area | Current location |
 |---|---|
-| App shell/routing | `src/app/App.tsx`, `src/app/routes.tsx`, `src/app/routeRoles.ts` |
-| Feature pages | `src/features/<feature>/page.tsx` |
-| Shared frontend | `src/shared/api`, `src/shared/auth`, `src/shared/components`, `src/shared/i18n`, `src/shared/stores`, `src/shared/theme`, `src/shared/utils` |
-| Compatibility frontend exports | legacy `src/api`, `src/auth`, `src/components`, `src/hooks`, `src/i18n`, `src/stores`, `src/theme`, `src/utils` paths |
-| Backend bootstrap | `server/index.ts` |
-| Backend modules | `server/modules/<domain>/routes.ts` and `service.ts` |
-| Shared backend services | `server/services/normalizedStore.ts`, `sop*.ts`, `logistics*.ts`, `exchangeRates.ts` |
+| App shell/routing | `frontend/src/app/App.tsx`, `frontend/src/app/routes.tsx`, `frontend/src/app/routeRoles.ts` |
+| Feature pages | `frontend/src/features/<feature>/page.tsx` |
+| Shared frontend | `frontend/src/shared/api`, `frontend/src/shared/auth`, `frontend/src/shared/components`, `frontend/src/shared/i18n`, `frontend/src/shared/stores`, `frontend/src/shared/theme`, `frontend/src/shared/utils` |
+| Compatibility frontend exports | legacy `frontend/src/api`, `frontend/src/auth`, `frontend/src/components`, `frontend/src/hooks`, `frontend/src/i18n`, `frontend/src/stores`, `frontend/src/theme`, `frontend/src/utils` paths |
+| Backend bootstrap | `backend/server.ts` |
+| Backend HTTP layers | `backend/routes/*.routes.ts`, `backend/controllers/*.controller.ts`, `backend/middlewares/` |
+| Backend business services | `backend/services/*.service.ts` |
+| Backend persistence | `backend/models/` |
+| Backend config/domain/helpers | `backend/config/`, `backend/domain/`, `backend/utils/` |
 
 ## GD1 Product Scope
 
@@ -166,4 +168,4 @@ Legacy `do` query params may remain while code still uses `delivery_orders`; new
 - Approval workflow, PO versioning, shipment milestones, task templates, landed cost allocation, and GD1 SLA runtime need implementation or migration.
 - Reliability foundations may exist before full workers/controllers are complete; Kafka/RabbitMQ publisher, provider webhooks, carrier pollers, IMAP/SFTP connectors, RLS tenant enforcement, and AES object-storage integration must be tracked separately before production cutover.
 - Master data for supplier, item, department, tenant, incoterm, and currency is referenced by GD1 but not fully modeled in the GD1 document.
-- No dedicated test framework yet; verification remains `pnpm typecheck`, `pnpm build`, and manual smoke checks.
+- Frontend and backend use independent Vitest suites and package-scoped verification commands.

@@ -1,6 +1,6 @@
 # Tasks Frontend Module
 
-Use this when implementing `src/features/tasks/page.tsx`.
+Use this when implementing `frontend/src/features/tasks/page.tsx`.
 
 ## Query
 

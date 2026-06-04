@@ -1,6 +1,6 @@
 # Purchase Orders Frontend Module
 
-Use this when implementing `src/features/purchase-orders/page.tsx`.
+Use this when implementing `frontend/src/features/purchase-orders/page.tsx`.
 
 ## Query
 

@@ -24,7 +24,7 @@ Use existing project stack only:
 - TanStack Query for server state.
 - Zustand for UI filters/preferences.
 - React Router query params for shareable context.
-- Axios/API helpers through `src/api/*` or `src/shared/api`.
+- Axios/API helpers through `frontend/src/api/*` or `frontend/src/shared/api`.
 
 ## ERP Design Rules
 

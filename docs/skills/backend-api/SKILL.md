@@ -18,14 +18,14 @@ Load:
 
 ## Current Boundary
 
-- `server/index.ts` is bootstrap only.
-- API routes live in `server/modules/<domain>/routes.ts`.
+- `backend/server.ts` is bootstrap only.
+- API routes live in `backend/routes/<domain>.routes.ts`; controllers handle HTTP, services own business rules, and models own persistence.
 - Persistence uses PostgreSQL tables, but current runtime may still use `delivery_orders` for the GD1 shipment concept.
 - Keep compatibility fields until frontend and backend migrate together.
 
 ## Local Dev Watcher Troubleshooting
 
-When `pnpm dev:be` fails with:
+When `pnpm --dir backend dev` fails with:
 
 ```text
 Error: ENOSPC: System limit for number of file watchers reached
@@ -36,10 +36,15 @@ treat it as Linux inotify watcher exhaustion, not a route/module bug. The path i
 Immediate workaround:
 
 ```bash
-pnpm start:be
+pnpm --dir backend exec tsx server.ts
 ```
 
-This starts `server/index.ts` without watch mode.
+This starts `backend/server.ts` without watch mode. Production-style startup requires a build first:
+
+```bash
+pnpm --dir backend build
+pnpm --dir backend start
+```
 
 Local machine fix:
 
@@ -58,7 +63,7 @@ sudo sysctl --system
 After applying the OS-level fix, retry:
 
 ```bash
-pnpm dev:be
+pnpm --dir backend dev
 ```
 
 Do not refactor backend routes or reduce imports to fix this error unless the watcher limit has already been ruled out.

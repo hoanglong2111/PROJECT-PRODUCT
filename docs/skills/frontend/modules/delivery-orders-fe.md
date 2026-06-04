@@ -1,6 +1,6 @@
 # Shipment Frontend Module
 
-Use this when implementing the legacy `src/features/delivery-orders/page.tsx` route or a future shipment route.
+Use this when implementing the legacy `frontend/src/features/delivery-orders/page.tsx` route or a future shipment route.
 
 ## Naming
 

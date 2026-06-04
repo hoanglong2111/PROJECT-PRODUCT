@@ -18,9 +18,11 @@ Purpose:
 
 Main code:
 
-- `src/features/dashboard/page.tsx`
-- `server/modules/dashboard`
-- `server/services/logisticsReporting.ts`
+- `frontend/src/features/dashboard/page.tsx`
+- `backend/routes/dashboard.routes.ts`
+- `backend/controllers/dashboard.controller.ts`
+- `backend/services/dashboard.service.ts`
+- `backend/models/logisticsReporting.ts`
 
 ## Workflow
 
@@ -33,9 +35,9 @@ Purpose:
 
 Main code:
 
-- `src/features/workflow/page.tsx`
-- `src/shared/components/EntityLink.tsx`
-- `src/shared/hooks/useEntityParam.ts`
+- `frontend/src/features/workflow/page.tsx`
+- `frontend/src/shared/components/EntityLink.tsx`
+- `frontend/src/shared/hooks/useEntityParam.ts`
 
 ## Rules
 

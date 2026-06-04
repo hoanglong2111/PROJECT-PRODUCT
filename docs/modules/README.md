@@ -6,12 +6,12 @@ This folder groups current GD1 documentation by implementation module.
 
 | Module | Docs | Main code |
 |---|---|---|
-| Procurement | `procurement/purchase-requests.md`, `procurement/purchase-orders.md`, `procurement/approvals.md` | `src/features/purchase-requests`, `src/features/purchase-orders`, `server/modules/purchaseRequests`, `server/modules/purchaseOrders` |
-| Shipments | `shipments/shipment.md`, `shipments/import-shipment-sop-sla.md` | `src/features/delivery-orders`, `server/modules/deliveryOrders`, `server/services/milestones.ts`, `server/services/landedCost.ts` |
-| Tasks | `tasks/po-stage-tasks.md` | `src/features/tasks`, `server/modules/tasks`, `server/services/poStageTasks.ts` |
-| Dashboard / Workflow | `dashboard-workflow/README.md` | `src/features/dashboard`, `src/features/workflow`, `server/modules/dashboard` |
-| Integrations | `integrations/erp-wms-outbox.md` | `server/services/reliability.ts`, `server/services/logisticsPurchaseOrders.ts`, `server/services/milestones.ts` |
-| Platform | `platform/README.md`, `platform/ai-harness.md`, `platform/dev-ai-harness.md` | `server/modules/auth`, `server/modules/users`, `server/modules/search`, `server/modules/health`, `server/modules/ai`, `server/ai`, `.agents/harness`, `src/features/settings`, `src/features/profile` |
+| Procurement | `procurement/purchase-requests.md`, `procurement/purchase-orders.md`, `procurement/approvals.md` | `frontend/src/features/purchase-requests`, `frontend/src/features/purchase-orders`, `backend/routes/purchase-*.routes.ts`, `backend/services/purchase-*.service.ts` |
+| Shipments | `shipments/shipment.md`, `shipments/import-shipment-sop-sla.md` | `frontend/src/features/delivery-orders`, `backend/routes/delivery-orders.routes.ts`, `backend/services/delivery-order-workflow.service.ts`, `backend/models/milestones.ts`, `backend/models/landedCost.ts` |
+| Tasks | `tasks/po-stage-tasks.md` | `frontend/src/features/tasks`, `backend/routes/tasks.routes.ts`, `backend/services/po-stage-task.service.ts`, `backend/models/poStageTasks.ts` |
+| Dashboard / Workflow | `dashboard-workflow/README.md` | `frontend/src/features/dashboard`, `frontend/src/features/workflow`, `backend/routes/dashboard.routes.ts`, `backend/services/dashboard.service.ts` |
+| Integrations | `integrations/erp-wms-outbox.md` | `backend/models/reliability.ts`, `backend/models/logisticsPurchaseOrders.ts`, `backend/models/milestones.ts` |
+| Platform | `platform/README.md`, `platform/ai-harness.md`, `platform/dev-ai-harness.md` | `backend/routes/auth.routes.ts`, `backend/routes/users.routes.ts`, `backend/routes/search.routes.ts`, `backend/routes/health.routes.ts`, `.agents/harness`, `frontend/src/features/settings`, `frontend/src/features/profile` |
 
 ## Boundaries
 

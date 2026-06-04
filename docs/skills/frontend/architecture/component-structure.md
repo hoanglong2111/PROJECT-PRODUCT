@@ -5,11 +5,11 @@ Use this when extracting components or deciding where code belongs.
 ## Current Structure
 
 ```text
-src/app/          app shell, route config, route role config
-src/features/     feature-owned route pages and local components/hooks/API/constants
-src/shared/       cross-feature API, auth, components, hooks, i18n, stores, theme, utils
-src/models/       shared TypeScript contracts
-src/app/routes.tsx route config; route pages live in src/features/
+frontend/src/app/          app shell, route config, route role config
+frontend/src/features/     feature-owned route pages and local components/hooks/API/constants
+frontend/src/shared/       cross-feature API, auth, components, hooks, i18n, stores, theme, utils
+frontend/src/models/       shared TypeScript contracts
+frontend/src/app/routes.tsx route config; route pages live in frontend/src/features/
 ```
 
 ## Extraction Rules

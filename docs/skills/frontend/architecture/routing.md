@@ -13,7 +13,7 @@ Use this when changing routes, deep links, navigation, or page-level context.
 /tasks             -> Tasks
 ```
 
-Routes are defined in `src/app/routes.tsx`.
+Routes are defined in `frontend/src/app/routes.tsx`.
 
 ## Query Param Contract
 
@@ -47,9 +47,9 @@ Examples:
 
 ## Adding A Route
 
-1. Add the route component in `src/features/<feature>/page.tsx` and export it.
-2. Register the lazy import in `src/app/routes.tsx`.
-3. Add or reuse role sets in `src/app/routeRoles.ts` when protected.
+1. Add the route component in `frontend/src/features/<feature>/page.tsx` and export it.
+2. Register the lazy import in `frontend/src/app/routes.tsx`.
+3. Add or reuse role sets in `frontend/src/app/routeRoles.ts` when protected.
 4. Add navigation in `AppShellLayout` if primary.
 5. Add route/deep-link behavior to docs if the page owns entity context.
 6. Add a UI/UX module spec and FE module spec.

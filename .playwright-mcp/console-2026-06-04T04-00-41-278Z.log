@@ -1,0 +1,104 @@
+[     352ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:14337
+[ 2382418ms] [ERROR] You are calling ReactDOMClient.createRoot() on a container that has already been passed to createRoot() before. Instead, call root.render() on the existing root instead if you want to update it. @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:11668
+[ 2382461ms] Error: useAuth must be used inside AuthProvider
+    at useAuth (http://localhost:5173/src/shared/auth/useAuth.ts:6:9)
+    at RequireAuth (http://localhost:5173/src/shared/auth/RequireAuth.tsx:10:41)
+    at Object.react_stack_bottom_frame (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:12868:12)
+    at renderWithHooks (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:4213:19)
+    at updateFunctionComponent (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:5569:16)
+    at beginWork (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:6140:20)
+    at runWithFiberInDEV (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:851:66)
+    at performUnitOfWork (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:8429:92)
+    at workLoopSync (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:8325:37)
+    at renderRootSync (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:8309:6)
+[ 2382461ms] [WARNING] %s
+
+%s
+ An error occurred in the <RequireAuth> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:5257
+[ 2382721ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:14337
+[ 2382792ms] Error: useAuth must be used inside AuthProvider
+    at useAuth (http://localhost:5173/src/shared/auth/useAuth.ts:6:9)
+    at RequireAuth (http://localhost:5173/src/shared/auth/RequireAuth.tsx:10:41)
+    at Object.react_stack_bottom_frame (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:12868:12)
+    at renderWithHooks (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:4213:19)
+    at updateFunctionComponent (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:5569:16)
+    at beginWork (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:6140:20)
+    at runWithFiberInDEV (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:851:66)
+    at performUnitOfWork (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:8429:92)
+    at workLoopSync (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:8325:37)
+    at renderRootSync (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:8309:6)
+[ 2382791ms] [WARNING] %s
+
+%s
+ An error occurred in the <RequireAuth> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:5257
+[ 2382820ms] [ERROR] You are calling ReactDOMClient.createRoot() on a container that has already been passed to createRoot() before. Instead, call root.render() on the existing root instead if you want to update it. @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:11668
+[ 2382833ms] Error: useAuth must be used inside AuthProvider
+    at useAuth (http://localhost:5173/src/shared/auth/useAuth.ts:6:9)
+    at RequireAuth (http://localhost:5173/src/shared/auth/RequireAuth.tsx:10:41)
+    at Object.react_stack_bottom_frame (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:12868:12)
+    at renderWithHooks (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:4213:19)
+    at updateFunctionComponent (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:5569:16)
+    at beginWork (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:6140:20)
+    at runWithFiberInDEV (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:851:66)
+    at performUnitOfWork (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:8429:92)
+    at workLoopSync (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:8325:37)
+    at renderRootSync (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:8309:6)
+[ 2382833ms] [WARNING] %s
+
+%s
+ An error occurred in the <RequireAuth> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:5257
+[ 2382938ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:14337
+[ 2382994ms] Error: useAuth must be used inside AuthProvider
+    at useAuth (http://localhost:5173/src/shared/auth/useAuth.ts:6:9)
+    at RequireAuth (http://localhost:5173/src/shared/auth/RequireAuth.tsx:10:41)
+    at Object.react_stack_bottom_frame (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:12868:12)
+    at renderWithHooks (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:4213:19)
+    at updateFunctionComponent (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:5569:16)
+    at beginWork (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:6140:20)
+    at runWithFiberInDEV (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:851:66)
+    at performUnitOfWork (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:8429:92)
+    at workLoopSync (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:8325:37)
+    at renderRootSync (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:8309:6)
+[ 2382993ms] [WARNING] %s
+
+%s
+ An error occurred in the <RequireAuth> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:5257
+[ 2383032ms] [ERROR] You are calling ReactDOMClient.createRoot() on a container that has already been passed to createRoot() before. Instead, call root.render() on the existing root instead if you want to update it. @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:11668
+[ 2383047ms] Error: useAuth must be used inside AuthProvider
+    at useAuth (http://localhost:5173/src/shared/auth/useAuth.ts:6:9)
+    at RequireAuth (http://localhost:5173/src/shared/auth/RequireAuth.tsx:10:41)
+    at Object.react_stack_bottom_frame (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:12868:12)
+    at renderWithHooks (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:4213:19)
+    at updateFunctionComponent (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:5569:16)
+    at beginWork (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:6140:20)
+    at runWithFiberInDEV (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:851:66)
+    at performUnitOfWork (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:8429:92)
+    at workLoopSync (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:8325:37)
+    at renderRootSync (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:8309:6)
+[ 2383046ms] [WARNING] %s
+
+%s
+ An error occurred in the <RequireAuth> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:5257
+[ 2383143ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:14337
+[ 2383192ms] Error: useAuth must be used inside AuthProvider
+    at useAuth (http://localhost:5173/src/shared/auth/useAuth.ts:6:9)
+    at RequireAuth (http://localhost:5173/src/shared/auth/RequireAuth.tsx:10:41)
+    at Object.react_stack_bottom_frame (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:12868:12)
+    at renderWithHooks (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:4213:19)
+    at updateFunctionComponent (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:5569:16)
+    at beginWork (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:6140:20)
+    at runWithFiberInDEV (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:851:66)
+    at performUnitOfWork (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:8429:92)
+    at workLoopSync (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:8325:37)
+    at renderRootSync (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:8309:6)
+[ 2383191ms] [WARNING] %s
+
+%s
+ An error occurred in the <RequireAuth> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:5257
+[ 2428604ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/@vite/client:992

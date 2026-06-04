@@ -11,14 +11,24 @@ Catch regressions in GD1 entity links, approval routing, quantity validation, PO
 
 ## Baseline
 
-Current repo has:
+Frontend and backend are independent packages with their own architecture checks, typechecks, tests, and builds:
 
 ```bash
-pnpm typecheck
-pnpm build
+pnpm --dir frontend verify
+pnpm --dir backend verify
 ```
 
-No dedicated test framework is configured yet.
+The frontend currently has 30 Vitest tests. Backend HTTP-foundation middleware and error behavior is covered under `backend/tests/`.
+
+## Test Framework
+
+- **Frontend**: Vitest + React Testing Library
+  - Place tests next to source: `frontend/src/features/<feature>/__tests__/`
+- **Backend**: Vitest
+  - Place cross-cutting HTTP tests in `backend/tests/`
+  - Place focused service/model tests next to the owning layer when useful
+- **E2E**: Playwright
+  - Place tests: `e2e/`
 
 ## High-Value Coverage
 
@@ -42,9 +52,9 @@ No dedicated test framework is configured yet.
 
 When writing or changing code, run:
 
-1. `pnpm typecheck`
-2. `pnpm build`
-3. Existing tests if configured
+1. `pnpm --dir frontend verify` for frontend changes.
+2. `pnpm --dir backend verify` for backend changes.
+3. Both commands for cross-package or deployment changes.
 
 For docs-only changes, typecheck/build are not required unless docs generate code or schema.
 
@@ -63,6 +73,6 @@ Before marking UI work done:
 ## Done
 
 - Verification matches change risk.
-- `pnpm typecheck` passes for code changes.
-- `pnpm build` passes for production-impacting changes.
+- The affected package `verify` command passes.
+- Backend production artifacts and copied migrations pass `verify:artifacts`.
 - Any skipped verification or manual smoke-test results are documented.

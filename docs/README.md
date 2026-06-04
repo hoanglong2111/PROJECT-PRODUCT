@@ -15,12 +15,12 @@ Docs in this folder are project-local context for the KBFE GD1 Procurement & Imp
 
 | Path | Use |
 |---|---|
-| `src/app/` | React app shell, route config, and role guards. |
-| `src/features/` | Feature route pages, feature-local components, hooks, API wrappers, and constants. |
-| `src/shared/` | Cross-feature frontend API, auth, UI, i18n, stores, theme, hooks, and utilities. |
-| `src/models/` | Shared TypeScript contracts that must stay compatible with API payloads. |
-| `server/modules/` | Express route/service modules mounted under stable `/api/*` paths. |
-| `server/services/` | Shared backend persistence, SOP, logistics, reporting, and transform helpers. |
+| `frontend/src/app/` | React app shell, route config, and role guards. |
+| `frontend/src/features/` | Feature route pages, feature-local components, hooks, API wrappers, and constants. |
+| `frontend/src/shared/` | Cross-feature frontend API, auth, UI, i18n, stores, theme, hooks, and utilities. |
+| `frontend/src/models/` | Shared TypeScript contracts that must stay compatible with API payloads. |
+| `backend/routes/`, `backend/controllers/`, `backend/middlewares/` | Express HTTP boundary mounted under stable `/api/*` paths. |
+| `backend/services/`, `backend/models/` | Backend business orchestration and PostgreSQL persistence. |
 | `docs/context/` | GD1 scope, routes, entities, operating model, gaps. |
 | `docs/database/` | GD1 ERD, runtime schema analysis, and migration planning. |
 | `docs/modules/` | Module-level business truth for Procurement, Shipments, Tasks, Dashboard/Workflow, Integrations, and Platform support. |
@@ -63,10 +63,13 @@ GD1 uses `shipment`. Current runtime code may still expose `delivery_orders` or 
 ## Local Run
 
 ```bash
-cp .env.example .env
-pnpm seed:logistics
-pnpm dev:be
-pnpm dev
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
+pnpm --dir backend install --frozen-lockfile
+pnpm --dir frontend install --frozen-lockfile
+pnpm --dir backend seed:dev
+pnpm --dir backend dev
+pnpm --dir frontend dev
 ```
 
 Default users:

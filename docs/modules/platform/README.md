@@ -6,14 +6,14 @@ Platform docs cover modules that support GD1 but are not themselves PR/PO/shipme
 
 | Module | Purpose | Main code |
 |---|---|---|
-| Auth | Login/session/JWT boundary | `server/modules/auth`, `src/shared/auth` |
-| Users | User list and admin account management | `server/modules/users` |
-| Search | Cross-module entity lookup | `server/modules/search` |
-| Health | Runtime health check | `server/modules/health` |
-| Product AI Harness | Read-only GD1 copilot orchestration for app users, compact context, routing, cache, metrics | `server/ai`, `server/modules/ai`, `src/shared/components/Gd1HarnessPanel.tsx` |
-| Development AI Harness | IDE/build-agent orchestration, context packs, workflows, prompt templates, readiness checks | `.agents/harness`, `AGENTS.md`, `docs/skills`, `server/mcp/deployServer.ts` |
-| Settings/Profile | User preferences, theme, language, admin UI | `src/features/settings`, `src/features/profile` |
-| Exchange Rates | Currency/rate support for PO and landed cost | `server/modules/exchangeRates`, `src/features/exchange-rates` |
+| Auth | Login/session/JWT boundary | `backend/routes/auth.routes.ts`, `frontend/src/shared/auth` |
+| Users | User list and admin account management | `backend/routes/users.routes.ts` |
+| Search | Cross-module entity lookup | `backend/routes/search.routes.ts` |
+| Health | Runtime health check | `backend/routes/health.routes.ts` |
+| Product AI Harness | Read-only GD1 copilot orchestration for app users, compact context, routing, cache, metrics | `backend/ai`, `backend/routes/ai.routes.ts`, `frontend/src/shared/components/Gd1HarnessPanel.tsx` |
+| Development AI Harness | IDE/build-agent orchestration, context packs, workflows, prompt templates, readiness checks | `.agents/harness`, `AGENTS.md`, `docs/skills`, `backend/mcp/deployServer.ts` |
+| Settings/Profile | User preferences, theme, language, admin UI | `frontend/src/features/settings`, `frontend/src/features/profile` |
+| Exchange Rates | Currency/rate support for PO and landed cost | `backend/routes/exchange-rates.routes.ts`, `frontend/src/features/exchange-rates` |
 
 ## Boundary
 

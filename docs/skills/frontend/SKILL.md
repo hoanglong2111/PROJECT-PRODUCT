@@ -19,12 +19,12 @@ Use the existing stack: React, TypeScript, Vite, React Router, TanStack Query, Z
 
 ## Source Map
 
-- App shell/routing: `src/app/App.tsx`, `src/app/routes.tsx`, `src/app/routeRoles.ts`
-- Feature route pages: `src/features/<feature>/page.tsx`
-- Feature-local UI/API/hooks/constants: `src/features/<feature>/components`, `api.ts`, `hooks.ts`, `constants.ts`
-- API/types compatibility: `src/api/logistics.ts`; shared implementation lives under `src/shared/api`
-- Deep links: `src/shared/hooks/useEntityParam.ts`
-- Shared state: `src/shared/stores/workspaceStore.ts`
+- App shell/routing: `frontend/src/app/App.tsx`, `frontend/src/app/routes.tsx`, `frontend/src/app/routeRoles.ts`
+- Feature route pages: `frontend/src/features/<feature>/page.tsx`
+- Feature-local UI/API/hooks/constants: `frontend/src/features/<feature>/components`, `api.ts`, `hooks.ts`, `constants.ts`
+- API/types compatibility: `frontend/src/api/logistics.ts`; shared implementation lives under `frontend/src/shared/api`
+- Deep links: `frontend/src/shared/hooks/useEntityParam.ts`
+- Shared state: `frontend/src/shared/stores/workspaceStore.ts`
 
 ## GD1 Screen Model
 
@@ -88,9 +88,45 @@ High-value invalidations:
 - Dense ERP tables should remain usable on mobile through horizontal scroll.
 - Do not expose write actions before backend validation exists unless explicitly building mock scope.
 
+## Theme System
+
+The KBFE theme system has 3 layers that work together:
+
+### Layer 1: Mantine Color Tuple (buildTheme)
+- `frontend/src/shared/theme/theme.ts` — `buildTheme(colorPresetId, eventThemeId)` returns a Mantine theme with `primaryColor` and `colors` tuple.
+- `frontend/src/shared/theme/colorPresets.ts` — 9 presets: teal, ocean, forest, sunset, midnight, lavender, rose, amber, slate.
+- `frontend/src/shared/theme/eventThemes.ts` — 9 event themes with optional `accentOverride` for seasonal colors.
+- `cssVariablesResolver` exposes `--mantine-color-{name}-{i}` for both light and dark tuples.
+
+### Layer 2: CSS Variables (theme.css)
+- `frontend/src/theme.css` — defines `--kbfe-*` tokens keyed on `data-kbfe-appearance` × `data-kbfe-visual-theme` × `data-kbfe-color-preset` × `data-kbfe-resolved-color-scheme`.
+- Custom components use `var(--kbfe-primary-color)`, `var(--kbfe-background-primary)`, etc.
+- `data-kbfe-density='compact'` reduces spacing tokens.
+
+### Layer 3: Dataset Attributes (WorkspacePreferencesContext)
+- `frontend/src/shared/preferences/WorkspacePreferencesContext.tsx` — stores preferences in localStorage and sets dataset attributes on `<html>`.
+- Attributes: `data-kbfe-appearance`, `data-kbfe-color-preset`, `data-kbfe-event-theme`, `data-kbfe-visual-theme`, `data-kbfe-density`, `data-kbfe-resolved-color-scheme`.
+
+### Adding a New Color Preset
+1. Add to `colorPresets.ts`: `{ id, primaryColor, colors: { light: [...], dark: [...] } }`.
+2. Add CSS rule in `theme.css`: `html[data-kbfe-color-preset='<id>'] { --kbfe-primary-color: ...; }`.
+3. Add translation keys in `messages.ts`: `settings.colorPresets.<id>`.
+4. Add label in `labels.ts`: `colorPresetLabels`.
+
+### Adding a New Event Theme
+1. Add to `eventThemes.ts`: `{ id, emoji, colorPresetId, accentOverride? }`.
+2. Add translation keys in `messages.ts`: `settings.eventThemes.<id>`.
+3. The `accentOverride` modifies Mantine's shade 6 (light) and shade 7 (dark).
+
+### Backend Sync (Phase 6)
+- Preferences sync via `GET/PUT /api/users/me/preferences`.
+- Server stores in `user_preferences` table.
+- localStorage acts as offline cache; server is source of truth when online.
+
 ## Done
 
-- `pnpm typecheck` passes for code changes.
+- `pnpm --dir frontend typecheck` passes for code changes.
 - Query params and cross-entity links still work.
 - New write UI has validation, loading, error, success, and invalidation.
 - GD1 naming is used in new UI text; legacy names are compatibility-only.
+- Theme system: color presets work, event themes apply, dark mode + compact density functional.

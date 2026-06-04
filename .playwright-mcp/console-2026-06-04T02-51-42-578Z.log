@@ -1,0 +1,62 @@
+[     787ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:14337
+[     968ms] [ERROR] Access to XMLHttpRequest at 'http://localhost:4000/api/users/me/preferences' from origin 'http://localhost:5174' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource. @ http://localhost:5174/:0
+[     970ms] [ERROR] Failed to load resource: net::ERR_FAILED @ http://localhost:4000/api/users/me/preferences:0
+[   81371ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5174/@vite/client:992
+[   82169ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:14337
+[   82492ms] [ERROR] Access to XMLHttpRequest at 'http://localhost:4000/api/users/me/preferences' from origin 'http://localhost:5174' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource. @ http://localhost:5174/login:0
+[   82493ms] [ERROR] Failed to load resource: net::ERR_FAILED @ http://localhost:4000/api/users/me/preferences:0
+[   90446ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5174/@vite/client:992
+[   91101ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:14337
+[   91268ms] [ERROR] Access to XMLHttpRequest at 'http://localhost:4000/api/users/me/preferences' from origin 'http://localhost:5174' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource. @ http://localhost:5174/login:0
+[   91269ms] [ERROR] Failed to load resource: net::ERR_FAILED @ http://localhost:4000/api/users/me/preferences:0
+[ 1384254ms] [ERROR] You are calling ReactDOMClient.createRoot() on a container that has already been passed to createRoot() before. Instead, call root.render() on the existing root instead if you want to update it. @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:11668
+[ 1384529ms] NotFoundError: Failed to execute 'removeChild' on 'Node': The node to be removed is not a child of this node.
+    at removeChildFromContainer (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:10588:123)
+    at runWithFiberInDEV (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:851:66)
+    at commitDeletionEffectsOnFiber (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:7106:7)
+    at recursivelyTraverseDeletionEffects (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:7073:50)
+    at commitDeletionEffectsOnFiber (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:7134:6)
+    at recursivelyTraverseDeletionEffects (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:7073:50)
+    at commitDeletionEffectsOnFiber (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:7148:14)
+    at recursivelyTraverseDeletionEffects (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:7073:50)
+    at commitDeletionEffectsOnFiber (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:7134:6)
+    at recursivelyTraverseDeletionEffects (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:7073:50)
+[ 1384528ms] [WARNING] %s
+
+%s
+ An error occurred in the <style> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:5257
+[ 1384533ms] NotFoundError: Failed to execute 'removeChild' on 'Node': The node to be removed is not a child of this node.
+    at removeChildFromContainer (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:10588:123)
+    at runWithFiberInDEV (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:851:66)
+    at commitDeletionEffectsOnFiber (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:7106:7)
+    at recursivelyTraverseDeletionEffects (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:7073:50)
+    at commitDeletionEffectsOnFiber (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:7134:6)
+    at recursivelyTraverseDeletionEffects (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:7073:50)
+    at commitDeletionEffectsOnFiber (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:7148:14)
+    at recursivelyTraverseDeletionEffects (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:7073:50)
+    at commitDeletionEffectsOnFiber (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:7134:6)
+    at recursivelyTraverseDeletionEffects (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:7073:50)
+[ 1384529ms] [WARNING] %s
+
+%s
+ An error occurred in the <style> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:5257
+[ 1384533ms] NotFoundError: Failed to execute 'removeChild' on 'Node': The node to be removed is not a child of this node.
+    at removeChildFromContainer (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:10588:123)
+    at runWithFiberInDEV (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:851:66)
+    at commitDeletionEffectsOnFiber (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:7106:7)
+    at recursivelyTraverseDeletionEffects (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:7073:50)
+    at commitDeletionEffectsOnFiber (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:7134:6)
+    at recursivelyTraverseDeletionEffects (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:7073:50)
+    at commitDeletionEffectsOnFiber (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:7134:6)
+    at recursivelyTraverseDeletionEffects (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:7073:50)
+    at commitDeletionEffectsOnFiber (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:7134:6)
+    at recursivelyTraverseDeletionEffects (http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:7073:50)
+[ 1384530ms] [WARNING] %s
+
+%s
+ An error occurred in the <div> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:5257
+[ 1384564ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:4000/api/users/me/preferences:0
+[ 1384918ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=5b70aa21:14337

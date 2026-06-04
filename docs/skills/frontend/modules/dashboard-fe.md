@@ -1,6 +1,6 @@
 # Dashboard Frontend Module
 
-Use this when implementing `src/features/dashboard/page.tsx`.
+Use this when implementing `frontend/src/features/dashboard/page.tsx`.
 
 ## GD1 Purpose
 

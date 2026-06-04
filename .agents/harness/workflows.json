@@ -21,7 +21,7 @@
         {
           "id": "verify",
           "action": "Run the relevant checks.",
-          "checks": ["pnpm typecheck", "pnpm build"]
+          "checks": ["pnpm --dir frontend verify"]
         },
         {
           "id": "log",
@@ -53,7 +53,7 @@
         {
           "id": "verify",
           "action": "Run focused checks first, then broader checks if risk warrants it.",
-          "checks": ["pnpm typecheck"]
+          "checks": ["pnpm --dir backend typecheck"]
         },
         {
           "id": "log_and_summarize",
@@ -96,7 +96,7 @@
         {
           "id": "run_checks",
           "action": "Run non-destructive readiness checks.",
-          "checks": ["pnpm typecheck", "pnpm build", "MCP check_repo_readiness when available"]
+          "checks": ["pnpm --dir frontend verify", "pnpm --dir backend verify", "MCP check_repo_readiness when available"]
         },
         {
           "id": "report",
@@ -124,6 +124,38 @@
         {
           "id": "log",
           "action": "Write the per-question log."
+        }
+      ]
+    },
+    {
+      "id": "db_migration",
+      "description": "Create or update database migrations, schema changes, and related data model docs.",
+      "defaultContextPack": "data_model",
+      "steps": [
+        {
+          "id": "scope",
+          "action": "State the schema change, affected tables, and backward compatibility impact."
+        },
+        {
+          "id": "inspect",
+          "action": "Read existing migrations in backend/migrations/ and the GD1 ERD to understand current state."
+        },
+        {
+          "id": "implement",
+          "action": "Create a new migration file with sequential number. Use IF NOT EXISTS / ADD COLUMN IF NOT EXISTS for idempotency."
+        },
+        {
+          "id": "docs",
+          "action": "Update docs/database/DATABASE_ANALYSIS_REPORT.md and relevant module docs if tables or relationships changed."
+        },
+        {
+          "id": "verify",
+          "action": "Run backend verification. If seed data is affected, build and run the backend seed artifact.",
+          "checks": ["pnpm --dir backend verify"]
+        },
+        {
+          "id": "log",
+          "action": "Write the per-question log under .agents/logs."
         }
       ]
     }

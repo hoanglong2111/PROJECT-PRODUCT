@@ -4,7 +4,7 @@ Use this when implementing cross-entity navigation or query-param selected detai
 
 ## Core Hook
 
-Use `src/hooks/useEntityParam.ts` for:
+Use `frontend/src/hooks/useEntityParam.ts` for:
 
 - opening entity context
 - closing entity context

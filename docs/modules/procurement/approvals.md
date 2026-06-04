@@ -42,8 +42,10 @@ Out of scope until the scheduler is enabled:
 
 Current backend logic lives in:
 
-- `server/modules/purchaseRequests/routes.ts`
-- `server/services/approval.ts`
-- `server/services/reliability.ts`
+- `backend/routes/purchase-requests.routes.ts`
+- `backend/controllers/purchase-requests.controller.ts`
+- `backend/services/purchase-request-workflow.service.ts`
+- `backend/models/approval.ts`
+- `backend/models/reliability.ts`
 
-Frontend approval UI lives in `src/features/purchase-requests/page.tsx`.
+Frontend approval UI lives in `frontend/src/features/purchase-requests/page.tsx`.

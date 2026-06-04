@@ -12,7 +12,7 @@ Ensure absolute separation of languages and maintain strict adherence to the GD1
 ## Use When
 
 - A user requests to translate a new feature, screen, or component.
-- Updating `src/shared/i18n/messages.ts` or related translation files.
+- Updating `frontend/src/shared/i18n/messages.ts` or related translation files.
 - Terminology inconsistencies or mixed languages are detected between English and Vietnamese strings.
 - Standardizing legacy terms (e.g., "Delivery Orders") to GD1 terms.
 
@@ -28,7 +28,7 @@ Ensure absolute separation of languages and maintain strict adherence to the GD1
 
 ## Workflow
 
-1. Locate the target English (`en`) and Vietnamese (`vi`) objects, primarily in `src/shared/i18n/messages.ts`.
+1. Locate the target English (`en`) and Vietnamese (`vi`) objects, primarily in `frontend/src/shared/i18n/messages.ts`.
 2. Audit the strings to ensure English strings do not contain Vietnamese, and Vietnamese strings do not contain English (unless it's an approved abbreviation like PR, PO).
 3. Apply standard GD1 terms consistently:
    - "Delivery Order" / "Delivery Orders" / "DO" -> **"Shipment(s)"** (EN), **"Lô hàng"** (VI).
@@ -47,7 +47,7 @@ Ensure absolute separation of languages and maintain strict adherence to the GD1
 ## Tools
 
 - `multi_replace_file_content` or `replace_file_content` to safely update specific translation lines.
-- `run_command` -> `pnpm typecheck` to ensure the TypeScript `MessageKey` interface remains strictly identical between both `en` and `vi` objects.
+- `run_command` -> `pnpm --dir frontend typecheck` to ensure the TypeScript `MessageKey` interface remains strictly identical between both `en` and `vi` objects.
 
 ## Safety
 
@@ -61,4 +61,4 @@ Ensure absolute separation of languages and maintain strict adherence to the GD1
 - [ ] The English object contains strictly English text.
 - [ ] The Vietnamese object contains strictly Vietnamese text (with exceptions for universal acronyms like PR, PO, DO, HBL, ETA).
 - [ ] Legacy terms like "Delivery Orders" are entirely eradicated from UI strings.
-- [ ] `pnpm typecheck` passes with `Exit code: 0`.
+- [ ] `pnpm --dir frontend typecheck` passes with `Exit code: 0`.
