@@ -7,9 +7,8 @@ import {
   deliveryOrders as fixtureDeliveryOrders,
   logisticsTasks as fixtureLogisticsTasks,
   purchaseOrders as fixturePurchaseOrders,
-  purchaseRequests as fixturePurchaseRequests,
 } from '../seeds/logisticsSeed';
-import type { DeliveryOrder, LogisticsTask, PurchaseOrder, PurchaseRequest } from '../domain/logistics';
+import type { DeliveryOrder, LogisticsTask, PurchaseOrder } from '../domain/logistics';
 
 const { Pool } = pg;
 
@@ -31,7 +30,6 @@ type NormalizedSeedData = {
   deliveryOrders: DeliveryOrder[];
   logisticsTasks: LogisticsTask[];
   purchaseOrders: PurchaseOrder[];
-  purchaseRequests: PurchaseRequest[];
 };
 
 async function main() {
@@ -80,108 +78,9 @@ async function main() {
           delivery_order_source_lines,
           delivery_orders,
           purchase_order_lines,
-          purchase_orders,
-          purchase_request_lines,
-          purchase_requests
+          purchase_orders
         RESTART IDENTITY CASCADE
       `);
-    }
-
-    for (const request of seedData.purchaseRequests) {
-      await client.query(
-        `
-          INSERT INTO purchase_requests (
-            id, requested_order_id, item_code, item_name, quantity, unit, priority,
-            requested_order_date, adjusted_date, warehouse_deadline_date, production_contract_number,
-            requester_id, purchasing_manager_id, status, notes, actual_warehouse_entry_date,
-            supplier_expected_delivery_date, expected_arrival_date, delay_days, warehouse_code, flow_tags,
-            updated_at
-          )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, NOW())
-          ON CONFLICT (id) DO UPDATE SET
-            requested_order_id = EXCLUDED.requested_order_id,
-            item_code = EXCLUDED.item_code,
-            item_name = EXCLUDED.item_name,
-            quantity = EXCLUDED.quantity,
-            unit = EXCLUDED.unit,
-            priority = EXCLUDED.priority,
-            requested_order_date = EXCLUDED.requested_order_date,
-            adjusted_date = EXCLUDED.adjusted_date,
-            warehouse_deadline_date = EXCLUDED.warehouse_deadline_date,
-            production_contract_number = EXCLUDED.production_contract_number,
-            requester_id = EXCLUDED.requester_id,
-            purchasing_manager_id = EXCLUDED.purchasing_manager_id,
-            status = EXCLUDED.status,
-            notes = EXCLUDED.notes,
-            actual_warehouse_entry_date = EXCLUDED.actual_warehouse_entry_date,
-            supplier_expected_delivery_date = EXCLUDED.supplier_expected_delivery_date,
-            expected_arrival_date = EXCLUDED.expected_arrival_date,
-            delay_days = EXCLUDED.delay_days,
-            warehouse_code = EXCLUDED.warehouse_code,
-            flow_tags = EXCLUDED.flow_tags,
-            updated_at = NOW()
-        `,
-        [
-          request.id,
-          request.requested_order_id,
-          request.item_code,
-          request.item_name,
-          request.quantity,
-          request.unit,
-          request.priority,
-          request.requested_order_date,
-          request.adjusted_date,
-          request.warehouse_deadline_date,
-          request.production_contract_number,
-          request.requester.user_id,
-          request.purchasing_manager.user_id,
-          request.status,
-          request.notes,
-          request.actual_warehouse_entry_date,
-          request.supplier_expected_delivery_date,
-          request.expected_arrival_date,
-          request.delay_days,
-          request.warehouse_code,
-          request.flow_tags,
-        ],
-      );
-
-      for (const line of request.line_items) {
-        await client.query(
-          `
-            INSERT INTO purchase_request_lines (
-              id, purchase_request_id, item_code, item_name, quantity, unit,
-              warehouse_deadline_date, warehouse_code, production_contract_number,
-              linked_po_numbers, linked_do_numbers
-            )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-            ON CONFLICT (id) DO UPDATE SET
-              purchase_request_id = EXCLUDED.purchase_request_id,
-              item_code = EXCLUDED.item_code,
-              item_name = EXCLUDED.item_name,
-              quantity = EXCLUDED.quantity,
-              unit = EXCLUDED.unit,
-              warehouse_deadline_date = EXCLUDED.warehouse_deadline_date,
-              warehouse_code = EXCLUDED.warehouse_code,
-              production_contract_number = EXCLUDED.production_contract_number,
-              linked_po_numbers = EXCLUDED.linked_po_numbers,
-              linked_do_numbers = EXCLUDED.linked_do_numbers
-          `,
-          [
-            line.id,
-            request.id,
-            line.item_code,
-            line.item_name,
-            line.quantity,
-            line.unit,
-            line.warehouse_deadline_date,
-            line.warehouse_code,
-            line.production_contract_number,
-            line.linked_po_numbers,
-            line.linked_do_numbers,
-          ],
-        );
-      }
     }
 
     for (const order of seedData.purchaseOrders) {
@@ -465,7 +364,6 @@ async function main() {
       delivery_orders: seedData.deliveryOrders.length,
       logistics_tasks: seedData.logisticsTasks.length,
       purchase_orders: seedData.purchaseOrders.length,
-      purchase_requests: seedData.purchaseRequests.length,
       storage: 'normalized_tables',
     });
   } catch (error) {
@@ -481,7 +379,6 @@ function loadSeedData(): NormalizedSeedData {
     deliveryOrders: fixtureDeliveryOrders,
     logisticsTasks: fixtureLogisticsTasks,
     purchaseOrders: fixturePurchaseOrders,
-    purchaseRequests: fixturePurchaseRequests,
   };
 }
 

@@ -26,9 +26,6 @@ import type {
   PurchaseOrder,
   PurchaseOrderLineItem,
   PurchaseOrderStatus,
-  PurchaseRequest,
-  PurchaseRequestLineItem,
-  PurchaseRequestStatus,
   Quotation,
   QuotationStatus,
   ShippingMode,
@@ -71,9 +68,6 @@ export type {
   PurchaseOrder,
   PurchaseOrderLineItem,
   PurchaseOrderStatus,
-  PurchaseRequest,
-  PurchaseRequestLineItem,
-  PurchaseRequestStatus,
   Quotation,
   QuotationStatus,
   ShippingMode,
@@ -95,40 +89,28 @@ type ApiResponse<T> = {
   meta?: Record<string, unknown>;
 };
 
-export type CreatePurchaseRequestPayload = {
-  expectedArrivalDate?: string | null;
-  itemCode: string;
-  itemName: string;
-  lineItems?: Array<{
-    itemCode: string;
-    itemName: string;
-    productionContractNumber?: string;
-    quantity: number;
-    unit: string;
-    warehouseCode?: string;
-    warehouseDeadlineDate?: string;
-  }>;
-  notes?: string;
-  priority: Priority;
-  productionContractNumber: string;
-  quantity: number;
-  requestedOrderDate?: string;
-  supplierExpectedDeliveryDate?: string | null;
-  unit: string;
-  warehouseCode: string;
-  warehouseDeadlineDate: string;
-};
-
 export type CreatePurchaseOrderPayload = {
   currency: string;
   orderDate?: string;
   poNumber: string;
   sourceLines?: Array<{
-    prCode: string;
-    prLineId: string;
-    quantity: number;
+    classificationCode?: string;
+    coNote?: string;
+    declarationType?: string;
+    dutyRate?: number;
+    hsCode?: string;
+    itemCode?: string;
+    itemGroup?: string;
+    itemName?: string;
+    quantity?: number;
+    sourceReference?: string;
+    tariffCode?: string;
+    taxNote?: string;
+    unit?: string;
+    vatRate?: number;
+    lotNumber?: string;
+    itemId?: string;
   }>;
-  sourcePrCode?: string;
   supplierCode: string;
   supplierName: string;
   totalAmount: number;
@@ -163,25 +145,6 @@ export type CreateDeliveryOrderPayload = {
     poLineId: string;
     quantity: number;
   }>;
-};
-
-export type UpdatePurchaseRequestPayload = {
-  expectedArrivalDate?: string | null;
-  itemCode?: string;
-  itemName?: string;
-  notes?: string;
-  priority?: Priority;
-  productionContractNumber?: string;
-  quantity?: number;
-  supplierExpectedDeliveryDate?: string | null;
-  unit?: string;
-  warehouseCode?: string;
-  warehouseDeadlineDate?: string;
-};
-
-export type UpdatePurchaseRequestStatusPayload = {
-  reason?: string;
-  status: PurchaseRequestStatus;
 };
 
 export type UpdateDeliveryOrderPayload = {
@@ -378,9 +341,7 @@ async function readCollection<T>(path: string): Promise<T> {
   return response.data.data;
 }
 
-export async function fetchPurchaseRequests() {
-  return readCollection<PurchaseRequest[]>('/purchase-requests');
-}
+
 
 export async function fetchQuotations() {
   return readCollection<Quotation[]>('/quotations');
@@ -406,10 +367,7 @@ export async function fetchSlaAlerts() {
   return readCollection<SlaAlert[]>('/sla/alerts');
 }
 
-export async function createPurchaseRequest(payload: CreatePurchaseRequestPayload) {
-  const response = await http.post<ApiResponse<PurchaseRequest>>('/purchase-requests', payload);
-  return response.data.data;
-}
+
 
 export async function createQuotation(payload: CreateQuotationPayload) {
   const response = await http.post<ApiResponse<Quotation>>('/quotations', payload);
@@ -433,24 +391,7 @@ export async function createDeliveryOrder(payload: CreateDeliveryOrderPayload) {
   return response.data.data;
 }
 
-export async function updatePurchaseRequest(requestedOrderId: string, payload: UpdatePurchaseRequestPayload) {
-  const response = await http.patch<ApiResponse<PurchaseRequest>>(
-    `/purchase-requests/${encodeURIComponent(requestedOrderId)}`,
-    payload,
-  );
-  return response.data.data;
-}
 
-export async function updatePurchaseRequestStatus(
-  requestedOrderId: string,
-  payload: UpdatePurchaseRequestStatusPayload,
-) {
-  const response = await http.patch<ApiResponse<PurchaseRequest>>(
-    `/purchase-requests/${encodeURIComponent(requestedOrderId)}/status`,
-    payload,
-  );
-  return response.data.data;
-}
 
 export async function updateQuotationAction(quotationId: string, payload: UpdateQuotationActionPayload) {
   const response = await http.patch<ApiResponse<Quotation>>(
@@ -643,36 +584,7 @@ export async function updateLogisticsTask(taskId: string, payload: UpdateTaskPay
   return response.data.data;
 }
 
-// --- GD1 PR Approval chain endpoints ---
-export async function submitPurchaseRequestForApproval(requestedOrderId: string) {
-  const response = await http.post<ApiResponse<{ success: boolean }>>(
-    `/purchase-requests/${encodeURIComponent(requestedOrderId)}/submit`
-  );
-  return response.data.data;
-}
 
-export async function fetchPurchaseRequestApprovalSteps(requestedOrderId: string) {
-  const response = await http.get<ApiResponse<Gd1ApprovalStep[]>>(
-    `/purchase-requests/${encodeURIComponent(requestedOrderId)}/approval-steps`
-  );
-  return response.data.data;
-}
-
-export async function approvePurchaseRequestStep(stepId: string, note?: string) {
-  const response = await http.post<ApiResponse<{ success: boolean }>>(
-    `/purchase-requests/steps/${encodeURIComponent(stepId)}/approve`,
-    { note }
-  );
-  return response.data.data;
-}
-
-export async function rejectPurchaseRequestStep(stepId: string, note?: string) {
-  const response = await http.post<ApiResponse<{ success: boolean }>>(
-    `/purchase-requests/steps/${encodeURIComponent(stepId)}/reject`,
-    { note }
-  );
-  return response.data.data;
-}
 
 // --- GD1 PO stage & PO-stage tasks endpoints ---
 export async function advancePurchaseOrderStage(poNumber: string, stage: Gd1PoStatus) {

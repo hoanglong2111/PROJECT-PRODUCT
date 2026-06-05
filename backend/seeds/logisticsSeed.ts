@@ -5,7 +5,6 @@ import type {
   DeliveryOrder,
   LogisticsTask,
   PurchaseOrder,
-  PurchaseRequest,
   TaskRole,
   UserRef,
 } from '../domain/logistics';
@@ -65,13 +64,11 @@ const {
   deliveryOrders,
   logisticsTasks,
   purchaseOrders,
-  purchaseRequests,
 } = buildMasterSeed(masterRows);
 
-export { deliveryOrders, logisticsTasks, purchaseOrders, purchaseRequests };
+export { deliveryOrders, logisticsTasks, purchaseOrders };
 
 export const logisticsSnapshotSeeds: Record<string, unknown> = {
-  purchase_requests: purchaseRequests,
   purchase_orders: purchaseOrders,
   delivery_orders: deliveryOrders,
   tasks: logisticsTasks,
@@ -116,7 +113,6 @@ function loadMasterRows(path: string): MasterRow[] {
 }
 
 function buildMasterSeed(rows: MasterRow[]) {
-  const purchaseRequestsSeed: PurchaseRequest[] = [];
   const purchaseOrdersSeed: PurchaseOrder[] = [];
   const deliveryOrdersSeed: DeliveryOrder[] = [];
   const logisticsTasksSeed: LogisticsTask[] = [];
@@ -149,45 +145,7 @@ function buildMasterSeed(rows: MasterRow[]) {
     const plannedEntryDate = eta ? addDays(eta, 2) : null;
     const delayDays = calculateDelayDays(plannedEntryDate ?? eta, warehouseDeadline);
 
-    purchaseRequestsSeed.push({
-      id: `pr-master-${String(rowNumber).padStart(6, '0')}`,
-      requested_order_id: prCode,
-      item_code: itemCode,
-      item_name: itemName,
-      quantity,
-      unit: inferUnit(row.packing),
-      priority: delayDays > 0 ? 'HIGH' : 'MEDIUM',
-      requested_order_date: requestDate,
-      adjusted_date: null,
-      warehouse_deadline_date: warehouseDeadline,
-      production_contract_number: productionContract,
-      requester: seedUsers.sale,
-      purchasing_manager: seedUsers.buyer,
-      status: 'CONVERTED_TO_PO',
-      notes: compactNotes(['Imported from KBI Master CSV', row.salesProgress, row.vendorProgress]),
-      line_items: [
-        {
-          id: prLineId,
-          item_code: itemCode,
-          item_name: itemName,
-          quantity,
-          unit: inferUnit(row.packing),
-          warehouse_deadline_date: warehouseDeadline,
-          warehouse_code: 'WH-HCM-01',
-          production_contract_number: productionContract,
-          linked_po_numbers: [poNumber],
-          linked_do_numbers: [doNumber],
-        },
-      ],
-      actual_warehouse_entry_date: status === 'DELIVERED' ? plannedEntryDate : null,
-      supplier_expected_delivery_date: eta,
-      expected_arrival_date: eta,
-      delay_days: calculateDelayDays(eta, warehouseDeadline),
-      linked_po_numbers: [poNumber],
-      linked_do_numbers: [doNumber],
-      warehouse_code: 'WH-HCM-01',
-      flow_tags: flowTags,
-    });
+
 
     purchaseOrdersSeed.push({
       id: `po-master-${String(rowNumber).padStart(6, '0')}`,
@@ -307,7 +265,6 @@ function buildMasterSeed(rows: MasterRow[]) {
     deliveryOrders: deliveryOrdersSeed,
     logisticsTasks: logisticsTasksSeed,
     purchaseOrders: purchaseOrdersSeed,
-    purchaseRequests: purchaseRequestsSeed,
   };
 }
 

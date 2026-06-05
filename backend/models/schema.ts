@@ -2,7 +2,9 @@ import bcrypt from 'bcryptjs';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 
-import { deliveryOrders, logisticsTasks, purchaseOrders, purchaseRequests } from '../seeds/logisticsSeed';
+import { deliveryOrders, logisticsTasks, purchaseOrders } from '../seeds/logisticsSeed';
+import { seedGd1Rbac } from '../seeds/gd1RbacSeed';
+import { seedGd1TaskTemplates } from '../seeds/gd1TaskTemplatesSeed';
 import { pool } from '../config/database';
 import type { AppUserRow } from '../domain/types';
 import { writeNormalizedSnapshot } from './normalizedStore';
@@ -156,6 +158,15 @@ export async function ensureSchemaAndSeed() {
   const migration005Sql = await readFile(migrationUrl('005_user_preferences.sql'), 'utf8');
   await pool.query(migration005Sql);
 
+  const migration006Sql = await readFile(migrationUrl('006_gd1_rbac_outbox_schema.sql'), 'utf8');
+  await pool.query(migration006Sql);
+
+  const migration007Sql = await readFile(migrationUrl('007_gd1_remaining_tables.sql'), 'utf8');
+  await pool.query(migration007Sql);
+
+  const migration008Sql = await readFile(migrationUrl('008_gd1_refactor.sql'), 'utf8');
+  await pool.query(migration008Sql);
+
   const usersCount = await pool.query<{ count: string }>('SELECT COUNT(*) AS count FROM app_users');
   if (Number(usersCount.rows[0]?.count ?? 0) === 0) {
     for (const user of seedUsers) {
@@ -170,13 +181,12 @@ export async function ensureSchemaAndSeed() {
     }
   }
 
-  const normalizedCount = await pool.query<{ count: string }>('SELECT COUNT(*) AS count FROM purchase_requests');
+  const normalizedCount = await pool.query<{ count: string }>('SELECT COUNT(*) AS count FROM purchase_orders');
   if (Number(normalizedCount.rows[0]?.count ?? 0) === 0) {
     const client = await pool.connect();
 
     try {
       await client.query('BEGIN');
-      await writeNormalizedSnapshot('purchase_requests', purchaseRequests, client);
       await writeNormalizedSnapshot('purchase_orders', purchaseOrders, client);
       await writeNormalizedSnapshot('delivery_orders', deliveryOrders, client);
       await writeNormalizedSnapshot('tasks', logisticsTasks, client);
@@ -192,4 +202,8 @@ export async function ensureSchemaAndSeed() {
   // Seed GD1 templates and approval matrix standard records
   await seedStandardTemplates();
   await seedStandardApprovalMatrix();
+  await seedGd1TaskTemplates();
+  
+  // Seed GD1 RBAC
+  await seedGd1Rbac();
 }

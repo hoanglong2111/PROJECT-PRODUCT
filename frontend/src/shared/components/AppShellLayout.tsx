@@ -42,31 +42,19 @@ const navigation: Array<{
   labelKey:
     | 'shell.dashboard'
     | 'shell.deliveryOrders'
-    | 'shell.efms'
-    | 'shell.exchangeRates'
     | 'shell.purchaseOrders'
-    | 'shell.purchaseRequests'
-    | 'shell.quotations'
-    | 'shell.tasks'
-    | 'shell.workflow';
+    | 'shell.dtos'
+    | 'shell.masterData'
+    | 'shell.tasks';
   path: string;
   roles?: AppRole[];
 }> = [
   { labelKey: 'shell.dashboard', path: '/', icon: IconLayoutDashboard },
-  { labelKey: 'shell.workflow', path: '/workflow', icon: IconGitBranch },
-  { labelKey: 'shell.exchangeRates', path: '/exchange-rates', icon: IconExchange },
-  { labelKey: 'shell.purchaseRequests', path: '/purchase-requests', icon: IconFileInvoice, roles: ['ADMIN', 'PIC_MANAGER', 'SALE_STAFF'] },
   {
     labelKey: 'shell.purchaseOrders',
     path: '/purchase-orders',
     icon: IconShoppingCart,
     roles: ['ADMIN', 'PIC_MANAGER', 'SALE_STAFF', 'FINANCE_OFFICER'],
-  },
-  {
-    labelKey: 'shell.quotations',
-    path: '/quotations',
-    icon: IconFileText,
-    roles: ['ADMIN', 'PIC_MANAGER', 'SALE_STAFF'],
   },
   {
     labelKey: 'shell.deliveryOrders',
@@ -75,10 +63,16 @@ const navigation: Array<{
     roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'WAREHOUSE_STAFF'],
   },
   {
-    labelKey: 'shell.efms',
-    path: '/efms',
+    labelKey: 'shell.dtos',
+    path: '/dtos',
     icon: IconShip,
-    roles: ['ADMIN', 'PIC_MANAGER', 'SALE_STAFF', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'FINANCE_OFFICER', 'WAREHOUSE_STAFF'],
+    roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'FINANCE_OFFICER', 'WAREHOUSE_STAFF'],
+  },
+  {
+    labelKey: 'shell.masterData',
+    path: '/master-data',
+    icon: IconFileText,
+    roles: ['ADMIN', 'PIC_MANAGER'],
   },
   {
     labelKey: 'shell.tasks',
@@ -154,13 +148,11 @@ export function AppShellLayout() {
                 onClick={() =>
                   void Promise.all([
                     queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
-                    queryClient.invalidateQueries({ queryKey: ['purchase-requests'] }),
                     queryClient.invalidateQueries({ queryKey: ['purchase-orders'] }),
-                    queryClient.invalidateQueries({ queryKey: ['quotations'] }),
                     queryClient.invalidateQueries({ queryKey: ['delivery-orders'] }),
-                    queryClient.invalidateQueries({ queryKey: ['efms-control'] }),
+                    queryClient.invalidateQueries({ queryKey: ['dtos'] }),
+                    queryClient.invalidateQueries({ queryKey: ['master-data'] }),
                     queryClient.invalidateQueries({ queryKey: ['tasks'] }),
-                    queryClient.invalidateQueries({ queryKey: ['exchange-rates'] }),
                     queryClient.invalidateQueries({ queryKey: ['global-search'] }),
                     queryClient.invalidateQueries({ queryKey: ['users'] }),
                   ])

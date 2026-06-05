@@ -7,17 +7,18 @@ import {
   postPurchaseOrder,
   postPurchaseOrderSapSync,
 } from '../controllers/purchase-orders.controller';
-import { readAllRoles, roleGroups } from '../domain/constants';
 import { authenticateRequest } from '../middlewares/authenticate';
-import { authorizeRole } from '../middlewares/authorize';
+import { authorizeDynamicRoute } from '../middlewares/authorize';
 import { idempotencyMiddleware } from '../middlewares/idempotency';
 
 export function createPurchaseOrdersRouter() {
   const router = Router();
-  router.get('/purchase-orders', authenticateRequest, authorizeRole(readAllRoles), getPurchaseOrders);
-  router.post('/purchase-orders', authenticateRequest, authorizeRole(roleGroups.purchaseOrders), idempotencyMiddleware, postPurchaseOrder);
-  router.post('/purchase-orders/:poNumber/sap-sync', authenticateRequest, authorizeRole(['ADMIN', 'PIC_MANAGER']), postPurchaseOrderSapSync);
-  router.patch('/purchase-orders/:poNumber/stage', authenticateRequest, authorizeRole(['ADMIN', 'PIC_MANAGER']), patchPurchaseOrderStage);
-  router.get('/purchase-orders/:poNumber/tasks', authenticateRequest, authorizeRole(readAllRoles), getPurchaseOrderTasks);
+  const authGuard = authorizeDynamicRoute('purchase_orders');
+
+  router.get('/purchase-orders', authenticateRequest, authGuard, getPurchaseOrders);
+  router.post('/purchase-orders', authenticateRequest, authGuard, idempotencyMiddleware, postPurchaseOrder);
+  router.post('/purchase-orders/:poNumber/sap-sync', authenticateRequest, authGuard, postPurchaseOrderSapSync);
+  router.patch('/purchase-orders/:poNumber/stage', authenticateRequest, authGuard, patchPurchaseOrderStage);
+  router.get('/purchase-orders/:poNumber/tasks', authenticateRequest, authGuard, getPurchaseOrderTasks);
   return router;
 }

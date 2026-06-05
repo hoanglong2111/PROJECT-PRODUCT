@@ -21,11 +21,9 @@ import {
   type DeliveryOrder,
   type LogisticsTask,
   type Priority,
-  type PurchaseRequest,
   type TaskStatus,
   updateDeliveryOrder,
   updateLogisticsTask,
-  updatePurchaseRequest,
 } from '@shared/api/logistics';
 import { getApiErrorMessage } from '@shared/api/http';
 import { useI18n } from '@shared/i18n';
@@ -34,141 +32,6 @@ const priorityValues: Priority[] = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
 const shippingMethodValues: Array<DeliveryOrder['logistics_shipping']['shipping_method']> = ['SEA', 'AIR', 'ROAD'];
 const documentOptions = ['Invoice', 'Packing List', 'B/L', 'CO'];
 const taskStatusValues: TaskStatus[] = ['TODO', 'IN_PROGRESS', 'WAITING', 'BLOCKED', 'COMPLETED', 'CANCELLED'];
-
-export function UpdatePurchaseRequestForm({
-  onUpdated,
-  request,
-}: {
-  onUpdated?: (request: PurchaseRequest) => void;
-  request: PurchaseRequest;
-}) {
-  const queryClient = useQueryClient();
-  const { priorityLabel, t } = useI18n();
-  const [editing, setEditing] = useState(false);
-  const locked = request.linked_po_numbers.length > 0 || request.status === 'CONVERTED_TO_PO';
-  const priorityOptions = priorityValues.map((priority) => ({ label: priorityLabel(priority), value: priority }));
-
-  const form = useForm({
-    initialValues: {
-      expectedArrivalDate: request.expected_arrival_date ?? '',
-      itemCode: request.item_code,
-      itemName: request.item_name,
-      notes: request.notes,
-      priority: request.priority,
-      productionContractNumber: request.production_contract_number,
-      quantity: request.quantity,
-      supplierExpectedDeliveryDate: request.supplier_expected_delivery_date ?? '',
-      unit: request.unit,
-      warehouseCode: request.warehouse_code,
-      warehouseDeadlineDate: request.warehouse_deadline_date,
-    },
-    validate: {
-      itemCode: requiredField(t('forms.required')),
-      itemName: requiredField(t('forms.required')),
-      productionContractNumber: requiredField(t('forms.required')),
-      quantity: positiveNumber(t('forms.positiveNumber')),
-      unit: requiredField(t('forms.required')),
-      warehouseCode: requiredField(t('forms.required')),
-      warehouseDeadlineDate: requiredField(t('forms.required')),
-    },
-  });
-
-  useEffect(() => {
-    form.setValues({
-      expectedArrivalDate: request.expected_arrival_date ?? '',
-      itemCode: request.item_code,
-      itemName: request.item_name,
-      notes: request.notes,
-      priority: request.priority,
-      productionContractNumber: request.production_contract_number,
-      quantity: request.quantity,
-      supplierExpectedDeliveryDate: request.supplier_expected_delivery_date ?? '',
-      unit: request.unit,
-      warehouseCode: request.warehouse_code,
-      warehouseDeadlineDate: request.warehouse_deadline_date,
-    });
-  }, [request]);
-
-  const mutation = useMutation({
-    mutationFn: () =>
-      updatePurchaseRequest(request.requested_order_id, {
-        expectedArrivalDate: toNullable(form.values.expectedArrivalDate),
-        itemCode: form.values.itemCode.trim(),
-        itemName: form.values.itemName.trim(),
-        notes: form.values.notes.trim(),
-        priority: form.values.priority,
-        productionContractNumber: form.values.productionContractNumber.trim(),
-        quantity: Number(form.values.quantity),
-        supplierExpectedDeliveryDate: toNullable(form.values.supplierExpectedDeliveryDate),
-        unit: form.values.unit.trim(),
-        warehouseCode: form.values.warehouseCode.trim(),
-        warehouseDeadlineDate: form.values.warehouseDeadlineDate,
-      }),
-    onSuccess: async (updated) => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['purchase-requests'] }),
-        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
-        queryClient.invalidateQueries({ queryKey: ['global-search'] }),
-      ]);
-      onUpdated?.(updated);
-      setEditing(false);
-    },
-  });
-
-  return (
-    <Paper withBorder p="md">
-      <Group justify="space-between" mb="sm">
-        <Text fw={700}>{t('forms.updatePr')}</Text>
-        <Button size="xs" variant={editing ? 'default' : 'light'} onClick={() => setEditing((value) => !value)} disabled={locked}>
-          {editing ? t('common.cancel') : t('common.edit')}
-        </Button>
-      </Group>
-
-      {locked ? (
-        <Alert color="orange">{t('purchaseRequests.lockedAfterPo')}</Alert>
-      ) : editing ? (
-        <form
-          onSubmit={form.onSubmit(() => {
-            mutation.mutate();
-          })}
-        >
-          <Stack gap="md">
-            {mutation.isError ? (
-              <Alert color="red" icon={<IconAlertTriangle size={18} />}>
-                {getApiErrorMessage(mutation.error, t('forms.apiUnknownError'))}
-              </Alert>
-            ) : null}
-            <SimpleGrid cols={{ base: 1, sm: 2 }}>
-              <TextInput label={t('forms.itemCode')} {...form.getInputProps('itemCode')} />
-              <TextInput label={t('forms.itemName')} {...form.getInputProps('itemName')} />
-              <NumberInput label={t('forms.quantity')} min={1} thousandSeparator="," {...form.getInputProps('quantity')} />
-              <TextInput label={t('forms.unit')} {...form.getInputProps('unit')} />
-              <Select label={t('forms.priority')} data={priorityOptions} {...form.getInputProps('priority')} />
-              <TextInput label={t('forms.warehouse')} {...form.getInputProps('warehouseCode')} />
-              <TextInput label={t('forms.warehouseDeadline')} type="date" {...form.getInputProps('warehouseDeadlineDate')} />
-              <TextInput label={t('forms.supplierExpectedDelivery')} type="date" {...form.getInputProps('supplierExpectedDeliveryDate')} />
-              <TextInput label={t('forms.expectedArrival')} type="date" {...form.getInputProps('expectedArrivalDate')} />
-            </SimpleGrid>
-            <TextInput label={t('forms.productionContract')} {...form.getInputProps('productionContractNumber')} />
-            <Textarea label={t('common.notes')} minRows={3} {...form.getInputProps('notes')} />
-            <Group justify="space-between">
-              <Text size="sm" c="dimmed">
-                {t('forms.updatePrHint')}
-              </Text>
-              <Button type="submit" size="xs" loading={mutation.isPending}>
-                {t('common.save')}
-              </Button>
-            </Group>
-          </Stack>
-        </form>
-      ) : (
-        <Text size="sm" c="dimmed">
-          {t('forms.updatePrHint')}
-        </Text>
-      )}
-    </Paper>
-  );
-}
 
 export function UpdateDeliveryOrderForm({ deliveryOrder }: { deliveryOrder: DeliveryOrder }) {
   const queryClient = useQueryClient();

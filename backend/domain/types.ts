@@ -207,7 +207,7 @@ export type NormalizedDeliverySourceLine = DeliverySourceLine & {
   pr_line_id: string;
 };
 
-export type GlobalSearchKind = 'purchase_request' | 'purchase_order' | 'delivery_order' | 'task' | 'account';
+export type GlobalSearchKind = 'purchase_order' | 'delivery_order' | 'task' | 'account';
 
 export type GlobalSearchResult = {
   href: string;

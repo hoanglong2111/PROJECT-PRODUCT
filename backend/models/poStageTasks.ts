@@ -44,12 +44,12 @@ export async function generateTasksForPoStage(
   const client = dbClient || pool;
 
   // 1. Get the PO type and tenant
-  const poRes = await client.query('SELECT po_type, tenant_id, created_by FROM purchase_orders WHERE id = $1', [purchaseOrderId]);
+  const poRes = await client.query('SELECT po_type, tenant_id FROM purchase_orders WHERE id = $1', [purchaseOrderId]);
   if (poRes.rows.length === 0) return;
 
   const poType = poRes.rows[0].po_type || 'SEA';
   const tenantId = poRes.rows[0].tenant_id;
-  const creatorId = poRes.rows[0].created_by || 'SYSTEM';
+  const creatorId = 'SYSTEM';
 
   // 2. Fetch active templates for this PO type and stage
   const templatesRes = await client.query(

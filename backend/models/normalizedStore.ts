@@ -18,10 +18,6 @@ type Row = Record<string, unknown>;
 const MAX_BATCH_INSERT_PARAMS = 60_000;
 
 export async function readNormalizedSnapshot<T>(key: string, client: DatabaseClient): Promise<T> {
-  if (key === 'purchase_requests') {
-    return (await readPurchaseRequests(client)) as T;
-  }
-
   if (key === 'purchase_orders') {
     return (await readPurchaseOrders(client)) as T;
   }
@@ -42,11 +38,6 @@ export async function writeNormalizedSnapshot<T>(key: string, payload: T, client
     throw new ApiError(400, `Normalized payload for "${key}" must be an array.`);
   }
 
-  if (key === 'purchase_requests') {
-    await replacePurchaseRequests(payload as PurchaseRequest[], client);
-    return;
-  }
-
   if (key === 'purchase_orders') {
     await replacePurchaseOrders(payload as PurchaseOrder[], client);
     return;
@@ -65,45 +56,7 @@ export async function writeNormalizedSnapshot<T>(key: string, payload: T, client
   throw new Error(`Normalized snapshot "${key as SnapshotKey}" does not exist.`);
 }
 
-async function readPurchaseRequests(client: DatabaseClient): Promise<PurchaseRequest[]> {
-  const [requestsResult, linesResult, users] = await Promise.all([
-    client.query<Row>('SELECT * FROM purchase_requests ORDER BY requested_order_date DESC, requested_order_id DESC'),
-    client.query<Row>('SELECT * FROM purchase_request_lines ORDER BY id ASC'),
-    readUserRefs(client),
-  ]);
-  const linesByRequest = groupBy(linesResult.rows, 'purchase_request_id');
-
-  return requestsResult.rows.map((row) => {
-    const lineItems = (linesByRequest.get(stringValue(row.id)) ?? []).map(toPurchaseRequestLine);
-
-    return {
-      id: stringValue(row.id),
-      requested_order_id: stringValue(row.requested_order_id),
-      item_code: stringValue(row.item_code),
-      item_name: stringValue(row.item_name),
-      quantity: numberValue(row.quantity),
-      unit: stringValue(row.unit),
-      priority: stringValue(row.priority) as PurchaseRequest['priority'],
-      requested_order_date: dateValue(row.requested_order_date),
-      adjusted_date: nullableDateValue(row.adjusted_date),
-      warehouse_deadline_date: dateValue(row.warehouse_deadline_date),
-      production_contract_number: stringValue(row.production_contract_number),
-      requester: userRefValue(row.requester_id, users, logisticsSeedUsers.requester),
-      purchasing_manager: userRefValue(row.purchasing_manager_id, users, logisticsSeedUsers.buyer),
-      status: stringValue(row.status) as PurchaseRequest['status'],
-      notes: stringValue(row.notes),
-      line_items: lineItems,
-      actual_warehouse_entry_date: nullableDateValue(row.actual_warehouse_entry_date),
-      supplier_expected_delivery_date: nullableDateValue(row.supplier_expected_delivery_date),
-      expected_arrival_date: nullableDateValue(row.expected_arrival_date),
-      delay_days: numberValue(row.delay_days),
-      linked_po_numbers: uniqueStrings(lineItems.flatMap((line) => line.linked_po_numbers)),
-      linked_do_numbers: uniqueStrings(lineItems.flatMap((line) => line.linked_do_numbers)),
-      warehouse_code: stringValue(row.warehouse_code),
-      flow_tags: stringArrayValue(row.flow_tags) as PurchaseRequest['flow_tags'],
-    };
-  });
-}
+// Deleted readPurchaseRequests
 
 async function readPurchaseOrders(client: DatabaseClient): Promise<PurchaseOrder[]> {
   const [ordersResult, linesResult] = await Promise.all([
@@ -135,25 +88,22 @@ async function readPurchaseOrders(client: DatabaseClient): Promise<PurchaseOrder
 }
 
 async function readDeliveryOrders(client: DatabaseClient): Promise<DeliveryOrder[]> {
-  const [ordersResult, transportResult, sourceLinesResult, taskSummaryResult] = await Promise.all([
-    client.query<Row>('SELECT * FROM delivery_orders ORDER BY created_at DESC, order_number DESC'),
-    client.query<Row>('SELECT * FROM efms_transport_records ORDER BY id ASC'),
-    client.query<Row>('SELECT * FROM delivery_order_source_lines ORDER BY id ASC'),
+  const [ordersResult, sourceLinesResult, taskSummaryResult] = await Promise.all([
+    client.query<Row>('SELECT * FROM shipments ORDER BY created_at DESC, order_number DESC'),
+    client.query<Row>('SELECT * FROM shipment_source_lines ORDER BY id ASC'),
     client.query<Row>('SELECT do_number, status, is_required_for_do_closure FROM logistics_tasks'),
   ]);
-  const transportByOrder = new Map(transportResult.rows.map((row) => [stringValue(row.delivery_order_id), row]));
   const sourceLinesByOrder = groupBy(sourceLinesResult.rows, 'delivery_order_id');
   const taskSummaryByDo = buildTaskSummaries(taskSummaryResult.rows);
 
   return ordersResult.rows.map((row) => {
     const id = stringValue(row.id);
     const orderNumber = stringValue(row.order_number);
-    const transport = transportByOrder.get(id);
 
     return {
       id,
       order_info: {
-        request_code: stringValue(row.request_code),
+        request_code: '',
         order_number: orderNumber,
         tracking_number: nullableStringValue(row.tracking_number),
         purchase_contract_number: stringValue(row.purchase_contract_number),
@@ -180,17 +130,17 @@ async function readDeliveryOrders(client: DatabaseClient): Promise<DeliveryOrder
         sync_status: stringValue(row.sap_sync_status) as DeliveryOrder['sap_integration']['sync_status'],
       },
       logistics_shipping: {
-        incoterms: transport ? stringValue(transport.incoterms) : 'FOB',
-        shipping_method: (transport ? stringValue(transport.shipping_method) : 'SEA') as DeliveryOrder['logistics_shipping']['shipping_method'],
-        shipping_line: transport ? nullableStringValue(transport.shipping_line) : null,
-        vessel_code: transport ? nullableStringValue(transport.vessel_code) : null,
-        port_of_departure: transport ? stringValue(transport.port_of_departure) : 'Supplier port pending',
-        port_of_destination: transport ? stringValue(transport.port_of_destination) : 'VNSGN - Cat Lai',
-        documents_list: transport ? stringArrayValue(transport.documents_list) : [],
-        missing_documents: transport ? stringArrayValue(transport.missing_documents) : [],
-        cut_off_date: transport ? nullableDateValue(transport.cut_off_date) : null,
-        etd_planned: transport ? nullableDateValue(transport.etd_planned) : null,
-        eta_planned: transport ? nullableDateValue(transport.eta_planned) : null,
+        incoterms: stringValue(row.incoterms) || 'FOB',
+        shipping_method: (stringValue(row.shipping_method) || 'SEA') as DeliveryOrder['logistics_shipping']['shipping_method'],
+        shipping_line: nullableStringValue(row.carrier),
+        vessel_code: nullableStringValue(row.vessel_flight),
+        port_of_departure: stringValue(row.pol) || 'Supplier port pending',
+        port_of_destination: stringValue(row.pod) || 'VNSGN - Cat Lai',
+        documents_list: stringArrayValue(row.documents_list),
+        missing_documents: stringArrayValue(row.missing_documents),
+        cut_off_date: nullableDateValue(row.etd) ? addDays(stringValue(row.etd), -2) : null,
+        etd_planned: nullableDateValue(row.etd),
+        eta_planned: nullableDateValue(row.eta),
       },
       warehouse_tracking: {
         warehouse_code: stringValue(row.warehouse_code),
@@ -242,97 +192,7 @@ async function readTasks(client: DatabaseClient): Promise<LogisticsTask[]> {
   }));
 }
 
-async function replacePurchaseRequests(requests: PurchaseRequest[], client: DatabaseClient) {
-  await client.query('DELETE FROM purchase_request_lines');
-  await client.query('DELETE FROM purchase_requests');
-
-  const updatedAt = new Date();
-  await batchInsert(
-    client,
-    'purchase_requests',
-    [
-      'id',
-      'requested_order_id',
-      'item_code',
-      'item_name',
-      'quantity',
-      'unit',
-      'priority',
-      'requested_order_date',
-      'adjusted_date',
-      'warehouse_deadline_date',
-      'production_contract_number',
-      'requester_id',
-      'purchasing_manager_id',
-      'status',
-      'notes',
-      'actual_warehouse_entry_date',
-      'supplier_expected_delivery_date',
-      'expected_arrival_date',
-      'delay_days',
-      'warehouse_code',
-      'flow_tags',
-      'updated_at',
-    ],
-    requests.map((request) => [
-        request.id,
-        request.requested_order_id,
-        request.item_code,
-        request.item_name,
-        request.quantity,
-        request.unit,
-        request.priority,
-        request.requested_order_date,
-        request.adjusted_date,
-        request.warehouse_deadline_date,
-        request.production_contract_number,
-        request.requester.user_id,
-        request.purchasing_manager.user_id,
-        request.status,
-        request.notes,
-        request.actual_warehouse_entry_date,
-        request.supplier_expected_delivery_date,
-        request.expected_arrival_date,
-        request.delay_days,
-        request.warehouse_code,
-        request.flow_tags,
-        updatedAt,
-      ]),
-  );
-
-  await batchInsert(
-    client,
-    'purchase_request_lines',
-    [
-      'id',
-      'purchase_request_id',
-      'item_code',
-      'item_name',
-      'quantity',
-      'unit',
-      'warehouse_deadline_date',
-      'warehouse_code',
-      'production_contract_number',
-      'linked_po_numbers',
-      'linked_do_numbers',
-    ],
-    requests.flatMap((request) =>
-      request.line_items.map((line) => [
-        line.id,
-        request.id,
-        line.item_code,
-        line.item_name,
-        line.quantity,
-        line.unit,
-        line.warehouse_deadline_date,
-        line.warehouse_code,
-        line.production_contract_number,
-        line.linked_po_numbers,
-        line.linked_do_numbers,
-      ]),
-    ),
-  );
-}
+// Deleted replacePurchaseRequests
 
 async function replacePurchaseOrders(orders: PurchaseOrder[], client: DatabaseClient) {
   await client.query('DELETE FROM purchase_order_lines');
@@ -407,27 +267,16 @@ async function replacePurchaseOrders(orders: PurchaseOrder[], client: DatabaseCl
 }
 
 async function replaceDeliveryOrders(orders: DeliveryOrder[], client: DatabaseClient) {
-  const preserved = await readDeliverySideTables(client);
-  const nextDeliveryOrderIds = new Set(orders.map((order) => order.id));
-
-  await client.query('DELETE FROM delivery_order_source_lines');
-  await client.query('DELETE FROM efms_containers');
-  await client.query('DELETE FROM efms_transport_records');
-  await client.query('DELETE FROM efms_document_reviews');
-  await client.query('DELETE FROM efms_house_bills');
-  await client.query('DELETE FROM customs_declarations');
-  await client.query('DELETE FROM finance_notes');
-  await client.query('DELETE FROM finance_charge_lines');
-  await client.query('DELETE FROM delivery_orders');
+  await client.query('DELETE FROM shipment_source_lines');
+  await client.query('DELETE FROM shipments');
 
   const updatedAt = new Date();
   await batchInsert(
     client,
-    'delivery_orders',
+    'shipments',
     [
       'id',
       'order_number',
-      'request_code',
       'po_number',
       'tracking_number',
       'purchase_contract_number',
@@ -449,101 +298,62 @@ async function replaceDeliveryOrders(orders: DeliveryOrder[], client: DatabaseCl
       'delay_days',
       'flow_tags',
       'updated_at',
-    ],
-    orders.map((order) => [
-        order.id,
-        order.order_info.order_number,
-        order.order_info.request_code,
-        order.sap_integration.po_number,
-        order.order_info.tracking_number,
-        order.order_info.purchase_contract_number,
-        order.order_info.status,
-        order.order_info.notes,
-        order.order_info.xnk_notes,
-        order.sap_integration.actual_item_code,
-        order.product_details.item_name_requested,
-        order.product_details.quantity,
-        order.product_details.unit,
-        order.sap_integration.supplier_code,
-        order.sap_integration.supplier_name,
-        order.sap_integration.raw_date,
-        order.sap_integration.sync_status,
-        order.warehouse_tracking.warehouse_code,
-        order.warehouse_tracking.warehouse_deadline,
-        order.warehouse_tracking.planned_entry_date,
-        order.warehouse_tracking.actual_entry_date,
-        order.warehouse_tracking.delay_days,
-        order.flow_tags,
-        updatedAt,
-      ]),
-  );
-
-  await batchInsert(
-    client,
-    'efms_transport_records',
-    [
-      'id',
-      'delivery_order_id',
       'incoterms',
       'shipping_method',
-      'shipping_line',
-      'vessel_code',
-      'booking_number',
-      'mbl_number',
-      'mbl_type',
-      'hbl_number',
-      'manifest_number',
-      'port_of_departure',
-      'port_of_destination',
-      'cut_off_date',
-      'etd_planned',
-      'eta_planned',
-      'actual_departure_at',
-      'actual_arrival_at',
+      'carrier',
+      'vessel_flight',
+      'pol',
+      'pod',
       'documents_list',
       'missing_documents',
-      'gross_weight',
-      'cbm',
+      'etd',
+      'eta',
     ],
-    orders.map((order) => {
-      const suffix = order.order_info.order_number.slice(-6);
-      return [
-        `efms-${order.id}`,
-        order.id,
-        order.logistics_shipping.incoterms,
-        order.logistics_shipping.shipping_method,
-        order.logistics_shipping.shipping_line,
-        order.logistics_shipping.vessel_code,
-        `BOOK-${suffix}`,
-        `MBL-${suffix}`,
-        'ORIGINAL',
-        `HBL-${suffix}`,
-        `MAN-${suffix}`,
-        order.logistics_shipping.port_of_departure,
-        order.logistics_shipping.port_of_destination,
-        order.logistics_shipping.cut_off_date,
-        order.logistics_shipping.etd_planned,
-        order.logistics_shipping.eta_planned,
-        null,
-        null,
-        order.logistics_shipping.documents_list,
-        order.logistics_shipping.missing_documents,
-        Math.max(1, order.product_details.quantity * 12),
-        Math.max(1, Math.round(order.product_details.quantity / 18)),
-      ];
-    }),
+    orders.map((order) => [
+      order.id,
+      order.order_info.order_number,
+      order.sap_integration.po_number,
+      order.order_info.tracking_number,
+      order.order_info.purchase_contract_number,
+      order.order_info.status,
+      order.order_info.notes,
+      order.order_info.xnk_notes,
+      order.sap_integration.actual_item_code,
+      order.product_details.item_name_requested,
+      order.product_details.quantity,
+      order.product_details.unit,
+      order.sap_integration.supplier_code,
+      order.sap_integration.supplier_name,
+      order.sap_integration.raw_date,
+      order.sap_integration.sync_status,
+      order.warehouse_tracking.warehouse_code,
+      order.warehouse_tracking.warehouse_deadline,
+      order.warehouse_tracking.planned_entry_date,
+      order.warehouse_tracking.actual_entry_date,
+      order.warehouse_tracking.delay_days,
+      order.flow_tags,
+      updatedAt,
+      order.logistics_shipping.incoterms,
+      order.logistics_shipping.shipping_method,
+      order.logistics_shipping.shipping_line,
+      order.logistics_shipping.vessel_code,
+      order.logistics_shipping.port_of_departure,
+      order.logistics_shipping.port_of_destination,
+      order.logistics_shipping.documents_list,
+      order.logistics_shipping.missing_documents,
+      order.logistics_shipping.etd_planned,
+      order.logistics_shipping.eta_planned,
+    ]),
   );
 
   await batchInsert(
     client,
-    'delivery_order_source_lines',
+    'shipment_source_lines',
     [
       'id',
       'delivery_order_id',
       'po_number',
       'po_line_id',
-      'request_code',
-      'pr_line_id',
       'item_code',
       'item_name',
       'quantity',
@@ -555,8 +365,6 @@ async function replaceDeliveryOrders(orders: DeliveryOrder[], client: DatabaseCl
         order.id,
         line.po_number,
         line.po_line_id,
-        line.request_code,
-        line.pr_line_id,
         line.item_code,
         line.item_name,
         line.quantity,
@@ -564,8 +372,6 @@ async function replaceDeliveryOrders(orders: DeliveryOrder[], client: DatabaseCl
       ]),
     ),
   );
-
-  await restoreDeliverySideTables(preserved, nextDeliveryOrderIds, client);
 }
 
 async function replaceTasks(tasks: LogisticsTask[], client: DatabaseClient) {
@@ -907,20 +713,7 @@ async function readUserRefs(client: DatabaseClient) {
   return users;
 }
 
-function toPurchaseRequestLine(row: Row): PurchaseRequestLineItem {
-  return {
-    id: stringValue(row.id),
-    item_code: stringValue(row.item_code),
-    item_name: stringValue(row.item_name),
-    quantity: numberValue(row.quantity),
-    unit: stringValue(row.unit),
-    warehouse_deadline_date: dateValue(row.warehouse_deadline_date),
-    warehouse_code: stringValue(row.warehouse_code),
-    production_contract_number: stringValue(row.production_contract_number),
-    linked_po_numbers: stringArrayValue(row.linked_po_numbers),
-    linked_do_numbers: stringArrayValue(row.linked_do_numbers),
-  };
-}
+// Deleted toPurchaseRequestLine
 
 function toPurchaseOrderLine(row: Row): PurchaseOrderLineItem {
   return {
@@ -1062,4 +855,10 @@ function nullableDateTimeValue(value: unknown) {
   }
 
   return String(value);
+}
+
+function addDays(dateStr: string, days: number) {
+  const date = new Date(dateStr);
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
 }

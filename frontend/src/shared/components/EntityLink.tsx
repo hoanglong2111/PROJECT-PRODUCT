@@ -4,22 +4,18 @@ import { Link } from 'react-router-dom';
 
 import { useI18n } from '@shared/i18n';
 
-type EntityType = 'pr' | 'po' | 'do' | 'task' | 'workflow';
+type EntityType = 'po' | 'do' | 'task';
 
 const ROUTE: Record<EntityType, string> = {
-  pr: '/purchase-requests',
   po: '/purchase-orders',
   do: '/delivery-orders',
   task: '/tasks',
-  workflow: '/workflow',
 };
 
 const ICON = {
-  pr: IconFileInvoice,
   po: IconShoppingCart,
   do: IconTruckDelivery,
   task: IconChecklist,
-  workflow: IconGitBranch,
 };
 
 export function EntityLink({
@@ -38,9 +34,7 @@ export function EntityLink({
   const label: Record<EntityType, string> = {
     do: t('entityLink.openDo'),
     po: t('entityLink.openPo'),
-    pr: t('entityLink.openPr'),
     task: t('entityLink.openTask'),
-    workflow: t('entityLink.workflow'),
   };
 
   if (!id) {
@@ -53,7 +47,7 @@ export function EntityLink({
     );
   }
 
-  const queryKey = type === 'workflow' ? 'do' : type;
+  const queryKey = type;
 
   return (
     <Button component={Link} to={`${ROUTE[type]}?${queryKey}=${id}`} size="xs" variant="light" leftSection={<Icon size={14} />}>

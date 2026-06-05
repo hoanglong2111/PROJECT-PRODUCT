@@ -9,13 +9,10 @@ export type WorkspaceModule = {
 
 export const workspaceModules = [
   { labelKey: 'shell.dashboard', path: '/' },
-  { labelKey: 'shell.workflow', path: '/workflow' },
-  { labelKey: 'shell.exchangeRates', path: '/exchange-rates' },
-  { labelKey: 'shell.purchaseRequests', path: '/purchase-requests', roles: ['ADMIN', 'PIC_MANAGER', 'SALE_STAFF'] },
   { labelKey: 'shell.purchaseOrders', path: '/purchase-orders', roles: ['ADMIN', 'PIC_MANAGER', 'SALE_STAFF', 'FINANCE_OFFICER'] },
-  { labelKey: 'shell.quotations', path: '/quotations', roles: ['ADMIN', 'PIC_MANAGER', 'SALE_STAFF'] },
   { labelKey: 'shell.deliveryOrders', path: '/delivery-orders', roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'WAREHOUSE_STAFF'] },
-  { labelKey: 'shell.efms', path: '/efms', roles: ['ADMIN', 'PIC_MANAGER', 'SALE_STAFF', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'FINANCE_OFFICER', 'WAREHOUSE_STAFF'] },
+  { labelKey: 'shell.dtos', path: '/dtos', roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'FINANCE_OFFICER', 'WAREHOUSE_STAFF'] },
+  { labelKey: 'shell.masterData', path: '/master-data', roles: ['ADMIN', 'PIC_MANAGER'] },
   { labelKey: 'shell.tasks', path: '/tasks', roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'FINANCE_OFFICER', 'WAREHOUSE_STAFF'] },
 ] as const satisfies readonly WorkspaceModule[];
 

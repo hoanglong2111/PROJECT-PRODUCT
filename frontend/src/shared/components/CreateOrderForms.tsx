@@ -21,16 +21,14 @@ import { useMemo, useState } from 'react';
 import {
   createDeliveryOrder,
   createPurchaseOrder,
-  createPurchaseRequest,
   type CreateDeliveryOrderPayload,
   type CreatePurchaseOrderPayload,
-  type CreatePurchaseRequestPayload,
   type DeliveryOrder,
   type Priority,
   type PurchaseOrder,
-  type PurchaseRequest,
 } from '@shared/api/logistics';
 import { getApiErrorMessage } from '@shared/api/http';
+import { getItems, getPartners } from '@shared/api/masterDataService';
 import { useI18n } from '@shared/i18n';
 import { FlowTagBadge } from './FlowTagBadge';
 
@@ -43,30 +41,6 @@ type DrawerProps = {
   opened: boolean;
 };
 
-type PurchaseRequestFormValues = {
-  expectedArrivalDate: string;
-  itemCode: string;
-  itemName: string;
-  lineItems: Array<{
-    itemCode: string;
-    itemName: string;
-    productionContractNumber: string;
-    quantity: number;
-    unit: string;
-    warehouseCode: string;
-    warehouseDeadlineDate: string;
-  }>;
-  notes: string;
-  priority: Priority;
-  productionContractNumber: string;
-  quantity: number;
-  requestedOrderDate: string;
-  supplierExpectedDeliveryDate: string;
-  unit: string;
-  warehouseCode: string;
-  warehouseDeadlineDate: string;
-};
-
 type PurchaseOrderFormValues = {
   currency: string;
   orderDate: string;
@@ -75,6 +49,24 @@ type PurchaseOrderFormValues = {
   supplierName: string;
   totalAmount: number;
   warehouseCode: string;
+  sourceLines: Array<{
+    classificationCode: string;
+    coNote: string;
+    declarationType: string;
+    dutyRate: number;
+    hsCode: string;
+    itemSelectKey: string;
+    itemId: string;
+    itemCode: string;
+    itemGroup: string;
+    itemName: string;
+    quantity: number;
+    sourceReference: string;
+    tariffCode: string;
+    taxNote: string;
+    unit: string;
+    vatRate: number;
+  }>;
 };
 
 type DeliveryOrderFormValues = {
@@ -102,16 +94,6 @@ type DeliveryOrderFormValues = {
   warehouseDeadline: string;
 };
 
-type SelectablePrLine = {
-  key: string;
-  prCode: string;
-  prLineId: string;
-  label: string;
-  remaining: number;
-  unit: string;
-  warehouseCode: string;
-};
-
 type SelectablePoLine = {
   key: string;
   poNumber: string;
@@ -126,208 +108,43 @@ type SelectablePoLine = {
   warehouseDeadline: string;
 };
 
-export function CreatePurchaseRequestDrawer({
-  onClose,
-  onCreated,
-  opened,
-}: DrawerProps & { onCreated?: (request: PurchaseRequest) => void }) {
-  const queryClient = useQueryClient();
-  const { priorityLabel, t } = useI18n();
-  const priorityOptions = priorityValues.map((priority) => ({ label: priorityLabel(priority), value: priority }));
-  const form = useForm<PurchaseRequestFormValues>({
-    initialValues: {
-      expectedArrivalDate: '',
-      itemCode: '',
-      itemName: '',
-      lineItems: [
-        {
-          itemCode: '',
-          itemName: '',
-          productionContractNumber: 'PC-2026-HCM-100',
-          quantity: 1,
-          unit: 'kg',
-          warehouseCode: 'WH-HCM-01',
-          warehouseDeadlineDate: addDays(todayIso(), 14),
-        },
-      ],
-      notes: '',
-      priority: 'MEDIUM',
-      productionContractNumber: '',
-      quantity: 1,
-      requestedOrderDate: todayIso(),
-      supplierExpectedDeliveryDate: '',
-      unit: 'kg',
-      warehouseCode: 'WH-HCM-01',
-      warehouseDeadlineDate: addDays(todayIso(), 14),
-    },
-    validate: {
-      lineItems: (value) => {
-        if (value.length === 0) {
-          return t('forms.required');
-        }
-
-        return value.some(
-          (line) =>
-            line.itemCode.trim().length === 0 ||
-            line.itemName.trim().length === 0 ||
-            line.productionContractNumber.trim().length === 0 ||
-            line.unit.trim().length === 0 ||
-            line.warehouseCode.trim().length === 0 ||
-            line.warehouseDeadlineDate.trim().length === 0 ||
-            Number(line.quantity) <= 0,
-        )
-          ? t('forms.required')
-          : null;
-      },
-    },
-  });
-  const mutation = useMutation({
-    mutationFn: createPurchaseRequest,
-    onSuccess: async (request) => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['purchase-requests'] }),
-        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
-        queryClient.invalidateQueries({ queryKey: ['global-search'] }),
-      ]);
-      form.reset();
-      onCreated?.(request);
-      onClose();
-    },
-  });
-
-  const handleClose = () => {
-    mutation.reset();
-    onClose();
+function emptyPurchaseOrderSourceLine(): PurchaseOrderFormValues['sourceLines'][number] {
+  return {
+    classificationCode: '',
+    coNote: '',
+    declarationType: '',
+    dutyRate: 0,
+    hsCode: '',
+    itemSelectKey: '',
+    itemId: '',
+    itemCode: '',
+    itemGroup: '',
+    itemName: '',
+    quantity: 1,
+    sourceReference: '',
+    tariffCode: '',
+    taxNote: '',
+    unit: 'kg',
+    vatRate: 0,
   };
-
-  return (
-    <Drawer opened={opened} onClose={handleClose} title={t('forms.createPrTitle')} position="right" size="xl">
-      <form
-        onSubmit={form.onSubmit((values) => {
-          const primaryLine = values.lineItems[0];
-          const payload: CreatePurchaseRequestPayload = {
-            expectedArrivalDate: toNullable(values.expectedArrivalDate),
-            itemCode: primaryLine.itemCode.trim(),
-            itemName: primaryLine.itemName.trim(),
-            lineItems: values.lineItems.map((line) => ({
-              itemCode: line.itemCode.trim(),
-              itemName: line.itemName.trim(),
-              productionContractNumber: line.productionContractNumber.trim(),
-              quantity: Number(line.quantity),
-              unit: line.unit.trim(),
-              warehouseCode: line.warehouseCode.trim(),
-              warehouseDeadlineDate: line.warehouseDeadlineDate,
-            })),
-            notes: values.notes.trim(),
-            priority: values.priority,
-            productionContractNumber: primaryLine.productionContractNumber.trim(),
-            quantity: values.lineItems.reduce((total, line) => total + Number(line.quantity), 0),
-            requestedOrderDate: values.requestedOrderDate,
-            supplierExpectedDeliveryDate: toNullable(values.supplierExpectedDeliveryDate),
-            unit: primaryLine.unit.trim(),
-            warehouseCode: primaryLine.warehouseCode.trim(),
-            warehouseDeadlineDate: primaryLine.warehouseDeadlineDate,
-          };
-
-          mutation.mutate(payload);
-        })}
-      >
-        <Stack gap="md">
-          {mutation.isError ? (
-            <Alert color="red" icon={<IconAlertTriangle size={18} />}>
-              {getApiErrorMessage(mutation.error, t('forms.apiUnknownError'))}
-            </Alert>
-          ) : null}
-
-          <Stack gap="sm">
-            <Group justify="space-between">
-              <Text fw={700}>{t('forms.sourceLines')}</Text>
-              <Button
-                size="xs"
-                variant="light"
-                leftSection={<IconPlus size={14} />}
-                onClick={() =>
-                  form.insertListItem('lineItems', {
-                    itemCode: '',
-                    itemName: '',
-                    productionContractNumber: 'PC-2026-HCM-100',
-                    quantity: 1,
-                    unit: 'kg',
-                    warehouseCode: 'WH-HCM-01',
-                    warehouseDeadlineDate: addDays(todayIso(), 14),
-                  })
-                }
-              >
-                {t('common.action')}
-              </Button>
-            </Group>
-            {form.values.lineItems.map((line, index) => (
-              <Stack key={index} gap="xs" p="sm" style={{ border: '1px solid var(--mantine-color-default-border)', borderRadius: 8 }}>
-                <Group justify="space-between">
-                  <Text size="sm" fw={700}>
-                    #{index + 1}
-                  </Text>
-                  <ActionIcon
-                    aria-label={t('common.cancel')}
-                    color="red"
-                    disabled={form.values.lineItems.length === 1}
-                    onClick={() => form.removeListItem('lineItems', index)}
-                    variant="subtle"
-                  >
-                    <IconTrash size={16} />
-                  </ActionIcon>
-                </Group>
-                <SimpleGrid cols={{ base: 1, sm: 2 }}>
-                  <TextInput label={t('forms.itemCode')} placeholder="RM-ALU-6061-T6" {...form.getInputProps(`lineItems.${index}.itemCode`)} />
-                  <TextInput label={t('forms.itemName')} placeholder={t('forms.itemNamePlaceholder')} {...form.getInputProps(`lineItems.${index}.itemName`)} />
-                  <NumberInput label={t('forms.quantity')} min={1} thousandSeparator="," {...form.getInputProps(`lineItems.${index}.quantity`)} />
-                  <TextInput label={t('forms.unit')} placeholder={t('forms.unitPlaceholder')} {...form.getInputProps(`lineItems.${index}.unit`)} />
-                  <TextInput label={t('forms.warehouse')} placeholder="WH-HCM-01" {...form.getInputProps(`lineItems.${index}.warehouseCode`)} />
-                  <TextInput label={t('forms.warehouseDeadline')} type="date" {...form.getInputProps(`lineItems.${index}.warehouseDeadlineDate`)} />
-                  <TextInput label={t('forms.productionContract')} placeholder="PC-2026-HCM-100" {...form.getInputProps(`lineItems.${index}.productionContractNumber`)} />
-                </SimpleGrid>
-              </Stack>
-            ))}
-          </Stack>
-
-          <SimpleGrid cols={{ base: 1, sm: 2 }}>
-            <Select label={t('forms.priority')} data={priorityOptions} {...form.getInputProps('priority')} />
-            <TextInput label={t('forms.requestedDate')} type="date" {...form.getInputProps('requestedOrderDate')} />
-            <TextInput label={t('forms.supplierExpectedDelivery')} type="date" {...form.getInputProps('supplierExpectedDeliveryDate')} />
-            <TextInput label={t('forms.expectedArrival')} type="date" {...form.getInputProps('expectedArrivalDate')} />
-          </SimpleGrid>
-          <Textarea label={t('common.notes')} minRows={3} placeholder={t('common.notes')} {...form.getInputProps('notes')} />
-
-          <Group justify="space-between">
-            <Text size="sm" c="dimmed">
-              {t('forms.createPrHint')}
-            </Text>
-            <Button type="submit" loading={mutation.isPending} leftSection={<IconFileInvoice size={16} />}>
-              {t('forms.createPr')}
-            </Button>
-          </Group>
-        </Stack>
-      </form>
-    </Drawer>
-  );
 }
 
 export function CreatePurchaseOrderDrawer({
   onClose,
   onCreated,
   opened,
-  purchaseOrders,
-  purchaseRequests,
 }: DrawerProps & {
   onCreated?: (order: PurchaseOrder) => void;
-  purchaseOrders: PurchaseOrder[];
-  purchaseRequests: PurchaseRequest[];
 }) {
-  const selectableLines = useMemo(() => buildSelectablePrLines(purchaseRequests, purchaseOrders), [purchaseOrders, purchaseRequests]);
-  const [selectedLines, setSelectedLines] = useState<Record<string, number>>({});
-  const selectedLineKeys = Object.keys(selectedLines).filter((key) => selectedLines[key] > 0);
   const queryClient = useQueryClient();
   const { t } = useI18n();
+  const itemsList = getItems();
+  const itemOptions = itemsList.map((item, index) => ({
+    item,
+    value: `${item.id}:${index}`,
+    label: `${item.item_code} - ${item.hs_code} - ${item.source_reference || item.declaration_type || item.id} - ${item.item_name}`,
+  }));
+  const partnersList = getPartners().filter((p) => p.type === 'SUPPLIER');
   const form = useForm<PurchaseOrderFormValues>({
     initialValues: {
       currency: 'USD',
@@ -337,6 +154,7 @@ export function CreatePurchaseOrderDrawer({
       supplierName: '',
       totalAmount: 1,
       warehouseCode: 'WH-HCM-01',
+      sourceLines: [emptyPurchaseOrderSourceLine()],
     },
     validate: {
       poNumber: requiredField(t('forms.required')),
@@ -344,6 +162,20 @@ export function CreatePurchaseOrderDrawer({
       supplierName: requiredField(t('forms.required')),
       totalAmount: positiveNumber(t('forms.positiveNumber')),
       warehouseCode: requiredField(t('forms.required')),
+      sourceLines: (value) => {
+        if (!value || value.length === 0) {
+          return t('forms.required');
+        }
+        return value.some(
+          (line) =>
+            !line.itemCode || line.itemCode.trim().length === 0 ||
+            !line.itemName || line.itemName.trim().length === 0 ||
+            !line.unit || line.unit.trim().length === 0 ||
+            Number(line.quantity) <= 0,
+        )
+          ? t('forms.required')
+          : null;
+      },
     },
   });
   const mutation = useMutation({
@@ -351,12 +183,10 @@ export function CreatePurchaseOrderDrawer({
     onSuccess: async (order) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['purchase-orders'] }),
-        queryClient.invalidateQueries({ queryKey: ['purchase-requests'] }),
         queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
         queryClient.invalidateQueries({ queryKey: ['global-search'] }),
       ]);
       form.reset();
-      setSelectedLines({});
       onCreated?.(order);
       onClose();
     },
@@ -375,34 +205,33 @@ export function CreatePurchaseOrderDrawer({
             currency: values.currency.trim().toUpperCase(),
             orderDate: values.orderDate,
             poNumber: values.poNumber.trim(),
-            sourceLines: selectedLineKeys.map((key) => {
-              const line = selectableLines.find((item) => item.key === key);
-              return {
-                prCode: line?.prCode ?? '',
-                prLineId: line?.prLineId ?? '',
-                quantity: selectedLines[key],
-              };
-            }),
+            sourceLines: values.sourceLines.map((line) => ({
+              classificationCode: line.classificationCode.trim(),
+              coNote: line.coNote.trim(),
+              declarationType: line.declarationType.trim(),
+              dutyRate: Number(line.dutyRate) || 0,
+              hsCode: line.hsCode.trim(),
+              itemId: line.itemId.trim(),
+              itemCode: line.itemCode.trim(),
+              itemGroup: line.itemGroup.trim(),
+              itemName: line.itemName.trim(),
+              quantity: Number(line.quantity),
+              sourceReference: line.sourceReference.trim(),
+              tariffCode: line.tariffCode.trim(),
+              taxNote: line.taxNote.trim(),
+              unit: line.unit.trim(),
+              vatRate: Number(line.vatRate) || 0,
+            })),
             supplierCode: values.supplierCode.trim(),
             supplierName: values.supplierName.trim(),
             totalAmount: Number(values.totalAmount),
             warehouseCode: values.warehouseCode.trim(),
           };
 
-          if (payload.sourceLines?.length === 0) {
-            mutation.reset();
-            return;
-          }
-
           mutation.mutate(payload);
         })}
       >
         <Stack gap="md">
-          {selectableLines.length === 0 ? (
-            <Alert color="orange" icon={<IconAlertTriangle size={18} />}>
-              {t('forms.noApprovedPr')}
-            </Alert>
-          ) : null}
           {mutation.isError ? (
             <Alert color="red" icon={<IconAlertTriangle size={18} />}>
               {getApiErrorMessage(mutation.error, t('forms.apiUnknownError'))}
@@ -412,48 +241,94 @@ export function CreatePurchaseOrderDrawer({
           <Stack gap="xs">
             <Group justify="space-between">
               <Text fw={700}>{t('forms.sourceLines')}</Text>
-              <FlowTagBadge
-                compact
-                tags={selectedLineKeys.length > 1 ? ['BULK_PURCHASE'] : ['LINEAR']}
-              />
+              <Button
+                size="xs"
+                variant="light"
+                leftSection={<IconPlus size={14} />}
+                onClick={() => form.insertListItem('sourceLines', emptyPurchaseOrderSourceLine())}
+              >
+                {t('common.action')}
+              </Button>
             </Group>
-            {selectableLines.map((line) => (
-              <Group key={line.key} align="end" justify="space-between">
-                <Checkbox
-                  checked={selectedLineKeys.includes(line.key)}
-                  label={`${line.label} - ${t('common.remaining')} ${line.remaining.toLocaleString()} ${line.unit}`}
-                  onChange={(event) => {
-                    const checked = event.currentTarget.checked;
-                    setSelectedLines((current) => {
-                      const next = { ...current };
-                      if (checked) {
-                        next[line.key] = line.remaining;
-                      } else {
-                        delete next[line.key];
-                      }
-                      return next;
-                    });
-                    form.setFieldValue('warehouseCode', line.warehouseCode);
-                  }}
-                />
-                <NumberInput
-                  aria-label={line.label}
-                  disabled={!selectedLineKeys.includes(line.key)}
-                  max={line.remaining}
-                  min={1}
-                  value={selectedLines[line.key] ?? line.remaining}
-                  w={150}
-                  onChange={(value) =>
-                    setSelectedLines((current) => ({ ...current, [line.key]: Math.min(Number(value) || 1, line.remaining) }))
-                  }
-                />
-              </Group>
+            {form.values.sourceLines.map((line, index) => (
+              <Stack key={index} gap="xs" p="sm" style={{ border: '1px solid var(--mantine-color-default-border)', borderRadius: 8 }}>
+                <Group justify="space-between">
+                  <Text size="sm" fw={700}>
+                    #{index + 1}
+                  </Text>
+                  <ActionIcon
+                    aria-label={t('common.cancel')}
+                    color="red"
+                    disabled={form.values.sourceLines.length === 1}
+                    onClick={() => form.removeListItem('sourceLines', index)}
+                    variant="subtle"
+                  >
+                    <IconTrash size={16} />
+                  </ActionIcon>
+                </Group>
+                <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                  <Select
+                    label={t('forms.itemCode')}
+                    placeholder="Chọn mã vật tư"
+                    data={itemOptions.map(({ label, value }) => ({ label, value }))}
+                    searchable
+                    clearable
+                    value={line.itemSelectKey}
+                    onChange={(val) => {
+                      const matched = itemOptions.find((option) => option.value === val)?.item;
+                      form.setFieldValue(`sourceLines.${index}.itemSelectKey`, val || '');
+                      form.setFieldValue(`sourceLines.${index}.itemId`, matched?.id || '');
+                      form.setFieldValue(`sourceLines.${index}.itemCode`, matched?.item_code || '');
+                      form.setFieldValue(`sourceLines.${index}.itemName`, matched?.item_name || '');
+                      form.setFieldValue(`sourceLines.${index}.itemGroup`, matched?.item_group || '');
+                      form.setFieldValue(`sourceLines.${index}.sourceReference`, matched?.source_reference || '');
+                      form.setFieldValue(`sourceLines.${index}.declarationType`, matched?.declaration_type || '');
+                      form.setFieldValue(`sourceLines.${index}.hsCode`, matched?.hs_code || '');
+                      form.setFieldValue(`sourceLines.${index}.dutyRate`, matched?.duty_rate || 0);
+                      form.setFieldValue(`sourceLines.${index}.vatRate`, matched?.vat_rate || 0);
+                      form.setFieldValue(`sourceLines.${index}.tariffCode`, matched?.tariff_code || '');
+                      form.setFieldValue(`sourceLines.${index}.classificationCode`, matched?.classification_code || '');
+                      form.setFieldValue(`sourceLines.${index}.coNote`, matched?.co_note || '');
+                      form.setFieldValue(`sourceLines.${index}.taxNote`, matched?.tax_note || '');
+                    }}
+                    error={form.errors[`sourceLines.${index}.itemCode`]}
+                  />
+                  <TextInput label={t('forms.itemName')} placeholder={t('forms.itemNamePlaceholder')} {...form.getInputProps(`sourceLines.${index}.itemName`)} />
+                  <NumberInput label={t('forms.quantity')} min={1} thousandSeparator="," {...form.getInputProps(`sourceLines.${index}.quantity`)} />
+                  <TextInput label={t('forms.unit')} placeholder={t('forms.unitPlaceholder')} {...form.getInputProps(`sourceLines.${index}.unit`)} />
+                  <TextInput label="Nhóm/Mã định danh" readOnly {...form.getInputProps(`sourceLines.${index}.itemGroup`)} />
+                  <TextInput label="GRPO / Hợp đồng" readOnly {...form.getInputProps(`sourceLines.${index}.sourceReference`)} />
+                  <TextInput label="Loại hình / PTVC" readOnly {...form.getInputProps(`sourceLines.${index}.declarationType`)} />
+                  <TextInput label="Mã HS" readOnly {...form.getInputProps(`sourceLines.${index}.hsCode`)} />
+                  <TextInput label="Thuế NK (%)" readOnly {...form.getInputProps(`sourceLines.${index}.dutyRate`)} />
+                  <TextInput label="VAT (%)" readOnly {...form.getInputProps(`sourceLines.${index}.vatRate`)} />
+                  <TextInput label="Mã biểu thuế" readOnly {...form.getInputProps(`sourceLines.${index}.tariffCode`)} />
+                  <TextInput label="Mã phân loại" readOnly {...form.getInputProps(`sourceLines.${index}.classificationCode`)} />
+                  <TextInput label="C/O" readOnly {...form.getInputProps(`sourceLines.${index}.coNote`)} />
+                  <TextInput label="Ghi chú thuế" readOnly {...form.getInputProps(`sourceLines.${index}.taxNote`)} />
+                </SimpleGrid>
+              </Stack>
             ))}
           </Stack>
 
           <SimpleGrid cols={{ base: 1, sm: 2 }}>
             <TextInput label="PO / Hợp đồng" placeholder="KBI-SDEC-2604 (LOT 1)" {...form.getInputProps('poNumber')} />
-            <TextInput label={t('forms.supplierCode')} placeholder="SUP-CN-0007" {...form.getInputProps('supplierCode')} />
+            <Select
+              label={t('forms.supplierCode')}
+              placeholder="Chọn nhà cung cấp"
+              data={partnersList.map((p) => ({ value: p.code, label: `${p.code} - ${p.name}` }))}
+              searchable
+              clearable
+              value={form.values.supplierCode}
+              onChange={(val) => {
+                form.setFieldValue('supplierCode', val || '');
+                const matched = partnersList.find((p) => p.code === val);
+                if (matched) {
+                  form.setFieldValue('supplierName', matched.name);
+                }
+              }}
+              error={form.errors.supplierCode}
+            />
             <TextInput label={t('forms.supplierName')} placeholder={t('forms.supplierNamePlaceholder')} {...form.getInputProps('supplierName')} />
             <TextInput label={t('forms.orderDate')} type="date" {...form.getInputProps('orderDate')} />
             <TextInput label={t('forms.currency')} placeholder="USD" {...form.getInputProps('currency')} />
@@ -467,7 +342,6 @@ export function CreatePurchaseOrderDrawer({
             </Text>
             <Button
               type="submit"
-              disabled={selectableLines.length === 0 || selectedLineKeys.length === 0}
               loading={mutation.isPending}
               leftSection={<IconShoppingCart size={16} />}
             >
@@ -486,12 +360,10 @@ export function CreateDeliveryOrderDrawer({
   onCreated,
   opened,
   purchaseOrders,
-  purchaseRequests,
 }: DrawerProps & {
   deliveryOrders: DeliveryOrder[];
   onCreated?: (order: DeliveryOrder) => void;
   purchaseOrders: PurchaseOrder[];
-  purchaseRequests: PurchaseRequest[];
 }) {
   const queryClient = useQueryClient();
   const { documentLabel, shippingMethodLabel, t } = useI18n();
@@ -537,7 +409,6 @@ export function CreateDeliveryOrderDrawer({
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['delivery-orders'] }),
         queryClient.invalidateQueries({ queryKey: ['purchase-orders'] }),
-        queryClient.invalidateQueries({ queryKey: ['purchase-requests'] }),
         queryClient.invalidateQueries({ queryKey: ['tasks'] }),
         queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
         queryClient.invalidateQueries({ queryKey: ['global-search'] }),
@@ -728,34 +599,7 @@ function positiveNumber(message: string) {
   return (value: number) => (Number(value) > 0 ? null : message);
 }
 
-function buildSelectablePrLines(purchaseRequests: PurchaseRequest[], purchaseOrders: PurchaseOrder[]): SelectablePrLine[] {
-  return purchaseRequests
-    .filter((request) => request.status === 'APPROVED' || request.status === 'CONVERTED_TO_PO')
-    .flatMap((request) =>
-      request.line_items.map((line) => {
-        const ordered = purchaseOrders.reduce(
-          (total, order) =>
-            total +
-            order.line_items
-              .filter((orderLine) => orderLine.source_pr_code === request.requested_order_id && orderLine.source_pr_line_id === line.id)
-              .reduce((lineTotal, orderLine) => lineTotal + orderLine.quantity, 0),
-          0,
-        );
-        const remaining = Math.max(0, line.quantity - ordered);
 
-        return {
-          key: `${request.requested_order_id}:${line.id}`,
-          label: `${request.requested_order_id} - ${line.item_code} - ${line.item_name}`,
-          prCode: request.requested_order_id,
-          prLineId: line.id,
-          remaining,
-          unit: line.unit,
-          warehouseCode: line.warehouse_code,
-        };
-      }),
-    )
-    .filter((line) => line.remaining > 0);
-}
 
 function buildSelectablePoLines(purchaseOrders: PurchaseOrder[], deliveryOrders: DeliveryOrder[]): SelectablePoLine[] {
   return purchaseOrders
@@ -773,15 +617,15 @@ function buildSelectablePoLines(purchaseOrders: PurchaseOrder[], deliveryOrders:
 
         return {
           key: `${order.po_number}:${line.id}`,
-          label: `${order.po_number} - ${line.source_pr_code} - ${line.item_code} - ${line.item_name}`,
+          label: `${order.po_number} - ${line.item_code} - ${line.item_name}`,
           poLineId: line.id,
           poNumber: order.po_number,
-          prCode: line.source_pr_code,
+          prCode: '',
           remaining,
           supplierCode: order.supplier_code,
           supplierName: order.supplier_name,
           unit: line.unit,
-          warehouseCode: line.warehouse_code,
+          warehouseCode: order.warehouse_code,
           warehouseDeadline: line.warehouse_deadline_date,
         };
       }),

@@ -1,17 +1,13 @@
 import { NumberFormatter, Paper, ScrollArea, Table, Text } from '@mantine/core';
 
-import type { DeliverySourceLine, PurchaseOrderLineItem, PurchaseRequestLineItem } from '@shared/api/logistics';
+import type { DeliverySourceLine, PurchaseOrderLineItem } from '@shared/api/logistics';
 import { useI18n } from '@shared/i18n';
 
-type SourceLine = DeliverySourceLine | PurchaseOrderLineItem | PurchaseRequestLineItem;
+type SourceLine = DeliverySourceLine | PurchaseOrderLineItem;
 
 function getSource(line: SourceLine) {
   if ('po_number' in line) {
-    return `${line.request_code} / ${line.po_number}`;
-  }
-
-  if ('source_pr_code' in line) {
-    return line.source_pr_code;
+    return line.po_number;
   }
 
   return line.id;
@@ -33,12 +29,15 @@ export function SourceLineTable({ lines }: { lines: SourceLine[] }) {
   return (
     <Paper withBorder p={0}>
       <ScrollArea className="data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
-        <Table miw={820} verticalSpacing="sm">
+        <Table miw={1160} verticalSpacing="sm">
           <Table.Thead>
             <Table.Tr>
               <Table.Th>{t('common.source')}</Table.Th>
               <Table.Th>{t('forms.itemCode')}</Table.Th>
               <Table.Th>{t('forms.itemName')}</Table.Th>
+              <Table.Th>HS</Table.Th>
+              <Table.Th>NK/VAT</Table.Th>
+              <Table.Th>Biểu thuế</Table.Th>
               <Table.Th>{t('forms.quantity')}</Table.Th>
               <Table.Th>{t('forms.warehouse')}</Table.Th>
             </Table.Tr>
@@ -57,6 +56,12 @@ export function SourceLineTable({ lines }: { lines: SourceLine[] }) {
                     {line.item_name}
                   </Text>
                 </Table.Td>
+                <Table.Td>{'hs_code' in line ? line.hs_code || '-' : '-'}</Table.Td>
+                <Table.Td>
+                  {'duty_rate' in line && line.duty_rate !== undefined ? `${line.duty_rate}%` : '-'} /
+                  {'vat_rate' in line && line.vat_rate !== undefined ? ` ${line.vat_rate}%` : ' -'}
+                </Table.Td>
+                <Table.Td>{'tariff_code' in line ? line.tariff_code || '-' : '-'}</Table.Td>
                 <Table.Td>
                   <NumberFormatter value={line.quantity} thousandSeparator /> {line.unit}
                 </Table.Td>

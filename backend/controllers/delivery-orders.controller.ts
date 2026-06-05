@@ -1,18 +1,14 @@
 import type { Response } from 'express';
 
 import type { AuthenticatedRequest, CreateDeliveryOrderBody, UpdateDeliveryOrderBody } from '../domain/types';
+import { gd1ShipmentService } from '../services/gd1-shipments.service';
 import {
   attachDeliveryOrderDocument,
-  createDeliveryOrder,
   listDeliveryOrderAttachments,
-  listDeliveryOrders,
-  updateDeliveryOrder,
 } from '../services/delivery-orders.service';
 import {
   createShipmentCost,
   listShipmentCosts,
-  listShipmentMilestones,
-  recordShipmentMilestone,
   removeShipmentCost,
 } from '../services/delivery-order-workflow.service';
 import { ApiError } from '../utils/errors';
@@ -20,16 +16,16 @@ import { ApiError } from '../utils/errors';
 const decodeParam = (value: unknown) => decodeURIComponent(String(value ?? ''));
 
 export async function getDeliveryOrders(_request: AuthenticatedRequest, response: Response) {
-  response.json({ data: await listDeliveryOrders(), errors: [] });
+  response.json({ data: await gd1ShipmentService.listShipments(), errors: [] });
 }
 
 export async function postDeliveryOrder(request: AuthenticatedRequest, response: Response) {
-  response.status(201).json({ data: await createDeliveryOrder(request.body as CreateDeliveryOrderBody), errors: [] });
+  response.status(201).json({ data: await gd1ShipmentService.createShipment(request.body, request.auth?.sub || 'SYSTEM'), errors: [] });
 }
 
 export async function patchDeliveryOrder(request: AuthenticatedRequest, response: Response) {
   response.json({
-    data: await updateDeliveryOrder(decodeParam(request.params.orderNumber), request.body as UpdateDeliveryOrderBody),
+    data: await gd1ShipmentService.updateShipment(decodeParam(request.params.orderNumber), request.body, request.auth?.sub || 'SYSTEM'),
     errors: [],
   });
 }
@@ -54,17 +50,19 @@ export async function postDeliveryOrderAttachment(request: AuthenticatedRequest,
 }
 
 export async function getDeliveryOrderMilestones(request: AuthenticatedRequest, response: Response) {
-  response.json({ data: await listShipmentMilestones(decodeParam(request.params.orderNumber)), errors: [] });
+  const shipment = await gd1ShipmentService.getShipment(decodeParam(request.params.orderNumber));
+  response.json({ data: shipment.milestones, errors: [] });
 }
 
 export async function patchDeliveryOrderMilestone(request: AuthenticatedRequest, response: Response) {
-  await recordShipmentMilestone(
+  const result = await gd1ShipmentService.updateMilestone(
     decodeParam(request.params.orderNumber),
     String(request.params.milestoneCode ?? ''),
-    request.body,
-    request.auth,
+    request.body.actualDate,
+    request.body.note,
+    request.auth?.sub || 'SYSTEM',
   );
-  response.json({ data: { success: true }, errors: [] });
+  response.json({ data: result, errors: [] });
 }
 
 export async function getDeliveryOrderCosts(request: AuthenticatedRequest, response: Response) {

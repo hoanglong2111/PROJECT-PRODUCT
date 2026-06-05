@@ -185,6 +185,16 @@ export async function updateMilestoneActualDate(
     });
   }
 
+  if (actualDate) {
+    await enqueueOutboxEvent(client, {
+      tenantId,
+      aggregateType: 'shipment',
+      aggregateId: shipmentId,
+      eventType: 'shipment.milestone_completed',
+      payload: { shipmentId, milestoneCode, actualDate, recordedBy },
+    });
+  }
+
   // 3. Auto-close linked tasks if actual_date is added
   if (actualDate) {
     // Legacy tasks: auto-complete any tasks associated with this DO and milestone

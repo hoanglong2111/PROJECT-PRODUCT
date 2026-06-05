@@ -104,12 +104,23 @@ export type PurchaseOrderLineItem = {
   id: string;
   source_pr_code: string;
   source_pr_line_id: string;
+  item_id?: string | null;
   item_code: string;
   item_name: string;
   quantity: number;
   unit: string;
   warehouse_deadline_date: string;
   warehouse_code: string;
+  item_group?: string;
+  source_reference?: string;
+  declaration_type?: string;
+  hs_code?: string;
+  duty_rate?: number;
+  vat_rate?: number;
+  tariff_code?: string;
+  classification_code?: string;
+  co_note?: string;
+  tax_note?: string;
 };
 
 export type DeliverySourceLine = {

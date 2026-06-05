@@ -1,5 +1,4 @@
 import type { DeliveryOrder, PurchaseOrder } from '../domain/logistics';
-import { createDeliveryOrder, updateDeliveryOrder } from '../models/logistics';
 import { attachDeliveryOrderDocument, listDeliveryOrderAttachments } from '../models/logisticsAttachments';
 import { readSnapshot } from '../models/logisticsSnapshots';
 import {
@@ -21,4 +20,4 @@ export async function listDeliveryOrders() {
   return classifyDeliveryOrders(deliveryOrdersRaw.map(normalizeDeliveryOrder), purchaseOrders);
 }
 
-export { attachDeliveryOrderDocument, createDeliveryOrder, listDeliveryOrderAttachments, updateDeliveryOrder };
+export { attachDeliveryOrderDocument, listDeliveryOrderAttachments };

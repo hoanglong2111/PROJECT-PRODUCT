@@ -54,8 +54,6 @@ export { buildDashboardStats, buildGlobalSearchResults } from './logisticsReport
 export { normalizeCurrencyCode } from '../utils/validation';
 import type { CreateDeliveryOrderBody, UpdateDeliveryOrderBody } from '../domain/types';
 
-export { createPurchaseRequest, updatePurchaseRequest, updatePurchaseRequestStatus } from './logisticsPurchaseRequests';
-
 export { createPurchaseOrder, syncPurchaseOrderWithSap } from './logisticsPurchaseOrders';
 
 

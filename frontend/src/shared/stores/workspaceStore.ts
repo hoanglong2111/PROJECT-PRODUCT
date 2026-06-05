@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import type { BusinessFlowTag, DeliveryOrderStatus, PurchaseRequestStatus, TaskRole, TaskStatus } from '@shared/api/logistics';
+import type { BusinessFlowTag, DeliveryOrderStatus, TaskRole, TaskStatus } from '@shared/api/logistics';
 
 type StatusFilter = 'all';
 
@@ -8,9 +8,6 @@ type WorkspaceState = {
   compactMode: boolean;
   search: string;
   statusFilter: StatusFilter;
-  prSearch: string;
-  prStatusFilter: PurchaseRequestStatus | 'all';
-  prRiskOnly: boolean;
   doSearch: string;
   doStatusFilter: DeliveryOrderStatus | 'all';
   doRiskOnly: boolean;
@@ -22,9 +19,6 @@ type WorkspaceState = {
   setCompactMode: (compactMode: boolean) => void;
   setSearch: (search: string) => void;
   setStatusFilter: (statusFilter: StatusFilter) => void;
-  setPrSearch: (prSearch: string) => void;
-  setPrStatusFilter: (prStatusFilter: PurchaseRequestStatus | 'all') => void;
-  setPrRiskOnly: (prRiskOnly: boolean) => void;
   setDoSearch: (doSearch: string) => void;
   setDoStatusFilter: (doStatusFilter: DeliveryOrderStatus | 'all') => void;
   setDoRiskOnly: (doRiskOnly: boolean) => void;
@@ -39,9 +33,6 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   compactMode: false,
   search: '',
   statusFilter: 'all',
-  prSearch: '',
-  prStatusFilter: 'all',
-  prRiskOnly: false,
   doSearch: '',
   doStatusFilter: 'all',
   doRiskOnly: false,
@@ -53,9 +44,6 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   setCompactMode: (compactMode) => set({ compactMode }),
   setSearch: (search) => set({ search }),
   setStatusFilter: (statusFilter) => set({ statusFilter }),
-  setPrSearch: (prSearch) => set({ prSearch }),
-  setPrStatusFilter: (prStatusFilter) => set({ prStatusFilter }),
-  setPrRiskOnly: (prRiskOnly) => set({ prRiskOnly }),
   setDoSearch: (doSearch) => set({ doSearch }),
   setDoStatusFilter: (doStatusFilter) => set({ doStatusFilter }),
   setDoRiskOnly: (doRiskOnly) => set({ doRiskOnly }),

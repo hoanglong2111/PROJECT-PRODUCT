@@ -8,10 +8,9 @@ import { AppShellLayout } from '@shared/components/AppShellLayout';
 
 import {
   deliveryOrderRoles,
-  efmsRoles,
+  dtoRoles,
+  masterDataRoles,
   purchaseOrderRoles,
-  purchaseRequestRoles,
-  quotationRoles,
   taskRoles,
 } from './routeRoles';
 
@@ -23,18 +22,15 @@ type RouteConfig = {
 
 const Dashboard = lazyFeature(() => import('@features/dashboard'), 'Dashboard');
 const DeliveryOrders = lazyFeature(() => import('@features/delivery-orders'), 'DeliveryOrders');
-const Efms = lazyFeature(() => import('@features/efms'), 'Efms');
-const ExchangeRates = lazyFeature(() => import('@features/exchange-rates'), 'ExchangeRates');
+const Dtos = lazyFeature(() => import('@features/dtos'), 'Dtos');
+const MasterData = lazyFeature(() => import('@features/master-data'), 'MasterData');
 const Login = lazyFeature(() => import('@features/login'), 'Login');
 const NotFound = lazyFeature(() => import('@features/not-found'), 'NotFound');
 const Profile = lazyFeature(() => import('@features/profile'), 'Profile');
 const PurchaseOrders = lazyFeature(() => import('@features/purchase-orders'), 'PurchaseOrders');
-const PurchaseRequests = lazyFeature(() => import('@features/purchase-requests'), 'PurchaseRequests');
-const Quotations = lazyFeature(() => import('@features/quotations'), 'Quotations');
 const Settings = lazyFeature(() => import('@features/settings'), 'Settings');
 const Tasks = lazyFeature(() => import('@features/tasks'), 'Tasks');
 const Unauthorized = lazyFeature(() => import('@features/unauthorized'), 'Unauthorized');
-const Workflow = lazyFeature(() => import('@features/workflow'), 'Workflow');
 
 const publicRoutes: RouteConfig[] = [
   { path: '/login', element: <Login /> },
@@ -43,14 +39,10 @@ const publicRoutes: RouteConfig[] = [
 
 const workspaceRoutes: RouteConfig[] = [
   { index: true, element: <Dashboard /> },
-  { path: 'workflow', element: <Workflow /> },
-  { path: 'exchange-rates', element: <ExchangeRates /> },
-  { path: 'purchase-requests', element: withRole(<PurchaseRequests />, purchaseRequestRoles) },
-  { path: 'quotations', element: withRole(<Quotations />, quotationRoles) },
   { path: 'purchase-orders', element: withRole(<PurchaseOrders />, purchaseOrderRoles) },
   { path: 'delivery-orders', element: withRole(<DeliveryOrders />, deliveryOrderRoles) },
-  { path: 'efms', element: withRole(<Efms />, efmsRoles) },
-  { path: 'efms/:orderNumber', element: withRole(<Efms />, efmsRoles) },
+  { path: 'dtos', element: withRole(<Dtos />, dtoRoles) },
+  { path: 'master-data', element: withRole(<MasterData />, masterDataRoles) },
   { path: 'tasks', element: withRole(<Tasks />, taskRoles) },
   { path: 'profile', element: <Profile /> },
   { path: 'settings', element: <Settings /> },

@@ -208,7 +208,6 @@ export function Tasks() {
   const [searchParams] = useSearchParams();
   const roleParam = searchParams.get('role');
   const { value: focusedDo } = useEntityParam('do');
-  const { value: focusedPr } = useEntityParam('pr');
   const { close: closeTaskParam, open: openTaskParam, value: focusedTask } = useEntityParam('task');
   const [selectedTask, setSelectedTask] = useState<LogisticsTask | null>(null);
   const search = useWorkspaceStore((state) => state.taskSearch);
@@ -265,8 +264,7 @@ export function Tasks() {
     const normalizedSearch = search.toLowerCase().trim();
 
     return tasks.filter((task) => {
-      const matchesFlowContext =
-        (!focusedDo || task.do_number === focusedDo) && (!focusedPr || task.request_code === focusedPr);
+      const matchesFlowContext = !focusedDo || task.do_number === focusedDo;
       const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
       const matchesRole = roleFilter === 'all' || task.role === roleFilter;
       const matchesRequired = !requiredOnly || task.is_required_for_do_closure;
@@ -276,7 +274,6 @@ export function Tasks() {
         task.task_id,
         task.task_name,
         task.do_number,
-        task.request_code,
         task.po_number,
         task.assignee.name,
         task.production_contract_number,
@@ -287,7 +284,7 @@ export function Tasks() {
 
       return matchesFlowContext && matchesStatus && matchesRole && matchesRequired && matchesFlow && matchesSearch;
     });
-  }, [deliveryOrderFlowTagsByNumber, flowFilter, focusedDo, focusedPr, requiredOnly, roleFilter, search, statusFilter, tasks]);
+  }, [deliveryOrderFlowTagsByNumber, flowFilter, focusedDo, requiredOnly, roleFilter, search, statusFilter, tasks]);
 
   const {
     page,
@@ -296,7 +293,7 @@ export function Tasks() {
     pageStart,
     setPage,
     visibleItems: visibleTasks,
-  } = useListPagination(filteredTasks, [flowFilter, focusedDo, focusedPr, requiredOnly, roleFilter, search, statusFilter]);
+  } = useListPagination(filteredTasks, [flowFilter, focusedDo, requiredOnly, roleFilter, search, statusFilter]);
 
   const today = dayjs().startOf('day');
   const isOverdue = (task: LogisticsTask) => task.status !== 'COMPLETED' && dayjs(task.due_date).isBefore(today, 'day');
@@ -363,15 +360,15 @@ export function Tasks() {
 
         <Tabs.Panel value="closure">
           <Stack gap="lg">
-            {focusedDo || focusedPr ? (
+            {focusedDo ? (
               <Paper withBorder p="md" className="flow-context">
                 <Group justify="space-between">
                   <Text size="sm">
-                    {t('tasks.context', { kind: focusedDo ? 'DO' : 'PR', id: focusedDo ?? focusedPr })}
+                    {t('tasks.context', { kind: 'DO', id: focusedDo })}
                   </Text>
                   <Button
                     component={Link}
-                    to={`/workflow?${focusedDo ? `do=${focusedDo}` : `pr=${focusedPr}`}`}
+                    to={`/workflow?do=${focusedDo}`}
                     size="xs"
                     variant="light"
                     leftSection={<IconGitBranch size={14} />}
@@ -482,9 +479,6 @@ export function Tasks() {
                         <Table.Td>
                           <Text size="sm" fw={600}>
                             {task.do_number}
-                          </Text>
-                          <Text size="xs" c="dimmed">
-                            {task.request_code}
                           </Text>
                         </Table.Td>
                         <Table.Td>{taskRoleLabel(task.role)}</Table.Td>
@@ -600,16 +594,14 @@ function TaskDetail({ onUpdated, task }: { onUpdated?: (task: LogisticsTask) => 
         <div>
           <Title order={3}>{task.task_name}</Title>
           <Text c="dimmed">
-            {task.do_number} - {task.request_code}
+            {task.do_number}
           </Text>
         </div>
         <StatusBadge status={task.status} />
       </Group>
 
       <Group gap="xs">
-        <EntityLink type="workflow" id={task.do_number} />
         <EntityLink type="do" id={task.do_number} />
-        <EntityLink type="pr" id={task.request_code} />
         <EntityLink type="po" id={task.po_number} />
       </Group>
 

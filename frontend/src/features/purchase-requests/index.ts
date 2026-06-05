@@ -1,1 +1,0 @@
-export { PurchaseRequests } from './page';

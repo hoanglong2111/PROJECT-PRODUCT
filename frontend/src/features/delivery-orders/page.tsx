@@ -62,7 +62,6 @@ import {
   fetchDeliveryOrders,
   fetchDeliveryOrderAttachments,
   fetchPurchaseOrders,
-  fetchPurchaseRequests,
   uploadDeliveryOrderAttachment,
   type DeliveryOrder,
   type DeliveryOrderStatus,
@@ -133,16 +132,11 @@ export function DeliveryOrders() {
     queryKey: ['delivery-orders'],
     queryFn: fetchDeliveryOrders,
   });
-  const purchaseRequestsQuery = useQuery({
-    queryKey: ['purchase-requests'],
-    queryFn: fetchPurchaseRequests,
-  });
   const purchaseOrdersQuery = useQuery({
     queryKey: ['purchase-orders'],
     queryFn: fetchPurchaseOrders,
   });
   const deliveryOrders = deliveryOrdersQuery.data ?? [];
-  const purchaseRequests = purchaseRequestsQuery.data ?? [];
   const purchaseOrders = purchaseOrdersQuery.data ?? [];
   const isFetching = deliveryOrdersQuery.isFetching;
 
@@ -414,7 +408,6 @@ export function DeliveryOrders() {
                         {deliveryOrder.order_info.tracking_number ?? t('deliveryOrders.noTracking')}
                       </Text>
                       <Group gap="xs">
-                        <EntityLink type="pr" id={deliveryOrder.order_info.request_code} compact />
                         <EntityLink type="po" id={deliveryOrder.sap_integration.po_number} compact />
                       </Group>
                       <FlowTagBadge compact tags={deliveryOrder.flow_tags} />
@@ -525,7 +518,6 @@ export function DeliveryOrders() {
         onClose={createHandlers.close}
         deliveryOrders={deliveryOrders}
         purchaseOrders={purchaseOrders}
-        purchaseRequests={purchaseRequests}
         onCreated={(order) => {
           setActiveTab('processing');
           setSelectedId(order.id);
@@ -956,8 +948,6 @@ function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: DeliveryOrder }
       </Group>
 
       <Group gap="xs" mb="md">
-        <EntityLink type="workflow" id={deliveryOrder.order_info.order_number} />
-        <EntityLink type="pr" id={deliveryOrder.order_info.request_code} />
         <EntityLink type="po" id={deliveryOrder.sap_integration.po_number} />
         <Button
           component={Link}

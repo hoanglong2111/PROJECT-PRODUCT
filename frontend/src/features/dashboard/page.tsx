@@ -33,9 +33,7 @@ import {
   fetchDeliveryOrders,
   fetchLogisticsTasks,
   fetchPurchaseOrders,
-  fetchPurchaseRequests,
   type DashboardStats,
-  type PurchaseRequest,
   type PurchaseOrder,
 } from '@shared/api/logistics';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
@@ -50,10 +48,6 @@ import {
 
 export function Dashboard() {
   const { t } = useI18n();
-  const purchaseRequestsQuery = useQuery({
-    queryKey: ['purchase-requests'],
-    queryFn: fetchPurchaseRequests,
-  });
   const purchaseOrdersQuery = useQuery({
     queryKey: ['purchase-orders'],
     queryFn: fetchPurchaseOrders,
@@ -71,7 +65,7 @@ export function Dashboard() {
     queryFn: fetchDashboardStats,
   });
 
-  const queries = [purchaseRequestsQuery, purchaseOrdersQuery, deliveryOrdersQuery, tasksQuery, dashboardStatsQuery] as const;
+  const queries = [purchaseOrdersQuery, deliveryOrdersQuery, tasksQuery, dashboardStatsQuery] as const;
   const errorQuery = queries.find((query) => query.isError);
   const loading = queries.some((query) => query.isLoading);
 
@@ -99,12 +93,10 @@ export function Dashboard() {
     );
   }
 
-  const purchaseRequests = purchaseRequestsQuery.data ?? [];
   const purchaseOrders = purchaseOrdersQuery.data ?? [];
   const deliveryOrders = deliveryOrdersQuery.data ?? [];
   const tasks = tasksQuery.data ?? [];
   const dashboardStats = dashboardStatsQuery.data;
-  const prRiskCount = purchaseRequests.filter((request) => request.delay_days > 0).length;
   const activeDeliveryOrders = deliveryOrders.filter((deliveryOrder) => deliveryOrder.order_info.status !== 'DELIVERED');
   const blockedTasks = tasks.filter((task) => task.status === 'BLOCKED');
   const missingDocumentOrders = deliveryOrders.filter(
@@ -137,23 +129,21 @@ export function Dashboard() {
         </Button>
       </Group>
 
-      <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }}>
-        <MetricCard label={t('dashboard.purchaseRequests')} value={purchaseRequests.length} color="blue" icon={<IconFileInvoice size={22} />} />
+      <SimpleGrid cols={{ base: 1, sm: 3 }}>
         <MetricCard label={t('dashboard.purchaseOrders')} value={purchaseOrders.length} color="yellow" icon={<IconShoppingCart size={22} />} />
         <MetricCard label={t('dashboard.activeDo')} value={activeDeliveryOrders.length} color="teal" icon={<IconTruckDelivery size={22} />} />
         <MetricCard label={t('dashboard.blockedTasks')} value={blockedTasks.length} color="red" icon={<IconAlertTriangle size={22} />} />
       </SimpleGrid>
 
-      {prRiskCount > 0 || missingDocumentOrders.length > 0 ? (
+      {missingDocumentOrders.length > 0 ? (
         <Alert color="red" icon={<IconAlertTriangle size={18} />}>
-          {t('dashboard.riskAlert', { prRiskCount, missingDocumentCount: missingDocumentOrders.length })}
+          {t('dashboard.riskAlert', { missingDocumentCount: missingDocumentOrders.length })}
         </Alert>
       ) : null}
 
       {dashboardStats ? (
         <DashboardCharts
           stats={dashboardStats}
-          purchaseRequests={purchaseRequests}
           purchaseOrders={purchaseOrders}
         />
       ) : null}
@@ -250,11 +240,9 @@ function riskLabel(code: OperationalRiskCode, t: ReturnType<typeof useI18n>['t']
 
 function DashboardCharts({
   stats,
-  purchaseRequests,
   purchaseOrders,
 }: {
   stats: DashboardStats;
-  purchaseRequests: PurchaseRequest[];
   purchaseOrders: PurchaseOrder[];
 }) {
   const navigate = useNavigate();
@@ -268,19 +256,14 @@ function DashboardCharts({
     1,
   );
 
-  // Group PR and PO counts by the last 6 months dynamically for the Line Chart
-  const monthlyPrPoData = useMemo(() => {
+  // Group PO counts by the last 6 months dynamically for the Line Chart
+  const monthlyPoData = useMemo(() => {
     const months: string[] = [];
     for (let i = 5; i >= 0; i--) {
       months.push(dayjs().subtract(i, 'month').format('YYYY-MM'));
     }
 
     return months.map((m) => {
-      const prCount = purchaseRequests.filter((pr) => {
-        const dateStr = pr.requested_order_date || pr.expected_arrival_date;
-        return dateStr && dateStr.startsWith(m);
-      }).length;
-
       const poCount = purchaseOrders.filter((po) => {
         const dateStr = po.order_date;
         return dateStr && dateStr.startsWith(m);
@@ -291,14 +274,13 @@ function DashboardCharts({
       return {
         month: m,
         label,
-        pr: prCount,
         po: poCount,
       };
     });
-  }, [purchaseRequests, purchaseOrders]);
+  }, [purchaseOrders]);
 
   // SVG Line Chart Dimensions and Math
-  const maxVal = Math.max(...monthlyPrPoData.flatMap((d) => [d.pr, d.po]), 4);
+  const maxVal = Math.max(...monthlyPoData.map((d) => d.po), 4);
   const width = 500;
   const height = 240;
   const paddingX = 45;
@@ -306,31 +288,20 @@ function DashboardCharts({
   const chartWidth = width - paddingX * 2;
   const chartHeight = height - paddingY * 2;
 
-  const prPoints = monthlyPrPoData.map((d, index) => {
-    const x = paddingX + (index / (monthlyPrPoData.length - 1)) * chartWidth;
-    const y = paddingY + chartHeight - (d.pr / maxVal) * chartHeight;
-    return { x, y };
-  });
-
-  const poPoints = monthlyPrPoData.map((d, index) => {
-    const x = paddingX + (index / (monthlyPrPoData.length - 1)) * chartWidth;
+  const poPoints = monthlyPoData.map((d, index) => {
+    const x = paddingX + (index / (monthlyPoData.length - 1)) * chartWidth;
     const y = paddingY + chartHeight - (d.po / maxVal) * chartHeight;
     return { x, y };
   });
 
-  const prPath = prPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
   const poPath = poPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-
-  const prAreaPath = prPoints.length > 0
-    ? `${prPath} L ${prPoints[prPoints.length - 1].x} ${height - paddingY} L ${prPoints[0].x} ${height - paddingY} Z`
-    : '';
   const poAreaPath = poPoints.length > 0
     ? `${poPath} L ${poPoints[poPoints.length - 1].x} ${height - paddingY} L ${poPoints[0].x} ${height - paddingY} Z`
     : '';
 
   return (
     <SimpleGrid cols={{ base: 1, xl: 2 }}>
-      {/* 1. Line Chart: PR & PO Relation */}
+      {/* 1. Line Chart: PO Volume */}
       <Paper withBorder p="lg">
         <Title order={3}>{t('dashboard.prPoRelationTitle')}</Title>
         <Text size="sm" c="dimmed" mb="md">
@@ -339,10 +310,6 @@ function DashboardCharts({
         <div style={{ position: 'relative', width: '100%', height: height }}>
           <svg viewBox={`0 0 ${width} ${height}`} width="100%" height="100%" style={{ overflow: 'visible' }}>
             <defs>
-              <linearGradient id="prGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--mantine-color-blue-filled)" stopOpacity="0.15" />
-                <stop offset="100%" stopColor="var(--mantine-color-blue-filled)" stopOpacity="0.0" />
-              </linearGradient>
               <linearGradient id="poGrad" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="var(--mantine-color-orange-filled)" stopOpacity="0.15" />
                 <stop offset="100%" stopColor="var(--mantine-color-orange-filled)" stopOpacity="0.0" />
@@ -364,20 +331,14 @@ function DashboardCharts({
             })}
 
             {/* X axis labels */}
-            {monthlyPrPoData.map((d, index) => {
-              const x = paddingX + (index / (monthlyPrPoData.length - 1)) * chartWidth;
+            {monthlyPoData.map((d, index) => {
+              const x = paddingX + (index / (monthlyPoData.length - 1)) * chartWidth;
               return (
                 <text key={index} x={x} y={height - paddingY + 20} textAnchor="middle" fontSize={10} fill="currentColor" opacity={0.6}>
                   {d.label}
                 </text>
               );
             })}
-
-            {/* PR Line & Area */}
-            <g style={{ cursor: 'pointer' }} onClick={() => navigate('/purchase-requests')}>
-              <path d={prAreaPath} fill="url(#prGrad)" />
-              <path d={prPath} fill="none" stroke="var(--mantine-color-blue-filled)" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
-            </g>
 
             {/* PO Line & Area */}
             <g style={{ cursor: 'pointer' }} onClick={() => navigate('/purchase-orders')}>
@@ -386,24 +347,10 @@ function DashboardCharts({
             </g>
 
             {/* Interactive Dots */}
-            {monthlyPrPoData.map((d, index) => {
-              const prP = prPoints[index];
+            {monthlyPoData.map((d, index) => {
               const poP = poPoints[index];
               return (
                 <g key={index}>
-                  {/* PR dot */}
-                  <circle
-                    cx={prP.x}
-                    cy={prP.y}
-                    r={5}
-                    fill="var(--mantine-color-blue-filled)"
-                    stroke="var(--mantine-color-body)"
-                    strokeWidth={2}
-                    style={{ cursor: 'pointer', transition: 'r 100ms ease' }}
-                    onClick={() => navigate(`/purchase-requests?month=${d.month}`)}
-                  >
-                    <title>{t('dashboard.chartPrTooltip', { month: d.label, count: d.pr })}</title>
-                  </circle>
                   {/* PO dot */}
                   <circle
                     cx={poP.x}
@@ -425,10 +372,6 @@ function DashboardCharts({
 
         {/* Legend */}
         <Group justify="center" mt="md" gap="lg">
-          <Group gap={6} style={{ cursor: 'pointer' }} onClick={() => navigate('/purchase-requests')}>
-            <span style={{ display: 'inline-block', width: 12, height: 12, borderRadius: '50%', background: 'var(--mantine-color-blue-filled)' }} />
-            <Text size="xs" fw={700}>{t('dashboard.modulePurchaseRequestsTitle')}</Text>
-          </Group>
           <Group gap={6} style={{ cursor: 'pointer' }} onClick={() => navigate('/purchase-orders')}>
             <span style={{ display: 'inline-block', width: 12, height: 12, borderRadius: '50%', background: 'var(--mantine-color-orange-filled)' }} />
             <Text size="xs" fw={700}>{t('dashboard.modulePurchaseOrdersTitle')}</Text>
@@ -561,12 +504,7 @@ function DashboardCharts({
             title={t('dashboard.moduleWorkflowTitle')}
             description={t('dashboard.moduleWorkflowDescription')}
           />
-          <ModuleLink
-            to="/purchase-requests"
-            icon={<IconFileInvoice size={20} />}
-            title={t('dashboard.modulePurchaseRequestsTitle')}
-            description={t('dashboard.modulePurchaseRequestsDescription')}
-          />
+
           <ModuleLink
             to="/purchase-orders"
             icon={<IconShoppingCart size={20} />}

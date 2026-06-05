@@ -96,7 +96,7 @@ export async function enqueueOutboxEvent(
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
     `,
     [
-      `outbox-${randomUUID()}`,
+      randomUUID(),
       input.tenantId ?? 'tenant-001',
       input.aggregateType,
       input.aggregateId,

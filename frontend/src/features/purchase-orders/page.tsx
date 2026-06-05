@@ -49,7 +49,6 @@ import { SourceLineTable } from '@shared/components/SourceLineTable';
 import { getApiErrorMessage } from '@shared/api/http';
 import {
   fetchPurchaseOrders,
-  fetchPurchaseRequests,
   syncPurchaseOrderSap,
   type PurchaseOrder,
   advancePurchaseOrderStage,
@@ -79,12 +78,7 @@ export function PurchaseOrders() {
     queryKey: ['purchase-orders'],
     queryFn: fetchPurchaseOrders,
   });
-  const purchaseRequestsQuery = useQuery({
-    queryKey: ['purchase-requests'],
-    queryFn: fetchPurchaseRequests,
-  });
   const purchaseOrders = purchaseOrdersQuery.data ?? [];
-  const purchaseRequests = purchaseRequestsQuery.data ?? [];
   const isFetching = purchaseOrdersQuery.isFetching;
   const canCreatePurchaseOrders = user?.role === 'ADMIN' || user?.role === 'PIC_MANAGER';
 
@@ -117,7 +111,7 @@ export function PurchaseOrders() {
         (activeTab === 'partial' && order.status === 'PARTIALLY_DELIVERED') ||
         (activeTab === 'closed' && order.status === 'CLOSED') ||
         (activeTab === 'sap' && order.sap_sync_status !== 'SYNCED');
-      const matchesSearch = [order.po_number, order.supplier_code, order.supplier_name, order.source_pr_codes.join(' '), order.linked_do_numbers.join(' ')]
+      const matchesSearch = [order.po_number, order.supplier_code, order.supplier_name, order.linked_do_numbers.join(' ')]
         .join(' ')
         .toLowerCase()
         .includes(normalizedSearch);
@@ -178,7 +172,7 @@ export function PurchaseOrders() {
       <PageLoading
         title={t('purchaseOrders.title')}
         description={t('purchaseOrders.loadingDescription')}
-        tableColumns={['PO', t('common.supplier'), t('purchaseOrders.sourcePr'), t('common.linkedDo'), t('purchaseOrders.total'), 'SAP', t('common.status')]}
+        tableColumns={['PO', t('common.supplier'), t('common.linkedDo'), t('purchaseOrders.total'), 'SAP', t('common.status')]}
       />
     );
   }
@@ -245,7 +239,6 @@ export function PurchaseOrders() {
                 <Table.Tr>
                   <Table.Th>PO</Table.Th>
                   <Table.Th>{t('common.supplier')}</Table.Th>
-                  <Table.Th>{t('purchaseOrders.sourcePr')}</Table.Th>
                   <Table.Th>{t('common.linkedDo')}</Table.Th>
                   <Table.Th>{t('purchaseOrders.total')}</Table.Th>
                   <Table.Th>SAP</Table.Th>
@@ -270,13 +263,6 @@ export function PurchaseOrders() {
                       <Text size="xs" c="dimmed">
                         {order.supplier_code}
                       </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Group gap="xs">
-                        {order.source_pr_codes.map((prCode) => (
-                          <EntityLink key={prCode} type="pr" id={prCode} compact />
-                        ))}
-                      </Group>
                     </Table.Td>
                     <Table.Td>
                       <Group gap="xs">
@@ -324,8 +310,6 @@ export function PurchaseOrders() {
       <CreatePurchaseOrderDrawer
         opened={createOpened}
         onClose={createHandlers.close}
-        purchaseOrders={purchaseOrders}
-        purchaseRequests={purchaseRequests}
         onCreated={(order) => openDetail(order)}
       />
 
@@ -618,13 +602,9 @@ function PurchaseOrderDetail({ onUpdated, order }: { onUpdated?: (order: Purchas
           {t('purchaseOrders.entityLinks')}
         </Text>
         <Group gap="xs">
-          {order.source_pr_codes.map((prCode) => (
-            <EntityLink key={prCode} type="pr" id={prCode} />
-          ))}
           {order.linked_do_numbers.map((doCode) => (
             <EntityLink key={doCode} type="do" id={doCode} />
           ))}
-          {order.linked_do_numbers[0] ? <EntityLink type="workflow" id={order.linked_do_numbers[0]} /> : null}
         </Group>
       </Paper>
     </Stack>

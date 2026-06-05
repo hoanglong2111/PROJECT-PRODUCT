@@ -1,17 +1,18 @@
 import type { Response } from 'express';
 
 import type { AuthenticatedRequest, CreatePurchaseOrderBody } from '../domain/types';
-import { createPurchaseOrder, listPurchaseOrders, syncPurchaseOrderWithSap } from '../services/purchase-orders.service';
+import { gd1PurchaseOrderService } from '../services/gd1-purchase-orders.service';
+import { syncPurchaseOrderWithSap } from '../services/purchase-orders.service';
 import { changePurchaseOrderStage, listPurchaseOrderTasks } from '../services/purchase-order-workflow.service';
 
 const decodeParam = (value: unknown) => decodeURIComponent(String(value ?? ''));
 
 export async function getPurchaseOrders(_request: AuthenticatedRequest, response: Response) {
-  response.json({ data: await listPurchaseOrders(), errors: [] });
+  response.json({ data: await gd1PurchaseOrderService.listPOs(), errors: [] });
 }
 
 export async function postPurchaseOrder(request: AuthenticatedRequest, response: Response) {
-  response.status(201).json({ data: await createPurchaseOrder(request.body as CreatePurchaseOrderBody), errors: [] });
+  response.status(201).json({ data: await gd1PurchaseOrderService.createPO(request.body, request.auth?.sub || 'SYSTEM'), errors: [] });
 }
 
 export async function postPurchaseOrderSapSync(request: AuthenticatedRequest, response: Response) {
@@ -19,8 +20,8 @@ export async function postPurchaseOrderSapSync(request: AuthenticatedRequest, re
 }
 
 export async function patchPurchaseOrderStage(request: AuthenticatedRequest, response: Response) {
-  await changePurchaseOrderStage(decodeParam(request.params.poNumber), String(request.body.stage ?? ''), request.auth);
-  response.json({ data: { success: true }, errors: [] });
+  const result = await gd1PurchaseOrderService.transitionPO(decodeParam(request.params.poNumber), String(request.body.stage || request.body.status || ''), request.auth?.sub || 'SYSTEM');
+  response.json({ data: result, errors: [] });
 }
 
 export async function getPurchaseOrderTasks(request: AuthenticatedRequest, response: Response) {

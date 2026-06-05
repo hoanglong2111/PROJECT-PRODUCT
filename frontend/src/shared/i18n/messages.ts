@@ -737,6 +737,8 @@ export const en = {
   'shell.tasks': 'Tasks',
   'shell.workflow': 'Workflow',
   'shell.skipToContent': 'Skip to main content',
+  'shell.masterData': 'Master Data',
+  'shell.dtos': 'Domestic Transport (DTO)',
 
   'tasks.blocked': 'Blocked',
   'tasks.blockedReason': 'Blocked reason',
@@ -1539,6 +1541,8 @@ export const vi: Record<MessageKey, string> = {
   'shell.tasks': 'Công việc',
   'shell.workflow': 'Quy trình',
   'shell.skipToContent': 'Bỏ qua để đến nội dung chính',
+  'shell.masterData': 'Dữ liệu gốc',
+  'shell.dtos': 'Vận chuyển nội địa (DTO)',
 
   'tasks.blocked': 'Bị chặn',
   'tasks.blockedReason': 'Lý do bị chặn',

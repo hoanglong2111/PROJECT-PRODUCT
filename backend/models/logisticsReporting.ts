@@ -3,7 +3,6 @@ import type {
   DeliveryOrder,
   LogisticsTask,
   PurchaseOrder,
-  PurchaseRequest,
 } from '../domain/logistics';
 import type { AppRole } from '../domain/auth';
 import type { AppUserRow, DashboardStats, GlobalSearchKind, GlobalSearchResult } from '../domain/types';
@@ -13,7 +12,6 @@ export function buildGlobalSearchResults({
   currentUserRole,
   deliveryOrders,
   purchaseOrders,
-  purchaseRequests,
   query,
   tasks,
   users,
@@ -22,7 +20,6 @@ export function buildGlobalSearchResults({
   currentUserRole?: AppRole;
   deliveryOrders: DeliveryOrder[];
   purchaseOrders: PurchaseOrder[];
-  purchaseRequests: PurchaseRequest[];
   query: string;
   tasks: LogisticsTask[];
   users: AppUserRow[];
@@ -53,34 +50,7 @@ export function buildGlobalSearchResults({
     results.push({ ...result, score: score + weight, sequence: results.length });
   };
 
-  for (const request of purchaseRequests) {
-    const values = [
-      request.requested_order_id,
-      request.item_code,
-      request.item_name,
-      request.production_contract_number,
-      request.requester.name,
-      request.purchasing_manager.name,
-      request.status,
-      ...(request.flow_tags ?? []),
-      ...request.line_items.flatMap((line) => [line.item_code, line.item_name]),
-    ];
 
-    addResult({
-      kind: 'purchase_request',
-      values,
-      weight: 8,
-      result: {
-        href: `/purchase-requests?pr=${encodeURIComponent(request.requested_order_id)}`,
-        id: request.id,
-        kind: 'purchase_request',
-        meta: request.priority,
-        status: request.status,
-        subtitle: `${request.item_code} - ${request.item_name}`,
-        title: request.requested_order_id,
-      },
-    });
-  }
 
   for (const order of purchaseOrders) {
     const values = [
@@ -214,7 +184,6 @@ const searchableRolesByKind: Record<GlobalSearchKind, AppRole[] | null> = {
   account: null,
   delivery_order: operationsRoles,
   purchase_order: [...salesRoles, 'FINANCE_OFFICER'],
-  purchase_request: salesRoles,
   task: [...operationsRoles, 'FINANCE_OFFICER'],
 };
 
@@ -253,12 +222,10 @@ function normalizeSearch(value: string) {
 }
 
 export function buildDashboardStats({
-  purchaseRequests,
   purchaseOrders,
   deliveryOrders,
   tasks,
 }: {
-  purchaseRequests: PurchaseRequest[];
   purchaseOrders: PurchaseOrder[];
   deliveryOrders: DeliveryOrder[];
   tasks: LogisticsTask[];
@@ -305,7 +272,7 @@ export function buildDashboardStats({
 
   return {
     totals: {
-      purchaseRequests: purchaseRequests.length,
+      purchaseRequests: 0,
       purchaseOrders: purchaseOrders.length,
       deliveryOrders: deliveryOrders.length,
       tasks: tasks.length,
