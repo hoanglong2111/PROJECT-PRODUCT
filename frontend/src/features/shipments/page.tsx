@@ -273,27 +273,39 @@ export function Shipments() {
 
   return (
     <Stack gap="lg">
-      <Group justify="space-between" align="flex-start" gap="md">
-        <div>
-          <Title order={1}>{t('shipments.title')}</Title>
-          <Text c="dimmed" mt={4}>
-            {t('shipments.subtitle')}
-          </Text>
-        </div>
-        <Group gap="xs">
-          <Button onClick={openCreate} leftSection={<IconPlus size={16} />} variant={workbench === 'create' ? 'filled' : 'light'}>
-            {t('shipments.create')}
-          </Button>
-          {workbench !== 'list' ? (
-            <Button onClick={closeWorkbench} leftSection={<IconX size={16} />} variant="subtle">
+      {workbench === 'list' ? (
+        <Group justify="space-between" align="flex-start" gap="md">
+          <div>
+            <Title order={1}>{t('shipments.title')}</Title>
+            <Text c="dimmed" mt={4}>
+              {t('shipments.subtitle')}
+            </Text>
+          </div>
+          <Group gap="xs">
+            <Button onClick={openCreate} leftSection={<IconPlus size={16} />} variant="light">
+              {t('shipments.create')}
+            </Button>
+            <Badge leftSection={<IconAnchor size={14} />} size="lg" variant="light">
+              {t('shell.poDo')}
+            </Badge>
+          </Group>
+        </Group>
+      ) : (
+        <Group justify="space-between" align="center" gap="md">
+          <Group gap="xs" align="center">
+            <Button onClick={closeWorkbench} leftSection={<IconX size={16} />} variant="subtle" size="sm">
               {t('common.backToList')}
             </Button>
-          ) : null}
-          <Badge leftSection={<IconAnchor size={14} />} size="lg" variant="light">
+            <Text c="dimmed" size="sm">·</Text>
+            <Text fw={600} size="sm">
+              {workbench === 'create' ? t('shipments.create') : selectedShipment?.shipment_number ?? ''}
+            </Text>
+          </Group>
+          <Badge leftSection={<IconAnchor size={14} />} size="md" variant="light">
             {t('shell.poDo')}
           </Badge>
         </Group>
-      </Group>
+      )}
 
       {workbench === 'list' ? (
         <SimpleGrid cols={{ base: 1, sm: 4 }}>
@@ -369,85 +381,82 @@ export function Shipments() {
       ) : null}
 
       {workbench === 'detail' && selectedShipment ? (
-        <Paper withBorder p="lg">
-          <Stack gap="md">
-            <Group justify="space-between" align="flex-start" mb="md">
+        <Stack gap="lg">
+          {/* Identity card */}
+          <Paper withBorder p="lg" className="workbench-section">
+            <Group justify="space-between" align="flex-start">
               <div>
-                <Title order={3}>{selectedShipment.shipment_number}</Title>
-                <Text c="dimmed">
-                  {selectedShipment.carrier_name} - {selectedShipment.vessel_voyage}
+                <Group gap="xs" mb={4} wrap="nowrap">
+                  <Title order={3}>{selectedShipment.shipment_number}</Title>
+                  <StatusBadge status={selectedShipment.status} />
+                </Group>
+                <Text c="dimmed" size="sm">
+                  {selectedShipment.carrier_name} · {selectedShipment.vessel_voyage}
                 </Text>
               </div>
               <Group gap="xs">
-                <StatusBadge status={selectedShipment.status} />
-                <Button variant="subtle" onClick={closeWorkbench} leftSection={<IconX size={16} />}>
-                  {t('common.backToList')}
-                </Button>
+                <EntityLink type="do" id={selectedShipment.do_number} />
+                <EntityLink type="po" id={selectedShipment.po_number} />
               </Group>
             </Group>
+          </Paper>
 
-            <Group gap="xs" mb="md">
-              <EntityLink type="do" id={selectedShipment.do_number} />
-              <EntityLink type="po" id={selectedShipment.po_number} />
-            </Group>
+          <Tabs defaultValue="overview">
+            <Tabs.List>
+              <Tabs.Tab value="overview" leftSection={<IconAnchor size={14} />}>
+                {t('shipments.overview')}
+              </Tabs.Tab>
+              <Tabs.Tab value="milestones" leftSection={<IconCalendar size={14} />}>
+                {t('shipments.milestones')}
+              </Tabs.Tab>
+              <Tabs.Tab value="documents" leftSection={<IconFileCheck size={14} />}>
+                {t('shipments.documents')}
+              </Tabs.Tab>
+              <Tabs.Tab value="customs" leftSection={<IconShield size={14} />}>
+                {t('shipments.customs')}
+              </Tabs.Tab>
+              <Tabs.Tab value="costs" leftSection={<IconHourglassHigh size={14} />}>
+                {t('shipments.costs')}
+              </Tabs.Tab>
+              <Tabs.Tab value="tasks" leftSection={<IconChecklist size={14} />}>
+                {t('shipments.tasks')}
+              </Tabs.Tab>
+            </Tabs.List>
 
-            <Tabs defaultValue="overview">
-              <Tabs.List>
-                <Tabs.Tab value="overview" leftSection={<IconAnchor size={14} />}>
-                  {t('shipments.overview')}
-                </Tabs.Tab>
-                <Tabs.Tab value="milestones" leftSection={<IconCalendar size={14} />}>
-                  {t('shipments.milestones')}
-                </Tabs.Tab>
-                <Tabs.Tab value="documents" leftSection={<IconFileCheck size={14} />}>
-                  {t('shipments.documents')}
-                </Tabs.Tab>
-                <Tabs.Tab value="customs" leftSection={<IconShield size={14} />}>
-                  {t('shipments.customs')}
-                </Tabs.Tab>
-                <Tabs.Tab value="costs" leftSection={<IconHourglassHigh size={14} />}>
-                  {t('shipments.costs')}
-                </Tabs.Tab>
-                <Tabs.Tab value="tasks" leftSection={<IconChecklist size={14} />}>
-                  {t('shipments.tasks')}
-                </Tabs.Tab>
-              </Tabs.List>
+            <Tabs.Panel value="overview" pt="md">
+              <SimpleGrid cols={{ base: 1, sm: 4 }}>
+                <Info label={t('shipments.carrier')} value={selectedShipment.carrier_name} />
+                <Info label={t('shipments.vessel')} value={selectedShipment.vessel_voyage} />
+                <Info label="POL" value={selectedShipment.origin_port} />
+                <Info label="POD" value={selectedShipment.dest_port} />
+                <Info label={t('shipments.etd')} value={selectedShipment.etd} />
+                <Info label={t('shipments.eta')} value={selectedShipment.eta} />
+                <Info label="Customs Stream" value={selectedShipment.customs.stream} />
+                <Info label="Tasks Completed" value={`${selectedShipment.po_tasks.filter((t) => t.status === 'COMPLETED').length}/${selectedShipment.po_tasks.length}`} />
+              </SimpleGrid>
+            </Tabs.Panel>
 
-              <Tabs.Panel value="overview" pt="md">
-                <SimpleGrid cols={{ base: 1, sm: 4 }}>
-                  <Info label={t('shipments.carrier')} value={selectedShipment.carrier_name} />
-                  <Info label={t('shipments.vessel')} value={selectedShipment.vessel_voyage} />
-                  <Info label="POL" value={selectedShipment.origin_port} />
-                  <Info label="POD" value={selectedShipment.dest_port} />
-                  <Info label={t('shipments.etd')} value={selectedShipment.etd} />
-                  <Info label={t('shipments.eta')} value={selectedShipment.eta} />
-                  <Info label="Customs Stream" value={selectedShipment.customs.stream} />
-                  <Info label="Tasks Completed" value={`${selectedShipment.po_tasks.filter((t) => t.status === 'COMPLETED').length}/${selectedShipment.po_tasks.length}`} />
-                </SimpleGrid>
-              </Tabs.Panel>
+            <Tabs.Panel value="milestones" pt="md">
+              <ShipmentMilestonesPanel shipment={selectedShipment} onUpdate={handleUpdateShipment} t={t} />
+            </Tabs.Panel>
 
-              <Tabs.Panel value="milestones" pt="md">
-                <ShipmentMilestonesPanel shipment={selectedShipment} onUpdate={handleUpdateShipment} t={t} />
-              </Tabs.Panel>
+            <Tabs.Panel value="documents" pt="md">
+              <ShipmentDocumentsPanel shipment={selectedShipment} onUpdate={handleUpdateShipment} t={t} />
+            </Tabs.Panel>
 
-              <Tabs.Panel value="documents" pt="md">
-                <ShipmentDocumentsPanel shipment={selectedShipment} onUpdate={handleUpdateShipment} t={t} />
-              </Tabs.Panel>
+            <Tabs.Panel value="customs" pt="md">
+              <ShipmentCustomsPanel shipment={selectedShipment} onUpdate={handleUpdateShipment} />
+            </Tabs.Panel>
 
-              <Tabs.Panel value="customs" pt="md">
-                <ShipmentCustomsPanel shipment={selectedShipment} onUpdate={handleUpdateShipment} />
-              </Tabs.Panel>
+            <Tabs.Panel value="costs" pt="md">
+              <ShipmentCostsPanel shippingMode={selectedShipment.shipping_mode} />
+            </Tabs.Panel>
 
-              <Tabs.Panel value="costs" pt="md">
-                <ShipmentCostsPanel shippingMode={selectedShipment.shipping_mode} />
-              </Tabs.Panel>
-
-              <Tabs.Panel value="tasks" pt="md">
-                <ShipmentTasksPanel tasks={selectedShipment.po_tasks} />
-              </Tabs.Panel>
-            </Tabs>
-          </Stack>
-        </Paper>
+            <Tabs.Panel value="tasks" pt="md">
+              <ShipmentTasksPanel tasks={selectedShipment.po_tasks} />
+            </Tabs.Panel>
+          </Tabs>
+        </Stack>
       ) : null}
 
       {workbench === 'list' ? (

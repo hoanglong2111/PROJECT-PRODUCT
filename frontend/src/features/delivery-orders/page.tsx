@@ -253,27 +253,37 @@ export function DeliveryOrders() {
 
   return (
     <Stack gap="lg">
-      <Group justify="space-between" align="flex-start" gap="md">
-        <div>
-          <Title order={1}>{t('deliveryOrders.title')}</Title>
-          <Text c="dimmed" mt={4}>
-            {t('deliveryOrders.subtitle')}
-          </Text>
-        </div>
-        <Group gap="xs">
-          {selectedDeliveryOrder ? (
-            <Button onClick={closeDetail} leftSection={<IconX size={16} />} variant="subtle">
+      {!selectedDeliveryOrder ? (
+        <Group justify="space-between" align="flex-start" gap="md">
+          <div>
+            <Title order={1}>{t('deliveryOrders.title')}</Title>
+            <Text c="dimmed" mt={4}>
+              {t('deliveryOrders.subtitle')}
+            </Text>
+          </div>
+          <Group gap="xs">
+            <Badge leftSection={<IconGitBranch size={14} />} size="lg" variant="light">
+              {t('deliveryOrders.generatedFromLots')}
+            </Badge>
+            <Button component={Link} to="/workflow" leftSection={<IconGitBranch size={16} />} variant="light">
+              {t('purchaseRequests.inspectWorkflow')}
+            </Button>
+          </Group>
+        </Group>
+      ) : (
+        <Group justify="space-between" align="center" gap="md">
+          <Group gap="xs" align="center">
+            <Button onClick={closeDetail} leftSection={<IconX size={16} />} variant="subtle" size="sm">
               {t('common.backToList')}
             </Button>
-          ) : null}
-          <Badge leftSection={<IconGitBranch size={14} />} size="lg" variant="light">
+            <Text c="dimmed" size="sm">·</Text>
+            <Text fw={600} size="sm">{selectedDeliveryOrder.order_info.order_number}</Text>
+          </Group>
+          <Badge leftSection={<IconGitBranch size={14} />} size="md" variant="light">
             {t('deliveryOrders.generatedFromLots')}
           </Badge>
-          <Button component={Link} to="/workflow" leftSection={<IconGitBranch size={16} />} variant="light">
-            {t('purchaseRequests.inspectWorkflow')}
-          </Button>
         </Group>
-      </Group>
+      )}
 
       {focusedDo || focusedPr ? (
         <Paper withBorder p="md" className="flow-context">
@@ -884,7 +894,7 @@ function Gd1QuotationBiddingPanel({ requestCode }: { requestCode: string }) {
   );
 }
 
-function DeliveryOrderDetail({ deliveryOrder, onClose }: { deliveryOrder: DeliveryOrder; onClose: () => void }) {
+function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: DeliveryOrder; onClose: () => void }) {
   const { documentLabel, t, taskRoleLabel } = useI18n();
   const gates = getOperationalGates(deliveryOrder);
   const risks = getDeliveryOrderRisks(deliveryOrder);
@@ -894,24 +904,25 @@ function DeliveryOrderDetail({ deliveryOrder, onClose }: { deliveryOrder: Delive
       : 0;
 
   return (
-    <Paper withBorder p="lg">
-      <Group justify="space-between" align="flex-start" mb="md">
-        <div>
-          <Title order={2}>{deliveryOrder.order_info.order_number}</Title>
-          <Text c="dimmed">
-            {deliveryOrder.source_po_number ?? deliveryOrder.sap_integration.po_number ?? t('deliveryOrders.poPending')} / {deliveryOrder.source_lot_no ?? deliveryOrder.product_details.lot_number} - {deliveryOrder.product_details.item_name_requested}
-          </Text>
-          <FlowTagBadge tags={deliveryOrder.flow_tags} />
-        </div>
-        <Group gap="xs">
-          <StatusBadge status={deliveryOrder.order_info.status} />
-          <Button variant="subtle" onClick={onClose} leftSection={<IconX size={16} />}>
-            {t('common.backToList')}
-          </Button>
+    <Stack gap="lg">
+      {/* Identity card */}
+      <Paper withBorder p="lg" className="workbench-section">
+        <Group justify="space-between" align="flex-start">
+          <div>
+            <Group gap="xs" mb={4} wrap="nowrap">
+              <Title order={3}>{deliveryOrder.order_info.order_number}</Title>
+              <StatusBadge status={deliveryOrder.order_info.status} />
+            </Group>
+            <Text c="dimmed" size="sm">
+              {deliveryOrder.source_po_number ?? deliveryOrder.sap_integration.po_number ?? t('deliveryOrders.poPending')} / {deliveryOrder.source_lot_no ?? deliveryOrder.product_details.lot_number} - {deliveryOrder.product_details.item_name_requested}
+            </Text>
+            <FlowTagBadge tags={deliveryOrder.flow_tags} />
+          </div>
+          <Text size="xs" c="dimmed" className="tabular-nums">{taskProgress}% {t('tasks.progress')}</Text>
         </Group>
-      </Group>
+      </Paper>
 
-      <Group gap="xs" mb="md">
+      <Group gap="xs">
         <EntityLink type="po" id={deliveryOrder.source_po_number ?? deliveryOrder.sap_integration.po_number} />
         <Button
           component={Link}
@@ -927,7 +938,7 @@ function DeliveryOrderDetail({ deliveryOrder, onClose }: { deliveryOrder: Delive
       {(deliveryOrder.logistics_shipping.missing_documents.length > 0 ||
         deliveryOrder.task_summary.blocked_tasks > 0 ||
         deliveryOrder.warehouse_tracking.delay_days > 0) && (
-        <Alert color="red" icon={<IconAlertTriangle size={18} />} mb="md">
+        <Alert color="red" icon={<IconAlertTriangle size={18} />}>
           {t('deliveryOrders.alertRisk')}
         </Alert>
       )}
@@ -1073,7 +1084,7 @@ function DeliveryOrderDetail({ deliveryOrder, onClose }: { deliveryOrder: Delive
           <SourceLineTable lines={deliveryOrder.source_lines} />
         </Tabs.Panel>
       </Tabs>
-    </Paper>
+    </Stack>
   );
 }
 

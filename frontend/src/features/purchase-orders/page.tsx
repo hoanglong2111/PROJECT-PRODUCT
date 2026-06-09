@@ -217,29 +217,41 @@ export function PurchaseOrders() {
 
   return (
     <Stack gap="lg">
-      <Group justify="space-between" align="flex-start" gap="md">
-        <div>
-          <Title order={1}>{t('purchaseOrders.title')}</Title>
-          <Text c="dimmed" mt={4}>
-            {t('purchaseOrders.subtitle')}
-          </Text>
-        </div>
-        <Group gap="xs">
-          {canCreatePurchaseOrders ? (
-            <Button onClick={openCreate} leftSection={<IconPlus size={16} />} variant={workbench === 'create' ? 'filled' : 'light'}>
-              {t('purchaseOrders.create')}
-            </Button>
-          ) : null}
-          {workbench !== 'list' ? (
-            <Button onClick={closeWorkbench} leftSection={<IconX size={16} />} variant="subtle">
+      {workbench === 'list' ? (
+        <Group justify="space-between" align="flex-start" gap="md">
+          <div>
+            <Title order={1}>{t('purchaseOrders.title')}</Title>
+            <Text c="dimmed" mt={4}>
+              {t('purchaseOrders.subtitle')}
+            </Text>
+          </div>
+          <Group gap="xs">
+            {canCreatePurchaseOrders ? (
+              <Button onClick={openCreate} leftSection={<IconPlus size={16} />} variant="light">
+                {t('purchaseOrders.create')}
+              </Button>
+            ) : null}
+            <Badge leftSection={<IconGitBranch size={14} />} size="lg" variant="light">
+              {'PO -> Lot -> DO'}
+            </Badge>
+          </Group>
+        </Group>
+      ) : (
+        <Group justify="space-between" align="center" gap="md">
+          <Group gap="xs" align="center">
+            <Button onClick={closeWorkbench} leftSection={<IconX size={16} />} variant="subtle" size="sm">
               {t('common.backToList')}
             </Button>
-          ) : null}
-          <Badge leftSection={<IconGitBranch size={14} />} size="lg" variant="light">
+            <Text c="dimmed" size="sm">·</Text>
+            <Text fw={600} size="sm">
+              {workbench === 'create' ? t('purchaseOrders.create') : selectedPo?.po_number ?? ''}
+            </Text>
+          </Group>
+          <Badge leftSection={<IconGitBranch size={14} />} size="md" variant="light">
             {'PO -> Lot -> DO'}
           </Badge>
         </Group>
-      </Group>
+      )}
 
       {workbench === 'create' ? (
         <PurchaseOrderCreatePanel onCancel={closeWorkbench} onCreated={openDetail} />
@@ -439,67 +451,69 @@ function PurchaseOrderCreatePanel({
   };
 
   return (
-    <Paper withBorder p="md" component="form" onSubmit={handleSubmit}>
-      <Stack gap="md">
-        <Group justify="space-between" align="flex-start">
-          <div>
-            <Title order={3}>{t('forms.createPoTitle')}</Title>
-            <Text size="sm" c="dimmed">
-              Supplier order, item rows, and initial LOT plan.
-            </Text>
-          </div>
-          <Group gap="xs">
-            <Button type="button" variant="subtle" onClick={onCancel} leftSection={<IconX size={16} />}>
-              {t('common.cancel')}
-            </Button>
-            <Button type="submit" loading={mutation.isPending} leftSection={<IconShoppingCart size={16} />}>
-              {t('common.save')}
-            </Button>
+    <Stack gap="lg">
+      {mutation.isError ? (
+        <Alert color="red" icon={<IconAlertTriangle size={18} />}>
+          {getApiErrorMessage(mutation.error)}
+        </Alert>
+      ) : null}
+
+      {/* Section: PO Header Info */}
+      <Paper withBorder p="md" component="form" id="po-create-form" onSubmit={handleSubmit} className="workbench-section">
+        <Stack gap="sm">
+          <Group justify="space-between" align="flex-start">
+            <div>
+              <Text fw={700} size="sm" tt="uppercase" lts="0.04em" c="dimmed">{t('forms.createPoTitle')}</Text>
+              <Text size="xs" c="dimmed" mt={2}>Supplier order, item rows, and initial LOT plan.</Text>
+            </div>
+            <Group gap="xs">
+              <Button type="button" variant="subtle" onClick={onCancel} leftSection={<IconX size={16} />}>
+                {t('common.cancel')}
+              </Button>
+              <Button form="po-create-form" type="submit" loading={mutation.isPending} leftSection={<IconShoppingCart size={16} />}>
+                {t('common.save')}
+              </Button>
+            </Group>
           </Group>
-        </Group>
+          <SimpleGrid cols={{ base: 1, md: 4 }}>
+            <TextInput label="PO number" value={poNumber} onChange={(event) => setPoNumber(event.currentTarget.value)} required />
+            <TextInput label={t('purchaseOrders.supplierCode')} value={supplierCode} onChange={(event) => setSupplierCode(event.currentTarget.value)} required />
+            <TextInput label={t('purchaseOrders.supplierName')} value={supplierName} onChange={(event) => setSupplierName(event.currentTarget.value)} required />
+            <TextInput label={t('purchaseOrders.orderDate')} type="date" value={orderDate} onChange={(event) => setOrderDate(event.currentTarget.value)} />
+            <TextInput label={t('forms.currency')} value={currency} onChange={(event) => setCurrency(event.currentTarget.value)} />
+            <TextInput label={t('forms.warehouse')} value={warehouseCode} onChange={(event) => setWarehouseCode(event.currentTarget.value)} />
+            <Info label="Lots" value={String(lots.length)} />
+            <Info label={t('purchaseOrders.total')} value={`${totalAmount.toLocaleString()} ${currency}`} />
+          </SimpleGrid>
+        </Stack>
+      </Paper>
 
-        {mutation.isError ? (
-          <Alert color="red" icon={<IconAlertTriangle size={18} />}>
-            {getApiErrorMessage(mutation.error)}
-          </Alert>
-        ) : null}
+      {/* Section: Item Lines */}
+      <CompactPoItemTable
+        lines={lines}
+        lots={lots}
+        onAddLine={() => setLines((current) => [...current, newCreateLine(current.length)])}
+        onRemoveLine={(lineId) => setLines((current) => (current.length === 1 ? current : current.filter((line) => line.id !== lineId)))}
+        onUpdateLine={updateLine}
+      />
 
-        <SimpleGrid cols={{ base: 1, md: 4 }}>
-          <TextInput label="PO number" value={poNumber} onChange={(event) => setPoNumber(event.currentTarget.value)} required />
-          <TextInput label={t('purchaseOrders.supplierCode')} value={supplierCode} onChange={(event) => setSupplierCode(event.currentTarget.value)} required />
-          <TextInput label={t('purchaseOrders.supplierName')} value={supplierName} onChange={(event) => setSupplierName(event.currentTarget.value)} required />
-          <TextInput label={t('purchaseOrders.orderDate')} type="date" value={orderDate} onChange={(event) => setOrderDate(event.currentTarget.value)} />
-          <TextInput label={t('forms.currency')} value={currency} onChange={(event) => setCurrency(event.currentTarget.value)} />
-          <TextInput label={t('forms.warehouse')} value={warehouseCode} onChange={(event) => setWarehouseCode(event.currentTarget.value)} />
-          <Info label="Lots" value={String(lots.length)} />
-          <Info label={t('purchaseOrders.total')} value={`${totalAmount.toLocaleString()} ${currency}`} />
-        </SimpleGrid>
-
-        <CompactPoItemTable
-          lines={lines}
-          lots={lots}
-          onAddLine={() => setLines((current) => [...current, newCreateLine(current.length)])}
-          onRemoveLine={(lineId) => setLines((current) => (current.length === 1 ? current : current.filter((line) => line.id !== lineId)))}
-          onUpdateLine={updateLine}
-        />
-
-        <LotDraftBoard
-          lots={lots}
-          lineSummaries={lines.map((line) => ({
-            id: line.id,
-            itemCode: line.itemCode || t('purchaseOrders.newItem'),
-            itemName: line.itemName || t('purchaseOrders.unnamedItem'),
-            quantity: line.quantity,
-            unit: line.unit,
-            lotNo: line.lotNumber,
-          }))}
-          onAddLot={addLot}
-          onRemoveLot={removeLot}
-          onMoveLine={(lineId, lotNo) => updateLine(lineId, { lotNumber: lotNo })}
-          saveActions={null}
-        />
-      </Stack>
-    </Paper>
+      {/* Section: Lot Board */}
+      <LotDraftBoard
+        lots={lots}
+        lineSummaries={lines.map((line) => ({
+          id: line.id,
+          itemCode: line.itemCode || t('purchaseOrders.newItem'),
+          itemName: line.itemName || t('purchaseOrders.unnamedItem'),
+          quantity: line.quantity,
+          unit: line.unit,
+          lotNo: line.lotNumber,
+        }))}
+        onAddLot={addLot}
+        onRemoveLot={removeLot}
+        onMoveLine={(lineId, lotNo) => updateLine(lineId, { lotNumber: lotNo })}
+        saveActions={null}
+      />
+    </Stack>
   );
 }
 
@@ -870,37 +884,29 @@ function PurchaseOrderDetailPanel({
   }));
 
   return (
-    <Paper withBorder p="md">
-      <Stack gap="md">
+    <Stack gap="lg">
+      {/* Section: PO Identity & Status */}
+      <Paper withBorder p="md" className="workbench-section">
         <Group justify="space-between" align="flex-start">
           <div>
-            <Title order={3}>{order.po_number}</Title>
-            <Text c="dimmed">
-              {order.supplier_name} - {order.warehouse_code}
+            <Group gap="xs" mb={4}>
+              <Title order={3}>{order.po_number}</Title>
+              <StatusBadge status={order.status} />
+            </Group>
+            <Text c="dimmed" size="sm">
+              {order.supplier_name} · {order.warehouse_code}
             </Text>
+            <FlowTagBadge tags={order.flow_tags ?? []} />
           </div>
-          <Group gap="xs">
-            <StatusBadge status={order.status} />
-            <Button variant="subtle" onClick={onClose} leftSection={<IconX size={16} />}>
-              Close detail
-            </Button>
-          </Group>
+          <Badge color={hasAllocationChanges ? 'orange' : 'teal'} variant="light">
+            {hasAllocationChanges ? 'Unsaved allocation changes' : sourceSummary}
+          </Badge>
         </Group>
+      </Paper>
 
-        <Paper withBorder p="md" className="ops-panel">
-          <Group justify="space-between" align="flex-start" gap="md">
-            <div>
-              <Text fw={700}>PO lot planning</Text>
-              <Text size="sm" c="dimmed">
-                Draft allocation review before DO regeneration.
-              </Text>
-            </div>
-            <Badge color={hasAllocationChanges ? 'orange' : 'teal'} variant="light">
-              {hasAllocationChanges ? 'Unsaved allocation changes' : sourceSummary}
-            </Badge>
-          </Group>
-        </Paper>
-
+      {/* Section: PO Metadata */}
+      <Paper withBorder p="md">
+        <Text fw={700} size="sm" tt="uppercase" lts="0.04em" c="dimmed" mb="sm">{t('forms.orderInfo')}</Text>
         <SimpleGrid cols={{ base: 1, sm: 4 }}>
           <Info label={t('forms.supplierCode')} value={order.supplier_code} />
           <Info label={t('forms.orderDate')} value={order.order_date} />
@@ -911,52 +917,56 @@ function PurchaseOrderDetailPanel({
           <Info label="Payment" value={order.payment_term ?? '-'} />
           <Info label="ETA" value={order.expected_eta ?? '-'} />
         </SimpleGrid>
+      </Paper>
 
-        <PoLineAllocationTable lines={order.line_items} lots={draftLots} assignments={draftAssignments} onMoveLine={moveLine} />
+      {/* Section: Item Allocation */}
+      <PoLineAllocationTable lines={order.line_items} lots={draftLots} assignments={draftAssignments} onMoveLine={moveLine} />
 
-        <LotDraftBoard
-          lots={draftLots}
-          lineSummaries={lineSummaries}
-          onAddLot={addLot}
-          onRemoveLot={removeLot}
-          onMoveLine={moveLine}
-          canRemoveLot={canRemoveLot}
-          saveActions={(
-            <Group gap="xs">
-              <Button variant="subtle" onClick={resetDraft} disabled={!hasAllocationChanges || saveAllocationMutation.isPending} leftSection={<IconRefresh size={16} />}>
-                Reset changes
-              </Button>
-              <Button
-                onClick={() => saveAllocationMutation.mutate()}
-                disabled={!hasAllocationChanges}
-                loading={saveAllocationMutation.isPending}
-                leftSection={<IconDeviceFloppy size={16} />}
-              >
-                Save allocation
-              </Button>
-            </Group>
-          )}
-        />
-
-        {saveAllocationMutation.isError ? (
-          <Alert color="red" icon={<IconAlertTriangle size={18} />}>
-            {getApiErrorMessage(saveAllocationMutation.error)}
-          </Alert>
-        ) : null}
-
-        <Gd1PoStageControlPanel order={order} onUpdated={onUpdated} />
-        <Gd1PoStageChecklist order={order} />
-
-        <Paper withBorder p="md">
-          <Text fw={700} mb="sm">Linked DOs</Text>
+      {/* Section: Lot Board */}
+      <LotDraftBoard
+        lots={draftLots}
+        lineSummaries={lineSummaries}
+        onAddLot={addLot}
+        onRemoveLot={removeLot}
+        onMoveLine={moveLine}
+        canRemoveLot={canRemoveLot}
+        saveActions={(
           <Group gap="xs">
-            {order.linked_do_numbers.map((doCode) => (
-              <EntityLink key={doCode} type="do" id={doCode} />
-            ))}
+            <Button variant="subtle" onClick={resetDraft} disabled={!hasAllocationChanges || saveAllocationMutation.isPending} leftSection={<IconRefresh size={16} />}>
+              Reset changes
+            </Button>
+            <Button
+              onClick={() => saveAllocationMutation.mutate()}
+              disabled={!hasAllocationChanges}
+              loading={saveAllocationMutation.isPending}
+              leftSection={<IconDeviceFloppy size={16} />}
+            >
+              Save allocation
+            </Button>
           </Group>
-        </Paper>
-      </Stack>
-    </Paper>
+        )}
+      />
+
+      {saveAllocationMutation.isError ? (
+        <Alert color="red" icon={<IconAlertTriangle size={18} />}>
+          {getApiErrorMessage(saveAllocationMutation.error)}
+        </Alert>
+      ) : null}
+
+      {/* Section: Stage Control */}
+      <Gd1PoStageControlPanel order={order} onUpdated={onUpdated} />
+      <Gd1PoStageChecklist order={order} />
+
+      {/* Section: Linked DOs */}
+      <Paper withBorder p="md">
+        <Text fw={700} size="sm" tt="uppercase" lts="0.04em" c="dimmed" mb="sm">Linked DOs</Text>
+        <Group gap="xs">
+          {order.linked_do_numbers.map((doCode) => (
+            <EntityLink key={doCode} type="do" id={doCode} />
+          ))}
+        </Group>
+      </Paper>
+    </Stack>
   );
 }
 

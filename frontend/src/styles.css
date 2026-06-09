@@ -324,6 +324,19 @@ html[data-kbfe-resolved-color-scheme='dark'] .global-search-dropdown {
   background: var(--kbfe-ops-risk-background);
 }
 
+/* Workbench section card — used in Create and Detail panels to visually group
+   related fields. Has a subtle left accent border to signal active editing context. */
+.workbench-section {
+  border-left-width: 3px;
+  border-left-color: var(--kbfe-primary-color);
+}
+
+/* Workbench breadcrumb bar — compact context strip shown when outside list view */
+.workbench-breadcrumb {
+  padding: var(--kbfe-space-xs) 0;
+  border-bottom: 1px solid var(--kbfe-border-primary);
+}
+
 .page-state-panel {
   max-width: 56rem;
 }
