@@ -13,7 +13,7 @@ Debug KBFE screens as both a senior UI/UX designer and frontend engineer. The go
 
 - A screen looks visually noisy, text-heavy, misaligned, sparse, or hard to scan.
 - A Mantine/React component behaves incorrectly across desktop, mobile, theme, density, or language.
-- Layout breaks with long PR/PO/shipment/task codes, Vietnamese labels, badges, buttons, tables, tabs, drawers, or forms.
+- Layout breaks with long PO/DO/quotation/shipment/task codes, Vietnamese labels, badges, buttons, tables, tabs, drawers, or forms.
 - Search/filter/table/detail UX does not support the operational task quickly enough.
 - A theme, design token, status color, loading/empty/error state, or accessibility behavior regresses.
 - The user asks for UI/UX review, polish, redesign, bugfix, or "debug UI".

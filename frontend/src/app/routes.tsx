@@ -8,7 +8,7 @@ import { AppShellLayout } from '@shared/components/AppShellLayout';
 
 import {
   deliveryOrderRoles,
-  dtoRoles,
+  shipmentRoles,
   masterDataRoles,
   purchaseOrderRoles,
   taskRoles,
@@ -22,7 +22,7 @@ type RouteConfig = {
 
 const Dashboard = lazyFeature(() => import('@features/dashboard'), 'Dashboard');
 const DeliveryOrders = lazyFeature(() => import('@features/delivery-orders'), 'DeliveryOrders');
-const Dtos = lazyFeature(() => import('@features/dtos'), 'Dtos');
+const Shipments = lazyFeature(() => import('@features/shipments'), 'Shipments');
 const MasterData = lazyFeature(() => import('@features/master-data'), 'MasterData');
 const Login = lazyFeature(() => import('@features/login'), 'Login');
 const NotFound = lazyFeature(() => import('@features/not-found'), 'NotFound');
@@ -41,7 +41,7 @@ const workspaceRoutes: RouteConfig[] = [
   { index: true, element: <Dashboard /> },
   { path: 'purchase-orders', element: withRole(<PurchaseOrders />, purchaseOrderRoles) },
   { path: 'delivery-orders', element: withRole(<DeliveryOrders />, deliveryOrderRoles) },
-  { path: 'dtos', element: withRole(<Dtos />, dtoRoles) },
+  { path: 'shipments', element: withRole(<Shipments />, shipmentRoles) },
   { path: 'master-data', element: withRole(<MasterData />, masterDataRoles) },
   { path: 'tasks', element: withRole(<Tasks />, taskRoles) },
   { path: 'profile', element: <Profile /> },

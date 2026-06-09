@@ -96,13 +96,12 @@ body {
   box-shadow: var(--kbfe-shadow-lg) !important;
 }
 
-html[data-kbfe-appearance='light'] .global-search-dropdown,
-html[data-kbfe-appearance='auto'] .global-search-dropdown {
+html[data-kbfe-resolved-color-scheme='light'] .global-search-dropdown {
   border: 1px solid rgba(255, 255, 255, 0.6) !important;
   box-shadow: var(--kbfe-shadow-lg), inset 0 1.5px 0 rgba(255, 255, 255, 0.8) !important;
 }
 
-html[data-kbfe-appearance='dark'] .global-search-dropdown {
+html[data-kbfe-resolved-color-scheme='dark'] .global-search-dropdown {
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   box-shadow: var(--kbfe-shadow-lg), inset 0 1.5px 0 rgba(255, 255, 255, 0.12) !important;
 }
@@ -480,13 +479,12 @@ html[data-kbfe-density='compact'] .mantine-Input-input {
   border-top: 4px solid var(--kbfe-primary-color) !important;
 }
 
-html[data-kbfe-appearance='light'] .login-card,
-html[data-kbfe-appearance='auto'] .login-card {
+html[data-kbfe-resolved-color-scheme='light'] .login-card {
   border: 1px solid rgba(255, 255, 255, 0.6) !important;
   box-shadow: var(--kbfe-shadow-lg), inset 0 1.5px 0 rgba(255, 255, 255, 0.8) !important;
 }
 
-html[data-kbfe-appearance='dark'] .login-card {
+html[data-kbfe-resolved-color-scheme='dark'] .login-card {
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   box-shadow: var(--kbfe-shadow-lg), inset 0 1.5px 0 rgba(255, 255, 255, 0.12) !important;
 }

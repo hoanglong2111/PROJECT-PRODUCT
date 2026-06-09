@@ -1,6 +1,6 @@
 ---
 name: workflow-businessflow-builder
-description: Use to turn GD1 business requirements, entity docs, ERP/SCM/logistics notes, or UI/API specs into workflow documentation with actors, states, rules, UI touchpoints, backend mapping, SLA, and QA checks.
+description: Use to turn GD1 business requirements, entity docs, SCM/logistics notes, or UI/API specs into workflow documentation with actors, states, rules, UI touchpoints, backend mapping, SLA, and QA checks.
 ---
 
 # GD1 Workflow Businessflow Builder
@@ -12,17 +12,17 @@ Create workflow docs that answer: who does what, when, with which data, on which
 For GD1, the baseline flow is:
 
 ```text
-PR -> Approval -> PO -> Shipment -> 10 Milestones -> Documents + Landed Cost -> ERP/GRN Sync
+PO -> DO (incorporating Quotations) -> Shipment (incorporating Documents & Milestones)
 ```
 
 Use `docs/context/OPERATING_MODEL.md` for state machines, hard rules, SLA timers, and integration events.
 
 ## Use When
 
-- Creating PR, approval, PO, shipment, milestone, landed-cost, or task workflow docs.
+- Creating PO, DO, Quotation, shipment, milestone, or task workflow docs.
 - Converting GD1 business notes into implementation-ready flow.
 - Building swimlanes, state transitions, UI/API mapping, or QA acceptance.
-- Documenting risk, deadline, escalation, task blockers, missing documents, over-shipment, or landed-cost allocation.
+- Documenting risk, deadline, escalation, task blockers, missing documents, or over-shipment.
 
 ## Output Shape
 
@@ -49,7 +49,7 @@ For large flows, produce:
 3. Write high-level flow before screen detail.
 4. Separate happy path from exceptions.
 5. Map each step to UI, API/service, and data mutation.
-6. Add risk/escalation rules for deadlines, blockers, missing docs, shipment delay, over-shipment, or approval timeout.
+6. Add risk/escalation rules for deadlines, blockers, missing docs, shipment delay, or over-shipment.
 7. Add SLA timers from `docs/context/OPERATING_MODEL.md`.
 8. Add QA checks.
 9. List assumptions and conflicts.
@@ -58,11 +58,9 @@ For large flows, produce:
 
 Use these tags in docs and UI filters when helpful:
 
-- `LINEAR`: 1 PR -> 1 PO -> 1 Shipment
-- `SPLIT_PURCHASE`: 1 PR -> N PO
-- `PARTIAL_CONVERSION`: PR line partially converted to PO
-- `PARTIAL_SHIPMENT`: 1 PO line -> N Shipments
-- `CONSOLIDATED_SHIPMENT`: N PO lines -> 1 Shipment
+- `LINEAR`: 1 PO -> 1 DO -> 1 Shipment
+- `SPLIT_LOT`: 1 PO -> N DO (split LOTs)
+- `CONSOLIDATED_SHIPMENT`: N DO lines -> 1 Shipment
 
 ## Quality Bar
 

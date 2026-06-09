@@ -1,6 +1,6 @@
 ---
 name: kbfe-frontend
-description: Use when implementing or refactoring KBFE GD1 React frontend code: routes, Mantine screens, TanStack Query, Zustand filters, entity deep links, PR/PO/Shipment/milestone/task UI, and backend API migration.
+description: Use when implementing or refactoring KBFE GD1 React frontend code: routes, Mantine screens, TanStack Query, Zustand filters, entity deep links, PO/DO/Quotation/Shipment/milestone/task UI, and backend API migration.
 ---
 
 # KBFE GD1 Frontend Skill
@@ -30,11 +30,12 @@ Use the existing stack: React, TypeScript, Vite, React Router, TanStack Query, Z
 
 | Screen | Must keep visible |
 |---|---|
-| Dashboard | PR approval queue, PO delivery risk, shipment risk, task workload, landed-cost attention. |
-| Workflow | PR -> PO -> Shipment -> milestones -> tasks/cost traceability. |
-| PR | PR lines, approval status, required date, conversion progress, linked PO. |
-| PO | supplier, revision, status, source PR lines, shipment progress, landed cost. |
-| Shipment | legacy route may be `/delivery-orders`; show shipment lines, mode, milestones, documents, customs, costs. |
+| Dashboard | PO delivery risk, DO status, quotation pending, shipment risk, task workload, landed-cost attention. |
+| Workflow | PO -> DO -> Quotation -> Shipment -> milestones -> tasks/cost traceability. |
+| PO | General Info, items, LOT management (drag-and-drop), revision, supplier confirmation, DO links, shipment progress, landed cost. |
+| DO | origin/destination warehouse, transport type, status, linked PO, linked shipment, confirm action. |
+| Quotation | version history, current content, send/reject/approve actions, page-to-page comparison. |
+| Shipment | shipment lines, mode, milestones, document management (import/edit/Draft B/L), customs, costs. |
 | Tasks | PO-stage task, assignee, status, due date, blocker, linked milestone. |
 
 ## State Ownership
@@ -48,25 +49,25 @@ Use the existing stack: React, TypeScript, Vite, React Router, TanStack Query, Z
 
 Use stable keys:
 
-- `['purchase-requests']`
 - `['purchase-orders']`
+- `['delivery-orders']`
+- `['quotations']`
 - `['shipments']`
 - `['shipment-milestones', shipmentId]`
 - `['tasks']`
 - `['task-templates']`
 
-Legacy `['delivery-orders']` can remain until code migrates.
-
 ## Deep Links
 
 Preferred GD1 params:
 
-- `pr`
 - `po`
+- `do`
+- `quotation`
 - `shipment`
 - `task`
 
-Legacy `do` params may remain while the runtime still uses delivery-order naming. Closing detail should remove only its own param. Cross-entity links should preserve unrelated params.
+Closing detail should remove only its own param. Cross-entity links should preserve unrelated params.
 
 ## Mutations
 
@@ -74,9 +75,10 @@ Mutation UI must show validation, loading, error, success, and invalidation.
 
 High-value invalidations:
 
-- PR submit/approve/reject/convert: PR, PO, workflow, dashboard.
-- PO send/confirm/revise: PO, tasks, workflow, dashboard.
-- Shipment create/milestone update: shipment, PO, tasks, workflow, dashboard.
+- PO send/confirm/revise: PO, DO, tasks, workflow, dashboard.
+- DO create/confirm/update: DO, PO, shipment, workflow, dashboard.
+- Quotation send/reject/approve: quotation, DO, workflow, dashboard.
+- Shipment create/milestone update: shipment, DO, PO, tasks, workflow, dashboard.
 - Cost create/update: shipment, PO, dashboard.
 - Task update: tasks, PO, shipment, workflow, dashboard.
 
@@ -130,3 +132,5 @@ The KBFE theme system has 3 layers that work together:
 - New write UI has validation, loading, error, success, and invalidation.
 - GD1 naming is used in new UI text; legacy names are compatibility-only.
 - Theme system: color presets work, event themes apply, dark mode + compact density functional.
+- LOT drag-and-drop provides visual feedback and updates DO references.
+- Quotation version comparison renders side-by-side with diff highlighting.

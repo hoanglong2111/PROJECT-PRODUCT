@@ -182,14 +182,6 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
     document.documentElement.dataset.kbfeEventTheme = eventTheme;
   }, [appearanceMode, colorPreset, density, eventTheme, language, resolvedColorScheme, visualTheme]);
 
-  useEffect(() => {
-    if (typeof document === 'undefined') return;
-    const resolved = appearanceMode === 'auto'
-      ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-      : appearanceMode;
-    document.documentElement.style.colorScheme = resolved;
-  }, [appearanceMode]);
-
   // ---------------------------------------------------------------------------
   // Server sync via TanStack Query
   // ---------------------------------------------------------------------------

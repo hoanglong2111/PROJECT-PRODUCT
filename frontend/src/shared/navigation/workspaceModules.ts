@@ -11,7 +11,7 @@ export const workspaceModules = [
   { labelKey: 'shell.dashboard', path: '/' },
   { labelKey: 'shell.purchaseOrders', path: '/purchase-orders', roles: ['ADMIN', 'PIC_MANAGER', 'SALE_STAFF', 'FINANCE_OFFICER'] },
   { labelKey: 'shell.deliveryOrders', path: '/delivery-orders', roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'WAREHOUSE_STAFF'] },
-  { labelKey: 'shell.dtos', path: '/dtos', roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'FINANCE_OFFICER', 'WAREHOUSE_STAFF'] },
+  { labelKey: 'shell.shipments', path: '/shipments', roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'FINANCE_OFFICER', 'WAREHOUSE_STAFF'] },
   { labelKey: 'shell.masterData', path: '/master-data', roles: ['ADMIN', 'PIC_MANAGER'] },
   { labelKey: 'shell.tasks', path: '/tasks', roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'FINANCE_OFFICER', 'WAREHOUSE_STAFF'] },
 ] as const satisfies readonly WorkspaceModule[];

@@ -17,20 +17,6 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE TYPE gd1.gd1_pr_status AS ENUM (
-    'DRAFT',
-    'SUBMITTED',
-    'PARTIALLY_APPROVED',
-    'APPROVED',
-    'REJECTED',
-    'CONVERTED',
-    'CLOSED',
-    'CANCELLED'
-  );
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
-
-DO $$ BEGIN
   CREATE TYPE gd1.gd1_po_status AS ENUM (
     'DRAFT',
     'SENT',
@@ -64,6 +50,30 @@ END $$;
 
 DO $$ BEGIN
   CREATE TYPE gd1.gd1_template_po_type AS ENUM ('SEA', 'AIR', 'DOMESTIC', 'ALL');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE gd1.gd1_do_status AS ENUM (
+    'DRAFT',
+    'CONFIRMED',
+    'READY_TO_SHIP',
+    'IN_TRANSIT',
+    'DELIVERED',
+    'CLOSED',
+    'CANCELLED'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE gd1.gd1_quotation_status AS ENUM (
+    'DRAFT',
+    'SENT',
+    'REJECTED',
+    'FINAL',
+    'CANCELLED'
+  );
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
@@ -150,172 +160,13 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE TYPE gd1.gd1_approval_applies_to AS ENUM ('PR', 'PO', 'BOTH');
+  CREATE TYPE gd1.gd1_approval_applies_to AS ENUM ('PO');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
-CREATE TABLE IF NOT EXISTS gd1.purchase_request (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID NOT NULL,
-  pr_no VARCHAR(30) NOT NULL,
-  title VARCHAR(255) NOT NULL,
-  requester_id UUID,
-  department_id UUID,
-  priority gd1.gd1_priority NOT NULL DEFAULT 'NORMAL',
-  status gd1.gd1_pr_status NOT NULL DEFAULT 'DRAFT',
-  required_date DATE NOT NULL,
-  total_amount NUMERIC(18,4) NOT NULL DEFAULT 0 CHECK (total_amount >= 0),
-  currency_code CHAR(3) NOT NULL CHECK (currency_code = upper(currency_code)),
-  notes TEXT,
-  submitted_at TIMESTAMPTZ,
-  approved_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  created_by UUID,
-  updated_by UUID,
-  version INT NOT NULL DEFAULT 1 CHECK (version >= 1),
-  deleted_at TIMESTAMPTZ,
-  CONSTRAINT purchase_request_submitted_status_check CHECK (
-    status NOT IN ('SUBMITTED', 'PARTIALLY_APPROVED', 'APPROVED', 'REJECTED', 'CONVERTED', 'CLOSED')
-    OR submitted_at IS NOT NULL
-  ),
-  CONSTRAINT purchase_request_approved_status_check CHECK (
-    status NOT IN ('APPROVED', 'CONVERTED', 'CLOSED')
-    OR approved_at IS NOT NULL
-  )
-);
-
-CREATE UNIQUE INDEX IF NOT EXISTS purchase_request_tenant_pr_no_active_uidx
-  ON gd1.purchase_request (tenant_id, pr_no)
-  WHERE deleted_at IS NULL;
-
-CREATE INDEX IF NOT EXISTS purchase_request_tenant_status_required_date_idx
-  ON gd1.purchase_request (tenant_id, status, required_date);
-
-CREATE TABLE IF NOT EXISTS gd1.purchase_request_line (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID NOT NULL,
-  purchase_request_id UUID NOT NULL REFERENCES gd1.purchase_request(id),
-  item_id UUID NOT NULL,
-  line_no INT NOT NULL CHECK (line_no > 0),
-  qty_requested NUMERIC(18,4) NOT NULL CHECK (qty_requested > 0),
-  qty_converted NUMERIC(18,4) NOT NULL DEFAULT 0 CHECK (qty_converted >= 0),
-  unit VARCHAR(20) NOT NULL,
-  target_price NUMERIC(18,4) CHECK (target_price IS NULL OR target_price >= 0),
-  currency_code CHAR(3) NOT NULL CHECK (currency_code = upper(currency_code)),
-  required_date DATE NOT NULL,
-  preferred_supplier_id UUID,
-  note TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  created_by UUID,
-  updated_by UUID,
-  version INT NOT NULL DEFAULT 1 CHECK (version >= 1),
-  deleted_at TIMESTAMPTZ,
-  CONSTRAINT purchase_request_line_qty_converted_check CHECK (qty_converted <= qty_requested)
-);
-
-CREATE UNIQUE INDEX IF NOT EXISTS purchase_request_line_pr_line_no_active_uidx
-  ON gd1.purchase_request_line (purchase_request_id, line_no)
-  WHERE deleted_at IS NULL;
-
-CREATE INDEX IF NOT EXISTS purchase_request_line_item_idx
-  ON gd1.purchase_request_line (tenant_id, item_id);
-
-CREATE TABLE IF NOT EXISTS gd1.purchase_request_revision (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID NOT NULL,
-  purchase_request_id UUID NOT NULL REFERENCES gd1.purchase_request(id),
-  revision_no INT NOT NULL CHECK (revision_no > 0),
-  header_snapshot JSONB NOT NULL,
-  lines_snapshot JSONB NOT NULL,
-  revised_by UUID,
-  revised_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE UNIQUE INDEX IF NOT EXISTS purchase_request_revision_pr_revision_uidx
-  ON gd1.purchase_request_revision (purchase_request_id, revision_no);
-
-CREATE TABLE IF NOT EXISTS gd1.approval_matrix_config (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID NOT NULL,
-  applies_to gd1.gd1_approval_applies_to NOT NULL DEFAULT 'PR',
-  department_id UUID,
-  min_amount NUMERIC(18,4) NOT NULL DEFAULT 0 CHECK (min_amount >= 0),
-  max_amount NUMERIC(18,4) CHECK (max_amount IS NULL OR max_amount > min_amount),
-  currency_code CHAR(3) NOT NULL CHECK (currency_code = upper(currency_code)),
-  step_order INT NOT NULL CHECK (step_order > 0),
-  approver_role gd1.gd1_approver_role NOT NULL,
-  approver_user_id UUID,
-  escalation_timeout_hours INT NOT NULL CHECK (escalation_timeout_hours > 0),
-  is_active BOOLEAN NOT NULL DEFAULT true,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  created_by UUID,
-  updated_by UUID,
-  version INT NOT NULL DEFAULT 1 CHECK (version >= 1),
-  deleted_at TIMESTAMPTZ
-);
-
-CREATE INDEX IF NOT EXISTS approval_matrix_resolver_idx
-  ON gd1.approval_matrix_config (tenant_id, applies_to, department_id, currency_code, min_amount, max_amount);
-
-CREATE UNIQUE INDEX IF NOT EXISTS approval_matrix_active_step_uidx
-  ON gd1.approval_matrix_config (
-    tenant_id,
-    applies_to,
-    department_id,
-    currency_code,
-    min_amount,
-    COALESCE(max_amount, -1),
-    step_order
-  )
-  WHERE deleted_at IS NULL AND is_active = true;
-
-CREATE TABLE IF NOT EXISTS gd1.approval_instance (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID NOT NULL,
-  entity_type VARCHAR(30) NOT NULL CHECK (entity_type IN ('purchase_request', 'purchase_order')),
-  entity_id UUID NOT NULL,
-  matrix_config_id UUID REFERENCES gd1.approval_matrix_config(id),
-  status VARCHAR(30) NOT NULL DEFAULT 'PENDING',
-  started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  completed_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  created_by UUID,
-  updated_by UUID,
-  version INT NOT NULL DEFAULT 1 CHECK (version >= 1),
-  deleted_at TIMESTAMPTZ,
-  CONSTRAINT approval_instance_completed_check CHECK (completed_at IS NULL OR completed_at >= started_at)
-);
-
-CREATE INDEX IF NOT EXISTS approval_instance_entity_idx
-  ON gd1.approval_instance (tenant_id, entity_type, entity_id);
-
-CREATE TABLE IF NOT EXISTS gd1.approval_step (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID NOT NULL,
-  instance_id UUID NOT NULL REFERENCES gd1.approval_instance(id),
-  step_order INT NOT NULL CHECK (step_order > 0),
-  approver_id UUID,
-  approver_role gd1.gd1_approver_role NOT NULL,
-  status VARCHAR(30) NOT NULL DEFAULT 'PENDING',
-  due_at TIMESTAMPTZ,
-  decision_at TIMESTAMPTZ,
-  escalated_to UUID,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  created_by UUID,
-  updated_by UUID,
-  version INT NOT NULL DEFAULT 1 CHECK (version >= 1),
-  deleted_at TIMESTAMPTZ
-);
-
-CREATE UNIQUE INDEX IF NOT EXISTS approval_step_instance_order_active_uidx
-  ON gd1.approval_step (instance_id, step_order)
-  WHERE deleted_at IS NULL;
+-- -----------------------------------------------------------------------------
+-- PURCHASE ORDER TABLES
+-- -----------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS gd1.purchase_order (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -360,7 +211,6 @@ CREATE TABLE IF NOT EXISTS gd1.purchase_order_line (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL,
   purchase_order_id UUID NOT NULL REFERENCES gd1.purchase_order(id),
-  purchase_request_line_id UUID REFERENCES gd1.purchase_request_line(id),
   item_id UUID NOT NULL,
   line_no INT NOT NULL CHECK (line_no > 0),
   status gd1.gd1_po_line_status NOT NULL DEFAULT 'OPEN',
@@ -403,6 +253,173 @@ CREATE TABLE IF NOT EXISTS gd1.purchase_order_revision (
 
 CREATE UNIQUE INDEX IF NOT EXISTS purchase_order_revision_po_revision_uidx
   ON gd1.purchase_order_revision (purchase_order_id, revision_no);
+
+-- -----------------------------------------------------------------------------
+-- DELIVERY ORDER & QUOTATION TABLES
+-- -----------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS gd1.delivery_order (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL,
+  purchase_order_id UUID NOT NULL REFERENCES gd1.purchase_order(id),
+  do_no VARCHAR(30) NOT NULL,
+  origin_warehouse_id UUID,
+  destination_warehouse_id UUID,
+  transport_type VARCHAR(10) NOT NULL,
+  status gd1.gd1_do_status NOT NULL DEFAULT 'DRAFT',
+  confirmed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by UUID,
+  updated_by UUID,
+  version INT NOT NULL DEFAULT 1 CHECK (version >= 1),
+  deleted_at TIMESTAMPTZ
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS delivery_order_tenant_do_no_active_uidx
+  ON gd1.delivery_order (tenant_id, do_no)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS gd1.delivery_order_line (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL,
+  delivery_order_id UUID NOT NULL REFERENCES gd1.delivery_order(id),
+  purchase_order_line_id UUID NOT NULL REFERENCES gd1.purchase_order_line(id),
+  qty_ordered NUMERIC(18,4) NOT NULL CHECK (qty_ordered > 0),
+  qty_shipped NUMERIC(18,4) NOT NULL DEFAULT 0 CHECK (qty_shipped >= 0),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by UUID,
+  updated_by UUID,
+  version INT NOT NULL DEFAULT 1 CHECK (version >= 1),
+  deleted_at TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS gd1.quotation (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL,
+  delivery_order_id UUID NOT NULL REFERENCES gd1.delivery_order(id),
+  quotation_no VARCHAR(30) NOT NULL,
+  current_version_id UUID,
+  status gd1.gd1_quotation_status NOT NULL DEFAULT 'DRAFT',
+  fds_sales_incharge_id UUID,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by UUID,
+  updated_by UUID,
+  version INT NOT NULL DEFAULT 1 CHECK (version >= 1),
+  deleted_at TIMESTAMPTZ
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS quotation_tenant_quotation_no_active_uidx
+  ON gd1.quotation (tenant_id, quotation_no)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS gd1.quotation_version (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL,
+  quotation_id UUID NOT NULL REFERENCES gd1.quotation(id),
+  version_no INT NOT NULL CHECK (version_no > 0),
+  freight_cost NUMERIC(18,4) NOT NULL CHECK (freight_cost >= 0),
+  insurance_cost NUMERIC(18,4) CHECK (insurance_cost IS NULL OR insurance_cost >= 0),
+  other_costs NUMERIC(18,4) CHECK (other_costs IS NULL OR other_costs >= 0),
+  currency_code CHAR(3) NOT NULL CHECK (currency_code = upper(currency_code)),
+  terms TEXT,
+  is_inclusive BOOLEAN NOT NULL DEFAULT true,
+  created_by UUID,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS quotation_version_quotation_version_no_uidx
+  ON gd1.quotation_version (quotation_id, version_no);
+
+-- -----------------------------------------------------------------------------
+-- APPROVAL MATRIX TABLES (For PO Approval)
+-- -----------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS gd1.approval_matrix_config (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL,
+  applies_to gd1.gd1_approval_applies_to NOT NULL DEFAULT 'PO',
+  department_id UUID,
+  min_amount NUMERIC(18,4) NOT NULL DEFAULT 0 CHECK (min_amount >= 0),
+  max_amount NUMERIC(18,4) CHECK (max_amount IS NULL OR max_amount > min_amount),
+  currency_code CHAR(3) NOT NULL CHECK (currency_code = upper(currency_code)),
+  step_order INT NOT NULL CHECK (step_order > 0),
+  approver_role gd1.gd1_approver_role NOT NULL,
+  approver_user_id UUID,
+  escalation_timeout_hours INT NOT NULL CHECK (escalation_timeout_hours > 0),
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by UUID,
+  updated_by UUID,
+  version INT NOT NULL DEFAULT 1 CHECK (version >= 1),
+  deleted_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS approval_matrix_resolver_idx
+  ON gd1.approval_matrix_config (tenant_id, applies_to, department_id, currency_code, min_amount, max_amount);
+
+CREATE UNIQUE INDEX IF NOT EXISTS approval_matrix_active_step_uidx
+  ON gd1.approval_matrix_config (
+    tenant_id,
+    applies_to,
+    department_id,
+    currency_code,
+    min_amount,
+    COALESCE(max_amount, -1),
+    step_order
+  )
+  WHERE deleted_at IS NULL AND is_active = true;
+
+CREATE TABLE IF NOT EXISTS gd1.approval_instance (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL,
+  entity_type VARCHAR(30) NOT NULL CHECK (entity_type IN ('purchase_order')),
+  entity_id UUID NOT NULL,
+  matrix_config_id UUID REFERENCES gd1.approval_matrix_config(id),
+  status VARCHAR(30) NOT NULL DEFAULT 'PENDING',
+  started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  completed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by UUID,
+  updated_by UUID,
+  version INT NOT NULL DEFAULT 1 CHECK (version >= 1),
+  deleted_at TIMESTAMPTZ,
+  CONSTRAINT approval_instance_completed_check CHECK (completed_at IS NULL OR completed_at >= started_at)
+);
+
+CREATE INDEX IF NOT EXISTS approval_instance_entity_idx
+  ON gd1.approval_instance (tenant_id, entity_type, entity_id);
+
+CREATE TABLE IF NOT EXISTS gd1.approval_step (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL,
+  instance_id UUID NOT NULL REFERENCES gd1.approval_instance(id),
+  step_order INT NOT NULL CHECK (step_order > 0),
+  approver_id UUID,
+  approver_role gd1.gd1_approver_role NOT NULL,
+  status VARCHAR(30) NOT NULL DEFAULT 'PENDING',
+  due_at TIMESTAMPTZ,
+  decision_at TIMESTAMPTZ,
+  escalated_to UUID,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by UUID,
+  updated_by UUID,
+  version INT NOT NULL DEFAULT 1 CHECK (version >= 1),
+  deleted_at TIMESTAMPTZ
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS approval_step_instance_order_active_uidx
+  ON gd1.approval_step (instance_id, step_order)
+  WHERE deleted_at IS NULL;
+
+-- -----------------------------------------------------------------------------
+-- SHIPMENT TABLES
+-- -----------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS gd1.shipment (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -467,7 +484,7 @@ CREATE TABLE IF NOT EXISTS gd1.shipment_line (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL,
   shipment_id UUID NOT NULL REFERENCES gd1.shipment(id),
-  purchase_order_line_id UUID NOT NULL REFERENCES gd1.purchase_order_line(id),
+  delivery_order_line_id UUID NOT NULL REFERENCES gd1.delivery_order_line(id),
   qty_shipped NUMERIC(18,4) NOT NULL CHECK (qty_shipped > 0),
   lot_no VARCHAR(100),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -478,11 +495,11 @@ CREATE TABLE IF NOT EXISTS gd1.shipment_line (
   deleted_at TIMESTAMPTZ
 );
 
-CREATE INDEX IF NOT EXISTS shipment_line_po_line_idx
-  ON gd1.shipment_line (purchase_order_line_id);
+CREATE INDEX IF NOT EXISTS shipment_line_do_line_idx
+  ON gd1.shipment_line (delivery_order_line_id);
 
 CREATE UNIQUE INDEX IF NOT EXISTS shipment_line_unique_lot_active_uidx
-  ON gd1.shipment_line (shipment_id, purchase_order_line_id, COALESCE(lot_no, ''))
+  ON gd1.shipment_line (shipment_id, delivery_order_line_id, COALESCE(lot_no, ''))
   WHERE deleted_at IS NULL;
 
 CREATE TABLE IF NOT EXISTS gd1.shipment_milestone (
@@ -533,6 +550,10 @@ CREATE TABLE IF NOT EXISTS gd1.shipment_cost (
 
 CREATE INDEX IF NOT EXISTS shipment_cost_tenant_shipment_type_idx
   ON gd1.shipment_cost (tenant_id, shipment_id, cost_type);
+
+-- -----------------------------------------------------------------------------
+-- PO-STAGE TASKS TABLES
+-- -----------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS gd1.po_task_template (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -609,6 +630,10 @@ CREATE TABLE IF NOT EXISTS gd1.task_audit_log (
 
 CREATE INDEX IF NOT EXISTS task_audit_log_task_created_idx
   ON gd1.task_audit_log (task_id, created_at);
+
+-- -----------------------------------------------------------------------------
+-- SUPPORT TABLES (FILE STORAGE, NOTIFICATION, SLA, INTEGRATION, OUTBOX, INBOX)
+-- -----------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS gd1.file_storage (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -798,11 +823,5 @@ CREATE TABLE IF NOT EXISTS gd1.forwarder_tracking_raw (
   shipment_id UUID REFERENCES gd1.shipment(id),
   source VARCHAR(80) NOT NULL,
   raw_payload JSONB NOT NULL,
-  parsed_milestone_code gd1.gd1_milestone_code,
-  parsed_date DATE,
-  received_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  applied_at TIMESTAMPTZ
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
-CREATE INDEX IF NOT EXISTS forwarder_tracking_raw_shipment_idx
-  ON gd1.forwarder_tracking_raw (tenant_id, shipment_id, received_at);

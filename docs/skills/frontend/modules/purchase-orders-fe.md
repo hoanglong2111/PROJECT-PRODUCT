@@ -4,7 +4,7 @@ Use this when implementing `frontend/src/features/purchase-orders/page.tsx`.
 
 ## Query
 
-Use `fetchPurchaseOrders` with query key `purchase-orders`. Target GD1 data should include source PR lines, revision, supplier confirmation, ETA/ETD, shipment progress, and landed-cost summary.
+Use `fetchPurchaseOrders` with query key `['purchase-orders']`. Target GD1 data should include revision, supplier confirmation, ETA/ETD, LOTs, DOs, and shipment progress.
 
 ## State
 
@@ -13,6 +13,7 @@ Current state:
 - local search string
 - selected PO
 - drawer open state
+- drag-and-drop state (for LOT assignment)
 
 URL param:
 
@@ -24,8 +25,8 @@ Search dimensions:
 
 - `po_no`
 - supplier
-- source PR
 - item lines
+- delivery order number
 - shipment number
 - supplier reference
 
@@ -50,10 +51,10 @@ Drawer opens when:
 Show:
 
 - PO header, revision, supplier, terms
-- source PR lines
 - PO lines and quantities
-- linked shipments
-- landed cost allocation
+- **LOT Management board** (enables splitting LOTs and dragging items between them)
+- **Linked Delivery Orders (DOs)** and confirmation status
+- **Linked shipments**
 - PO-stage tasks
 
 ## Mutations
@@ -64,6 +65,8 @@ Target actions:
 - confirm supplier response
 - revise PO
 - cancel PO
-- create shipment from selected PO lines
+- split LOT / reassign items to LOT (drag-and-drop)
+- confirm DO
+- create shipment from DO lines
 
-Invalidate PO, PR, shipment, tasks, workflow, dashboard after mutations.
+Invalidate `purchase-orders`, `delivery-orders`, `shipments`, `tasks`, `workflow`, and `dashboard` after mutations.

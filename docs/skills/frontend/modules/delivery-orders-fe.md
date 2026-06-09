@@ -1,83 +1,69 @@
-# Shipment Frontend Module
+# Delivery Orders Frontend Module
 
-Use this when implementing the legacy `frontend/src/features/delivery-orders/page.tsx` route or a future shipment route.
-
-## Naming
-
-GD1 canonical name is `Shipment`. Current runtime and route may still say Delivery Orders or DO. Treat that as compatibility only.
+Use this when implementing `frontend/src/features/delivery-orders/page.tsx`.
 
 ## Query
 
-Current compatibility:
-
-- `fetchDeliveryOrders` with query key `delivery-orders`
-
-Target GD1:
-
-- `fetchShipments` with query key `shipments`
-- `fetchShipmentMilestones`
-- `fetchShipmentCosts`
+- Use `fetchDeliveryOrders` with query key `['delivery-orders']`. Expose DO header, items, warehouses, transport type, and confirmation status.
+- Use `fetchQuotationsForDO` with query key `['delivery-orders', doId, 'quotations']` to fetch the versions of quotations linked to the DO.
 
 ## State
 
 Use Zustand for:
 
-- `shipmentSearch`
-- `shipmentStatusFilter`
-- `shipmentRiskOnly`
-- `shipmentModeFilter`
+- `doSearch`
+- `doStatusFilter`
+- `doTransportFilter`
+- `selectedQuotationVersionLeft`, `selectedQuotationVersionRight` (for side-by-side version comparison)
 
-Use URL params:
+Use URL param:
 
-- preferred: `shipment`
-- legacy: `do`
-- context: `pr`, `po`
+- `do`
 
 ## Filtering
 
 Search dimensions:
 
-- shipment number
-- PO number
-- PR number
-- supplier/forwarder
-- B/L or AWB
-- container number
-- vessel/flight
+- DO code
+- PO reference
+- Origin warehouse
+- Destination warehouse
 
-Risk is:
+Core filters:
 
-- overdue/missing milestone actual date
-- missing required document
-- customs yellow/red
-- cost allocation pending
-- linked task blocked/overdue
-- ETA passed without ATD
+- Draft
+- Confirmed
+- Ready to ship
+- In transit
+- Delivered
+- Closed
+- Cancelled
 
-## Detail
+## Detail Drawer / Panel
 
-Use tabs:
+Drawer/panel opens when:
 
-- Overview
-- Lines
-- Milestones
-- Documents
-- Customs
-- Costs
-- Tasks
-- Audit
+- User clicks a row or action icon.
+- Route contains matching `?do=`.
 
-Selected detail should remain synchronized with route params.
+Tabs inside the DO Drawer:
+1. **General**: DO info, items list with quantities, linked PO.
+2. **Quotation**:
+   - Current quote details, freight amount, and status.
+   - 1-hour countdown timer for SENT status (calculated from `sentAt` + 1 hour).
+   - Version list table.
+   - Side-by-side version comparison panel utilizing a structured diff-like UI.
+3. **Audit**: State transition logs.
 
 ## Mutations
 
 Target actions:
 
-- create shipment from PO lines
-- update milestone actual date
-- upload milestone document
-- add/update shipment cost
-- update customs stream
-- trigger/inspect warehouse-arrival event
+- Confirm DO (origin, destination, transport mode, dates)
+- Cancel DO
+- **Quotation actions**:
+  - `sendQuotation(doId, payload)` -> transitions quotation status to SENT, sets `sentAt`.
+  - `rejectQuotation(doId, quotationId, reason)` -> transitions to REJECTED.
+  - `approveQuotation(doId, quotationId)` -> transitions to FINAL.
 
-Invalidate shipment, PO, tasks, workflow, dashboard after mutations.
+Invalidate `delivery-orders`, `purchase-orders`, `workflow`, and `dashboard` after mutations.

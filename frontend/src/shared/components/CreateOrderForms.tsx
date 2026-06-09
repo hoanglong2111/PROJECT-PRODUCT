@@ -1,11 +1,13 @@
 import {
   ActionIcon,
   Alert,
+  Badge,
   Button,
   Checkbox,
   Drawer,
   Group,
   NumberInput,
+  Paper,
   Select,
   SimpleGrid,
   Stack,
@@ -66,6 +68,7 @@ type PurchaseOrderFormValues = {
     taxNote: string;
     unit: string;
     vatRate: number;
+    lotNumber: string;
   }>;
 };
 
@@ -126,6 +129,7 @@ function emptyPurchaseOrderSourceLine(): PurchaseOrderFormValues['sourceLines'][
     taxNote: '',
     unit: 'kg',
     vatRate: 0,
+    lotNumber: 'Lô 1',
   };
 }
 
@@ -145,6 +149,10 @@ export function CreatePurchaseOrderDrawer({
     label: `${item.item_code} - ${item.hs_code} - ${item.source_reference || item.declaration_type || item.id} - ${item.item_name}`,
   }));
   const partnersList = getPartners().filter((p) => p.type === 'SUPPLIER');
+
+  // Track LOTs in state
+  const [lots, setLots] = useState<string[]>(['Lô 1']);
+
   const form = useForm<PurchaseOrderFormValues>({
     initialValues: {
       currency: 'USD',
@@ -178,6 +186,7 @@ export function CreatePurchaseOrderDrawer({
       },
     },
   });
+
   const mutation = useMutation({
     mutationFn: createPurchaseOrder,
     onSuccess: async (order) => {
@@ -187,6 +196,7 @@ export function CreatePurchaseOrderDrawer({
         queryClient.invalidateQueries({ queryKey: ['global-search'] }),
       ]);
       form.reset();
+      setLots(['Lô 1']);
       onCreated?.(order);
       onClose();
     },
@@ -195,6 +205,10 @@ export function CreatePurchaseOrderDrawer({
   const handleClose = () => {
     mutation.reset();
     onClose();
+  };
+
+  const handleAddLot = () => {
+    setLots([...lots, `Lô ${lots.length + 1}`]);
   };
 
   return (
@@ -221,6 +235,7 @@ export function CreatePurchaseOrderDrawer({
               taxNote: line.taxNote.trim(),
               unit: line.unit.trim(),
               vatRate: Number(line.vatRate) || 0,
+              lotNumber: line.lotNumber || 'Lô 1',
             })),
             supplierCode: values.supplierCode.trim(),
             supplierName: values.supplierName.trim(),
@@ -238,6 +253,7 @@ export function CreatePurchaseOrderDrawer({
             </Alert>
           ) : null}
 
+          {/* Section 1: Source Lines (Items Input) */}
           <Stack gap="xs">
             <Group justify="space-between">
               <Text fw={700}>{t('forms.sourceLines')}</Text>
@@ -254,7 +270,7 @@ export function CreatePurchaseOrderDrawer({
               <Stack key={index} gap="xs" p="sm" style={{ border: '1px solid var(--mantine-color-default-border)', borderRadius: 8 }}>
                 <Group justify="space-between">
                   <Text size="sm" fw={700}>
-                    #{index + 1}
+                    Mặt hàng #{index + 1}
                   </Text>
                   <ActionIcon
                     aria-label={t('common.cancel')}
@@ -296,23 +312,106 @@ export function CreatePurchaseOrderDrawer({
                   <TextInput label={t('forms.itemName')} placeholder={t('forms.itemNamePlaceholder')} {...form.getInputProps(`sourceLines.${index}.itemName`)} />
                   <NumberInput label={t('forms.quantity')} min={1} thousandSeparator="," {...form.getInputProps(`sourceLines.${index}.quantity`)} />
                   <TextInput label={t('forms.unit')} placeholder={t('forms.unitPlaceholder')} {...form.getInputProps(`sourceLines.${index}.unit`)} />
-                  <TextInput label="Nhóm/Mã định danh" readOnly {...form.getInputProps(`sourceLines.${index}.itemGroup`)} />
-                  <TextInput label="GRPO / Hợp đồng" readOnly {...form.getInputProps(`sourceLines.${index}.sourceReference`)} />
-                  <TextInput label="Loại hình / PTVC" readOnly {...form.getInputProps(`sourceLines.${index}.declarationType`)} />
-                  <TextInput label="Mã HS" readOnly {...form.getInputProps(`sourceLines.${index}.hsCode`)} />
-                  <TextInput label="Thuế NK (%)" readOnly {...form.getInputProps(`sourceLines.${index}.dutyRate`)} />
-                  <TextInput label="VAT (%)" readOnly {...form.getInputProps(`sourceLines.${index}.vatRate`)} />
-                  <TextInput label="Mã biểu thuế" readOnly {...form.getInputProps(`sourceLines.${index}.tariffCode`)} />
-                  <TextInput label="Mã phân loại" readOnly {...form.getInputProps(`sourceLines.${index}.classificationCode`)} />
-                  <TextInput label="C/O" readOnly {...form.getInputProps(`sourceLines.${index}.coNote`)} />
-                  <TextInput label="Ghi chú thuế" readOnly {...form.getInputProps(`sourceLines.${index}.taxNote`)} />
+                  <Select
+                    label="Phân bổ vào Lô"
+                    data={lots.map(l => ({ label: l, value: l }))}
+                    value={line.lotNumber}
+                    onChange={(val) => form.setFieldValue(`sourceLines.${index}.lotNumber`, val || 'Lô 1')}
+                  />
                 </SimpleGrid>
               </Stack>
             ))}
           </Stack>
 
+          {/* Section 2: Visual LOT Splitter & Drag and Drop */}
+          <Paper withBorder p="md" mt="sm" style={{ backgroundColor: 'var(--mantine-color-dark-8)' }}>
+            <Stack gap="xs">
+              <Group justify="space-between">
+                <div>
+                  <Text fw={700}>Chia Lô Hàng (LOT Splitter)</Text>
+                  <Text size="xs" c="dimmed">
+                    Mặc định tất cả vật tư thuộc Lô 1 (DO 1). Kéo thả vật tư giữa các ô bên dưới để phân chia lô.
+                  </Text>
+                </div>
+                <Button size="xs" onClick={handleAddLot} leftSection={<IconPlus size={14} />}>
+                  Tạo Lô mới
+                </Button>
+              </Group>
+
+              <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm" mt="xs">
+                {lots.map((lotName) => {
+                  const lotItems = form.values.sourceLines
+                    .map((line, idx) => ({ line, idx }))
+                    .filter((item) => (item.line.lotNumber || 'Lô 1') === lotName);
+
+                  return (
+                    <Paper
+                      key={lotName}
+                      withBorder
+                      p="xs"
+                      onDragOver={(e: React.DragEvent) => e.preventDefault()}
+                      onDrop={(e: React.DragEvent) => {
+                        const origIdx = parseInt(e.dataTransfer.getData('sourceLineIndex'));
+                        if (!isNaN(origIdx)) {
+                          form.setFieldValue(`sourceLines.${origIdx}.lotNumber`, lotName);
+                        }
+                      }}
+                      style={{
+                        minHeight: 120,
+                        backgroundColor: 'var(--mantine-color-dark-9)',
+                        borderStyle: 'dashed',
+                        borderColor: 'var(--mantine-color-blue-outline)',
+                      }}
+                    >
+                      <Group justify="space-between" mb="xs">
+                        <Text fw={700} size="sm" c="blue">
+                          {lotName}
+                        </Text>
+                        <Badge size="xs">{lotItems.length} mặt hàng</Badge>
+                      </Group>
+
+                      <Stack gap="xs">
+                        {lotItems.map((item) => (
+                          <Paper
+                            key={item.idx}
+                            withBorder
+                            p="xs"
+                            draggable
+                            onDragStart={(e: React.DragEvent) => {
+                              e.dataTransfer.setData('sourceLineIndex', item.idx.toString());
+                            }}
+                            style={{
+                              cursor: 'grab',
+                              backgroundColor: 'var(--mantine-color-dark-7)',
+                            }}
+                          >
+                            <Text size="xs" fw={600} truncate>
+                              {item.line.itemCode || `Mặt hàng #${item.idx + 1}`}
+                            </Text>
+                            <Text size="xs" c="dimmed" truncate>
+                              {item.line.itemName || 'Chưa đặt tên'}
+                            </Text>
+                            <Text size="xs" fw={700}>
+                              SL: {item.line.quantity} {item.line.unit}
+                            </Text>
+                          </Paper>
+                        ))}
+                        {lotItems.length === 0 && (
+                          <Text size="xs" c="dimmed" fs="italic" style={{ textAlign: 'center', marginTop: 20 }}>
+                            Kéo thả vật tư vào đây
+                          </Text>
+                        )}
+                      </Stack>
+                    </Paper>
+                  );
+                })}
+              </SimpleGrid>
+            </Stack>
+          </Paper>
+
+          {/* Section 3: General Information */}
           <SimpleGrid cols={{ base: 1, sm: 2 }}>
-            <TextInput label="PO / Hợp đồng" placeholder="KBI-SDEC-2604 (LOT 1)" {...form.getInputProps('poNumber')} />
+            <TextInput label="PO / Hợp đồng" placeholder="KBI-SDEC-2604" {...form.getInputProps('poNumber')} />
             <Select
               label={t('forms.supplierCode')}
               placeholder="Chọn nhà cung cấp"

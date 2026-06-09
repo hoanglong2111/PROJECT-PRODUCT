@@ -7,7 +7,7 @@ Use this when designing or changing the Workflow route.
 Workflow shows GD1 traceability across:
 
 ```text
-PR -> PO -> Shipment -> Milestones -> Documents -> Costs -> Tasks
+PO -> DO (with Quotations) -> Shipment (with Documents & Milestones) -> Tasks
 ```
 
 It is not a pure status timeline; it is a relationship map for operational inspection.
@@ -15,33 +15,28 @@ It is not a pure status timeline; it is a relationship map for operational inspe
 ## Layout
 
 - Page header with action to open Shipment board.
-- Context alert when deep-linked by `pr`, `po`, `shipment`, or legacy `do`.
-- Metrics: PR chains, active shipments, missing documents, blocked tasks, cost pending.
+- Context alert when deep-linked by `po`, `do`, or `shipment`.
+- Metrics: active PO chains, pending DOs, active shipments, missing documents, blocked tasks.
 - End-to-end timeline summary.
-- Wide table with each PR/PO/shipment chain.
+- Wide table with each PO/DO/shipment chain.
 
 ## Row Requirements
 
 Each row should show:
 
-- PR demand and conversion progress.
-- linked PO and status.
-- linked shipment and milestone progress.
-- document readiness.
-- landed cost state.
-- task workload/blockers.
-- direct flow actions.
+- PO details and status.
+- Linked DO details, transport type, and active quotation status.
+- Linked shipment and milestone progress.
+- Document readiness (uploaded vs required).
+- Task workload/blockers.
+- Direct flow actions.
 
 ## Deep-Link UX
 
-When opened with `?pr=`, `?po=`, or `?shipment=`:
+When opened with `?po=`, `?do=`, or `?shipment=`:
 
 - show a context alert.
 - filter/focus the relevant chain.
 - keep links to related entities visible.
 
-If no match exists, keep all rows usable and show a warning in future implementation.
-
-## Divergent Mode
-
-Workflow may eventually become a graph, swimlane, or timeline board. Preserve entity ids, direct links, risk reasons, and quantity traceability.
+If no match exists, keep all rows usable.

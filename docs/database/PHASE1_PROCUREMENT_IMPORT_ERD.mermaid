@@ -2,37 +2,6 @@
 erDiagram
   direction LR
 
-  purchase_request {
-    UUID id PK
-    UUID tenant_id
-    VARCHAR pr_no UK
-    VARCHAR title
-    UUID requester_id
-    UUID department_id
-    gd1_priority priority
-    gd1_pr_status status
-    DATE required_date
-    NUMERIC total_amount
-    CHAR currency_code
-    TIMESTAMPTZ submitted_at
-    TIMESTAMPTZ approved_at
-  }
-
-  purchase_request_line {
-    UUID id PK
-    UUID tenant_id
-    UUID purchase_request_id FK
-    UUID item_id
-    INT line_no
-    NUMERIC qty_requested
-    NUMERIC qty_converted
-    VARCHAR unit
-    NUMERIC target_price
-    CHAR currency_code
-    DATE required_date
-    UUID preferred_supplier_id
-  }
-
   purchase_order {
     UUID id PK
     UUID tenant_id
@@ -57,7 +26,6 @@ erDiagram
     UUID id PK
     UUID tenant_id
     UUID purchase_order_id FK
-    UUID purchase_request_line_id FK
     UUID item_id
     INT line_no
     gd1_po_line_status status
@@ -65,7 +33,52 @@ erDiagram
     NUMERIC qty_shipped
     NUMERIC qty_received
     NUMERIC unit_price
-    NUMERIC landed_cost_alloc
+  }
+
+  delivery_order {
+    UUID id PK
+    UUID tenant_id
+    UUID purchase_order_id FK
+    VARCHAR do_no UK
+    UUID origin_warehouse_id
+    UUID destination_warehouse_id
+    VARCHAR transport_type
+    gd1_do_status status
+    TIMESTAMPTZ confirmed_at
+  }
+
+  delivery_order_line {
+    UUID id PK
+    UUID tenant_id
+    UUID delivery_order_id FK
+    UUID purchase_order_line_id FK
+    NUMERIC qty_ordered
+    NUMERIC qty_shipped
+  }
+
+  quotation {
+    UUID id PK
+    UUID tenant_id
+    UUID delivery_order_id FK
+    VARCHAR quotation_no UK
+    UUID current_version_id FK
+    gd1_quotation_status status
+    UUID fds_sales_incharge_id
+  }
+
+  quotation_version {
+    UUID id PK
+    UUID tenant_id
+    UUID quotation_id FK
+    INT version_no
+    NUMERIC freight_cost
+    NUMERIC insurance_cost
+    NUMERIC other_costs
+    CHAR currency_code
+    TEXT terms
+    BOOLEAN is_inclusive
+    UUID created_by
+    TIMESTAMPTZ created_at
   }
 
   shipment {
@@ -92,7 +105,7 @@ erDiagram
     UUID id PK
     UUID tenant_id
     UUID shipment_id FK
-    UUID purchase_order_line_id FK
+    UUID delivery_order_line_id FK
     NUMERIC qty_shipped
     VARCHAR lot_no
   }
@@ -107,18 +120,6 @@ erDiagram
     DATE actual_date
     UUID recorded_by
     gd1_milestone_source source
-  }
-
-  shipment_cost {
-    UUID id PK
-    UUID tenant_id
-    UUID shipment_id FK
-    gd1_cost_type cost_type
-    NUMERIC amount
-    CHAR currency_code
-    NUMERIC exchange_rate
-    gd1_alloc_method alloc_method
-    VARCHAR invoice_ref
   }
 
   po_stage_task {
@@ -147,28 +148,14 @@ erDiagram
     BOOLEAN is_active
   }
 
-  approval_matrix_config {
-    UUID id PK
-    UUID tenant_id
-    gd1_approval_applies_to applies_to
-    UUID department_id
-    NUMERIC min_amount
-    NUMERIC max_amount
-    CHAR currency_code
-    INT step_order
-    gd1_approver_role approver_role
-    UUID approver_user_id
-    INT escalation_timeout_hours
-    BOOLEAN is_active
-  }
-
-  purchase_request ||--o{ purchase_request_line : has
-  purchase_request_line ||--o{ purchase_order_line : sourced_by
   purchase_order ||--o{ purchase_order_line : has
-  purchase_order_line ||--o{ shipment_line : shipped_by
+  purchase_order ||--o{ delivery_order : has
+  delivery_order ||--o{ delivery_order_line : has
+  purchase_order_line ||--o{ delivery_order_line : logs
+  delivery_order ||--o| quotation : requests
+  quotation ||--o{ quotation_version : versions
+  delivery_order_line ||--o{ shipment_line : shipped_by
   shipment ||--o{ shipment_line : contains
   shipment ||--o{ shipment_milestone : tracks
-  shipment ||--o{ shipment_cost : costs
   purchase_order ||--o{ po_stage_task : owns
   po_task_template ||--o{ po_stage_task : generates
-  approval_matrix_config }o..o{ purchase_request : resolves_approval

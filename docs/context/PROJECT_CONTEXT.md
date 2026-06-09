@@ -1,9 +1,9 @@
 # KBFE Project Context
 
-KBFE is the Kim Binh Supply Chain Platform for GD1: Procurement & Import Tracking. GD1 digitizes the flow from purchase demand to warehouse arrival for imported and domestic procurement:
+KBFE is the Kim Binh Supply Chain Platform for GD1: Procurement & Import Tracking. GD1 digitizes the flow from purchase order creation to warehouse arrival for imported and domestic procurement:
 
 ```text
-PR -> Approval -> PO -> Import Shipment -> 10 Milestones -> Documents + Landed Cost -> ERP/GRN Sync
+PO -> DO -> Quotation -> Shipment -> 10 Milestones -> Documents + Landed Cost -> ERP/GRN Sync
 ```
 
 The current codebase still contains older Logistics Control Tower runtime names such as `delivery_orders`. For new documentation, data model planning, UI/API design, and migration planning, use the GD1 vocabulary below. If code still uses a legacy runtime name, document the mapping instead of silently renaming it.
@@ -48,13 +48,14 @@ The current codebase still contains older Logistics Control Tower runtime names 
 
 In scope:
 
-- Manual/template PR creation.
-- Multi-level approval workflow by department and PR/PO value.
-- PR to PO conversion, including partial conversion and split by supplier.
+- PO creation (manual or template) with General Info + LOT-based item organization.
+- LOT management: default 1 LOT (= 1 DO). Split into N LOTs to create N DOs. Drag-and-drop items between LOTs for no-code reassignment.
+- Delivery Order (DO) as the unit of delivery between PO and Shipment: origin warehouse, destination warehouse, transport type, confirmation status.
+- FDS freight-forwarding Quotation with version workflow: Draft(n) → Sent → Reject/Revise loop → Final (Approved). Page-to-page version comparison.
 - PO SEA/AIR/DOMESTIC lifecycle, supplier confirmation, and revision/versioning.
-- Import shipment creation from one or more PO lines.
+- Import shipment creation from one or more DO lines.
 - 10 shipment milestones from booking confirmation to EDO and delivery.
-- Document upload per shipment milestone.
+- Document management per shipment milestone: import, edit, version chứng từ (CI, PL, CO, Draft B/L, Final B/L, AWB, customs declarations).
 - Landed cost per PO line, allocated by value, weight, or quantity.
 - SLA enforcement for FDS-KBI SOP stages.
 - PO-stage task assignment, templates, overdue detection, and milestone auto-close.
@@ -64,6 +65,9 @@ In scope:
 
 Out of scope for GD1:
 
+- Purchase Request (PR) — removed from GD1 scope entirely.
+- Cost & Settlement (Landed Cost allocation, Debit Notes, invoicing, debt reconciliation) — deferred/skipped.
+- ERP / WMS Integration — deferred/skipped.
 - Bin/rack warehouse location management.
 - WMS putaway/scanning and full GRN warehouse operation.
 - BOM, production orders, MRP, and purchase demand forecasting.
@@ -72,13 +76,77 @@ Out of scope for GD1:
 
 | GD1 entity | Table in GD1 document | Purpose |
 |---|---|---|
-| Purchase Request | `purchase_request`, `purchase_request_line` | Demand header and item lines, approval, required date, estimated value. |
-| Approval Matrix | `approval_matrix_config` | Department/value based approval chain and escalation timeout. |
-| Purchase Order | `purchase_order`, `purchase_order_line` | Supplier order, revision, terms, ETA/ETD, ordered/shipped/received quantities. |
-| Shipment | `shipment`, `shipment_line` | Import lot linked to one or more PO lines, mode, forwarder, B/L/AWB, route, dates, customs stream. |
+| Purchase Order | `purchase_order`, `purchase_order_line` | Supplier order with General Info (supplier, incoterm, payment terms, currency, ETD/ETA) and LOT-based item grouping. Revision, terms, ordered/shipped/received quantities. |
+| Delivery Order | `delivery_order`, `delivery_order_line` | Unit of delivery between PO and Shipment. Each LOT creates 1 DO. Contains origin warehouse, destination warehouse, transport type (SEA/AIR/ROAD/RAIL), confirmation status, and delivery dates. |
+| Quotation | `quotation`, `quotation_version` | FDS freight-forwarding quotation to KBI per SOP FDS-KBI R7. Draft/Sent/Rejected/Final workflow with versioning and page-to-page comparison. |
+| Shipment | `shipment`, `shipment_line` | Import lot linked to one or more DO lines, mode, forwarder, B/L/AWB, route, dates, customs stream. |
 | Milestone | `shipment_milestone` | 10 runtime checkpoints with planned/actual dates and source. |
 | Cost | `shipment_cost` | Freight, insurance, duty, VAT, local charges, demurrage, and allocation method. |
 | Task | `po_stage_task`, `po_task_template` | Owned work generated per PO type and PO stage, optionally linked to shipment milestone. |
+| Approval Matrix | `approval_matrix_config` | Department/value based approval chain and escalation timeout (applicable to PO approval). |
+
+## PO Structure — General Info + LOT Management
+
+### Create PO Form UX
+
+Group form fields logically by human workflow (Họ → Tên → ... pattern):
+
+| Section | Fields |
+|---|---|
+| **Thông tin chung (General)** | Supplier → PO Type (SEA/AIR/DOMESTIC) → Incoterm → Payment Term → Currency → Exchange Rate → ETD/ETA → Notes |
+| **Items** | Add items: Item → Qty → Unit Price → Tax → Discount → Expected ETA per line |
+| **LOT Management** | Default: all items in 1 LOT = 1 DO. Split button to create additional LOTs. Drag-and-drop items between LOTs for no-code reassignment. |
+
+### PO Detail View
+
+| Element | What it shows |
+|---|---|
+| Header | PO number, supplier, status, revision, dates |
+| General Info | All input fields from creation |
+| Items summary | All items in this PO with qty ordered/shipped/received |
+| LOT view | Which LOT each item belongs to. If not split, shows "1 LOT (default)". If split, shows LOT breakdown with item assignments. |
+| DO links | Each LOT links to its corresponding DO |
+
+### LOT ↔ DO Relationship
+
+- 1 PO → mặc định 1 LOT = 1 DO
+- Tách LOT → mỗi LOT tạo 1 DO riêng
+- Kéo thả items giữa LOTs (no-code drag-and-drop) → hệ thống tự cập nhật DO tương ứng
+- Ở màn quản lý PO: hiển thị 1 PO
+- Ở màn quản lý DO: hiển thị N DO (mỗi DO chung mã PO)
+
+## Quotation Workflow (FDS → KBI)
+
+Per SOP FDS-KBI R7, the quotation is the freight-forwarding pricing quote from FDS Sales to KBI:
+
+```text
+Draft(v1) → Sent → [KBI reviews]
+  ├── Rejected → Draft(v1 revised) → Sent → [KBI reviews again]
+  ├── Yêu cầu điều chỉnh → Draft(v1 revised) → Sent → ...
+  └── Chấp thuận → Final Quotation (v1)
+
+If multiple revision cycles:
+  Draft(v1) → Sent → Rejected → Draft(v1 revised) → Sent → Rejected → Draft(v2) → Sent → Final(v2)
+```
+
+### Quotation Rules
+
+- Each rejection keeps the current version for revision (sửa lại cùng version) until the change is substantial enough to warrant a new version.
+- Version history is preserved for audit trail.
+- **Page-to-page comparison**: users can compare any two versions side-by-side.
+- Per SOP: if KBI does not respond (reject/request changes) within 1 hour, the quotation is considered APPROVED.
+- Quotation is all-inclusive pricing (giá trọn gói) per SOP operating principles.
+
+## Shipment Document Management
+
+Shipments support full document lifecycle per milestone:
+
+| Capability | Description |
+|---|---|
+| Import | Upload documents (CI, PL, CO, Draft B/L, AWB, customs declarations, etc.) per milestone |
+| Edit | Revise uploaded documents with version tracking |
+| Draft B/L workflow | Upload Draft B/L → FDS Ops review (2h SLA) → KBI confirmation → Revision if needed → Final B/L |
+| Document set | Per SOP: Contract, Invoice, Packing List, Tờ khai thông quan, CO/CQ, Đơn bảo hiểm, Hoá đơn Bảo hiểm, MBL/HBL, Arrival Notice, EDO, and other documents |
 
 ## Production Reliability Context
 
@@ -88,9 +156,9 @@ These requirements are part of the GD1 production baseline, not optional polish:
 |---|---|---|
 | Transactional outbox | Do not lose ERP/WMS/internal events when the destination is unavailable. | Business writes that trigger integration must enqueue an outbox event in the same DB transaction. PO `CONFIRMED` and PO revision target ERP; `EDO_DELIVERY` targets GD2/WMS as `shipment.arrived_at_warehouse`. |
 | Idempotency | Prevent duplicate creates when users retry or double-submit. | Mutating create APIs must require or attach an `Idempotency-Key` and persist request hash/result for replay or conflict detection. |
-| Optimistic locking | Prevent stale browser tabs from overwriting newer PR/PO/shipment/task changes. | Core transactional entities must carry `version`; update APIs should reject stale versions before writing. |
-| Immutable audit/state log | Preserve who changed what and when for critical PR/PO/shipment/task/cost changes. | Audit and state-transition records are append-only snapshots with before/after payloads. |
-| State machine and scheduler | Enforce SOP state transitions and detect overdue SLA/task work. | PR, PO, shipment, and task transitions must follow `OPERATING_MODEL.md`; scheduler metadata supports 15-minute SLA/task scans and 4-hour carrier polling. |
+| Optimistic locking | Prevent stale browser tabs from overwriting newer PO/shipment/DO/task changes. | Core transactional entities must carry `version`; update APIs should reject stale versions before writing. |
+| Immutable audit/state log | Preserve who changed what and when for critical PO/DO/shipment/quotation/task/cost changes. | Audit and state-transition records are append-only snapshots with before/after payloads. |
+| State machine and scheduler | Enforce SOP state transitions and detect overdue SLA/task work. | PO, DO, shipment, quotation, and task transitions must follow `OPERATING_MODEL.md`; scheduler metadata supports 15-minute SLA/task scans and 4-hour carrier polling. |
 | Landed-cost allocation | Keep PO-line landed cost accurate after every shipment cost change. | Costs allocate to PO lines by `BY_VALUE`, `BY_WEIGHT`, or `BY_QTY` and recalculate after add/update/delete. |
 | Integration fallback | Keep shipment milestones current even when partners differ in capability. | Prefer webhook, fall back to REST polling, then IMAP email parsing or SFTP/CSV batch capture with raw event storage. |
 | Aggregate read models | Keep dashboards fast under operational volume. | Supplier, shipment, and task dashboards should read from aggregate/materialized tables or snapshots once query volume grows. |
@@ -98,11 +166,13 @@ These requirements are part of the GD1 production baseline, not optional polish:
 ## Canonical Chain
 
 ```text
-purchase_request
-  -> purchase_request_line
+purchase_order
   -> purchase_order_line
-  -> shipment_line
+  -> delivery_order (1 per LOT, default 1)
+  -> delivery_order_line
+  -> quotation (FDS freight-forwarding quote)
   -> shipment
+  -> shipment_line
   -> shipment_milestone
   -> shipment_cost
   -> landed_cost_alloc on purchase_order_line
@@ -110,20 +180,30 @@ purchase_request
 
 ## GD1 States
 
-PR:
-
-```text
-DRAFT -> SUBMITTED -> PARTIALLY_APPROVED -> APPROVED -> CONVERTED -> CLOSED
-REJECTED -> DRAFT
-CANCELLED
-```
-
 PO:
 
 ```text
 DRAFT -> SENT -> CONFIRMED -> IN_PRODUCTION -> READY_TO_SHIP -> SHIPPED -> RECEIVED -> CLOSED
 CANCELLED
 ```
+
+DO (Delivery Order):
+
+```text
+DRAFT -> CONFIRMED -> READY_TO_SHIP -> IN_TRANSIT -> DELIVERED -> CLOSED
+CANCELLED
+```
+
+DO fields: origin warehouse, destination warehouse, transport type (SEA/AIR/ROAD/RAIL), confirmation date.
+
+Quotation:
+
+```text
+DRAFT -> SENT -> REJECTED -> DRAFT (revised, same or new version) -> SENT -> ... -> FINAL (Approved/Confirmed)
+CANCELLED
+```
+
+Quotation supports version tracking and page-to-page comparison between any two versions.
 
 Shipment:
 
@@ -137,11 +217,12 @@ CANCELLED
 
 | Route | GD1 purpose |
 |---|---|
-| `/` | GD1 dashboard: PR pending, PO delivery risk, shipment risk, task workload, landed-cost attention. |
-| `/workflow` | Trace PR -> PO -> Shipment -> milestones/tasks/cost. |
-| `/purchase-requests` | PR list/detail, approval status, line conversion readiness. |
-| `/purchase-orders` | PO list/detail, revision, supplier confirmation, source PR lines, shipment progress. |
-| `/delivery-orders` | Legacy route name for Shipment board until route migration is done. |
+| `/` | GD1 dashboard: PO delivery risk, DO status, shipment risk, task workload, landed-cost attention. |
+| `/workflow` | Trace PO -> DO -> Shipment -> milestones/tasks/cost. |
+| `/purchase-orders` | PO list/detail, LOT management, drag-and-drop items, revision, supplier confirmation, shipment progress. |
+| `/delivery-orders` | DO list/detail — shows all DOs grouped by PO. Each DO shows origin/destination warehouse, transport type, status. |
+| `/quotations` | Quotation management: draft/send/reject/approve workflow, version history, page-to-page comparison. |
+| `/shipments` | Shipment board: list, milestones, document management (import/edit/Draft B/L), costs. |
 | `/tasks` | PO-stage tasks, assignee workload, overdue/blocker management. |
 | `/settings` | Theme, language, admin account management. |
 
@@ -150,23 +231,36 @@ CANCELLED
 Use query params for shareable context:
 
 ```text
-/purchase-requests?pr=PR-2026-000145
 /purchase-orders?po=PO-2026-000145
-/delivery-orders?shipment=SHP-2026-000087
-/delivery-orders?pr=PR-2026-000145
+/delivery-orders?do=DO-2026-000201
+/delivery-orders?po=PO-2026-000145
+/quotations?quotation=QUO-2026-000034
+/shipments?shipment=SHP-2026-000087
 /tasks?po=PO-2026-000145
 /tasks?task=TASK-2026-000553
 /workflow?shipment=SHP-2026-000087
-/workflow?pr=PR-2026-000145
+/workflow?po=PO-2026-000145
 ```
 
-Legacy `do` query params may remain while code still uses `delivery_orders`; new docs and APIs should prefer `shipment`.
+## Form UX Principle
+
+All create/edit forms must group fields logically by human workflow, following the "Họ → Tên → ..." principle:
+
+- **PO Create**: Supplier → PO Type → Incoterm → Payment → Currency → Dates → Items → LOT
+- **DO Create** (from PO LOT): Origin warehouse → Destination warehouse → Transport type → Delivery dates → Confirm
+- **Quotation Create**: Reference DO/Shipment → Pricing → Terms → Documents → Submit
+- **Shipment Create**: Mode → Forwarder → Carrier → B/L/AWB → Route → Dates → DO lines
+
+Each form section should be visually grouped (card or section header) and ordered to match how a human would naturally fill in the information.
 
 ## Current Gaps
 
 - Runtime tables are not yet fully aligned with GD1 singular table names and states.
-- `delivery_orders` currently represents the shipment concept in code; migration should be explicit.
-- Approval workflow, PO versioning, shipment milestones, task templates, landed cost allocation, and GD1 SLA runtime need implementation or migration.
+- `delivery_orders` in code currently represents the old shipment concept; migration to the new DO entity (between PO and Shipment) needs explicit planning.
+- Quotation entity, version tracking, and page-to-page comparison need implementation.
+- LOT management, drag-and-drop item reassignment, and PO → DO auto-creation need implementation.
+- Shipment document management (import/edit/version) needs full implementation.
+- PO versioning, shipment milestones, task templates, landed cost allocation, and GD1 SLA runtime need implementation or migration.
 - Reliability foundations may exist before full workers/controllers are complete; Kafka/RabbitMQ publisher, provider webhooks, carrier pollers, IMAP/SFTP connectors, RLS tenant enforcement, and AES object-storage integration must be tracked separately before production cutover.
 - Master data for supplier, item, department, tenant, incoterm, and currency is referenced by GD1 but not fully modeled in the GD1 document.
 - Frontend and backend use independent Vitest suites and package-scoped verification commands.

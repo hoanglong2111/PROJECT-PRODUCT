@@ -17,18 +17,19 @@ Read the smallest useful set of files. For broad GD1 changes, read:
 
 1. Identify whether the change is GD1 product truth, runtime compatibility, or future migration planning.
 2. Use GD1 names in new docs:
-   - `purchase_request`
-   - `purchase_request_line`
    - `purchase_order`
    - `purchase_order_line`
+   - `delivery_order`
+   - `delivery_order_line`
+   - `quotation`
+   - `quotation_version`
    - `shipment`
    - `shipment_line`
    - `shipment_milestone`
-   - `shipment_cost`
    - `po_stage_task`
    - `po_task_template`
    - `approval_matrix_config`
-3. If current code still uses a legacy name such as `delivery_orders`, mention it as a mapping, not as the GD1 canonical name.
+3. If current code still uses a legacy name such as the old `delivery_orders` (which mapped to shipments), mention it as a mapping, not as the GD1 canonical name.
 4. Add one matching skill if needed:
    - UI/UX: `docs/skills/ui-ux/SKILL.md`
    - Frontend: `docs/skills/frontend/SKILL.md`
@@ -54,17 +55,26 @@ Read the smallest useful set of files. For broad GD1 changes, read:
 
 ## GD1 Consistency Checklist
 
-- The PR chain is `PR -> Approval -> PO -> Shipment -> 10 milestones -> landed cost -> ERP/GRN sync`.
-- Shipment has exactly 10 standard milestone slots.
-- PR quantity conversion and PO shipment quantity rules are stated when relevant.
+- The GD1 chain is `PO -> DO (incorporating Quotations) -> Shipment (incorporating Documents & 10 milestones)`.
+- PO defaults to 1 LOT = 1 DO. Splitting LOTs creates additional DOs.
+- LOT items can be reassigned between LOTs via drag-and-drop (no-code).
+- DO must have origin warehouse, destination warehouse, transport type, and confirmation before proceeding.
+- Quotation is managed under DO (FDS Sales → KBI review, reject, version compare, 1-hour auto-approve).
+- Shipment has exactly 10 standard milestone slots:
+  - Milestone 3 (`PICK_UP`) is managed under Milestone 2 (`CARGO_READY`).
+  - Milestone 5 (`GATE_IN_POL`) is managed under Milestone 4 (`BL_ISSUED`).
+  - Milestones 6 (`ATD`) and 7 (`CUSTOM_DRAFT_SUBMITTED`) are skipped/deferred in current phase.
+  - Documents (Draft/Final B/L, CI, PL, etc.) are managed under Shipment.
 - PO revision after supplier send is preserved.
-- Landed cost allocation points back to shipment cost and PO lines.
+- Cost & Settlement (6) and ERP / WMS Integration (7) are skipped/deferred.
 - PO-stage task templates can generate tasks on state transition.
 - SLA rules match `docs/context/OPERATING_MODEL.md`.
+- Create/edit forms group fields by human cognitive flow (General → Specific).
 
 ## Anti-Patterns
 
-- Treating `delivery_orders` as the GD1 canonical name instead of runtime compatibility.
+- Referencing `purchase_request` or `PR` as a current GD1 entity — PR is removed from GD1 scope.
+- Treating the old `delivery_orders` code (which mapped to shipments) as the GD1 `delivery_order` entity — the new `delivery_order` sits between PO and Shipment.
 - Duplicating long table schemas outside `docs/database/GD1_DOCUMENT_ERD.md`.
 - Creating new support tables that the GD1 document did not define without marking them as assumptions.
 - Editing API rules without checking data model rules.

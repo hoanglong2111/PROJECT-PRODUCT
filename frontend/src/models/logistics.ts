@@ -9,14 +9,17 @@ export type PurchaseRequestStatus =
   | 'CANCELLED';
 
 export type DeliveryOrderStatus =
+  | 'DRAFT'
   | 'CREATED'
   | 'CONFIRMED'
   | 'IN_PRODUCTION'
+  | 'READY_TO_SHIP'
   | 'IN_TRANSIT'
   | 'ARRIVED_PORT'
   | 'CUSTOMS_PROCESSING'
   | 'WAREHOUSE_PENDING'
   | 'DELIVERED'
+  | 'CLOSED'
   | 'DELAYED'
   | 'CANCELLED';
 
@@ -36,7 +39,17 @@ export type UserRef = {
   department: string;
 };
 
-export type PurchaseOrderStatus = 'SAP_SYNCED' | 'SAP_PENDING' | 'PARTIALLY_DELIVERED' | 'CLOSED';
+export type PurchaseOrderStatus =
+  | 'DRAFT'
+  | 'SENT'
+  | 'CONFIRMED'
+  | 'IN_PRODUCTION'
+  | 'READY_TO_SHIP'
+  | 'SHIPPED'
+  | 'RECEIVED'
+  | 'PARTIALLY_DELIVERED'
+  | 'CLOSED'
+  | 'CANCELLED';
 
 export type ShippingMode = 'AIR' | 'FCL' | 'LCL';
 
@@ -93,6 +106,8 @@ export type PurchaseRequestLineItem = {
   item_name: string;
   quantity: number;
   unit: string;
+  unit_price?: number;
+  expected_eta?: string | null;
   warehouse_deadline_date: string;
   warehouse_code: string;
   production_contract_number: string;
@@ -109,6 +124,8 @@ export type PurchaseOrderLineItem = {
   item_name: string;
   quantity: number;
   unit: string;
+  unit_price?: number;
+  expected_eta?: string | null;
   warehouse_deadline_date: string;
   warehouse_code: string;
   item_group?: string;
@@ -121,6 +138,20 @@ export type PurchaseOrderLineItem = {
   classification_code?: string;
   co_note?: string;
   tax_note?: string;
+  lot_number?: string | null;
+};
+
+export type PurchaseOrderLotAllocation = {
+  id: string;
+  po_line_id: string;
+  quantity: number;
+};
+
+export type PurchaseOrderLot = {
+  id: string;
+  lot_no: string;
+  do_number?: string;
+  allocations: PurchaseOrderLotAllocation[];
 };
 
 export type DeliverySourceLine = {
@@ -148,6 +179,15 @@ export type PurchaseOrder = {
   total_amount: number;
   sap_sync_status: 'SYNCED' | 'PENDING' | 'FAILED';
   linked_do_numbers: string[];
+  lots?: PurchaseOrderLot[];
+  po_type?: Gd1PoType;
+  incoterm?: string;
+  payment_term?: string;
+  expected_etd?: string | null;
+  expected_eta?: string | null;
+  version?: number;
+  sent_at?: string | null;
+  confirmed_date?: string | null;
   warehouse_code: string;
   flow_tags: BusinessFlowTag[];
 };
@@ -196,6 +236,15 @@ export type PurchaseRequest = {
   delay_days: number;
   linked_po_numbers: string[];
   linked_do_numbers: string[];
+  lots?: PurchaseOrderLot[];
+  po_type?: Gd1PoType;
+  incoterm?: string;
+  payment_term?: string;
+  expected_etd?: string | null;
+  expected_eta?: string | null;
+  version?: number;
+  sent_at?: string | null;
+  confirmed_date?: string | null;
   warehouse_code: string;
   flow_tags: BusinessFlowTag[];
 };
@@ -229,6 +278,10 @@ export type DeliveryOrder = {
     po_number: string | null;
     sync_status: 'SYNCED' | 'SYNC_INCOMPLETE' | 'SYNC_FAILED';
   };
+  source_po_number?: string;
+  source_lot_id?: string;
+  source_lot_no?: string;
+  linked_shipment_number?: string | null;
   logistics_shipping: {
     incoterms: string;
     shipping_method: 'SEA' | 'AIR' | 'ROAD';
@@ -706,4 +759,59 @@ export interface Gd1ApprovalStep {
   created_at: string;
   updated_at: string;
 }
+
+// Shipment types for Shipments page
+export type ShipmentMilestone = {
+  id: string;
+  milestone_code: Gd1MilestoneCode;
+  planned_date: string | null;
+  actual_date: string | null;
+  source: 'MANUAL' | 'API' | 'EMAIL';
+  note: string | null;
+};
+
+export type ShipmentDocumentStatus = 'PENDING_UPLOAD' | 'WAITING_REVIEW' | 'APPROVED' | 'REJECTED';
+
+export type ShipmentDocument = {
+  id: string;
+  document_type: string;
+  file_name: string | null;
+  status: ShipmentDocumentStatus;
+  review_due_at?: string;
+  reject_reason?: string;
+  uploaded_at?: string;
+};
+
+export type ShipmentPoTask = {
+  id: string;
+  task_name: string;
+  status: 'TODO' | 'IN_PROGRESS' | 'COMPLETED' | 'BLOCKED';
+  assignee_role: string;
+};
+
+export type ShipmentStatus = 'BOOKED' | 'IN_TRANSIT' | 'ARRIVED_PORT' | 'CUSTOMS_PROCESSING' | 'DELIVERED';
+
+export type ShipmentRecord = {
+  id: string;
+  shipment_number: string;
+  do_number: string;
+  po_number: string;
+  status: ShipmentStatus;
+  shipping_mode: 'SEA' | 'AIR';
+  carrier_name: string;
+  vessel_voyage: string;
+  origin_port: string;
+  dest_port: string;
+  etd: string;
+  eta: string;
+  customs: {
+    stream: Gd1CustomsStream;
+    declaration_no?: string;
+    lane_status: string;
+    clearance_date?: string;
+  };
+  milestones: ShipmentMilestone[];
+  documents: ShipmentDocument[];
+  po_tasks: ShipmentPoTask[];
+};
 

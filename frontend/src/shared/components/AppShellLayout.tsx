@@ -43,7 +43,7 @@ const navigation: Array<{
     | 'shell.dashboard'
     | 'shell.deliveryOrders'
     | 'shell.purchaseOrders'
-    | 'shell.dtos'
+    | 'shell.shipments'
     | 'shell.masterData'
     | 'shell.tasks';
   path: string;
@@ -63,8 +63,8 @@ const navigation: Array<{
     roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'WAREHOUSE_STAFF'],
   },
   {
-    labelKey: 'shell.dtos',
-    path: '/dtos',
+    labelKey: 'shell.shipments',
+    path: '/shipments',
     icon: IconShip,
     roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'FINANCE_OFFICER', 'WAREHOUSE_STAFF'],
   },
@@ -131,7 +131,7 @@ export function AppShellLayout() {
                   KBI
                 </Text>
                 <Text size="xs" c="dimmed">
-                  ERP Logistics
+                  GD1 Logistics
                 </Text>
               </span>
             </UnstyledButton>
@@ -150,7 +150,7 @@ export function AppShellLayout() {
                     queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
                     queryClient.invalidateQueries({ queryKey: ['purchase-orders'] }),
                     queryClient.invalidateQueries({ queryKey: ['delivery-orders'] }),
-                    queryClient.invalidateQueries({ queryKey: ['dtos'] }),
+                    queryClient.invalidateQueries({ queryKey: ['shipments'] }),
                     queryClient.invalidateQueries({ queryKey: ['master-data'] }),
                     queryClient.invalidateQueries({ queryKey: ['tasks'] }),
                     queryClient.invalidateQueries({ queryKey: ['global-search'] }),

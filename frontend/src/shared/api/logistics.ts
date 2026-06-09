@@ -25,6 +25,7 @@ import type {
   Priority,
   PurchaseOrder,
   PurchaseOrderLineItem,
+  PurchaseOrderLot,
   PurchaseOrderStatus,
   Quotation,
   QuotationStatus,
@@ -39,6 +40,11 @@ import type {
   Gd1ShipmentCost,
   Gd1PoStatus,
   Gd1MilestoneCode,
+  ShipmentMilestone,
+  ShipmentDocument,
+  ShipmentPoTask,
+  ShipmentStatus,
+  ShipmentRecord,
 } from '@/models/logistics';
 
 export type {
@@ -67,6 +73,7 @@ export type {
   Priority,
   PurchaseOrder,
   PurchaseOrderLineItem,
+  PurchaseOrderLot,
   PurchaseOrderStatus,
   Quotation,
   QuotationStatus,
@@ -81,6 +88,11 @@ export type {
   Gd1ShipmentCost,
   Gd1PoStatus,
   Gd1MilestoneCode,
+  ShipmentMilestone,
+  ShipmentDocument,
+  ShipmentPoTask,
+  ShipmentStatus,
+  ShipmentRecord,
 };
 
 type ApiResponse<T> = {
@@ -91,8 +103,13 @@ type ApiResponse<T> = {
 
 export type CreatePurchaseOrderPayload = {
   currency: string;
+  expectedEta?: string | null;
+  expectedEtd?: string | null;
+  incoterm?: string;
   orderDate?: string;
+  paymentTerm?: string;
   poNumber: string;
+  poType?: string;
   sourceLines?: Array<{
     classificationCode?: string;
     coNote?: string;
@@ -110,11 +127,26 @@ export type CreatePurchaseOrderPayload = {
     vatRate?: number;
     lotNumber?: string;
     itemId?: string;
+    expectedEta?: string | null;
+    unitPrice?: number;
   }>;
   supplierCode: string;
   supplierName: string;
   totalAmount: number;
   warehouseCode: string;
+};
+
+export type UpdatePurchaseOrderLotAllocationPayload = {
+  lots: Array<{
+    id?: string;
+    lotNo: string;
+    doNumber?: string;
+  }>;
+  lineAllocations: Array<{
+    poLineId: string;
+    lotNo: string;
+    quantity: number;
+  }>;
 };
 
 export type CreateDeliveryOrderPayload = {
@@ -343,6 +375,80 @@ async function readCollection<T>(path: string): Promise<T> {
 
 
 
+export async function fetchQuotation(payload: CreateQuotationPayload) {
+  const response = await http.post<ApiResponse<Quotation>>('/quotations', payload);
+  return response.data.data;
+}
+
+export async function fetchShipments() {
+  return readCollection<ShipmentRecord[]>('/shipments');
+}
+
+export async function createShipment(payload: {
+  shipmentNumber: string;
+  doNumber: string;
+  poNumber: string;
+  shippingMode: 'SEA' | 'AIR';
+  carrierName?: string | null;
+  vesselVoyage?: string | null;
+  originPort?: string | null;
+  destPort?: string | null;
+  etd?: string | null;
+  eta?: string | null;
+}) {
+  const now = Date.now();
+  const newShipment: ShipmentRecord = {
+    id: `shp-${now}`,
+    shipment_number: payload.shipmentNumber,
+    do_number: payload.doNumber,
+    po_number: payload.poNumber,
+    status: 'BOOKED',
+    shipping_mode: payload.shippingMode,
+    carrier_name: payload.carrierName || 'Hapag Lloyd',
+    vessel_voyage: payload.vesselVoyage || 'HAPAG V204',
+    origin_port: payload.originPort || 'Port of Ningbo',
+    dest_port: payload.destPort || 'Port of Cat Lai',
+    etd: payload.etd || '2026-06-15',
+    eta: payload.eta || '2026-06-29',
+    customs: {
+      stream: 'GREEN',
+      lane_status: 'Thông quan tự động',
+    },
+    milestones: [
+      { id: `m-new-1-${now}`, milestone_code: 'BOOKING_CONFIRMED', planned_date: payload.etd || '2026-06-12', actual_date: payload.etd || '2026-06-12', source: 'MANUAL', note: 'Booking confirmed' },
+      { id: `m-new-2-${now}`, milestone_code: 'CARGO_READY', planned_date: payload.etd || '2026-06-14', actual_date: null, source: 'API', note: null },
+      { id: `m-new-3-${now}`, milestone_code: 'PICK_UP', planned_date: payload.etd || '2026-06-15', actual_date: null, source: 'API', note: null },
+      { id: `m-new-4-${now}`, milestone_code: 'BL_ISSUED', planned_date: payload.etd || '2026-06-16', actual_date: null, source: 'API', note: null },
+      { id: `m-new-5-${now}`, milestone_code: 'GATE_IN_POL', planned_date: payload.etd || '2026-06-16', actual_date: null, source: 'API', note: null },
+      { id: `m-new-6-${now}`, milestone_code: 'ATD', planned_date: payload.etd || '2026-06-17', actual_date: null, source: 'API', note: null },
+      { id: `m-new-7-${now}`, milestone_code: 'CUSTOM_DRAFT_SUBMITTED', planned_date: payload.eta || '2026-06-20', actual_date: null, source: 'API', note: null },
+      { id: `m-new-8-${now}`, milestone_code: 'AN_ATA', planned_date: payload.eta || '2026-06-28', actual_date: null, source: 'API', note: null },
+      { id: `m-new-9-${now}`, milestone_code: 'CUSTOM_CLEARED', planned_date: payload.eta || '2026-06-29', actual_date: null, source: 'API', note: null },
+      { id: `m-new-10-${now}`, milestone_code: 'EDO_DELIVERY', planned_date: payload.eta || '2026-06-30', actual_date: null, source: 'API', note: null },
+    ],
+    documents: [
+      { id: `d-new-1-${now}`, document_type: 'Hóa đơn thương mại (Commercial Invoice)', file_name: null, status: 'PENDING_UPLOAD' },
+      { id: `d-new-2-${now}`, document_type: 'Phiếu đóng gói (Packing List)', file_name: null, status: 'PENDING_UPLOAD' },
+      { id: `d-new-3-${now}`, document_type: 'Vận đơn nháp (Draft B/L)', file_name: null, status: 'PENDING_UPLOAD' },
+      { id: `d-new-4-${now}`, document_type: 'Vận đơn chính thức (Official B/L)', file_name: null, status: 'PENDING_UPLOAD' },
+      { id: `d-new-5-${now}`, document_type: 'Tờ khai hải quan (Customs Declaration)', file_name: null, status: 'PENDING_UPLOAD' },
+    ],
+    po_tasks: [
+      { id: `t-new-1-${now}`, task_name: 'Duyệt báo giá vận chuyển', status: 'TODO', assignee_role: 'LOGISTICS' },
+      { id: `t-new-2-${now}`, task_name: 'Xác nhận booking space', status: 'TODO', assignee_role: 'LOGISTICS' },
+    ],
+  };
+  return newShipment;
+}
+
+export async function updateShipment(shipmentNumber: string, payload: Partial<ShipmentRecord>) {
+  const response = await http.patch<ApiResponse<ShipmentRecord>>(
+    `/shipments/${encodeURIComponent(shipmentNumber)}`,
+    payload
+  );
+  return response.data.data;
+}
+
 export async function fetchQuotations() {
   return readCollection<Quotation[]>('/quotations');
 }
@@ -376,6 +482,18 @@ export async function createQuotation(payload: CreateQuotationPayload) {
 
 export async function createPurchaseOrder(payload: CreatePurchaseOrderPayload) {
   const response = await http.post<ApiResponse<PurchaseOrder>>('/purchase-orders', payload);
+  return response.data.data;
+}
+
+
+export async function updatePurchaseOrderLotAllocation(
+  poNumber: string,
+  payload: UpdatePurchaseOrderLotAllocationPayload,
+) {
+  const response = await http.patch<ApiResponse<PurchaseOrder>>(
+    `/purchase-orders/${encodeURIComponent(poNumber)}/lot-allocation`,
+    payload,
+  );
   return response.data.data;
 }
 

@@ -31,9 +31,10 @@ Ensure absolute separation of languages and maintain strict adherence to the GD1
 1. Locate the target English (`en`) and Vietnamese (`vi`) objects, primarily in `frontend/src/shared/i18n/messages.ts`.
 2. Audit the strings to ensure English strings do not contain Vietnamese, and Vietnamese strings do not contain English (unless it's an approved abbreviation like PR, PO).
 3. Apply standard GD1 terms consistently:
-   - "Delivery Order" / "Delivery Orders" / "DO" -> **"Shipment(s)"** (EN), **"Lô hàng"** (VI).
+   - "Delivery Order" -> **"Delivery Order"** (EN), **"Đơn giao hàng"** (VI).
+   - "Shipment" -> **"Shipment"** (EN), **"Lô hàng"** (VI).
    - "Purchase Order" -> **"Purchase Order"** (EN), **"Đơn mua hàng"** (VI).
-   - "Purchase Request" -> **"Purchase Request"** (EN), **"Yêu cầu mua hàng"** (VI).
+   - "Quotation" -> **"Quotation"** (EN), **"Báo giá"** (VI).
    - "Task Management" -> **"Task Management"** (EN), **"Quản lý công việc"** (VI).
    - "Dashboard" -> **"Dashboard"** (EN), **"Tổng quan"** (VI).
 4. For domain-specific terms (eFMS, Customs, Finance), use industry-standard terminology. Some terms may remain in English within the Vietnamese locale if widely accepted (e.g., "Debit Note", "Commercial Invoice", "Draft B/L").

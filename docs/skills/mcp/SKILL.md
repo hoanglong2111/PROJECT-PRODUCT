@@ -1,6 +1,6 @@
 ---
 name: kbfe-mcp-integration
-description: Use when designing or implementing MCP resources, tools, prompts, or AI/RAG integrations for KBFE GD1 PR/PO/shipment/task context, workflow inspection, risk summaries, and safe operational actions.
+description: Use when designing or implementing MCP resources, tools, prompts, or AI/RAG integrations for KBFE GD1 PO/DO/Quotation/shipment/task context, workflow inspection, risk summaries, and safe operational actions.
 ---
 
 # KBFE GD1 MCP Integration Skill
@@ -18,7 +18,6 @@ Current deploy reality:
 - FE is a standalone Vite package built with `pnpm --dir frontend build` into `frontend/dist/`.
 - BE runs source with `pnpm --dir backend dev`, or builds and starts production JS with `pnpm --dir backend build && pnpm --dir backend start`.
 - DB is PostgreSQL through `DATABASE_URL`.
-- Runtime schema may still use older names such as `delivery_orders`; GD1 docs use `shipment`.
 - Deployment and DB normalization plan: `docs/future/mcp-ops/deployment-mcp-and-db-plan.md`.
 - GD1 ERD: `docs/database/GD1_DOCUMENT_ERD.md`.
 - Product AI harness runtime target: `backend/ai`, `backend/routes/ai.routes.ts`, `backend/mcp/deployServer.ts`.
@@ -32,8 +31,9 @@ Recommended read-only resources:
 ```text
 kbfe://context/project
 kbfe://context/data-model
-kbfe://purchase-requests/{pr_no}
 kbfe://purchase-orders/{po_no}
+kbfe://delivery-orders/{do_no}
+kbfe://quotations/{quotation_no}
 kbfe://shipments/{shipment_no}
 kbfe://shipments/{shipment_no}/milestones
 kbfe://tasks/{task_id}
@@ -48,8 +48,6 @@ kbfe://audit/{entity_type}/{entity_id}
 kbfe://ai/harness/metrics
 kbfe://ai/harness/risk-triage
 ```
-
-Legacy compatibility resources may expose `delivery-orders/{do_number}` while runtime uses older names.
 
 ## Tools
 
@@ -87,7 +85,7 @@ Write tools, only after backend authorization and audit exist:
 
 ## RAG Index
 
-Index PR/PO/shipment ids, item/supplier, status, ETA/ETD/ATD/ATA, approval due, milestone due, missing documents, task blockers, landed-cost status, ERP sync, and audit summaries.
+Index PO/DO/quotation/shipment ids, item/supplier, status, ETA/ETD/ATD/ATA, approval due, milestone due, missing documents, task blockers, landed-cost status, ERP sync, and audit summaries.
 
 ## Done
 

@@ -4,7 +4,6 @@ import {
   Badge,
   Button,
   Checkbox,
-  Drawer,
   FileInput,
   Group,
   Loader,
@@ -20,11 +19,9 @@ import {
   Tabs,
   Text,
   TextInput,
-  Timeline,
   Title,
   Tooltip,
 } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   IconAlertTriangle,
@@ -37,18 +34,15 @@ import {
   IconFileUpload,
   IconGitBranch,
   IconPlane,
-  IconPlus,
   IconSearch,
   IconShip,
   IconTruckDelivery,
-  IconCalendar,
-  IconTrash,
-  IconCash,
+  IconX,
 } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import dayjs from 'dayjs';
 
-import { CreateDeliveryOrderDrawer } from '@shared/components/CreateOrderForms';
 import { DelayBadge } from '@shared/components/DelayBadge';
 import { EmptyState } from '@shared/components/EmptyState';
 import { EntityLink } from '@shared/components/EntityLink';
@@ -61,22 +55,17 @@ import { UpdateDeliveryOrderForm } from '@shared/components/UpdateOrderForms';
 import {
   fetchDeliveryOrders,
   fetchDeliveryOrderAttachments,
-  fetchPurchaseOrders,
   uploadDeliveryOrderAttachment,
   type DeliveryOrder,
   type DeliveryOrderStatus,
   type BusinessFlowTag,
   type LogisticsAttachment,
-  fetchShipmentMilestones,
-  updateShipmentMilestone,
-  fetchShipmentCosts,
-  addShipmentCost,
-  deleteShipmentCost,
-  type Gd1ShipmentMilestone,
-  type Gd1ShipmentCost,
+  fetchQuotations,
+  createQuotation,
+  updateQuotationAction,
+  type QuotationAction,
 } from '@shared/api/logistics';
 import { getApiErrorMessage } from '@shared/api/http';
-import { useAuth } from '@shared/auth/useAuth';
 import { useEntityParam } from '@shared/hooks/useEntityParam';
 import { useI18n } from '@shared/i18n';
 import { useWorkspaceStore } from '@shared/stores/workspaceStore';
@@ -99,7 +88,7 @@ const shippingIcon = {
 type DeliveryOrderTab = 'processing' | 'handover' | 'completed' | 'issues' | 'all';
 
 const deliveryOrderStatusTabs: Record<Exclude<DeliveryOrderTab, 'all'>, DeliveryOrderStatus[]> = {
-  processing: ['CREATED', 'CONFIRMED', 'IN_PRODUCTION'],
+  processing: ['DRAFT', 'CREATED', 'CONFIRMED', 'IN_PRODUCTION', 'READY_TO_SHIP'],
   handover: ['IN_TRANSIT', 'ARRIVED_PORT', 'CUSTOMS_PROCESSING', 'WAREHOUSE_PENDING'],
   completed: ['DELIVERED'],
   issues: ['DELAYED', 'CANCELLED'],
@@ -114,7 +103,7 @@ function hasOperationalRisk(deliveryOrder: DeliveryOrder) {
 }
 
 export function DeliveryOrders() {
-  const { flowTagLabel, statusLabel, t } = useI18n();
+  const { flowTagLabel, t } = useI18n();
   const [searchParams] = useSearchParams();
   const statusParam = searchParams.get('status');
   const { close: closeDoParam, open: openDoParam, value: focusedDo } = useEntityParam('do');
@@ -122,7 +111,6 @@ export function DeliveryOrders() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<DeliveryOrderTab>('processing');
   const [flowFilter, setFlowFilter] = useState<BusinessFlowTag | 'all'>('all');
-  const [createOpened, createHandlers] = useDisclosure(false);
   const search = useWorkspaceStore((state) => state.doSearch);
   const riskOnly = useWorkspaceStore((state) => state.doRiskOnly);
   const setSearch = useWorkspaceStore((state) => state.setDoSearch);
@@ -132,12 +120,7 @@ export function DeliveryOrders() {
     queryKey: ['delivery-orders'],
     queryFn: fetchDeliveryOrders,
   });
-  const purchaseOrdersQuery = useQuery({
-    queryKey: ['purchase-orders'],
-    queryFn: fetchPurchaseOrders,
-  });
   const deliveryOrders = deliveryOrdersQuery.data ?? [];
-  const purchaseOrders = purchaseOrdersQuery.data ?? [];
   const isFetching = deliveryOrdersQuery.isFetching;
 
   useEffect(() => {
@@ -186,11 +169,12 @@ export function DeliveryOrders() {
         ? deliveryOrder.order_info.status === statusParam
         : (activeTab === 'all' || deliveryOrderStatusTabs[activeTab].includes(deliveryOrder.order_info.status));
       const matchesFlow = flowFilter === 'all' || deliveryOrder.flow_tags.includes(flowFilter);
-      const matchesRisk = !riskOnly || hasOperationalRisk(deliveryOrder) || deliveryOrder.sap_integration.sync_status !== 'SYNCED';
+      const matchesRisk = !riskOnly || hasOperationalRisk(deliveryOrder);
       const matchesSearch = [
         deliveryOrder.order_info.order_number,
         deliveryOrder.order_info.request_code,
-        deliveryOrder.sap_integration.po_number,
+        deliveryOrder.source_po_number ?? deliveryOrder.sap_integration.po_number,
+        deliveryOrder.source_lot_no,
         deliveryOrder.sap_integration.supplier_name,
         deliveryOrder.product_details.item_name_requested,
       ]
@@ -253,7 +237,7 @@ export function DeliveryOrders() {
         description={t('deliveryOrders.loadingDescription')}
         tableColumns={[
           t('deliveryOrders.doColumn'),
-          t('deliveryOrders.prPoColumn'),
+          'Source PO / Lot',
           t('common.supplier'),
           t('common.item'),
           t('common.route'),
@@ -277,9 +261,9 @@ export function DeliveryOrders() {
           </Text>
         </div>
         <Group gap="xs">
-          <Button onClick={createHandlers.open} leftSection={<IconPlus size={16} />}>
-            {t('deliveryOrders.create')}
-          </Button>
+          <Badge leftSection={<IconGitBranch size={14} />} size="lg" variant="light">
+            Generated from PO LOTs
+          </Badge>
           <Button component={Link} to="/workflow" leftSection={<IconGitBranch size={16} />} variant="light">
             {t('purchaseRequests.inspectWorkflow')}
           </Button>
@@ -368,19 +352,20 @@ export function DeliveryOrders() {
         </Stack>
       </Paper>
 
+      {selectedDeliveryOrder ? (
+        <DeliveryOrderDetail deliveryOrder={selectedDeliveryOrder} onClose={closeDetail} />
+      ) : null}
+
       <Paper withBorder p={0}>
         <ScrollArea className="data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
           <Table miw={1180} verticalSpacing="sm" highlightOnHover>
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>{t('deliveryOrders.doColumn')}</Table.Th>
-                <Table.Th>
-                  {t('common.supplier')} / {t('common.item')}
-                </Table.Th>
+                <Table.Th>Source PO / Lot</Table.Th>
+                <Table.Th>{t('common.supplier')} / Allocation</Table.Th>
                 <Table.Th>{t('common.route')}</Table.Th>
-                <Table.Th>
-                  {t('forms.warehouse')} / {t('shell.tasks')}
-                </Table.Th>
+                <Table.Th>Linked shipment / ETA</Table.Th>
                 <Table.Th>{t('common.status')}</Table.Th>
                 <Table.Th />
               </Table.Tr>
@@ -401,24 +386,31 @@ export function DeliveryOrders() {
                     : 0;
 
                 return (
-                  <Table.Tr key={deliveryOrder.id}>
+                  <Table.Tr
+                    key={deliveryOrder.id}
+                    onClick={() => {
+                      setSelectedId(deliveryOrder.id);
+                      openDoParam(deliveryOrder.order_info.order_number, { clear: ['pr', 'po', 'task'] });
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  >
                     <Table.Td>
                       <Text fw={700}>{deliveryOrder.order_info.order_number}</Text>
                       <Text size="xs" c="dimmed">
-                        {deliveryOrder.order_info.tracking_number ?? t('deliveryOrders.noTracking')}
+                        {deliveryOrder.source_lot_no ?? deliveryOrder.product_details.lot_number ?? 'Lot pending'}
                       </Text>
-                      <Group gap="xs">
-                        <EntityLink type="po" id={deliveryOrder.sap_integration.po_number} compact />
-                      </Group>
                       <FlowTagBadge compact tags={deliveryOrder.flow_tags} />
+                    </Table.Td>
+                    <Table.Td>
+                      <EntityLink type="po" id={deliveryOrder.source_po_number ?? deliveryOrder.sap_integration.po_number} compact />
+                      <Text size="xs" c="dimmed">{deliveryOrder.source_lot_no ?? deliveryOrder.product_details.lot_number}</Text>
                     </Table.Td>
                     <Table.Td className="table-cell-truncate" style={{ maxWidth: '18rem' }}>
                       <Text size="sm" fw={600} lineClamp={1} title={deliveryOrder.sap_integration.supplier_name ?? t('deliveryOrders.supplierPending')}>
                         {deliveryOrder.sap_integration.supplier_name ?? t('deliveryOrders.supplierPending')}
                       </Text>
                       <Text size="sm" c="dimmed" lineClamp={1}>
-                        {deliveryOrder.sap_integration.actual_item_code ?? '-'} ·{' '}
-                        {deliveryOrder.product_details.quantity.toLocaleString()} {deliveryOrder.product_details.unit}
+                        {deliveryOrder.source_lines.length} items · {deliveryOrder.product_details.quantity.toLocaleString()} {deliveryOrder.product_details.unit}
                       </Text>
                     </Table.Td>
                     <Table.Td className="table-cell-truncate" style={{ maxWidth: '17rem' }}>
@@ -436,9 +428,13 @@ export function DeliveryOrders() {
                       </Text>
                     </Table.Td>
                     <Table.Td>
-                      <Text size="sm">{deliveryOrder.warehouse_tracking.warehouse_code}</Text>
-                      <Text size="xs" c={delay.isLate ? 'red' : 'dimmed'}>
-                        {t('common.deadline')} {deliveryOrder.warehouse_tracking.warehouse_deadline}
+                      {deliveryOrder.linked_shipment_number ? (
+                        <Badge size="xs" color="blue" variant="light">{deliveryOrder.linked_shipment_number}</Badge>
+                      ) : (
+                        <Badge size="xs" color="gray" variant="light">No shipment</Badge>
+                      )}
+                      <Text size="xs" c={delay.isLate ? 'red' : 'dimmed'} mt={4}>
+                        ETA {deliveryOrder.logistics_shipping.eta_planned ?? '-'}
                       </Text>
                       <Group gap="xs" mt={6}>
                         <DelayBadge days={delay.days} type={delay.type} />
@@ -452,13 +448,6 @@ export function DeliveryOrders() {
                       <Stack gap={6}>
                         <StatusBadge status={deliveryOrder.order_info.status} />
                         <Group gap={6}>
-                          <Badge
-                            size="xs"
-                            color={deliveryOrder.sap_integration.sync_status === 'SYNCED' ? 'teal' : 'orange'}
-                            variant="light"
-                          >
-                            {statusLabel(deliveryOrder.sap_integration.sync_status)}
-                          </Badge>
                           {deliveryOrder.logistics_shipping.missing_documents.length > 0 ? (
                             <Badge size="xs" color="red" variant="light">
                               {t('deliveryOrders.missingDocuments', { count: deliveryOrder.logistics_shipping.missing_documents.length })}
@@ -481,7 +470,8 @@ export function DeliveryOrders() {
                         <ActionIcon
                           variant="subtle"
                           aria-label={t('deliveryOrders.inspect')}
-                          onClick={() => {
+                          onClick={(event) => {
+                            event.stopPropagation();
                             setSelectedId(deliveryOrder.id);
                             openDoParam(deliveryOrder.order_info.order_number, { clear: ['pr', 'po', 'task'] });
                           }}
@@ -509,422 +499,391 @@ export function DeliveryOrders() {
         />
       </Paper>
 
-      <Drawer opened={Boolean(selectedDeliveryOrder)} onClose={closeDetail} title={t('deliveryOrders.detailTitle')} position="right" size="xl">
-        {selectedDeliveryOrder ? <DeliveryOrderDetail deliveryOrder={selectedDeliveryOrder} /> : null}
-      </Drawer>
-
-      <CreateDeliveryOrderDrawer
-        opened={createOpened}
-        onClose={createHandlers.close}
-        deliveryOrders={deliveryOrders}
-        purchaseOrders={purchaseOrders}
-        onCreated={(order) => {
-          setActiveTab('processing');
-          setSelectedId(order.id);
-          openDoParam(order.order_info.order_number, { clear: ['pr', 'po', 'task'] });
-        }}
-      />
     </Stack>
   );
 }
 
-function Gd1ShipmentMilestonesPanel({ orderNumber }: { orderNumber: string }) {
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
-  const { t } = useI18n();
-  const [selectedMilestone, setSelectedMilestone] = useState<string | null>(null);
-  const [actualDate, setActualDate] = useState('');
-  const [note, setNote] = useState('');
-  const [source, setSource] = useState('MANUAL');
+function SlaTimer({ dueAt }: { dueAt: string }) {
+  const [timeLeft, setTimeLeft] = useState('');
 
-  const milestonesQuery = useQuery({
-    queryKey: ['shipment-milestones', orderNumber],
-    queryFn: () => fetchShipmentMilestones(orderNumber),
-    enabled: !!orderNumber,
-  });
+  useEffect(() => {
+    const updateTime = () => {
+      const diff = dayjs(dueAt).diff(dayjs());
+      if (diff <= 0) {
+        setTimeLeft('OVERDUE');
+      } else {
+        const mins = Math.floor(diff / 60000);
+        const secs = Math.floor((diff % 60000) / 1000);
+        setTimeLeft(`${mins}m ${secs}s`);
+      }
+    };
 
-  const mutation = useMutation({
-    mutationFn: ({
-      milestoneCode,
-      actualDate,
-      note,
-      source,
-    }: {
-      milestoneCode: string;
-      actualDate: string | null;
-      note?: string;
-      source?: string;
-    }) => updateShipmentMilestone(orderNumber, milestoneCode, { actualDate, note, source }),
-    onSuccess: () => {
-      setSelectedMilestone(null);
-      setActualDate('');
-      setNote('');
-      setSource('MANUAL');
-      void queryClient.invalidateQueries({ queryKey: ['shipment-milestones', orderNumber] });
-    },
-  });
+    updateTime();
+    const timer = setInterval(updateTime, 1000);
+    return () => clearInterval(timer);
+  }, [dueAt]);
 
-  const milestones = milestonesQuery.data ?? [];
-
-  const milestoneLabels: Record<string, string> = {
-    BOOKING_CONFIRMED: t('deliveryOrders.milestone.BOOKING_CONFIRMED'),
-    CARGO_READY: t('deliveryOrders.milestone.CARGO_READY'),
-    PICK_UP: t('deliveryOrders.milestone.PICK_UP'),
-    BL_ISSUED: t('deliveryOrders.milestone.BL_ISSUED'),
-    GATE_IN_POL: t('deliveryOrders.milestone.GATE_IN_POL'),
-    ATD: t('deliveryOrders.milestone.ATD'),
-    CUSTOM_DRAFT_SUBMITTED: t('deliveryOrders.milestone.CUSTOM_DRAFT_SUBMITTED'),
-    AN_ATA: t('deliveryOrders.milestone.AN_ATA'),
-    CUSTOM_CLEARED: t('deliveryOrders.milestone.CUSTOM_CLEARED'),
-    EDO_DELIVERY: t('deliveryOrders.milestone.EDO_DELIVERY'),
-  };
-
-  const activeIndex = useMemo(() => {
-    const lastCompletedIndex = milestones.map((m) => !!m.actual_date).lastIndexOf(true);
-    return lastCompletedIndex === -1 ? 0 : Math.min(lastCompletedIndex + 1, 9);
-  }, [milestones]);
-
+  const isOverdue = timeLeft === 'OVERDUE';
   return (
-    <Paper withBorder p="md">
-      <Stack gap="md">
-        <Group justify="space-between">
-          <Group gap="xs">
-            <IconCalendar size={20} />
-            <Text fw={700}>{t('deliveryOrders.milestonesTitle')}</Text>
-          </Group>
-          <Badge color="teal" variant="light">
-            {t('deliveryOrders.milestoneCompleted', {
-              completed: milestones.filter((m) => m.actual_date).length,
-            })}
-          </Badge>
-        </Group>
-
-        {milestonesQuery.isLoading ? (
-          <Group justify="center" p="md">
-            <Loader size="sm" />
-            <Text size="sm" c="dimmed">
-              {t('deliveryOrders.milestoneLoading')}
-            </Text>
-          </Group>
-        ) : milestones.length === 0 ? (
-          <Text size="sm" c="dimmed">
-            {t('deliveryOrders.milestoneEmpty')}
-          </Text>
-        ) : (
-          <Timeline active={activeIndex} bulletSize={22} lineWidth={2}>
-            {milestones.map((milestone, idx) => {
-              const isCompleted = !!milestone.actual_date;
-              const isActive = activeIndex === idx;
-              const label = milestoneLabels[milestone.milestone_code] || milestone.milestone_code;
-
-              return (
-                <Timeline.Item
-                  key={milestone.id}
-                  title={label}
-                  bullet={isCompleted ? <IconFileCheck size={12} /> : undefined}
-                  color={isCompleted ? 'teal' : isActive ? 'blue' : 'gray'}
-                >
-                  <Group gap="xs" mt={4}>
-                    <Text size="xs" c="dimmed">
-                      {t('deliveryOrders.milestonePlanned')}{' '}
-                      {milestone.planned_date ? new Date(milestone.planned_date).toLocaleDateString() : '-'}
-                    </Text>
-                    <Text size="xs" c={isCompleted ? 'teal' : 'dimmed'} fw={isCompleted ? 600 : 400}>
-                      {t('deliveryOrders.milestoneActual')}{' '}
-                      {isCompleted ? new Date(milestone.actual_date!).toLocaleDateString() : t('deliveryOrders.milestoneNotAchieved')}
-                    </Text>
-                    {milestone.source && (
-                      <Badge size="xs" color="gray" variant="light">
-                        {t('deliveryOrders.milestoneSource')} {milestone.source}
-                      </Badge>
-                    )}
-                  </Group>
-                  {milestone.note && (
-                    <Text size="xs" c="dimmed" fs="italic" mt={2}>
-                      {t('deliveryOrders.milestoneNote')} "{milestone.note}"
-                    </Text>
-                  )}
-
-                  {isActive && (
-                    <Button
-                      size="xs"
-                      variant="light"
-                      color="blue"
-                      mt="xs"
-                      onClick={() => {
-                        setSelectedMilestone(milestone.milestone_code);
-                        setActualDate(new Date().toISOString().split('T')[0]);
-                      }}
-                    >
-                      {t('common.edit')}
-                    </Button>
-                  )}
-
-                  {selectedMilestone === milestone.milestone_code && (
-                    <Paper withBorder p="sm" mt="xs" style={{ backgroundColor: 'var(--mantine-color-dark-8)' }}>
-                      <Stack gap="xs">
-                        <Text size="xs" fw={700}>
-                          CẬP NHẬT MỐC LOGISTICS
-                        </Text>
-                        <TextInput
-                          label="Ngày thực tế"
-                          type="date"
-                          value={actualDate}
-                          onChange={(e) => setActualDate(e.currentTarget.value)}
-                          size="xs"
-                        />
-                        <Select
-                          label="Nguồn dữ liệu"
-                          value={source}
-                          onChange={(val) => setSource(val || 'MANUAL')}
-                          data={['MANUAL', 'API', 'EMAIL']}
-                          size="xs"
-                        />
-                        <TextInput
-                          label="Ghi chú"
-                          placeholder="Nhập lý do chênh lệch hoặc ghi chú..."
-                          value={note}
-                          onChange={(e) => setNote(e.currentTarget.value)}
-                          size="xs"
-                        />
-                        {mutation.isError && (
-                          <Alert color="red">
-                            {getApiErrorMessage(mutation.error)}
-                          </Alert>
-                        )}
-                        <Group justify="flex-end" gap="xs">
-                          <Button size="xs" variant="subtle" onClick={() => setSelectedMilestone(null)}>
-                            Hủy
-                          </Button>
-                          <Button
-                            size="xs"
-                            color="blue"
-                            onClick={() =>
-                              mutation.mutate({
-                                milestoneCode: milestone.milestone_code,
-                                actualDate,
-                                note,
-                                source,
-                              })
-                            }
-                            loading={mutation.isPending}
-                          >
-                            Xác nhận
-                          </Button>
-                        </Group>
-                      </Stack>
-                    </Paper>
-                  )}
-                </Timeline.Item>
-              );
-            })}
-          </Timeline>
-        )}
-      </Stack>
-    </Paper>
+    <Badge color={isOverdue ? 'red' : 'orange'} variant="filled">
+      {timeLeft}
+    </Badge>
   );
 }
 
-function Gd1LandedCostsPanel({ orderNumber }: { orderNumber: string }) {
+function Gd1QuotationBiddingPanel({ requestCode }: { requestCode: string }) {
   const queryClient = useQueryClient();
-  const [costType, setCostType] = useState('FREIGHT');
+  const { t } = useI18n();
+
+  const [compareIds, setCompareIds] = useState<string[]>([]);
+  const [showComparison, setShowComparison] = useState(false);
+
+  // Form states for creating a new quotation
+  const [carrier, setCarrier] = useState('');
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('USD');
-  const [exchangeRate, setExchangeRate] = useState('1');
-  const [allocMethod, setAllocMethod] = useState('BY_VALUE');
-  const [note, setNote] = useState('');
+  const [shippingMode, setShippingMode] = useState('FCL');
+  const [freightCost, setFreightCost] = useState('');
+  const [localCharges, setLocalCharges] = useState('');
+  const [customsFee, setCustomsFee] = useState('');
+  const [isAllInclusive, setIsAllInclusive] = useState(false);
 
-  const costsQuery = useQuery({
-    queryKey: ['shipment-costs', orderNumber],
-    queryFn: () => fetchShipmentCosts(orderNumber),
-    enabled: !!orderNumber,
+  const quotationsQuery = useQuery({
+    queryKey: ['quotations'],
+    queryFn: fetchQuotations,
   });
 
-  const addMutation = useMutation({
-    mutationFn: (payload: {
-      costType: string;
-      amount: number;
-      currencyCode: string;
-      exchangeRate: number;
-      allocMethod: string;
-      invoiceRef?: string | null;
-    }) =>
-      addShipmentCost(orderNumber, payload),
+  const quotations = useMemo(() => {
+    const all = quotationsQuery.data ?? [];
+    return all.filter((q) => q.requestCode === requestCode);
+  }, [quotationsQuery.data, requestCode]);
+
+  const createMutation = useMutation({
+    mutationFn: (payload: any) => createQuotation(payload),
     onSuccess: () => {
+      setCarrier('');
       setAmount('');
-      setNote('');
-      void queryClient.invalidateQueries({ queryKey: ['shipment-costs', orderNumber] });
+      setFreightCost('');
+      setLocalCharges('');
+      setCustomsFee('');
+      setIsAllInclusive(false);
+      void queryClient.invalidateQueries({ queryKey: ['quotations'] });
     },
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (costId: string) => deleteShipmentCost(costId),
+  const actionMutation = useMutation({
+    mutationFn: ({ id, action }: { id: string; action: QuotationAction }) => updateQuotationAction(id, { action }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['shipment-costs', orderNumber] });
+      void queryClient.invalidateQueries({ queryKey: ['quotations'] });
     },
   });
 
-  const costs = costsQuery.data ?? [];
-  const totalAmount = useMemo(
-    () => costs.reduce((sum, c) => sum + Number(c.amount) * Number(c.exchange_rate), 0),
-    [costs],
-  );
+  const handleCompareSelect = (id: string, checked: boolean) => {
+    if (checked) {
+      if (compareIds.length < 2) {
+        setCompareIds([...compareIds, id]);
+      }
+    } else {
+      setCompareIds(compareIds.filter((x) => x !== id));
+    }
+  };
+
+  const selectedQuotes = useMemo(() => {
+    return quotations.filter((q) => compareIds.includes(q.id));
+  }, [quotations, compareIds]);
 
   return (
-    <Paper withBorder p="md">
-      <Stack gap="md">
-        <Group justify="space-between">
-          <Group gap="xs">
-            <IconCash size={20} />
-            <Text fw={700}>Phân bổ Chi phí Landed Cost (GĐ1)</Text>
-          </Group>
-          <Badge color="orange" variant="light" size="lg">
-            Tổng chi phí (Quy đổi VND): {totalAmount.toLocaleString()} VND
-          </Badge>
+    <Stack gap="md">
+      <Group justify="space-between">
+        <Title order={4}>{t('quotations.title')}</Title>
+        <Group>
+          <Button
+            size="xs"
+            variant="outline"
+            disabled={compareIds.length !== 2}
+            onClick={() => setShowComparison((current) => !current)}
+          >
+            {showComparison ? 'Ẩn so sánh' : 'So sánh'} ({compareIds.length}/2)
+          </Button>
         </Group>
+      </Group>
 
-        {costsQuery.isLoading ? (
-          <Group justify="center" p="md">
-            <Loader size="sm" />
-            <Text size="sm" c="dimmed">
-              Đang tải danh sách chi phí...
-            </Text>
-          </Group>
-        ) : costs.length === 0 ? (
-          <Text size="sm" c="dimmed">
-            Chưa phân bổ bất kỳ chi phí thực tế nào cho lô hàng này.
-          </Text>
-        ) : (
-          <Stack gap="xs">
-            {costs.map((cost) => (
-              <Paper key={cost.id} withBorder p="sm">
-                <Group justify="space-between" wrap="nowrap">
-                  <div>
-                    <Text fw={600} size="sm">
-                      Loại phí: <Badge color="blue" variant="light">{cost.cost_type}</Badge>
+      {quotationsQuery.isLoading ? (
+        <Group justify="center" p="md">
+          <Loader size="sm" />
+        </Group>
+      ) : quotations.length === 0 ? (
+        <Text size="sm" c="dimmed">
+          Chưa có báo giá nào cho yêu cầu này.
+        </Text>
+      ) : (
+        <Table verticalSpacing="xs">
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th style={{ width: 40 }}></Table.Th>
+              <Table.Th>Báo giá</Table.Th>
+              <Table.Th>Nhà vận chuyển</Table.Th>
+              <Table.Th>Giá đề xuất</Table.Th>
+              <Table.Th>Trạng thái</Table.Th>
+              <Table.Th>SLA</Table.Th>
+              <Table.Th style={{ textAlign: 'right' }}>Thao tác</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {quotations.map((quote: any) => {
+              const isChecked = compareIds.includes(quote.id);
+              const isDisabled = !isChecked && compareIds.length >= 2;
+              return (
+                <Table.Tr key={quote.id}>
+                  <Table.Td>
+                    <Checkbox
+                      checked={isChecked}
+                      disabled={isDisabled}
+                      onChange={(e) => handleCompareSelect(quote.id, e.currentTarget.checked)}
+                    />
+                  </Table.Td>
+                  <Table.Td>
+                    <Text size="sm" fw={600}>
+                      {quote.quoteNumber}
                     </Text>
-                    <Text size="sm" mt={2}>
-                      Số tiền: {cost.amount.toLocaleString()} {cost.currency_code} (Tỷ giá:{' '}
-                      {cost.exchange_rate.toLocaleString()} VND)
+                    <Text size="xs" c="dimmed">
+                      {quote.shippingMode}
                     </Text>
-                    {cost.invoice_ref && (
-                      <Text size="xs" c="dimmed" fs="italic">
-                        Tham chiếu: "{cost.invoice_ref}"
+                  </Table.Td>
+                  <Table.Td>{quote.carrierName || 'N/A'}</Table.Td>
+                  <Table.Td>
+                    {quote.quoteAmount ? (
+                      <Text fw={700}>
+                        {Number(quote.quoteAmount).toLocaleString()} {quote.currency}
                       </Text>
+                    ) : (
+                      <Text c="dimmed">-</Text>
                     )}
-                  </div>
-                  <ActionIcon
-                    color="red"
-                    variant="subtle"
-                    onClick={() => deleteMutation.mutate(cost.id)}
-                    loading={deleteMutation.isPending && deleteMutation.variables === cost.id}
-                  >
-                    <IconTrash size={16} />
-                  </ActionIcon>
-                </Group>
-              </Paper>
-            ))}
-          </Stack>
-        )}
+                  </Table.Td>
+                  <Table.Td>
+                    <Badge
+                      color={
+                        quote.status === 'APPROVED' || quote.status === 'BOOKED'
+                          ? 'green'
+                          : quote.status === 'REJECTED'
+                            ? 'red'
+                            : quote.status.includes('SENT')
+                              ? 'blue'
+                              : 'gray'
+                      }
+                      variant="light"
+                    >
+                      {quote.status}
+                    </Badge>
+                  </Table.Td>
+                  <Table.Td>
+                    {(quote.status === 'PRELIMINARY_SENT' || quote.status === 'OFFICIAL_SENT') && (
+                      <SlaTimer
+                        dueAt={quote.status === 'PRELIMINARY_SENT' ? quote.preliminaryDueAt : quote.officialDueAt}
+                      />
+                    )}
+                  </Table.Td>
+                  <Table.Td style={{ textAlign: 'right' }}>
+                    <Group gap="xs" justify="flex-end">
+                      {quote.status === 'DRAFT' && (
+                        <Button
+                          size="compact-xs"
+                          color="blue"
+                          onClick={() => actionMutation.mutate({ id: quote.id, action: 'SEND_PRELIMINARY' })}
+                          loading={actionMutation.isPending}
+                        >
+                          Gửi
+                        </Button>
+                      )}
+                      {(quote.status === 'PRELIMINARY_SENT' || quote.status === 'OFFICIAL_SENT') && (
+                        <>
+                          <Button
+                            size="compact-xs"
+                            color="green"
+                            onClick={() => actionMutation.mutate({ id: quote.id, action: 'CUSTOMER_APPROVED' })}
+                            loading={actionMutation.isPending}
+                          >
+                            Duyệt (KBI)
+                          </Button>
+                          <Button
+                            size="compact-xs"
+                            color="red"
+                            variant="light"
+                            onClick={() => actionMutation.mutate({ id: quote.id, action: 'CUSTOMER_REJECTED' })}
+                            loading={actionMutation.isPending}
+                          >
+                            Từ chối
+                          </Button>
+                        </>
+                      )}
+                    </Group>
+                  </Table.Td>
+                </Table.Tr>
+              );
+            })}
+          </Table.Tbody>
+        </Table>
+      )}
 
-        <Paper withBorder p="sm" mt="xs" style={{ backgroundColor: 'var(--mantine-color-dark-8)' }}>
-          <Stack gap="xs">
-            <Text size="xs" fw={700}>
-              PHÂN BỔ CHI PHÍ MỚI
-            </Text>
-            <SimpleGrid cols={{ base: 1, sm: 4 }}>
-              <Select
-                label="Loại chi phí"
-                value={costType}
-                onChange={(val) => setCostType(val || 'FREIGHT')}
-                data={[
-                  { label: 'FREIGHT (Vận chuyển)', value: 'FREIGHT' },
-                  { label: 'INSURANCE (Bảo hiểm)', value: 'INSURANCE' },
-                  { label: 'CUSTOMS_DUTY (Thuế NK)', value: 'CUSTOMS_DUTY' },
-                  { label: 'VAT (Thuế GTGT)', value: 'VAT' },
-                  { label: 'LOCAL_CHARGES (Phí cảng)', value: 'LOCAL_CHARGES' },
-                  { label: 'DEMURRAGE (Phí lưu kho)', value: 'DEMURRAGE' },
-                  { label: 'OTHER (Chi phí khác)', value: 'OTHER' },
-                ]}
-                size="xs"
-              />
-              <TextInput
-                label="Số tiền"
-                type="number"
-                placeholder="0.00"
-                value={amount}
-                onChange={(e) => setAmount(e.currentTarget.value)}
-                size="xs"
-              />
-              <Select
-                label="Tiền tệ"
-                value={currency}
-                onChange={(val) => setCurrency(val || 'USD')}
-                data={['USD', 'VND', 'CNY', 'EUR']}
-                size="xs"
-              />
-              <TextInput
-                label="Tỷ giá"
-                type="number"
-                placeholder="1"
-                value={exchangeRate}
-                onChange={(e) => setExchangeRate(e.currentTarget.value)}
-                size="xs"
-              />
-            </SimpleGrid>
+      {/* Form thêm báo giá mới */}
+      <Paper withBorder p="md" mt="md">
+        <Stack gap="xs">
+          <Text size="xs" fw={700}>
+            TẠO BÁO GIÁ MỚI
+          </Text>
+          <SimpleGrid cols={{ base: 1, sm: 3 }}>
+            <TextInput
+              label="Nhà vận chuyển"
+              placeholder="VD: Logistics Hữu Nghị"
+              value={carrier}
+              onChange={(e) => setCarrier(e.currentTarget.value)}
+              size="xs"
+              required
+            />
+            <TextInput
+              label="Tổng số tiền"
+              type="number"
+              placeholder="0.00"
+              value={amount}
+              onChange={(e) => setAmount(e.currentTarget.value)}
+              size="xs"
+              required
+            />
             <Select
-              label="Phương pháp phân bổ"
-              value={allocMethod}
-              onChange={(val) => setAllocMethod(val || 'BY_VALUE')}
-              data={[
-                { label: 'Theo giá trị hàng', value: 'BY_VALUE' },
-                { label: 'Theo số lượng', value: 'BY_QTY' },
-                { label: 'Theo khối lượng', value: 'BY_WEIGHT' },
-              ]}
+              label="Tiền tệ"
+              value={currency}
+              onChange={(val) => setCurrency(val || 'USD')}
+              data={['USD', 'VND', 'EUR']}
+              size="xs"
+            />
+          </SimpleGrid>
+
+          <SimpleGrid cols={{ base: 1, sm: 4 }}>
+            <Select
+              label="Hình thức vận chuyển"
+              value={shippingMode}
+              onChange={(val) => setShippingMode(val || 'FCL')}
+              data={['FCL', 'LCL', 'AIR']}
               size="xs"
             />
             <TextInput
-              label="Ghi chú / Số hóa đơn (Invoice Ref)"
-              placeholder="Nhập số hóa đơn tham chiếu..."
-              value={note}
-              onChange={(e) => setNote(e.currentTarget.value)}
+              label="Cước biển/hàng không"
+              type="number"
+              placeholder="Freight cost"
+              value={freightCost}
+              onChange={(e) => setFreightCost(e.currentTarget.value)}
               size="xs"
             />
-            {addMutation.isError && (
-              <Alert color="red">
-                {getApiErrorMessage(addMutation.error)}
-              </Alert>
-            )}
-            <Group justify="flex-end">
-              <Button
-                size="xs"
-                color="blue"
-                onClick={() =>
-                  amount &&
-                  addMutation.mutate({
-                    costType,
-                    amount: Number(amount),
-                    currencyCode: currency,
-                    exchangeRate: Number(exchangeRate || 1),
-                    allocMethod,
-                    invoiceRef: note || null,
-                  })
-                }
-                loading={addMutation.isPending}
-                disabled={!amount || !exchangeRate}
-              >
-                Thêm phân bổ chi phí
-              </Button>
-            </Group>
-          </Stack>
+            <TextInput
+              label="Phí địa phương (Local charges)"
+              type="number"
+              placeholder="Local charges"
+              value={localCharges}
+              onChange={(e) => setLocalCharges(e.currentTarget.value)}
+              size="xs"
+            />
+            <TextInput
+              label="Phí hải quan (Customs fee)"
+              type="number"
+              placeholder="Customs clearance fee"
+              value={customsFee}
+              onChange={(e) => setCustomsFee(e.currentTarget.value)}
+              size="xs"
+            />
+          </SimpleGrid>
+
+          <Switch
+            label="Giá trọn gói (All inclusive)"
+            checked={isAllInclusive}
+            onChange={(e) => setIsAllInclusive(e.currentTarget.checked)}
+            size="xs"
+          />
+
+          <Group justify="flex-end">
+            <Button
+              size="xs"
+              color="blue"
+              onClick={() =>
+                createMutation.mutate({
+                  requestCode,
+                  carrierName: carrier,
+                  quoteAmount: Number(amount),
+                  currency,
+                  shippingMode,
+                  freightCost: Number(freightCost) || 0,
+                  localCharges: Number(localCharges) || 0,
+                  customsFee: Number(customsFee) || 0,
+                  isAllInclusive,
+                })
+              }
+              loading={createMutation.isPending}
+              disabled={!carrier || !amount}
+            >
+              Tạo báo giá
+            </Button>
+          </Group>
+        </Stack>
+      </Paper>
+
+      {showComparison && selectedQuotes.length === 2 ? (
+        <Paper withBorder p="md">
+          <Group justify="space-between" mb="md">
+            <Title order={4}>So sánh chi tiết Báo giá</Title>
+            <Button size="xs" variant="subtle" onClick={() => setShowComparison(false)} leftSection={<IconX size={14} />}>
+              Đóng
+            </Button>
+          </Group>
+          <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
+            {selectedQuotes.map((quote: any, idx) => (
+              <Paper key={quote.id} withBorder p="md">
+                <Title order={5} mb="md">
+                  Lựa chọn {idx + 1}: {quote.quoteNumber}
+                </Title>
+                <Stack gap="xs">
+                  <Info label="Nhà vận chuyển" value={quote.carrierName || 'N/A'} />
+                  <Info label="Phương thức" value={quote.shippingMode} />
+                  <Info
+                    label="Giá đề xuất"
+                    value={
+                      quote.quoteAmount
+                        ? `${Number(quote.quoteAmount).toLocaleString()} ${quote.currency}`
+                        : 'N/A'
+                    }
+                  />
+                  <Info
+                    label="Cước chính"
+                    value={
+                      quote.freightCost ? `${Number(quote.freightCost).toLocaleString()} ${quote.currency}` : '0'
+                    }
+                  />
+                  <Info
+                    label="Phí địa phương"
+                    value={
+                      quote.localCharges
+                        ? `${Number(quote.localCharges).toLocaleString()} ${quote.currency}`
+                        : '0'
+                    }
+                  />
+                  <Info
+                    label="Phí hải quan"
+                    value={
+                      quote.customsFee ? `${Number(quote.customsFee).toLocaleString()} ${quote.currency}` : '0'
+                    }
+                  />
+                  <Info label="Trọn gói" value={quote.isAllInclusive ? 'Có' : 'Không'} />
+                  <Info label="Trạng thái" value={quote.status} />
+                </Stack>
+              </Paper>
+            ))}
+          </SimpleGrid>
         </Paper>
-      </Stack>
-    </Paper>
+      ) : null}
+    </Stack>
   );
 }
 
-function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: DeliveryOrder }) {
-  const { documentLabel, statusLabel, t, taskRoleLabel } = useI18n();
+function DeliveryOrderDetail({ deliveryOrder, onClose }: { deliveryOrder: DeliveryOrder; onClose: () => void }) {
+  const { documentLabel, t, taskRoleLabel } = useI18n();
   const gates = getOperationalGates(deliveryOrder);
   const risks = getDeliveryOrderRisks(deliveryOrder);
   const taskProgress =
@@ -938,17 +897,20 @@ function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: DeliveryOrder }
         <div>
           <Title order={2}>{deliveryOrder.order_info.order_number}</Title>
           <Text c="dimmed">
-            {deliveryOrder.sap_integration.po_number ?? t('deliveryOrders.poPending')} - {deliveryOrder.product_details.item_name_requested}
+            {deliveryOrder.source_po_number ?? deliveryOrder.sap_integration.po_number ?? t('deliveryOrders.poPending')} / {deliveryOrder.source_lot_no ?? deliveryOrder.product_details.lot_number} - {deliveryOrder.product_details.item_name_requested}
           </Text>
           <FlowTagBadge tags={deliveryOrder.flow_tags} />
         </div>
         <Group gap="xs">
           <StatusBadge status={deliveryOrder.order_info.status} />
+          <Button variant="subtle" onClick={onClose} leftSection={<IconX size={16} />}>
+            Close detail
+          </Button>
         </Group>
       </Group>
 
       <Group gap="xs" mb="md">
-        <EntityLink type="po" id={deliveryOrder.sap_integration.po_number} />
+        <EntityLink type="po" id={deliveryOrder.source_po_number ?? deliveryOrder.sap_integration.po_number} />
         <Button
           component={Link}
           to={`/tasks?do=${deliveryOrder.order_info.order_number}`}
@@ -977,6 +939,9 @@ function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: DeliveryOrder }
           <Tabs.Tab value="overview" leftSection={<IconTruckDelivery size={16} />}>
             {t('deliveryOrders.overview')}
           </Tabs.Tab>
+          <Tabs.Tab value="quotations" leftSection={<IconClipboardCheck size={16} />}>
+            {t('quotations.title')}
+          </Tabs.Tab>
           <Tabs.Tab value="ops" leftSection={<IconClipboardCheck size={16} />}>
             {t('deliveryOrders.opsControl')}
           </Tabs.Tab>
@@ -994,17 +959,17 @@ function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: DeliveryOrder }
         <Tabs.Panel value="overview" pt="md">
           <SimpleGrid cols={{ base: 1, lg: 2 }}>
             <Stack gap="sm">
+              <Info label="Source lot" value={deliveryOrder.source_lot_no ?? deliveryOrder.product_details.lot_number ?? '-'} />
               <Info label={t('common.supplier')} value={deliveryOrder.sap_integration.supplier_name ?? t('deliveryOrders.supplierPending')} />
               <Info label={t('forms.incoterms')} value={deliveryOrder.logistics_shipping.incoterms} />
               <Info label={t('deliveryOrders.etdEta')} value={`${deliveryOrder.logistics_shipping.etd_planned ?? '-'} / ${deliveryOrder.logistics_shipping.eta_planned ?? '-'}`} />
               <Info label={t('forms.plannedWarehouseEntry')} value={deliveryOrder.warehouse_tracking.planned_entry_date ?? '-'} />
             </Stack>
-            <Gd1ShipmentMilestonesPanel orderNumber={deliveryOrder.order_info.order_number} />
           </SimpleGrid>
-          
-          <Stack mt="md">
-            <Gd1LandedCostsPanel orderNumber={deliveryOrder.order_info.order_number} />
-          </Stack>
+        </Tabs.Panel>
+
+        <Tabs.Panel value="quotations" pt="md">
+          <Gd1QuotationBiddingPanel requestCode={deliveryOrder.order_info.order_number} />
         </Tabs.Panel>
 
         <Tabs.Panel value="ops" pt="md">
@@ -1311,7 +1276,6 @@ function gateLabel(id: string, t: ReturnType<typeof useI18n>['t']) {
     customs: t('deliveryOrders.gateCustoms'),
     documents: t('deliveryOrders.gateDocuments'),
     finance: t('deliveryOrders.gateFinance'),
-    sap: t('deliveryOrders.gateSap'),
     tasks: t('deliveryOrders.gateTasks'),
     warehouse: t('deliveryOrders.gateWarehouse'),
   };
@@ -1325,8 +1289,9 @@ function riskLabel(code: OperationalRiskCode, t: ReturnType<typeof useI18n>['t']
     FINANCE_NOT_READY: t('opsRisk.financeNotReady'),
     MISSING_DOCUMENTS: t('opsRisk.missingDocuments'),
     REQUIRED_TASKS: t('opsRisk.requiredTasks'),
-    SAP_SYNC: t('opsRisk.sapSync'),
     WAREHOUSE_DELAY: t('opsRisk.warehouseDelay'),
+    QUOTATION_SLA: t('opsRisk.quotationSla'),
+    DRAFT_BL_SLA: t('opsRisk.draftBlSla'),
   };
 
   return labels[code];

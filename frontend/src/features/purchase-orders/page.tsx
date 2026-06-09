@@ -3,12 +3,14 @@ import {
   Alert,
   Badge,
   Button,
-  Drawer,
+  Checkbox,
   Group,
   Loader,
   NumberFormatter,
+  NumberInput,
   Paper,
   ScrollArea,
+  Select,
   SimpleGrid,
   Stack,
   Table,
@@ -16,28 +18,25 @@ import {
   TextInput,
   Title,
   Tooltip,
-  Tabs,
-  Select,
-  Checkbox,
 } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   IconAlertTriangle,
   IconCircleCheck,
+  IconDeviceFloppy,
   IconEye,
-  IconPlugConnected,
+  IconGitBranch,
   IconPlus,
   IconRefresh,
   IconSearch,
   IconShoppingCart,
+  IconTrash,
+  IconX,
   IconChecklist,
-  IconGitBranch,
 } from '@tabler/icons-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type DragEvent, type FormEvent, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
-import { CreatePurchaseOrderDrawer } from '@shared/components/CreateOrderForms';
 import { EntityLink } from '@shared/components/EntityLink';
 import { FilterToolbar } from '@shared/components/FilterToolbar';
 import { FlowTagBadge } from '@shared/components/FlowTagBadge';
@@ -45,26 +44,59 @@ import { ListPagination, useListPagination } from '@shared/components/ListPagina
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { EmptyState } from '@shared/components/EmptyState';
-import { SourceLineTable } from '@shared/components/SourceLineTable';
 import { getApiErrorMessage } from '@shared/api/http';
 import {
-  fetchPurchaseOrders,
-  syncPurchaseOrderSap,
-  type PurchaseOrder,
   advancePurchaseOrderStage,
+  createPurchaseOrder,
+  fetchDeliveryOrders,
+  fetchPurchaseOrders,
   fetchPurchaseOrderStageTasks,
-  type Gd1PoStageTask,
-  type Gd1PoStatus,
   updatePoStageTask,
+  updatePurchaseOrderLotAllocation,
+  type CreatePurchaseOrderPayload,
+  type Gd1PoStatus,
+  type PurchaseOrder,
+  type PurchaseOrderLineItem,
 } from '@shared/api/logistics';
 import { useAuth } from '@shared/auth/useAuth';
 import { useEntityParam } from '@shared/hooks/useEntityParam';
 import { useI18n } from '@shared/i18n';
 
-type PurchaseOrderTab = 'all' | 'single' | 'bulk' | 'awaiting' | 'partial' | 'closed' | 'sap';
+type PurchaseOrderTab = 'all' | 'single' | 'bulk' | 'awaiting' | 'partial' | 'closed';
+type PurchaseOrderWorkbench = 'list' | 'create' | 'detail';
+
+type CreatePoLine = {
+  id: string;
+  itemCode: string;
+  itemName: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  lotNumber: string;
+  expectedEta: string;
+};
+
+const DEFAULT_LOT = 'Lot 1';
+
+function newCreateLine(index: number): CreatePoLine {
+  return {
+    id: `new-line-${Date.now()}-${index}`,
+    itemCode: '',
+    itemName: '',
+    quantity: 1,
+    unit: 'PCS',
+    unitPrice: 0,
+    lotNumber: DEFAULT_LOT,
+    expectedEta: '',
+  };
+}
+
+function normalizeLotName(value: string) {
+  return value.trim() || DEFAULT_LOT;
+}
 
 export function PurchaseOrders() {
-  const { flowTagLabel, statusLabel, t } = useI18n();
+  const { flowTagLabel, t } = useI18n();
   const [searchParams] = useSearchParams();
   const monthParam = searchParams.get('month');
   const { user } = useAuth();
@@ -72,7 +104,7 @@ export function PurchaseOrders() {
   const [selectedPo, setSelectedPo] = useState<PurchaseOrder | null>(null);
   const [activeTab, setActiveTab] = useState<PurchaseOrderTab>('all');
   const [search, setSearch] = useState('');
-  const [createOpened, createHandlers] = useDisclosure(false);
+  const [workbench, setWorkbench] = useState<PurchaseOrderWorkbench>('list');
 
   const purchaseOrdersQuery = useQuery({
     queryKey: ['purchase-orders'],
@@ -84,20 +116,21 @@ export function PurchaseOrders() {
 
   useEffect(() => {
     if (!focusedPo) {
-      setSelectedPo(null);
+      if (workbench === 'detail') {
+        setSelectedPo(null);
+        setWorkbench('list');
+      }
       return;
     }
 
-    if (purchaseOrders.length === 0) {
-      return;
-    }
+    if (purchaseOrders.length === 0) return;
 
     const matchedOrder = purchaseOrders.find((order) => order.po_number === focusedPo);
-
     if (matchedOrder) {
       setSelectedPo(matchedOrder);
+      setWorkbench('detail');
     }
-  }, [focusedPo, purchaseOrders]);
+  }, [focusedPo, purchaseOrders, workbench]);
 
   const filteredPurchaseOrders = useMemo(() => {
     const normalizedSearch = search.toLowerCase().trim();
@@ -109,19 +142,17 @@ export function PurchaseOrders() {
         (activeTab === 'bulk' && order.flow_tags.includes('BULK_PURCHASE')) ||
         (activeTab === 'awaiting' && order.linked_do_numbers.length === 0) ||
         (activeTab === 'partial' && order.status === 'PARTIALLY_DELIVERED') ||
-        (activeTab === 'closed' && order.status === 'CLOSED') ||
-        (activeTab === 'sap' && order.sap_sync_status !== 'SYNCED');
+        (activeTab === 'closed' && order.status === 'CLOSED');
       const matchesSearch = [order.po_number, order.supplier_code, order.supplier_name, order.linked_do_numbers.join(' ')]
         .join(' ')
         .toLowerCase()
         .includes(normalizedSearch);
-
-      const dateStr = order.order_date;
-      const matchesMonth = !monthParam || (dateStr && dateStr.startsWith(monthParam));
+      const matchesMonth = !monthParam || (order.order_date && order.order_date.startsWith(monthParam));
 
       return matchesTab && matchesSearch && matchesMonth;
     });
   }, [activeTab, purchaseOrders, search, monthParam]);
+
   const {
     page,
     pageCount,
@@ -138,7 +169,6 @@ export function PurchaseOrders() {
       bulk: purchaseOrders.filter((order) => order.flow_tags.includes('BULK_PURCHASE')).length,
       closed: purchaseOrders.filter((order) => order.status === 'CLOSED').length,
       partial: purchaseOrders.filter((order) => order.status === 'PARTIALLY_DELIVERED').length,
-      sap: purchaseOrders.filter((order) => order.sap_sync_status !== 'SYNCED').length,
       single: purchaseOrders.filter((order) => order.flow_tags.includes('LINEAR')).length,
     }),
     [purchaseOrders],
@@ -146,11 +176,19 @@ export function PurchaseOrders() {
 
   const openDetail = (order: PurchaseOrder) => {
     setSelectedPo(order);
+    setWorkbench('detail');
     openPoParam(order.po_number, { clear: ['pr', 'do', 'task'] });
   };
 
-  const closeDrawer = () => {
+  const closeWorkbench = () => {
+    setWorkbench('list');
     setSelectedPo(null);
+    closePoParam({ clear: ['pr', 'do', 'task'] });
+  };
+
+  const openCreate = () => {
+    setSelectedPo(null);
+    setWorkbench('create');
     closePoParam({ clear: ['pr', 'do', 'task'] });
   };
 
@@ -172,7 +210,7 @@ export function PurchaseOrders() {
       <PageLoading
         title={t('purchaseOrders.title')}
         description={t('purchaseOrders.loadingDescription')}
-        tableColumns={['PO', t('common.supplier'), t('common.linkedDo'), t('purchaseOrders.total'), 'SAP', t('common.status')]}
+        tableColumns={['PO', t('common.supplier'), t('common.linkedDo'), 'Lots', t('purchaseOrders.total'), t('common.status')]}
       />
     );
   }
@@ -188,21 +226,34 @@ export function PurchaseOrders() {
         </div>
         <Group gap="xs">
           {canCreatePurchaseOrders ? (
-            <Button onClick={createHandlers.open} leftSection={<IconPlus size={16} />}>
+            <Button onClick={openCreate} leftSection={<IconPlus size={16} />} variant={workbench === 'create' ? 'filled' : 'light'}>
               {t('purchaseOrders.create')}
             </Button>
           ) : null}
-          <Badge leftSection={<IconShoppingCart size={14} />} size="lg" variant="light">
-            {t('purchaseOrders.sapSource')}
+          {workbench !== 'list' ? (
+            <Button onClick={closeWorkbench} leftSection={<IconX size={16} />} variant="subtle">
+              Back to list
+            </Button>
+          ) : null}
+          <Badge leftSection={<IconGitBranch size={14} />} size="lg" variant="light">
+            {'PO -> Lot -> DO'}
           </Badge>
         </Group>
       </Group>
 
       <SimpleGrid cols={{ base: 1, sm: 3 }}>
         <Metric label={t('purchaseOrders.totalPo')} value={purchaseOrders.length} color="blue" icon={<IconShoppingCart size={22} />} />
-        <Metric label={t('purchaseOrders.synced')} value={purchaseOrders.filter((order) => order.sap_sync_status === 'SYNCED').length} color="teal" icon={<IconCircleCheck size={22} />} />
-        <Metric label={t('purchaseOrders.pendingSap')} value={purchaseOrders.filter((order) => order.sap_sync_status !== 'SYNCED').length} color="orange" icon={<IconAlertTriangle size={22} />} />
+        <Metric label="Lots planned" value={purchaseOrders.reduce((total, order) => total + (order.lots?.length ?? 1), 0)} color="teal" icon={<IconGitBranch size={22} />} />
+        <Metric label="Generated DOs" value={purchaseOrders.reduce((total, order) => total + order.linked_do_numbers.length, 0)} color="blue" icon={<IconCircleCheck size={22} />} />
       </SimpleGrid>
+
+      {workbench === 'create' ? (
+        <PurchaseOrderCreatePanel onCancel={closeWorkbench} onCreated={openDetail} />
+      ) : null}
+
+      {workbench === 'detail' && selectedPo ? (
+        <PurchaseOrderDetailPanel order={selectedPo} onClose={closeWorkbench} onUpdated={setSelectedPo} />
+      ) : null}
 
       <FilterToolbar
         activeTab={activeTab}
@@ -216,7 +267,6 @@ export function PurchaseOrders() {
           { label: t('common.awaitingDo'), value: 'awaiting', count: tabCounts.awaiting },
           { label: flowTagLabel('PARTIAL_DELIVERY'), value: 'partial', count: tabCounts.partial },
           { label: t('common.closed'), value: 'closed', count: tabCounts.closed },
-          { label: t('common.sapIssues'), value: 'sap', count: tabCounts.sap },
         ]}
       >
         <TextInput
@@ -240,8 +290,8 @@ export function PurchaseOrders() {
                   <Table.Th>PO</Table.Th>
                   <Table.Th>{t('common.supplier')}</Table.Th>
                   <Table.Th>{t('common.linkedDo')}</Table.Th>
+                  <Table.Th>Lots</Table.Th>
                   <Table.Th>{t('purchaseOrders.total')}</Table.Th>
-                  <Table.Th>SAP</Table.Th>
                   <Table.Th>{t('common.status')}</Table.Th>
                   <Table.Th />
                 </Table.Tr>
@@ -272,14 +322,14 @@ export function PurchaseOrders() {
                       </Group>
                     </Table.Td>
                     <Table.Td>
+                      <Badge color="teal" variant="light">
+                        {order.lots?.length ?? 1} lot / {order.linked_do_numbers.length} DO
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
                       <Text fw={600}>
                         <NumberFormatter value={order.total_amount} thousandSeparator /> {order.currency}
                       </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Badge color={order.sap_sync_status === 'SYNCED' ? 'teal' : 'orange'} variant="light">
-                        {statusLabel(order.sap_sync_status)}
-                      </Badge>
                     </Table.Td>
                     <Table.Td>
                       <StatusBadge status={order.status} />
@@ -306,17 +356,222 @@ export function PurchaseOrders() {
           total={filteredPurchaseOrders.length}
         />
       </Paper>
-
-      <CreatePurchaseOrderDrawer
-        opened={createOpened}
-        onClose={createHandlers.close}
-        onCreated={(order) => openDetail(order)}
-      />
-
-      <Drawer opened={Boolean(focusedPo && selectedPo)} onClose={closeDrawer} title={t('purchaseOrders.detailTitle')} position="right" size="lg">
-        {selectedPo ? <PurchaseOrderDetail order={selectedPo} onUpdated={setSelectedPo} /> : null}
-      </Drawer>
     </Stack>
+  );
+}
+
+function PurchaseOrderCreatePanel({
+  onCancel,
+  onCreated,
+}: {
+  onCancel: () => void;
+  onCreated: (order: PurchaseOrder) => void;
+}) {
+  const queryClient = useQueryClient();
+  const [lots, setLots] = useState<string[]>([DEFAULT_LOT]);
+  const [lines, setLines] = useState<CreatePoLine[]>([newCreateLine(0)]);
+  const [poNumber, setPoNumber] = useState(`PO-2026-${String(Date.now()).slice(-6)}`);
+  const [supplierCode, setSupplierCode] = useState('SUP-NEW');
+  const [supplierName, setSupplierName] = useState('New Supplier');
+  const [currency, setCurrency] = useState('USD');
+  const [orderDate, setOrderDate] = useState(new Date().toISOString().slice(0, 10));
+  const [warehouseCode, setWarehouseCode] = useState('WH001');
+
+  const totalAmount = lines.reduce((total, line) => total + Number(line.quantity || 0) * Number(line.unitPrice || 0), 0);
+
+  const mutation = useMutation({
+    mutationFn: createPurchaseOrder,
+    onSuccess: async (order) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['purchase-orders'] }),
+        queryClient.invalidateQueries({ queryKey: ['delivery-orders'] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
+        queryClient.invalidateQueries({ queryKey: ['global-search'] }),
+      ]);
+      onCreated(order);
+    },
+  });
+
+  const updateLine = (lineId: string, patch: Partial<CreatePoLine>) => {
+    setLines((current) => current.map((line) => (line.id === lineId ? { ...line, ...patch } : line)));
+  };
+
+  const addLot = () => {
+    setLots((current) => [...current, `Lot ${current.length + 1}`]);
+  };
+
+  const removeLot = (lotName: string) => {
+    if (lotName === DEFAULT_LOT) return;
+    if (lines.some((line) => line.lotNumber === lotName)) return;
+    setLots((current) => current.filter((lot) => lot !== lotName));
+  };
+
+  const handleSubmit = (event: FormEvent) => {
+    event.preventDefault();
+    const validLines = lines.filter((line) => line.itemCode.trim() && line.itemName.trim() && Number(line.quantity) > 0);
+    if (!poNumber.trim() || !supplierCode.trim() || !supplierName.trim() || validLines.length === 0) return;
+
+    const payload: CreatePurchaseOrderPayload = {
+      currency: currency.trim().toUpperCase(),
+      orderDate,
+      poNumber: poNumber.trim(),
+      sourceLines: validLines.map((line) => ({
+        itemCode: line.itemCode.trim(),
+        itemName: line.itemName.trim(),
+        quantity: Number(line.quantity),
+        unit: line.unit.trim(),
+        lotNumber: line.lotNumber,
+        unitPrice: Number(line.unitPrice) || 0,
+        expectedEta: line.expectedEta || undefined,
+      })),
+      supplierCode: supplierCode.trim(),
+      supplierName: supplierName.trim(),
+      totalAmount,
+      warehouseCode: warehouseCode.trim(),
+    } as CreatePurchaseOrderPayload;
+
+    mutation.mutate(payload);
+  };
+
+  return (
+    <Paper withBorder p="md" component="form" onSubmit={handleSubmit}>
+      <Stack gap="md">
+        <Group justify="space-between" align="flex-start">
+          <div>
+            <Title order={3}>Create Purchase Order</Title>
+            <Text size="sm" c="dimmed">
+              Supplier order, item rows, and initial LOT plan.
+            </Text>
+          </div>
+          <Group gap="xs">
+            <Button type="button" variant="subtle" onClick={onCancel} leftSection={<IconX size={16} />}>
+              Cancel
+            </Button>
+            <Button type="submit" loading={mutation.isPending} leftSection={<IconShoppingCart size={16} />}>
+              Save PO
+            </Button>
+          </Group>
+        </Group>
+
+        {mutation.isError ? (
+          <Alert color="red" icon={<IconAlertTriangle size={18} />}>
+            {getApiErrorMessage(mutation.error)}
+          </Alert>
+        ) : null}
+
+        <SimpleGrid cols={{ base: 1, md: 4 }}>
+          <TextInput label="PO number" value={poNumber} onChange={(event) => setPoNumber(event.currentTarget.value)} required />
+          <TextInput label="Supplier code" value={supplierCode} onChange={(event) => setSupplierCode(event.currentTarget.value)} required />
+          <TextInput label="Supplier name" value={supplierName} onChange={(event) => setSupplierName(event.currentTarget.value)} required />
+          <TextInput label="Order date" type="date" value={orderDate} onChange={(event) => setOrderDate(event.currentTarget.value)} />
+          <TextInput label="Currency" value={currency} onChange={(event) => setCurrency(event.currentTarget.value)} />
+          <TextInput label="Warehouse" value={warehouseCode} onChange={(event) => setWarehouseCode(event.currentTarget.value)} />
+          <Info label="Lots" value={String(lots.length)} />
+          <Info label="Total" value={`${totalAmount.toLocaleString()} ${currency}`} />
+        </SimpleGrid>
+
+        <CompactPoItemTable
+          lines={lines}
+          lots={lots}
+          onAddLine={() => setLines((current) => [...current, newCreateLine(current.length)])}
+          onRemoveLine={(lineId) => setLines((current) => (current.length === 1 ? current : current.filter((line) => line.id !== lineId)))}
+          onUpdateLine={updateLine}
+        />
+
+        <LotDraftBoard
+          lots={lots}
+          lineSummaries={lines.map((line) => ({
+            id: line.id,
+            itemCode: line.itemCode || 'New item',
+            itemName: line.itemName || 'Unnamed item',
+            quantity: line.quantity,
+            unit: line.unit,
+            lotNo: line.lotNumber,
+          }))}
+          onAddLot={addLot}
+          onRemoveLot={removeLot}
+          onMoveLine={(lineId, lotNo) => updateLine(lineId, { lotNumber: lotNo })}
+          saveActions={null}
+        />
+      </Stack>
+    </Paper>
+  );
+}
+
+function CompactPoItemTable({
+  lines,
+  lots,
+  onAddLine,
+  onRemoveLine,
+  onUpdateLine,
+}: {
+  lines: CreatePoLine[];
+  lots: string[];
+  onAddLine: () => void;
+  onRemoveLine: (lineId: string) => void;
+  onUpdateLine: (lineId: string, patch: Partial<CreatePoLine>) => void;
+}) {
+  return (
+    <Paper withBorder p={0}>
+      <Group justify="space-between" p="sm">
+        <Text fw={700}>PO items</Text>
+        <Button size="xs" variant="light" onClick={onAddLine} leftSection={<IconPlus size={14} />}>
+          Add item
+        </Button>
+      </Group>
+      <ScrollArea type="always" offsetScrollbars scrollbarSize={8}>
+        <Table miw={980} verticalSpacing="xs">
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th style={{ width: 105 }}>Mặt hàng #</Table.Th>
+              <Table.Th>Item code</Table.Th>
+              <Table.Th>Item name</Table.Th>
+              <Table.Th style={{ width: 120 }}>Qty</Table.Th>
+              <Table.Th style={{ width: 100 }}>Unit</Table.Th>
+              <Table.Th style={{ width: 130 }}>Unit price</Table.Th>
+              <Table.Th style={{ width: 135 }}>LOT</Table.Th>
+              <Table.Th style={{ width: 140 }}>ETA</Table.Th>
+              <Table.Th style={{ width: 56 }} />
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {lines.map((line, index) => (
+              <Table.Tr key={line.id}>
+                <Table.Td>
+                  <Text size="sm" fw={700}>#{index + 1}</Text>
+                </Table.Td>
+                <Table.Td>
+                  <TextInput size="xs" value={line.itemCode} onChange={(event) => onUpdateLine(line.id, { itemCode: event.currentTarget.value })} required />
+                </Table.Td>
+                <Table.Td>
+                  <TextInput size="xs" value={line.itemName} onChange={(event) => onUpdateLine(line.id, { itemName: event.currentTarget.value })} required />
+                </Table.Td>
+                <Table.Td>
+                  <NumberInput size="xs" min={1} value={line.quantity} onChange={(value) => onUpdateLine(line.id, { quantity: Number(value) || 1 })} />
+                </Table.Td>
+                <Table.Td>
+                  <TextInput size="xs" value={line.unit} onChange={(event) => onUpdateLine(line.id, { unit: event.currentTarget.value })} />
+                </Table.Td>
+                <Table.Td>
+                  <NumberInput size="xs" min={0} value={line.unitPrice} onChange={(value) => onUpdateLine(line.id, { unitPrice: Number(value) || 0 })} />
+                </Table.Td>
+                <Table.Td>
+                  <Select size="xs" data={lots} value={line.lotNumber} onChange={(value) => onUpdateLine(line.id, { lotNumber: value ?? DEFAULT_LOT })} />
+                </Table.Td>
+                <Table.Td>
+                  <TextInput size="xs" type="date" value={line.expectedEta} onChange={(event) => onUpdateLine(line.id, { expectedEta: event.currentTarget.value })} />
+                </Table.Td>
+                <Table.Td>
+                  <ActionIcon variant="subtle" color="red" disabled={lines.length === 1} onClick={() => onRemoveLine(line.id)} aria-label="Remove item">
+                    <IconTrash size={16} />
+                  </ActionIcon>
+                </Table.Td>
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+        </Table>
+      </ScrollArea>
+    </Paper>
   );
 }
 
@@ -327,7 +582,7 @@ function Metric({
   value,
 }: {
   color?: string;
-  icon?: React.ReactNode;
+  icon?: ReactNode;
   label: string;
   value: number;
 }) {
@@ -371,6 +626,7 @@ function Gd1PoStageControlPanel({
         queryClient.invalidateQueries({ queryKey: ['purchase-order-tasks', order.po_number] }),
         queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
       ]);
+      onUpdated?.(order);
     },
   });
 
@@ -399,20 +655,15 @@ function Gd1PoStageControlPanel({
             onChange={(val) => setSelectedStage((val || '') as Gd1PoStatus | '')}
             style={{ flex: 1 }}
           />
-          <Button
-            onClick={() => selectedStage && mutation.mutate(selectedStage)}
-            loading={mutation.isPending}
-            disabled={!selectedStage}
-            color="blue"
-          >
+          <Button onClick={() => selectedStage && mutation.mutate(selectedStage)} loading={mutation.isPending} disabled={!selectedStage} color="blue">
             {t('common.save')}
           </Button>
         </Group>
-        {mutation.isError && (
+        {mutation.isError ? (
           <Alert color="red" mt="xs">
             {getApiErrorMessage(mutation.error)}
           </Alert>
-        )}
+        ) : null}
       </Stack>
     </Paper>
   );
@@ -420,7 +671,6 @@ function Gd1PoStageControlPanel({
 
 function Gd1PoStageChecklist({ order }: { order: PurchaseOrder }) {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
   const { t } = useI18n();
 
   const tasksQuery = useQuery({
@@ -430,8 +680,7 @@ function Gd1PoStageChecklist({ order }: { order: PurchaseOrder }) {
   });
 
   const completeMutation = useMutation({
-    mutationFn: ({ taskId, status }: { taskId: string; status: string }) =>
-      updatePoStageTask(taskId, { status }),
+    mutationFn: ({ taskId, status }: { taskId: string; status: string }) => updatePoStageTask(taskId, { status }),
     onSuccess: () => {
       void Promise.all([
         queryClient.invalidateQueries({ queryKey: ['purchase-order-tasks', order.po_number] }),
@@ -452,7 +701,7 @@ function Gd1PoStageChecklist({ order }: { order: PurchaseOrder }) {
           </Group>
           <Badge color="blue" variant="light">
             {t('purchaseOrders.stageChecklistCompleted', {
-              completed: tasks.filter((t) => t.status === 'DONE').length,
+              completed: tasks.filter((task) => task.status === 'DONE').length,
               total: tasks.length,
             })}
           </Badge>
@@ -472,46 +721,28 @@ function Gd1PoStageChecklist({ order }: { order: PurchaseOrder }) {
             {tasks.map((task) => {
               const isCompleted = task.status === 'DONE';
               return (
-                <Paper
-                  key={task.id}
-                  withBorder
-                  p="sm"
-                  style={{
-                    backgroundColor: isCompleted ? 'rgba(46, 125, 50, 0.05)' : undefined,
-                    borderColor: isCompleted ? 'var(--mantine-color-teal-outline)' : undefined,
-                  }}
-                >
-                  <Group justify="space-between" wrap="nowrap">
-                    <Group gap="sm" style={{ flex: 1 }}>
-                      <Checkbox
-                        checked={isCompleted}
-                        onChange={(e) =>
-                          completeMutation.mutate({
-                            taskId: task.id,
-                            status: e.currentTarget.checked ? 'DONE' : 'PENDING',
-                          })
-                        }
-                        color="teal"
-                      />
-                      <div>
-                        <Text fw={600} size="sm" style={{ textDecoration: isCompleted ? 'line-through' : 'none' }}>
-                          {task.task_name}
-                        </Text>
-                        <Group gap="xs" mt={4}>
-                          <Badge size="xs" color="gray" variant="light">
-                            Chặng: {task.po_stage}
-                          </Badge>
-                          <Badge size="xs" color="blue" variant="light">
-                            Vai trò: {task.assignee_id}
-                          </Badge>
-                          {task.due_date && (
-                            <Text size="xs" c="dimmed">
-                              Hạn: {new Date(task.due_date).toLocaleDateString()}
-                            </Text>
-                          )}
-                        </Group>
-                      </div>
-                    </Group>
+                <Paper key={task.id} withBorder p="sm" style={{ backgroundColor: isCompleted ? 'rgba(46, 125, 50, 0.05)' : undefined }}>
+                  <Group gap="sm" wrap="nowrap">
+                    <Checkbox
+                      checked={isCompleted}
+                      onChange={(event) =>
+                        completeMutation.mutate({
+                          taskId: task.id,
+                          status: event.currentTarget.checked ? 'DONE' : 'PENDING',
+                        })
+                      }
+                      color="teal"
+                    />
+                    <div>
+                      <Text fw={600} size="sm" style={{ textDecoration: isCompleted ? 'line-through' : 'none' }}>
+                        {task.task_name}
+                      </Text>
+                      <Group gap="xs" mt={4}>
+                        <Badge size="xs" color="gray" variant="light">{task.po_stage}</Badge>
+                        <Badge size="xs" color="blue" variant="light">{task.assignee_id}</Badge>
+                        {task.due_date ? <Text size="xs" c="dimmed">{new Date(task.due_date).toLocaleDateString()}</Text> : null}
+                      </Group>
+                    </div>
                   </Group>
                 </Paper>
               );
@@ -523,16 +754,58 @@ function Gd1PoStageChecklist({ order }: { order: PurchaseOrder }) {
   );
 }
 
-function PurchaseOrderDetail({ onUpdated, order }: { onUpdated?: (order: PurchaseOrder) => void; order: PurchaseOrder }) {
-  const { formatNumber, statusLabel, t } = useI18n();
+function PurchaseOrderDetailPanel({
+  onClose,
+  onUpdated,
+  order,
+}: {
+  onClose: () => void;
+  onUpdated?: (order: PurchaseOrder) => void;
+  order: PurchaseOrder;
+}) {
+  const { formatNumber, t } = useI18n();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
-  const canSyncSap = user?.role === 'ADMIN' || user?.role === 'PIC_MANAGER';
-  const syncMutation = useMutation({
-    mutationFn: () => syncPurchaseOrderSap(order.po_number),
-    onSuccess: (updatedOrder) => {
+  const sourceSummary = `${order.lots?.length ?? 1} lot / ${order.linked_do_numbers.length} generated DO`;
+  const [draftLots, setDraftLots] = useState<string[]>([]);
+  const [draftAssignments, setDraftAssignments] = useState<Record<string, string>>({});
+  const deliveryOrdersQuery = useQuery({
+    queryKey: ['delivery-orders'],
+    queryFn: fetchDeliveryOrders,
+  });
+  const deliveryOrders = deliveryOrdersQuery.data ?? [];
+
+  useEffect(() => {
+    const lotNames = order.lots?.map((lot) => lot.lot_no) ?? [];
+    const initialLots = lotNames.length > 0 ? lotNames : Array.from(new Set(order.line_items.map((item) => item.lot_number || DEFAULT_LOT)));
+    setDraftLots(initialLots.includes(DEFAULT_LOT) ? initialLots : [DEFAULT_LOT, ...initialLots]);
+    setDraftAssignments(
+      Object.fromEntries(order.line_items.map((line) => [line.id, line.lot_number || order.lots?.find((lot) => lot.allocations.some((allocation) => allocation.po_line_id === line.id))?.lot_no || DEFAULT_LOT])),
+    );
+  }, [order]);
+
+  const hasAllocationChanges = useMemo(() => {
+    const currentLots = (order.lots?.map((lot) => lot.lot_no) ?? [DEFAULT_LOT]).join('|');
+    const nextLots = draftLots.join('|');
+    if (currentLots !== nextLots) return true;
+    return order.line_items.some((line) => (line.lot_number || DEFAULT_LOT) !== (draftAssignments[line.id] || DEFAULT_LOT));
+  }, [draftAssignments, draftLots, order]);
+
+  const saveAllocationMutation = useMutation({
+    mutationFn: () =>
+      updatePurchaseOrderLotAllocation(order.po_number, {
+        lots: draftLots.map((lotNo) => {
+          const existingLot = order.lots?.find((lot) => lot.lot_no === lotNo);
+          return { id: existingLot?.id, lotNo, doNumber: existingLot?.do_number };
+        }),
+        lineAllocations: order.line_items.map((line) => ({
+          poLineId: line.id,
+          lotNo: draftAssignments[line.id] || DEFAULT_LOT,
+          quantity: line.quantity,
+        })),
+      }),
+    onSuccess: async (updatedOrder) => {
       onUpdated?.(updatedOrder);
-      void Promise.all([
+      await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['purchase-orders'] }),
         queryClient.invalidateQueries({ queryKey: ['delivery-orders'] }),
         queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
@@ -540,74 +813,301 @@ function PurchaseOrderDetail({ onUpdated, order }: { onUpdated?: (order: Purchas
       ]);
     },
   });
-  const sapSynced = order.sap_sync_status === 'SYNCED';
+
+  const resetDraft = () => {
+    const lotNames = order.lots?.map((lot) => lot.lot_no) ?? [DEFAULT_LOT];
+    setDraftLots(lotNames);
+    setDraftAssignments(Object.fromEntries(order.line_items.map((line) => [line.id, line.lot_number || DEFAULT_LOT])));
+  };
+
+  const hasLinkedShipment = (lotName: string) => {
+    const existingLot = order.lots?.find((lot) => lot.lot_no === lotName);
+    if (!existingLot?.do_number) return false;
+
+    return deliveryOrders.some(
+      (deliveryOrder) =>
+        deliveryOrder.order_info.order_number === existingLot.do_number && Boolean(deliveryOrder.linked_shipment_number),
+    );
+  };
+
+  const canRemoveLot = (lotName: string, itemCount: number) =>
+    lotName !== DEFAULT_LOT && itemCount === 0 && !hasLinkedShipment(lotName);
+
+  const addLot = () => {
+    setDraftLots((current) => {
+      let index = current.length + 1;
+      let lotName = `Lot ${index}`;
+      while (current.includes(lotName)) {
+        index += 1;
+        lotName = `Lot ${index}`;
+      }
+      return [...current, lotName];
+    });
+  };
+
+  const removeLot = (lotName: string) => {
+    if (!canRemoveLot(lotName, 0)) return;
+    setDraftLots((current) => current.filter((lot) => lot !== lotName));
+  };
+
+  const moveLine = (lineId: string, lotNo: string) => {
+    setDraftAssignments((current) => ({ ...current, [lineId]: lotNo }));
+  };
+
+  const lineSummaries = order.line_items.map((line) => ({
+    id: line.id,
+    itemCode: line.item_code,
+    itemName: line.item_name,
+    quantity: line.quantity,
+    unit: line.unit,
+    lotNo: draftAssignments[line.id] || DEFAULT_LOT,
+  }));
 
   return (
-    <Stack gap="md">
-      <Group justify="space-between" align="flex-start">
-        <div>
-          <Title order={3}>{order.po_number}</Title>
-          <Text c="dimmed">
-            {order.supplier_name} - {order.warehouse_code}
-          </Text>
-        </div>
-        <StatusBadge status={order.status} />
-      </Group>
-
-      <Paper withBorder p="md" className={sapSynced ? 'ops-panel' : 'ops-panel-risk'}>
-        <Group justify="space-between" align="flex-start" gap="md">
+    <Paper withBorder p="md">
+      <Stack gap="md">
+        <Group justify="space-between" align="flex-start">
           <div>
-            <Text fw={700}>{t('purchaseOrders.sapSyncControl')}</Text>
-            <Text size="sm" c="dimmed">
-              {sapSynced ? t('purchaseOrders.sapSyncedDescription') : t('purchaseOrders.sapPendingDescription')}
+            <Title order={3}>{order.po_number}</Title>
+            <Text c="dimmed">
+              {order.supplier_name} - {order.warehouse_code}
             </Text>
           </div>
-          <Button
-            disabled={!canSyncSap || order.status === 'CLOSED'}
-            loading={syncMutation.isPending}
-            onClick={() => syncMutation.mutate()}
-            leftSection={sapSynced ? <IconRefresh size={16} /> : <IconPlugConnected size={16} />}
-            variant={sapSynced ? 'light' : 'filled'}
-          >
-            {sapSynced ? t('purchaseOrders.retrySapSync') : t('purchaseOrders.syncSap')}
-          </Button>
+          <Group gap="xs">
+            <StatusBadge status={order.status} />
+            <Button variant="subtle" onClick={onClose} leftSection={<IconX size={16} />}>
+              Close detail
+            </Button>
+          </Group>
         </Group>
-        {!canSyncSap ? (
-          <Text size="sm" c="dimmed" mt="sm">
-            {t('purchaseOrders.sapSyncPicOnly')}
-          </Text>
-        ) : null}
-        {syncMutation.isError ? (
-          <Alert color="red" mt="md">
-            {getApiErrorMessage(syncMutation.error)}
+
+        <Paper withBorder p="md" className="ops-panel">
+          <Group justify="space-between" align="flex-start" gap="md">
+            <div>
+              <Text fw={700}>PO lot planning</Text>
+              <Text size="sm" c="dimmed">
+                Draft allocation review before DO regeneration.
+              </Text>
+            </div>
+            <Badge color={hasAllocationChanges ? 'orange' : 'teal'} variant="light">
+              {hasAllocationChanges ? 'Unsaved allocation changes' : sourceSummary}
+            </Badge>
+          </Group>
+        </Paper>
+
+        <SimpleGrid cols={{ base: 1, sm: 4 }}>
+          <Info label={t('forms.supplierCode')} value={order.supplier_code} />
+          <Info label={t('forms.orderDate')} value={order.order_date} />
+          <Info label={t('forms.totalAmount')} value={`${formatNumber(order.total_amount)} ${order.currency}`} />
+          <Info label="Version" value={`v${order.version ?? 1}`} />
+          <Info label="PO type" value={order.po_type ?? '-'} />
+          <Info label="Incoterm" value={order.incoterm ?? '-'} />
+          <Info label="Payment" value={order.payment_term ?? '-'} />
+          <Info label="ETA" value={order.expected_eta ?? '-'} />
+        </SimpleGrid>
+
+        <PoLineAllocationTable lines={order.line_items} lots={draftLots} assignments={draftAssignments} onMoveLine={moveLine} />
+
+        <LotDraftBoard
+          lots={draftLots}
+          lineSummaries={lineSummaries}
+          onAddLot={addLot}
+          onRemoveLot={removeLot}
+          onMoveLine={moveLine}
+          canRemoveLot={canRemoveLot}
+          saveActions={(
+            <Group gap="xs">
+              <Button variant="subtle" onClick={resetDraft} disabled={!hasAllocationChanges || saveAllocationMutation.isPending} leftSection={<IconRefresh size={16} />}>
+                Reset changes
+              </Button>
+              <Button
+                onClick={() => saveAllocationMutation.mutate()}
+                disabled={!hasAllocationChanges}
+                loading={saveAllocationMutation.isPending}
+                leftSection={<IconDeviceFloppy size={16} />}
+              >
+                Save allocation
+              </Button>
+            </Group>
+          )}
+        />
+
+        {saveAllocationMutation.isError ? (
+          <Alert color="red" icon={<IconAlertTriangle size={18} />}>
+            {getApiErrorMessage(saveAllocationMutation.error)}
           </Alert>
         ) : null}
-      </Paper>
 
-      <SimpleGrid cols={{ base: 1, sm: 2 }}>
-        <Info label={t('forms.supplierCode')} value={order.supplier_code} />
-        <Info label={t('forms.orderDate')} value={order.order_date} />
-        <Info label={t('forms.totalAmount')} value={`${formatNumber(order.total_amount)} ${order.currency}`} />
-        <Info label={t('purchaseOrders.sap')} value={statusLabel(order.sap_sync_status)} />
-      </SimpleGrid>
+        <Gd1PoStageControlPanel order={order} onUpdated={onUpdated} />
+        <Gd1PoStageChecklist order={order} />
 
-      <Gd1PoStageControlPanel order={order} onUpdated={onUpdated} />
+        <Paper withBorder p="md">
+          <Text fw={700} mb="sm">Linked DOs</Text>
+          <Group gap="xs">
+            {order.linked_do_numbers.map((doCode) => (
+              <EntityLink key={doCode} type="do" id={doCode} />
+            ))}
+          </Group>
+        </Paper>
+      </Stack>
+    </Paper>
+  );
+}
 
-      <Gd1PoStageChecklist order={order} />
+function PoLineAllocationTable({
+  assignments,
+  lines,
+  lots,
+  onMoveLine,
+}: {
+  assignments: Record<string, string>;
+  lines: PurchaseOrderLineItem[];
+  lots: string[];
+  onMoveLine: (lineId: string, lotNo: string) => void;
+}) {
+  return (
+    <Paper withBorder p={0}>
+      <Group justify="space-between" p="sm">
+        <Text fw={700}>PO item allocation</Text>
+        <Badge variant="light">{lines.length} rows</Badge>
+      </Group>
+      <ScrollArea type="always" offsetScrollbars scrollbarSize={8}>
+        <Table miw={980} verticalSpacing="xs">
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th style={{ width: 105 }}>Mặt hàng #</Table.Th>
+              <Table.Th>Item</Table.Th>
+              <Table.Th style={{ width: 120 }}>Qty</Table.Th>
+              <Table.Th style={{ width: 100 }}>Unit</Table.Th>
+              <Table.Th style={{ width: 135 }}>Unit price</Table.Th>
+              <Table.Th style={{ width: 135 }}>LOT</Table.Th>
+              <Table.Th style={{ width: 145 }}>Expected ETA</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {lines.map((line, index) => (
+              <Table.Tr key={line.id} draggable onDragStart={(event: DragEvent<HTMLTableRowElement>) => event.dataTransfer.setData('lineId', line.id)}>
+                <Table.Td>
+                  <Text size="sm" fw={700}>#{index + 1}</Text>
+                </Table.Td>
+                <Table.Td className="table-cell-truncate" style={{ maxWidth: '24rem' }}>
+                  <Text size="sm" fw={700} lineClamp={1}>{line.item_code}</Text>
+                  <Text size="xs" c="dimmed" lineClamp={1}>{line.item_name}</Text>
+                </Table.Td>
+                <Table.Td>{line.quantity.toLocaleString()}</Table.Td>
+                <Table.Td>{line.unit}</Table.Td>
+                <Table.Td>{line.unit_price ? <NumberFormatter value={line.unit_price} thousandSeparator /> : '-'}</Table.Td>
+                <Table.Td>
+                  <Select size="xs" data={lots} value={assignments[line.id] || DEFAULT_LOT} onChange={(value) => onMoveLine(line.id, value ?? DEFAULT_LOT)} />
+                </Table.Td>
+                <Table.Td>{line.expected_eta ?? line.warehouse_deadline_date}</Table.Td>
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+        </Table>
+      </ScrollArea>
+    </Paper>
+  );
+}
 
-      <SourceLineTable lines={order.line_items} />
-
-      <Paper withBorder p="md">
-        <Text fw={700} mb="sm">
-          {t('purchaseOrders.entityLinks')}
-        </Text>
-        <Group gap="xs">
-          {order.linked_do_numbers.map((doCode) => (
-            <EntityLink key={doCode} type="do" id={doCode} />
-          ))}
+function LotDraftBoard({
+  lineSummaries,
+  lots,
+  onAddLot,
+  onMoveLine,
+  onRemoveLot,
+  canRemoveLot,
+  saveActions,
+}: {
+  lineSummaries: Array<{ id: string; itemCode: string; itemName: string; quantity: number; unit: string; lotNo: string }>;
+  lots: string[];
+  onAddLot: () => void;
+  onMoveLine: (lineId: string, lotNo: string) => void;
+  onRemoveLot: (lotName: string) => void;
+  canRemoveLot?: (lotName: string, itemCount: number) => boolean;
+  saveActions: ReactNode;
+}) {
+  return (
+    <Paper withBorder p="md">
+      <Stack gap="sm">
+        <Group justify="space-between" align="flex-start">
+          <div>
+            <Group gap="xs">
+              <IconGitBranch size={20} />
+              <Text fw={700}>LOT allocation</Text>
+            </Group>
+            <Text size="sm" c="dimmed">
+              PO line allocation by LOT before confirmation.
+            </Text>
+          </div>
+          <Group gap="xs">
+            <Button size="xs" variant="light" onClick={onAddLot} leftSection={<IconPlus size={14} />}>
+              Add LOT
+            </Button>
+            {saveActions}
+          </Group>
         </Group>
-      </Paper>
-    </Stack>
+
+        <SimpleGrid cols={{ base: 1, md: Math.min(Math.max(lots.length, 1), 4) }} spacing="sm">
+          {lots.map((lotName) => {
+            const itemsInLot = lineSummaries.filter((line) => normalizeLotName(line.lotNo) === lotName);
+            const canRemove = canRemoveLot
+              ? canRemoveLot(lotName, itemsInLot.length)
+              : lotName !== DEFAULT_LOT && itemsInLot.length === 0;
+            return (
+              <Paper
+                key={lotName}
+                withBorder
+                p="sm"
+                onDragOver={(event: DragEvent<HTMLDivElement>) => event.preventDefault()}
+                onDrop={(event: DragEvent<HTMLDivElement>) => {
+                  const lineId = event.dataTransfer.getData('lineId');
+                  if (lineId) onMoveLine(lineId, lotName);
+                }}
+                style={{ minHeight: 140, borderStyle: 'dashed' }}
+              >
+                <Group justify="space-between" mb="xs">
+                  <div>
+                    <Text fw={700} size="sm">{lotName}</Text>
+                    <Text size="xs" c="dimmed">{itemsInLot.length} item rows</Text>
+                  </div>
+                  <ActionIcon variant="subtle" color="red" disabled={!canRemove} onClick={() => onRemoveLot(lotName)} aria-label={`Remove ${lotName}`}>
+                    <IconTrash size={16} />
+                  </ActionIcon>
+                </Group>
+                <Stack gap="xs">
+                  {itemsInLot.map((line) => (
+                    <Paper
+                      key={line.id}
+                      withBorder
+                      p="xs"
+                      draggable
+                      onDragStart={(event: DragEvent<HTMLDivElement>) => event.dataTransfer.setData('lineId', line.id)}
+                      style={{ cursor: 'grab' }}
+                    >
+                      <Group justify="space-between" gap="xs" wrap="nowrap">
+                        <div style={{ minWidth: 0 }}>
+                          <Text size="xs" fw={700} truncate>{line.itemCode}</Text>
+                          <Text size="xs" c="dimmed" truncate>{line.itemName}</Text>
+                        </div>
+                        <Text size="xs" fw={700} style={{ whiteSpace: 'nowrap' }}>
+                          {line.quantity} {line.unit}
+                        </Text>
+                      </Group>
+                    </Paper>
+                  ))}
+                  {itemsInLot.length === 0 ? (
+                    <Text size="xs" c="dimmed" fs="italic" ta="center" mt="md">
+                      Drop item rows here
+                    </Text>
+                  ) : null}
+                </Stack>
+              </Paper>
+            );
+          })}
+        </SimpleGrid>
+      </Stack>
+    </Paper>
   );
 }
 

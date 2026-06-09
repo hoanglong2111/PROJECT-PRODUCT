@@ -32,21 +32,24 @@ The frontend currently has 30 Vitest tests. Backend HTTP-foundation middleware a
 
 ## High-Value Coverage
 
-- PR submit/approve/reject state transitions.
+- PO submit/approve/reject state transitions.
 - Approval matrix by department and value band.
-- PR line `qty_converted` cannot exceed `qty_requested`.
-- PR partial conversion remains visible.
+- DO confirmation validation (requiring warehouses, transport type).
+- DO split and item reassignment (LOT split).
+- Quotation SLA (1-hour auto-approval countdown).
+- Quotation version comparison side-by-side.
 - PO revision increments after editing a sent/confirmed PO.
+- Shipment creation from DO lines.
 - Shipment creation generates exactly 10 milestones.
 - Duplicate shipment milestone code/sequence is rejected.
-- Shipment line total cannot exceed PO over-shipment tolerance.
+- Shipment line total cannot exceed DO/PO tolerance.
 - Updating `ATD` moves shipment to `IN_TRANSIT`.
 - Updating `EDO_DELIVERY` moves shipment to `DELIVERED` and emits warehouse event.
 - Shipment cost allocation updates PO line landed cost.
 - Task `DONE` requires completion metadata.
 - Task `BLOCKED` requires note and appears in workload risk.
 - Linked milestone auto-closes matching task.
-- Deep links open and close the correct PR/PO/shipment/task detail.
+- Deep links open and close the correct PO/DO/quotation/shipment/task detail.
 
 ## Automated Verification Workflow
 
@@ -62,13 +65,15 @@ For docs-only changes, typecheck/build are not required unless docs generate cod
 
 Before marking UI work done:
 
-- Dashboard, Workflow, PR, PO, Shipment/Delivery Orders, and Tasks load.
+- Dashboard, Workflow, PO, Delivery Orders (DO), Quotations, Shipments, and Tasks load.
 - Deep links are shareable.
 - Cross-entity links work both directions.
 - Empty/loading/error states appear.
 - Mobile width keeps tables usable with horizontal scroll.
 - Long supplier/item/document names do not break layout.
-- Legacy route labels do not obscure GD1 shipment semantics.
+- LOT drag-and-drop behaves responsively.
+- Side-by-side quotation comparison aligns correctly.
+- Legacy route labels do not obscure GD1 semantics.
 
 ## Done
 

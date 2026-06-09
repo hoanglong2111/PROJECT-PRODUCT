@@ -21,6 +21,7 @@ import {
   IconClockHour4,
   IconFileInvoice,
   IconGitBranch,
+  IconShip,
   IconShoppingCart,
   IconTruckDelivery,
 } from '@tabler/icons-react';
@@ -131,7 +132,7 @@ export function Dashboard() {
 
       <SimpleGrid cols={{ base: 1, sm: 3 }}>
         <MetricCard label={t('dashboard.purchaseOrders')} value={purchaseOrders.length} color="yellow" icon={<IconShoppingCart size={22} />} />
-        <MetricCard label={t('dashboard.activeDo')} value={activeDeliveryOrders.length} color="teal" icon={<IconTruckDelivery size={22} />} />
+        <MetricCard label={t('shell.shipments')} value={activeDeliveryOrders.length} color="teal" icon={<IconShip size={22} />} />
         <MetricCard label={t('dashboard.blockedTasks')} value={blockedTasks.length} color="red" icon={<IconAlertTriangle size={22} />} />
       </SimpleGrid>
 
@@ -176,7 +177,7 @@ export function Dashboard() {
                   <Table.Td>
                     <Text fw={700}>{deliveryOrder.order_info.order_number}</Text>
                     <Text size="xs" c="dimmed">
-                      {deliveryOrder.sap_integration.po_number}
+                      {deliveryOrder.source_po_number ?? deliveryOrder.sap_integration.po_number}
                     </Text>
                     <Button
                       component={Link}
@@ -231,8 +232,9 @@ function riskLabel(code: OperationalRiskCode, t: ReturnType<typeof useI18n>['t']
     FINANCE_NOT_READY: t('opsRisk.financeNotReady'),
     MISSING_DOCUMENTS: t('opsRisk.missingDocuments'),
     REQUIRED_TASKS: t('opsRisk.requiredTasks'),
-    SAP_SYNC: t('opsRisk.sapSync'),
     WAREHOUSE_DELAY: t('opsRisk.warehouseDelay'),
+    QUOTATION_SLA: t('opsRisk.quotationSla'),
+    DRAFT_BL_SLA: t('opsRisk.draftBlSla'),
   };
 
   return labels[code];

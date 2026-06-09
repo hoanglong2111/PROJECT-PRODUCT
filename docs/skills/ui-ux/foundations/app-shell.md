@@ -14,7 +14,7 @@ AppShell
 
 ## Sidebar
 
-- Keep primary modules visible: Dashboard, Workflow, Purchase Requests, Purchase Orders, Shipments/Delivery Orders, Tasks.
+- Keep primary modules visible: Dashboard, Workflow, Purchase Orders, Delivery Orders, Quotations, Shipments, Tasks.
 - Use icon + label for primary nav items.
 - Highlight the active route clearly.
 - Keep future secondary modules grouped below primary modules: Suppliers, Items, Departments, Users, Settings.

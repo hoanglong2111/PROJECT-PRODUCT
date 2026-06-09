@@ -4,7 +4,7 @@ Use this when designing or changing the Purchase Orders route.
 
 ## Purpose
 
-PO pages help users inspect supplier commitment, revision, source PR lines, shipment progress, ETA, and landed cost.
+PO pages help users inspect supplier commitment, revision, LOT management, delivery orders, shipment progress, and ETA.
 
 ## Default Layout
 
@@ -19,30 +19,29 @@ PO pages help users inspect supplier commitment, revision, source PR lines, ship
 Recommended columns:
 
 - PO number + revision.
-- supplier.
-- source PR.
-- status.
-- expected ETD/ETA.
-- shipped/received quantity progress.
-- linked shipment.
-- landed cost state.
-- row action.
+- Supplier.
+- Status.
+- Expected ETD/ETA.
+- Shipped/received quantity progress.
+- Linked delivery orders (DOs).
+- Row action.
 
 ## Detail Drawer
 
 Show:
 
 - PO header and terms.
-- supplier confirmation.
-- source PR lines.
-- PO lines.
-- linked shipments and milestones.
+- Supplier confirmation.
+- PO lines and items.
+- **LOT Management panel** (with drag-and-drop items between LOTs, splitting LOTs).
+- **Linked DOs** (each LOT maps to a DO: origin/destination warehouses, transport types, confirmation status).
+- **Linked shipments** and milestone progress.
 - PO-stage tasks.
-- landed cost allocation.
 
 ## Risk UX
 
-- ETA passed without ATD is red.
+- ETA passed is red.
 - Supplier confirmation pending is orange.
 - Revision pending reconfirmation is orange.
 - Over-shipment is red and should block save.
+- LOTs without confirmed DOs show warning.

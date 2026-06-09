@@ -220,7 +220,15 @@ export function Settings() {
                 <Info label={t('settings.currentAppearance')} value={appearanceModeLabel(appearanceMode)} />
                 <Info label={t('settings.currentResolvedMode')} value={appearanceModeLabel(resolvedColorScheme)} />
                 <Info label={t('settings.colorPreset')} value={t(`settings.colorPresets.${colorPreset}`)} />
-                <Info label={t('settings.eventTheme')} value={`${eventThemes[eventTheme].emoji} ${t(`settings.eventThemes.${eventTheme}`)}`} />
+                {(() => {
+                  const ev = eventThemes[eventTheme] ?? eventThemes.none;
+                  return (
+                    <Info
+                      label={t('settings.eventTheme')}
+                      value={`${ev.emoji} ${t(`settings.eventThemes.${ev.id}`)}`}
+                    />
+                  );
+                })()}
                 <Info label={t('settings.currentVisualTheme')} value={visualThemeLabel(visualTheme)} />
                 <Info label={t('settings.currentDensity')} value={densityLabel(density)} />
                 <Info label={t('settings.currentLanguage')} value={languageLabel(language)} />

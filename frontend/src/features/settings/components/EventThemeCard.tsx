@@ -45,8 +45,8 @@ export function EventThemeCard({ eventTheme, onChange }: Props) {
         {showAutoHint && (
           <Text c="dimmed" size="sm">
             {t('settings.eventThemeAutoDetected', {
-              emoji: eventThemes[autoTheme].emoji,
-              name: t(`settings.eventThemes.${autoTheme}`),
+              emoji: (eventThemes[autoTheme] ?? eventThemes.none).emoji,
+              name: t(`settings.eventThemes.${(eventThemes[autoTheme] ?? eventThemes.none).id}`),
             })}
           </Text>
         )}

@@ -1,13 +1,14 @@
-import type { DeliveryOrder } from '@/models/logistics';
+import type { DeliveryOrder, Quotation, DocumentReview } from '@/models/logistics';
 import { calcDelay } from './delay';
 
 export type OperationalRiskCode =
-  | 'SAP_SYNC'
   | 'MISSING_DOCUMENTS'
   | 'BLOCKED_TASKS'
   | 'REQUIRED_TASKS'
   | 'WAREHOUSE_DELAY'
-  | 'FINANCE_NOT_READY';
+  | 'FINANCE_NOT_READY'
+  | 'QUOTATION_SLA'
+  | 'DRAFT_BL_SLA';
 
 export type OperationalOwner =
   | 'PIC Manager'
@@ -21,7 +22,7 @@ export type OperationalRisk = {
   code: OperationalRiskCode;
   severity: 'high' | 'medium' | 'low';
   owner: OperationalOwner;
-  sla: '1h' | '8h' | 'Today' | 'Before close';
+  sla: '1h' | '2h' | '8h' | 'Today' | 'Before close';
   detail: string;
 };
 
@@ -40,17 +41,51 @@ export function getDeliveryOrderDelay(deliveryOrder: DeliveryOrder) {
   });
 }
 
-export function getDeliveryOrderRisks(deliveryOrder: DeliveryOrder): OperationalRisk[] {
+export function getDeliveryOrderRisks(
+  deliveryOrder: DeliveryOrder,
+  quotations?: Quotation[],
+  documentReviews?: DocumentReview[],
+): OperationalRisk[] {
   const delay = getDeliveryOrderDelay(deliveryOrder);
   const risks: OperationalRisk[] = [];
 
-  if (deliveryOrder.sap_integration.sync_status !== 'SYNCED') {
+  // 1. Quotation SLA Risk
+  const orderQuote = quotations?.find((q) => q.requestCode === deliveryOrder.order_info.request_code);
+  if (orderQuote && (orderQuote.status === 'PRELIMINARY_SENT' || orderQuote.status === 'OFFICIAL_SENT')) {
     risks.push({
-      code: 'SAP_SYNC',
-      detail: deliveryOrder.sap_integration.sync_status,
+      code: 'QUOTATION_SLA',
+      detail: `Quotation ${orderQuote.quoteNumber} pending response`,
       owner: 'PIC Manager',
-      severity: 'medium',
-      sla: 'Today',
+      severity: 'high',
+      sla: '1h',
+    });
+  } else if (!quotations && deliveryOrder.order_info.status === 'CREATED') {
+    risks.push({
+      code: 'QUOTATION_SLA',
+      detail: 'Quotation bidding pending response',
+      owner: 'PIC Manager',
+      severity: 'high',
+      sla: '1h',
+    });
+  }
+
+  // 2. Draft B/L SLA Risk
+  const orderReview = documentReviews?.find((r) => r.deliveryOrderId === deliveryOrder.id);
+  if (orderReview && orderReview.status === 'READY_FOR_CHECK') {
+    risks.push({
+      code: 'DRAFT_BL_SLA',
+      detail: 'Draft B/L pending KBI review',
+      owner: 'Customs Officer',
+      severity: 'high',
+      sla: '2h',
+    });
+  } else if (!documentReviews && deliveryOrder.order_info.status === 'IN_TRANSIT') {
+    risks.push({
+      code: 'DRAFT_BL_SLA',
+      detail: 'Draft B/L uploaded, pending KBI review',
+      owner: 'Customs Officer',
+      severity: 'high',
+      sla: '2h',
     });
   }
 
@@ -112,10 +147,18 @@ export function getDeliveryOrderRisks(deliveryOrder: DeliveryOrder): Operational
   return risks;
 }
 
-export function getPrimaryOperationalRisk(deliveryOrder: DeliveryOrder) {
+export function getPrimaryOperationalRisk(
+  deliveryOrder: DeliveryOrder,
+  quotations?: Quotation[],
+  documentReviews?: DocumentReview[],
+) {
   const score = { high: 3, medium: 2, low: 1 };
 
-  return getDeliveryOrderRisks(deliveryOrder).sort((a, b) => score[b.severity] - score[a.severity])[0] ?? null;
+  return (
+    getDeliveryOrderRisks(deliveryOrder, quotations, documentReviews).sort(
+      (a, b) => score[b.severity] - score[a.severity],
+    )[0] ?? null
+  );
 }
 
 export function getOperationalGates(deliveryOrder: DeliveryOrder): OperationalGate[] {
@@ -128,12 +171,6 @@ export function getOperationalGates(deliveryOrder: DeliveryOrder): OperationalGa
   const documentsReady = deliveryOrder.logistics_shipping.missing_documents.length === 0 && hasCoreDocuments;
 
   return [
-    {
-      detail: deliveryOrder.sap_integration.sync_status,
-      id: 'sap',
-      owner: 'PIC Manager',
-      passed: deliveryOrder.sap_integration.sync_status === 'SYNCED',
-    },
     {
       detail: documentsReady ? 'Draft B/L, CI, Packing List ready' : deliveryOrder.logistics_shipping.missing_documents.join(', '),
       id: 'documents',

@@ -80,6 +80,12 @@ describe('buildTheme', () => {
       expect(theme).toBeDefined();
     }
   });
+
+  it('falls back safely for invalid preset or event theme IDs', () => {
+    const theme = buildTheme('invalid-preset' as any, 'invalid-event' as any);
+    expect(theme).toBeDefined();
+    expect(theme.primaryColor).toBe('teal');
+  });
 });
 
 describe('buildCssVariablesResolver', () => {
@@ -113,5 +119,12 @@ describe('buildCssVariablesResolver', () => {
     const result = resolver();
     // Tet accentOverride.primaryDark is #fc8181
     expect(result.dark['--mantine-color-pink-7']).toBe('#fc8181');
+  });
+
+  it('falls back safely for invalid preset or event theme IDs', () => {
+    const resolver = buildCssVariablesResolver('invalid-preset' as any, 'invalid-event' as any);
+    const result = resolver();
+    expect(result.light).toBeDefined();
+    expect(result.dark).toBeDefined();
   });
 });

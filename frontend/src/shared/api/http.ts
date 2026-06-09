@@ -134,52 +134,102 @@ http.interceptors.request.use((config) => {
     };
   } else if (url.includes('/purchase-orders')) {
     config.adapter = async (cfg) => {
+      if (method === 'PATCH' && url.includes('/lot-allocation')) {
+        let body: any = {};
+        try {
+          if (cfg.data) body = JSON.parse(cfg.data);
+        } catch {}
+        const poNumber = decodeURIComponent(url.split('/purchase-orders/')[1]?.split('/')[0] ?? '');
+        const updated = mockData.updateMockPurchaseOrderLotAllocation(poNumber, body);
+        return {
+          data: { data: updated },
+          status: updated ? 200 : 404,
+          statusText: updated ? 'OK' : 'Not Found',
+          headers: {},
+          config: cfg,
+        };
+      }
+
       if (method === 'POST') {
         let body: any = {};
         try {
           if (cfg.data) body = JSON.parse(cfg.data);
         } catch {}
 
+        const now = Date.now();
+        const sourceLines = body.sourceLines || [];
+        const lineItems = sourceLines.map((line: any, idx: number) => ({
+          id: `po-item-${now}-${idx}`,
+          source_pr_code: '',
+          source_pr_line_id: '',
+          item_id: line.itemId || null,
+          item_code: line.itemCode,
+          item_name: line.itemName,
+          quantity: Number(line.quantity),
+          unit: line.unit,
+          unit_price: Number(line.unitPrice) || 0,
+          expected_eta: line.expectedEta || body.expectedEta || null,
+          warehouse_deadline_date: line.expectedEta || body.expectedEta || '2026-06-30',
+          warehouse_code: body.warehouseCode || 'WH001',
+          item_group: line.itemGroup || '',
+          source_reference: line.sourceReference || '',
+          declaration_type: line.declarationType || '',
+          hs_code: line.hsCode || '',
+          duty_rate: Number(line.dutyRate) || 0,
+          vat_rate: Number(line.vatRate) || 0,
+          tariff_code: line.tariffCode || '',
+          classification_code: line.classificationCode || '',
+          co_note: line.coNote || '',
+          tax_note: line.taxNote || '',
+          lot_number: line.lotNumber || 'Lot 1',
+        }));
+        const lotNames = Array.from(new Set(lineItems.map((line: any) => line.lot_number || 'Lot 1')));
         const newPo = {
-          id: `po-${Date.now()}`,
-          po_number: body.poNumber || `PO-${Date.now()}`,
+          id: `po-${now}`,
+          po_number: body.poNumber || `PO-${now}`,
           source_pr_codes: [],
-          line_items: (body.sourceLines || []).map((line: any, idx: number) => ({
-            id: `po-item-${Date.now()}-${idx}`,
-            source_pr_code: '',
-            source_pr_line_id: '',
-            item_id: line.itemId || null,
-            item_code: line.itemCode,
-            item_name: line.itemName,
-            quantity: Number(line.quantity),
-            unit: line.unit,
-            warehouse_deadline_date: '2026-06-30',
-            warehouse_code: body.warehouseCode || 'WH001',
-            item_group: line.itemGroup || '',
-            source_reference: line.sourceReference || '',
-            declaration_type: line.declarationType || '',
-            hs_code: line.hsCode || '',
-            duty_rate: Number(line.dutyRate) || 0,
-            vat_rate: Number(line.vatRate) || 0,
-            tariff_code: line.tariffCode || '',
-            classification_code: line.classificationCode || '',
-            co_note: line.coNote || '',
-            tax_note: line.taxNote || '',
-          })),
+          line_items: lineItems,
           supplier_code: body.supplierCode || 'SUP-UNKNOWN',
           supplier_name: body.supplierName || 'Unknown Supplier',
-          status: 'SAP_PENDING',
+          status: 'DRAFT',
           order_date: body.orderDate || '2026-06-05',
           currency: body.currency || 'USD',
           total_amount: Number(body.totalAmount) || 0,
-          sap_sync_status: 'PENDING',
+          sap_sync_status: 'SYNCED',
           linked_do_numbers: [],
+          lots: lotNames.map((lotName, lotIndex) => ({
+            id: `lot-${now}-${lotIndex + 1}`,
+            lot_no: lotName,
+            allocations: lineItems
+              .filter((line: any) => (line.lot_number || 'Lot 1') === lotName)
+              .map((line: any, allocationIndex: number) => ({
+                id: `alloc-${now}-${lotIndex + 1}-${allocationIndex + 1}`,
+                po_line_id: line.id,
+                quantity: Number(line.quantity) || 0,
+              })),
+          })),
+          po_type: body.poType || 'SEA',
+          incoterm: body.incoterm || 'CIP',
+          payment_term: body.paymentTerm || 'Net 30',
+          expected_etd: body.expectedEtd || null,
+          expected_eta: body.expectedEta || null,
+          version: 1,
+          sent_at: null,
+          confirmed_date: null,
           warehouse_code: body.warehouseCode || 'WH001',
-          flow_tags: ['LINEAR'],
+          flow_tags: lotNames.length > 1 ? ['SPLIT_PURCHASE'] : ['LINEAR'],
         };
         mockData.mockPurchaseOrders.push(newPo as any);
+        const saved = mockData.updateMockPurchaseOrderLotAllocation(newPo.po_number, {
+          lots: newPo.lots.map((lot: any) => ({ id: lot.id, lotNo: lot.lot_no })),
+          lineAllocations: lineItems.map((line: any) => ({
+            poLineId: line.id,
+            lotNo: line.lot_number || 'Lot 1',
+            quantity: Number(line.quantity) || 0,
+          })),
+        });
         return {
-          data: { data: newPo },
+          data: { data: saved ?? newPo },
           status: 200,
           statusText: 'OK',
           headers: {},
@@ -254,6 +304,72 @@ http.interceptors.request.use((config) => {
         config: cfg,
       };
     };
+  } else if (url.includes('/shipments')) {
+    config.adapter = async (cfg) => {
+      if (method === 'POST') {
+        let body: any = {};
+        try {
+          if (cfg.data) body = JSON.parse(cfg.data);
+        } catch {}
+        const now = Date.now();
+        const newShipment = {
+          id: `shp-${now}`,
+          shipment_number: body.shipmentNumber,
+          do_number: body.doNumber,
+          po_number: body.poNumber,
+          status: 'BOOKED',
+          shipping_mode: body.shippingMode,
+          carrier_name: body.carrierName || 'Hapag Lloyd',
+          vessel_voyage: body.vesselVoyage || 'HAPAG V204',
+          origin_port: body.originPort || 'Port of Ningbo',
+          dest_port: body.destPort || 'Port of Cat Lai',
+          etd: body.etd || '2026-06-15',
+          eta: body.eta || '2026-06-29',
+          customs: {
+            stream: 'GREEN',
+            lane_status: 'Thông quan tự động',
+          },
+          milestones: [
+            { id: `m-new-1-${now}`, milestone_code: 'BOOKING_CONFIRMED', planned_date: body.etd || '2026-06-12', actual_date: body.etd || '2026-06-12', source: 'MANUAL', note: 'Booking confirmed' },
+            { id: `m-new-2-${now}`, milestone_code: 'CARGO_READY', planned_date: body.etd || '2026-06-14', actual_date: null, source: 'API', note: null },
+            { id: `m-new-3-${now}`, milestone_code: 'PICK_UP', planned_date: body.etd || '2026-06-15', actual_date: null, source: 'API', note: null },
+            { id: `m-new-4-${now}`, milestone_code: 'BL_ISSUED', planned_date: body.etd || '2026-06-16', actual_date: null, source: 'API', note: null },
+            { id: `m-new-5-${now}`, milestone_code: 'GATE_IN_POL', planned_date: body.etd || '2026-06-16', actual_date: null, source: 'API', note: null },
+            { id: `m-new-6-${now}`, milestone_code: 'ATD', planned_date: body.etd || '2026-06-17', actual_date: null, source: 'API', note: null },
+            { id: `m-new-7-${now}`, milestone_code: 'CUSTOM_DRAFT_SUBMITTED', planned_date: body.eta || '2026-06-20', actual_date: null, source: 'API', note: null },
+            { id: `m-new-8-${now}`, milestone_code: 'AN_ATA', planned_date: body.eta || '2026-06-28', actual_date: null, source: 'API', note: null },
+            { id: `m-new-9-${now}`, milestone_code: 'CUSTOM_CLEARED', planned_date: body.eta || '2026-06-29', actual_date: null, source: 'API', note: null },
+            { id: `m-new-10-${now}`, milestone_code: 'EDO_DELIVERY', planned_date: body.eta || '2026-06-30', actual_date: null, source: 'API', note: null },
+          ],
+          documents: [
+            { id: `d-new-1-${now}`, document_type: 'Hóa đơn thương mại (Commercial Invoice)', file_name: null, status: 'PENDING_UPLOAD' },
+            { id: `d-new-2-${now}`, document_type: 'Phiếu đóng gói (Packing List)', file_name: null, status: 'PENDING_UPLOAD' },
+            { id: `d-new-3-${now}`, document_type: 'Vận đơn nháp (Draft B/L)', file_name: null, status: 'PENDING_UPLOAD' },
+            { id: `d-new-4-${now}`, document_type: 'Vận đơn chính thức (Official B/L)', file_name: null, status: 'PENDING_UPLOAD' },
+            { id: `d-new-5-${now}`, document_type: 'Tờ khai hải quan (Customs Declaration)', file_name: null, status: 'PENDING_UPLOAD' },
+          ],
+          po_tasks: [
+            { id: `t-new-1-${now}`, task_name: 'Duyệt báo giá vận chuyển', status: 'TODO', assignee_role: 'LOGISTICS' },
+            { id: `t-new-2-${now}`, task_name: 'Xác nhận booking space', status: 'TODO', assignee_role: 'LOGISTICS' },
+          ],
+        };
+        mockData.mockShipments.unshift(newShipment as any);
+        return {
+          data: { data: newShipment },
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config: cfg,
+        };
+      }
+      return {
+        data: { data: mockData.mockShipments },
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: cfg,
+      };
+    };
   }
 
   return config;
@@ -282,6 +398,8 @@ http.interceptors.response.use(
           data = mockData.mockDomesticTransportOrders;
         } else if (url.includes('/issues')) {
           data = mockData.mockIssues;
+        } else if (url.includes('/shipments')) {
+          data = mockData.mockShipments;
         }
         return {
           data: { data },
