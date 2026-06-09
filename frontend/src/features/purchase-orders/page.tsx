@@ -1,4 +1,4 @@
-import {
+﻿import {
   ActionIcon,
   Alert,
   Badge,
@@ -44,7 +44,7 @@ import { ListPagination, useListPagination } from '@shared/components/ListPagina
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { EmptyState } from '@shared/components/EmptyState';
-import { getApiErrorMessage } from '@shared/api/http';
+import { getApiErrorMessage } from '@shared/lib/errors';
 import {
   advancePurchaseOrderStage,
   createPurchaseOrder,
@@ -58,6 +58,7 @@ import {
   type PurchaseOrder,
   type PurchaseOrderLineItem,
 } from '@shared/api/logistics';
+import { queryKeys } from '@shared/api/queryKeys';
 import { useAuth } from '@shared/auth/useAuth';
 import { useEntityParam } from '@shared/hooks/useEntityParam';
 import { useI18n } from '@shared/i18n';
@@ -107,7 +108,7 @@ export function PurchaseOrders() {
   const [workbench, setWorkbench] = useState<PurchaseOrderWorkbench>('list');
 
   const purchaseOrdersQuery = useQuery({
-    queryKey: ['purchase-orders'],
+    queryKey: queryKeys.purchaseOrders,
     queryFn: fetchPurchaseOrders,
   });
   const purchaseOrders = purchaseOrdersQuery.data ?? [];
@@ -400,10 +401,10 @@ function PurchaseOrderCreatePanel({
     mutationFn: createPurchaseOrder,
     onSuccess: async (order) => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['purchase-orders'] }),
-        queryClient.invalidateQueries({ queryKey: ['delivery-orders'] }),
-        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
-        queryClient.invalidateQueries({ queryKey: ['global-search'] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.purchaseOrders }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.deliveryOrders }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.globalSearch }),
       ]);
       onCreated(order);
     },
@@ -642,9 +643,9 @@ function Gd1PoStageControlPanel({
     onSuccess: () => {
       setSelectedStage('');
       void Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['purchase-orders'] }),
-        queryClient.invalidateQueries({ queryKey: ['purchase-order-tasks', order.po_number] }),
-        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.purchaseOrders }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.purchaseOrderTasks(order.po_number) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats }),
       ]);
       onUpdated?.(order);
     },
@@ -694,7 +695,7 @@ function Gd1PoStageChecklist({ order }: { order: PurchaseOrder }) {
   const { t } = useI18n();
 
   const tasksQuery = useQuery({
-    queryKey: ['purchase-order-tasks', order.po_number],
+    queryKey: queryKeys.purchaseOrderTasks(order.po_number),
     queryFn: () => fetchPurchaseOrderStageTasks(order.po_number),
     enabled: !!order.po_number,
   });
@@ -703,8 +704,8 @@ function Gd1PoStageChecklist({ order }: { order: PurchaseOrder }) {
     mutationFn: ({ taskId, status }: { taskId: string; status: string }) => updatePoStageTask(taskId, { status }),
     onSuccess: () => {
       void Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['purchase-order-tasks', order.po_number] }),
-        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.purchaseOrderTasks(order.po_number) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats }),
       ]);
     },
   });
@@ -789,7 +790,7 @@ function PurchaseOrderDetailPanel({
   const [draftLots, setDraftLots] = useState<string[]>([]);
   const [draftAssignments, setDraftAssignments] = useState<Record<string, string>>({});
   const deliveryOrdersQuery = useQuery({
-    queryKey: ['delivery-orders'],
+    queryKey: queryKeys.deliveryOrders,
     queryFn: fetchDeliveryOrders,
   });
   const deliveryOrders = deliveryOrdersQuery.data ?? [];
@@ -826,10 +827,10 @@ function PurchaseOrderDetailPanel({
     onSuccess: async (updatedOrder) => {
       onUpdated?.(updatedOrder);
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['purchase-orders'] }),
-        queryClient.invalidateQueries({ queryKey: ['delivery-orders'] }),
-        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
-        queryClient.invalidateQueries({ queryKey: ['global-search'] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.purchaseOrders }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.deliveryOrders }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.globalSearch }),
       ]);
     },
   });

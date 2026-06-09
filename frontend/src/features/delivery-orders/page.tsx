@@ -1,4 +1,4 @@
-import {
+﻿import {
   ActionIcon,
   Alert,
   Badge,
@@ -65,7 +65,8 @@ import {
   updateQuotationAction,
   type QuotationAction,
 } from '@shared/api/logistics';
-import { getApiErrorMessage } from '@shared/api/http';
+import { queryKeys } from '@shared/api/queryKeys';
+import { getApiErrorMessage } from '@shared/lib/errors';
 import { useEntityParam } from '@shared/hooks/useEntityParam';
 import { useI18n } from '@shared/i18n';
 import { useWorkspaceStore } from '@shared/stores/workspaceStore';
@@ -117,7 +118,7 @@ export function DeliveryOrders() {
   const setRiskOnly = useWorkspaceStore((state) => state.setDoRiskOnly);
 
   const deliveryOrdersQuery = useQuery({
-    queryKey: ['delivery-orders'],
+    queryKey: queryKeys.deliveryOrders,
     queryFn: fetchDeliveryOrders,
   });
   const deliveryOrders = deliveryOrdersQuery.data ?? [];
@@ -561,7 +562,7 @@ function Gd1QuotationBiddingPanel({ requestCode }: { requestCode: string }) {
   const [isAllInclusive, setIsAllInclusive] = useState(false);
 
   const quotationsQuery = useQuery({
-    queryKey: ['quotations'],
+    queryKey: queryKeys.quotations,
     queryFn: fetchQuotations,
   });
 
@@ -579,14 +580,14 @@ function Gd1QuotationBiddingPanel({ requestCode }: { requestCode: string }) {
       setLocalCharges('');
       setCustomsFee('');
       setIsAllInclusive(false);
-      void queryClient.invalidateQueries({ queryKey: ['quotations'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.quotations });
     },
   });
 
   const actionMutation = useMutation({
     mutationFn: ({ id, action }: { id: string; action: QuotationAction }) => updateQuotationAction(id, { action }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['quotations'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.quotations });
     },
   });
 
@@ -1100,7 +1101,7 @@ function DocumentUploadPanel({
   const [selectedFiles, setSelectedFiles] = useState<Record<string, File | null>>({});
   const orderNumber = deliveryOrder.order_info.order_number;
   const attachmentsQuery = useQuery({
-    queryKey: ['delivery-order-attachments', orderNumber],
+    queryKey: queryKeys.deliveryOrderAttachments(orderNumber),
     queryFn: () => fetchDeliveryOrderAttachments(orderNumber),
   });
   const uploadMutation = useMutation({
@@ -1112,9 +1113,9 @@ function DocumentUploadPanel({
       }),
     onSuccess: () => {
       void Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['delivery-orders'] }),
-        queryClient.invalidateQueries({ queryKey: ['delivery-order-attachments', orderNumber] }),
-        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.deliveryOrders }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.deliveryOrderAttachments(orderNumber) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats }),
       ]);
     },
   });

@@ -1,4 +1,4 @@
-import type { DeliveryOrder, Quotation, DocumentReview } from '@/models/logistics';
+import type { DeliveryOrder, DocumentReview, Quotation } from '@shared/model/logistics';
 import { calcDelay } from './delay';
 
 export type OperationalRiskCode =

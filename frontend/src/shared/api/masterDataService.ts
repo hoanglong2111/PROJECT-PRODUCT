@@ -1,56 +1,17 @@
-import {
-  mockPartners,
-  mockPorts,
-  mockItems,
-  type PartnerRecord,
-  type PortRecord,
-  type ItemRecord,
-} from '@features/master-data/mockData';
+import type { ItemRecord, PartnerRecord, PortRecord } from '@shared/model/masterData';
 
 const PARTNERS_KEY = 'kbfe.master.partners';
 const PORTS_KEY = 'kbfe.master.ports';
 const ITEMS_KEY = 'kbfe.master.items';
 
-function itemIdentity(item: Partial<ItemRecord>) {
-  return `${item.item_name || ''}::${item.hs_code || ''}`.toLowerCase();
-}
-
-function mergeItemsWithDefaults(storedItems: ItemRecord[]) {
-  const storedByCode = new Map(storedItems.map((item) => [item.item_code, item]));
-  const storedByIdentity = new Map(storedItems.map((item) => [itemIdentity(item), item]));
-  const usedCodes = new Set<string>();
-  const usedIdentities = new Set<string>();
-
-  const mergedDefaults = mockItems.map((defaultItem) => {
-    const storedItem = storedByCode.get(defaultItem.item_code) ?? storedByIdentity.get(itemIdentity(defaultItem));
-
-    if (!storedItem) {
-      return defaultItem;
-    }
-
-    usedCodes.add(storedItem.item_code);
-    usedIdentities.add(itemIdentity(storedItem));
-    return { ...defaultItem, ...storedItem };
-  });
-
-  const customItems = storedItems.filter(
-    (item) => !usedCodes.has(item.item_code) && !usedIdentities.has(itemIdentity(item)),
-  );
-
-  return [...mergedDefaults, ...customItems];
-}
-
 export function getPartners(): PartnerRecord[] {
-  if (typeof window === 'undefined') return mockPartners;
+  if (typeof window === 'undefined') return [];
   const stored = window.localStorage.getItem(PARTNERS_KEY);
-  if (!stored) {
-    window.localStorage.setItem(PARTNERS_KEY, JSON.stringify(mockPartners));
-    return mockPartners;
-  }
+  if (!stored) return [];
   try {
     return JSON.parse(stored);
   } catch {
-    return mockPartners;
+    return [];
   }
 }
 
@@ -60,16 +21,13 @@ export function savePartners(data: PartnerRecord[]) {
 }
 
 export function getPorts(): PortRecord[] {
-  if (typeof window === 'undefined') return mockPorts;
+  if (typeof window === 'undefined') return [];
   const stored = window.localStorage.getItem(PORTS_KEY);
-  if (!stored) {
-    window.localStorage.setItem(PORTS_KEY, JSON.stringify(mockPorts));
-    return mockPorts;
-  }
+  if (!stored) return [];
   try {
     return JSON.parse(stored);
   } catch {
-    return mockPorts;
+    return [];
   }
 }
 
@@ -79,23 +37,18 @@ export function savePorts(data: PortRecord[]) {
 }
 
 export function getItems(): ItemRecord[] {
-  if (typeof window === 'undefined') return mockItems;
+  if (typeof window === 'undefined') return [];
   const stored = window.localStorage.getItem(ITEMS_KEY);
-  if (!stored) {
-    window.localStorage.setItem(ITEMS_KEY, JSON.stringify(mockItems));
-    return mockItems;
-  }
+  if (!stored) return [];
   try {
     const parsed = JSON.parse(stored);
     if (!Array.isArray(parsed)) {
-      return mockItems;
+      return [];
     }
 
-    const merged = mergeItemsWithDefaults(parsed as ItemRecord[]);
-    window.localStorage.setItem(ITEMS_KEY, JSON.stringify(merged));
-    return merged;
+    return parsed as ItemRecord[];
   } catch {
-    return mockItems;
+    return [];
   }
 }
 

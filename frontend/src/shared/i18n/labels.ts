@@ -1,5 +1,5 @@
 import type { AppRole } from '@shared/auth/types';
-import type { BusinessFlowTag, DeliveryOrder, Priority, TaskRole } from '@/models/logistics';
+import type { BusinessFlowTag, DeliveryOrder, Priority, TaskRole } from '@shared/model/logistics';
 import type { AppearanceMode, DensityPreference, VisualTheme, WorkspaceLanguage } from '@shared/preferences/WorkspacePreferencesContext';
 
 export type ShippingMethod = DeliveryOrder['logistics_shipping']['shipping_method'];

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-import type { BusinessFlowTag, Priority, TaskRole } from '@/models/logistics';
+import type { BusinessFlowTag, Priority, TaskRole } from '@shared/model/logistics';
 import type { AppRole } from '@shared/auth/types';
 import {
   useWorkspacePreferences,

@@ -33,6 +33,7 @@ import { Link, NavLink as RouterNavLink, Outlet, useLocation } from 'react-route
 import { type AppRole } from '@shared/auth/types';
 import { useAuth } from '@shared/auth/useAuth';
 import { useI18n } from '@shared/i18n';
+import { queryKeys } from '@shared/api/queryKeys';
 import { queryClient } from '@shared/queryClient';
 import { GlobalSearch } from './GlobalSearch';
 import { RouteErrorBoundary } from './PageFeedback';
@@ -144,14 +145,14 @@ export function AppShellLayout() {
                 aria-label={t('shell.refresh')}
                 onClick={() =>
                   void Promise.all([
-                    queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
-                    queryClient.invalidateQueries({ queryKey: ['purchase-orders'] }),
-                    queryClient.invalidateQueries({ queryKey: ['delivery-orders'] }),
-                    queryClient.invalidateQueries({ queryKey: ['shipments'] }),
-                    queryClient.invalidateQueries({ queryKey: ['master-data'] }),
-                    queryClient.invalidateQueries({ queryKey: ['tasks'] }),
-                    queryClient.invalidateQueries({ queryKey: ['global-search'] }),
-                    queryClient.invalidateQueries({ queryKey: ['users'] }),
+                    queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats }),
+                    queryClient.invalidateQueries({ queryKey: queryKeys.purchaseOrders }),
+                    queryClient.invalidateQueries({ queryKey: queryKeys.deliveryOrders }),
+                    queryClient.invalidateQueries({ queryKey: queryKeys.shipments }),
+                    queryClient.invalidateQueries({ queryKey: queryKeys.masterData }),
+                    queryClient.invalidateQueries({ queryKey: queryKeys.tasks }),
+                    queryClient.invalidateQueries({ queryKey: queryKeys.globalSearch }),
+                    queryClient.invalidateQueries({ queryKey: queryKeys.users }),
                   ])
                 }
               >

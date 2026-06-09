@@ -1,4 +1,4 @@
-import {
+﻿import {
   Alert,
   Avatar,
   Badge,
@@ -22,6 +22,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 import { createUser, fetchUsers, type CreateUserPayload } from '@shared/api/system';
+import { queryKeys } from '@shared/api/queryKeys';
 import { APP_ROLES } from '@shared/auth/types';
 import { useAuth } from '@shared/auth/useAuth';
 import { ListPagination, useListPagination } from '@shared/components/ListPagination';
@@ -78,7 +79,7 @@ export function Settings() {
   const highlightedAccount = isAdmin ? searchParams.get('account') : null;
 
   const usersQuery = useQuery({
-    queryKey: ['users'],
+    queryKey: queryKeys.users,
     queryFn: fetchUsers,
     enabled: isAdmin,
   });
@@ -117,7 +118,7 @@ export function Settings() {
     onSuccess: async (createdUser) => {
       setMessage(t('settings.createdAccount', { email: createdUser.email }));
       form.reset();
-      await queryClient.invalidateQueries({ queryKey: ['users'] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.users });
     },
   });
 

@@ -1,4 +1,4 @@
-import {
+﻿import {
   ActionIcon,
   Alert,
   Badge,
@@ -27,7 +27,7 @@ import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
-import { getApiErrorMessage } from '@shared/api/http';
+import { getApiErrorMessage } from '@shared/lib/errors';
 import { EmptyState } from '@shared/components/EmptyState';
 import { EntityLink } from '@shared/components/EntityLink';
 import { ListPagination, useListPagination } from '@shared/components/ListPagination';
@@ -45,6 +45,7 @@ import {
   updatePoStageTask,
   type Gd1PoStageTask,
 } from '@shared/api/logistics';
+import { queryKeys } from '@shared/api/queryKeys';
 import { useEntityParam } from '@shared/hooks/useEntityParam';
 import { useI18n } from '@shared/i18n';
 import { useWorkspaceStore } from '@shared/stores/workspaceStore';
@@ -63,7 +64,7 @@ function Gd1PoTasksBoard() {
   const [statusFilter, setStatusFilter] = useState('all');
 
   const tasksQuery = useQuery({
-    queryKey: ['po-stage-tasks'],
+    queryKey: queryKeys.globalPoStageTasks,
     queryFn: fetchGlobalPoStageTasks,
   });
 
@@ -72,8 +73,8 @@ function Gd1PoTasksBoard() {
       updatePoStageTask(taskId, { status }),
     onSuccess: () => {
       void Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['po-stage-tasks'] }),
-        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.globalPoStageTasks }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats }),
       ]);
     },
   });
@@ -223,11 +224,11 @@ export function Tasks() {
   const setFlowFilter = useWorkspaceStore((state) => state.setTaskFlowFilter);
 
   const tasksQuery = useQuery({
-    queryKey: ['tasks'],
+    queryKey: queryKeys.tasks,
     queryFn: fetchLogisticsTasks,
   });
   const deliveryOrdersQuery = useQuery({
-    queryKey: ['delivery-orders'],
+    queryKey: queryKeys.deliveryOrders,
     queryFn: fetchDeliveryOrders,
   });
   const tasks = tasksQuery.data ?? [];

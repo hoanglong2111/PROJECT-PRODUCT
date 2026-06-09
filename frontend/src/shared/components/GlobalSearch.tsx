@@ -1,4 +1,4 @@
-import {
+﻿import {
   ActionIcon,
   Badge,
   Box,
@@ -26,6 +26,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { fetchGlobalSearch, type GlobalSearchKind } from '@shared/api/system';
+import { queryKeys } from '@shared/api/queryKeys';
 import { useI18n } from '@shared/i18n';
 
 const kindMeta: Record<
@@ -56,7 +57,7 @@ export function GlobalSearch() {
   const canSearch = debouncedQuery.length >= 2;
 
   const searchQuery = useQuery({
-    queryKey: ['global-search', debouncedQuery],
+    queryKey: queryKeys.globalSearchResults(debouncedQuery),
     queryFn: () => fetchGlobalSearch(debouncedQuery),
     enabled: canSearch,
     staleTime: 10_000,

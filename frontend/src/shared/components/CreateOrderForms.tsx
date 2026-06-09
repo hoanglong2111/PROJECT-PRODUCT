@@ -1,4 +1,4 @@
-import {
+﻿import {
   ActionIcon,
   Alert,
   Badge,
@@ -29,7 +29,8 @@ import {
   type Priority,
   type PurchaseOrder,
 } from '@shared/api/logistics';
-import { getApiErrorMessage } from '@shared/api/http';
+import { queryKeys } from '@shared/api/queryKeys';
+import { getApiErrorMessage } from '@shared/lib/errors';
 import { getItems, getPartners } from '@shared/api/masterDataService';
 import { useI18n } from '@shared/i18n';
 import { FlowTagBadge } from './FlowTagBadge';
@@ -191,9 +192,9 @@ export function CreatePurchaseOrderDrawer({
     mutationFn: createPurchaseOrder,
     onSuccess: async (order) => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['purchase-orders'] }),
-        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
-        queryClient.invalidateQueries({ queryKey: ['global-search'] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.purchaseOrders }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.globalSearch }),
       ]);
       form.reset();
       setLots(['Lô 1']);
@@ -506,11 +507,11 @@ export function CreateDeliveryOrderDrawer({
     mutationFn: createDeliveryOrder,
     onSuccess: async (order) => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['delivery-orders'] }),
-        queryClient.invalidateQueries({ queryKey: ['purchase-orders'] }),
-        queryClient.invalidateQueries({ queryKey: ['tasks'] }),
-        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
-        queryClient.invalidateQueries({ queryKey: ['global-search'] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.deliveryOrders }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.purchaseOrders }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.tasks }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.globalSearch }),
       ]);
       form.reset();
       setSelectedLines({});

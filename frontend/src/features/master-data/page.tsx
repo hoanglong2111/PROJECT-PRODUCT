@@ -40,7 +40,7 @@ import {
   getItems,
   saveItems,
 } from '@shared/api/masterDataService';
-import type { PartnerRecord, PortRecord, ItemRecord } from './mockData';
+import type { ItemRecord, PartnerRecord, PortRecord } from '@shared/model/masterData';
 
 export function MasterData() {
   const { user } = useAuth();

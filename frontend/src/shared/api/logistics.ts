@@ -1,5 +1,4 @@
-import { http } from '@shared/api/http';
-import type {
+﻿import type {
   BusinessFlowTag,
   AdvanceSettlement,
   AdvanceSettlementStatus,
@@ -45,7 +44,7 @@ import type {
   ShipmentPoTask,
   ShipmentStatus,
   ShipmentRecord,
-} from '@/models/logistics';
+} from '@shared/model/logistics';
 
 export type {
   BusinessFlowTag,
@@ -368,20 +367,190 @@ export type UploadDeliveryOrderAttachmentResult = {
   deliveryOrder: DeliveryOrder;
 };
 
-async function readCollection<T>(path: string): Promise<T> {
-  const response = await http.get<ApiResponse<T>>(path);
-  return response.data.data;
+const emptyDashboardStats: DashboardStats = {
+  totals: {
+    purchaseRequests: 0,
+    purchaseOrders: 0,
+    deliveryOrders: 0,
+    tasks: 0,
+    blockedTasks: 0,
+  },
+  businessFlowCounts: [],
+  deliveryOrderStatus: [],
+  taskStatus: [],
+  taskRoleProgress: [],
+  monthlyThroughput: [],
+};
+
+const uiOnlySuccess = { success: true } as const;
+
+function uiId(prefix: string) {
+  return `${prefix}-${Date.now()}`;
 }
 
+function buildUiQuotation(payload: CreateQuotationPayload): Quotation {
+  const now = new Date().toISOString();
 
+  return {
+    id: uiId('quote'),
+    quoteNumber: payload.requestCode || uiId('QUOTE'),
+    requestCode: payload.requestCode,
+    shippingMode: payload.shippingMode,
+    status: 'DRAFT',
+    preliminaryDueAt: now,
+    preliminarySentAt: null,
+    officialDueAt: now,
+    officialSentAt: null,
+    autoApproveAt: null,
+    customerResponseAt: null,
+    quoteAmount: payload.quoteAmount ?? null,
+    currency: payload.currency ?? null,
+    bookingNumber: null,
+    bookingConfirmedAt: null,
+    createdBy: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+function buildUiShipment(payload: {
+  shipmentNumber: string;
+  doNumber: string;
+  poNumber: string;
+  shippingMode: 'SEA' | 'AIR';
+  carrierName?: string | null;
+  vesselVoyage?: string | null;
+  originPort?: string | null;
+  destPort?: string | null;
+  etd?: string | null;
+  eta?: string | null;
+}): ShipmentRecord {
+  return {
+    id: uiId('shp'),
+    shipment_number: payload.shipmentNumber,
+    do_number: payload.doNumber,
+    po_number: payload.poNumber,
+    status: 'BOOKED',
+    shipping_mode: payload.shippingMode,
+    carrier_name: payload.carrierName || '',
+    vessel_voyage: payload.vesselVoyage || '',
+    origin_port: payload.originPort || '',
+    dest_port: payload.destPort || '',
+    etd: payload.etd || '',
+    eta: payload.eta || '',
+    customs: {
+      stream: 'GREEN',
+      lane_status: '',
+    },
+    milestones: [],
+    documents: [],
+    po_tasks: [],
+  };
+}
+
+function buildUiPurchaseOrder(payload: CreatePurchaseOrderPayload): PurchaseOrder {
+  return {
+    id: uiId('po'),
+    po_number: payload.poNumber,
+    source_pr_codes: [],
+    line_items: [],
+    supplier_code: payload.supplierCode,
+    supplier_name: payload.supplierName,
+    status: 'DRAFT',
+    order_date: payload.orderDate || new Date().toISOString().slice(0, 10),
+    currency: payload.currency,
+    total_amount: payload.totalAmount,
+    sap_sync_status: 'PENDING',
+    linked_do_numbers: [],
+    lots: [],
+    po_type: payload.poType as PurchaseOrder['po_type'],
+    incoterm: payload.incoterm,
+    payment_term: payload.paymentTerm,
+    expected_etd: payload.expectedEtd ?? null,
+    expected_eta: payload.expectedEta ?? null,
+    version: 1,
+    sent_at: null,
+    confirmed_date: null,
+    warehouse_code: payload.warehouseCode,
+    flow_tags: ['LINEAR'],
+  };
+}
+
+function buildUiDeliveryOrder(payload: CreateDeliveryOrderPayload): DeliveryOrder {
+  return {
+    id: uiId('do'),
+    source_po_number: payload.poNumber,
+    source_lines: [],
+    order_info: {
+      request_code: payload.requestCode || '',
+      order_number: payload.requestCode || uiId('DO'),
+      tracking_number: payload.trackingNumber ?? null,
+      purchase_contract_number: payload.purchaseContractNumber || '',
+      status: 'DRAFT',
+      notes: payload.notes || '',
+      xnk_notes: '',
+    },
+    product_details: {
+      item_name_requested: payload.itemName || '',
+      unit: payload.unit || '',
+      quantity: payload.quantity || 0,
+      lot_number: null,
+      lot_unit_quantity: null,
+      lot_unit_type: null,
+      packaging_type: null,
+    },
+    sap_integration: {
+      supplier_code: payload.supplierCode ?? null,
+      supplier_name: payload.supplierName ?? null,
+      actual_item_code: payload.itemCode ?? null,
+      raw_date: null,
+      po_number: payload.poNumber ?? null,
+      sync_status: 'SYNCED',
+    },
+    logistics_shipping: {
+      incoterms: payload.incoterms || '',
+      shipping_method: payload.shippingMethod || 'SEA',
+      shipping_line: payload.shippingLine ?? null,
+      vessel_code: null,
+      port_of_departure: payload.portOfDeparture || '',
+      port_of_destination: payload.portOfDestination || '',
+      documents_list: payload.documentsList ?? [],
+      missing_documents: [],
+      cut_off_date: null,
+      etd_planned: payload.etdPlanned ?? null,
+      eta_planned: payload.etaPlanned ?? null,
+    },
+    warehouse_tracking: {
+      warehouse_code: payload.warehouseCode || '',
+      production_ready_date: null,
+      warehouse_deadline: payload.warehouseDeadline || '',
+      planned_entry_date: payload.plannedEntryDate ?? null,
+      actual_entry_date: null,
+      delay_days: 0,
+    },
+    finance_tax: {
+      import_tax_rate: null,
+      tax_amount: null,
+      currency: 'USD',
+      tax_payment_deadline: null,
+      insurance: null,
+    },
+    task_summary: {
+      total_tasks: 0,
+      completed_tasks: 0,
+      blocked_tasks: 0,
+      required_tasks_remaining: 0,
+    },
+    flow_tags: ['LINEAR'],
+  };
+}
 
 export async function fetchQuotation(payload: CreateQuotationPayload) {
-  const response = await http.post<ApiResponse<Quotation>>('/quotations', payload);
-  return response.data.data;
+  return buildUiQuotation(payload);
 }
 
 export async function fetchShipments() {
-  return readCollection<ShipmentRecord[]>('/shipments');
+  return [] as ShipmentRecord[];
 }
 
 export async function createShipment(payload: {
@@ -396,280 +565,173 @@ export async function createShipment(payload: {
   etd?: string | null;
   eta?: string | null;
 }) {
-  const now = Date.now();
-  const newShipment: ShipmentRecord = {
-    id: `shp-${now}`,
-    shipment_number: payload.shipmentNumber,
-    do_number: payload.doNumber,
-    po_number: payload.poNumber,
-    status: 'BOOKED',
-    shipping_mode: payload.shippingMode,
-    carrier_name: payload.carrierName || 'Hapag Lloyd',
-    vessel_voyage: payload.vesselVoyage || 'HAPAG V204',
-    origin_port: payload.originPort || 'Port of Ningbo',
-    dest_port: payload.destPort || 'Port of Cat Lai',
-    etd: payload.etd || '2026-06-15',
-    eta: payload.eta || '2026-06-29',
-    customs: {
-      stream: 'GREEN',
-      lane_status: 'Thông quan tự động',
-    },
-    milestones: [
-      { id: `m-new-1-${now}`, milestone_code: 'BOOKING_CONFIRMED', planned_date: payload.etd || '2026-06-12', actual_date: payload.etd || '2026-06-12', source: 'MANUAL', note: 'Booking confirmed' },
-      { id: `m-new-2-${now}`, milestone_code: 'CARGO_READY', planned_date: payload.etd || '2026-06-14', actual_date: null, source: 'API', note: null },
-      { id: `m-new-3-${now}`, milestone_code: 'PICK_UP', planned_date: payload.etd || '2026-06-15', actual_date: null, source: 'API', note: null },
-      { id: `m-new-4-${now}`, milestone_code: 'BL_ISSUED', planned_date: payload.etd || '2026-06-16', actual_date: null, source: 'API', note: null },
-      { id: `m-new-5-${now}`, milestone_code: 'GATE_IN_POL', planned_date: payload.etd || '2026-06-16', actual_date: null, source: 'API', note: null },
-      { id: `m-new-6-${now}`, milestone_code: 'ATD', planned_date: payload.etd || '2026-06-17', actual_date: null, source: 'API', note: null },
-      { id: `m-new-7-${now}`, milestone_code: 'CUSTOM_DRAFT_SUBMITTED', planned_date: payload.eta || '2026-06-20', actual_date: null, source: 'API', note: null },
-      { id: `m-new-8-${now}`, milestone_code: 'AN_ATA', planned_date: payload.eta || '2026-06-28', actual_date: null, source: 'API', note: null },
-      { id: `m-new-9-${now}`, milestone_code: 'CUSTOM_CLEARED', planned_date: payload.eta || '2026-06-29', actual_date: null, source: 'API', note: null },
-      { id: `m-new-10-${now}`, milestone_code: 'EDO_DELIVERY', planned_date: payload.eta || '2026-06-30', actual_date: null, source: 'API', note: null },
-    ],
-    documents: [
-      { id: `d-new-1-${now}`, document_type: 'Hóa đơn thương mại (Commercial Invoice)', file_name: null, status: 'PENDING_UPLOAD' },
-      { id: `d-new-2-${now}`, document_type: 'Phiếu đóng gói (Packing List)', file_name: null, status: 'PENDING_UPLOAD' },
-      { id: `d-new-3-${now}`, document_type: 'Vận đơn nháp (Draft B/L)', file_name: null, status: 'PENDING_UPLOAD' },
-      { id: `d-new-4-${now}`, document_type: 'Vận đơn chính thức (Official B/L)', file_name: null, status: 'PENDING_UPLOAD' },
-      { id: `d-new-5-${now}`, document_type: 'Tờ khai hải quan (Customs Declaration)', file_name: null, status: 'PENDING_UPLOAD' },
-    ],
-    po_tasks: [
-      { id: `t-new-1-${now}`, task_name: 'Duyệt báo giá vận chuyển', status: 'TODO', assignee_role: 'LOGISTICS' },
-      { id: `t-new-2-${now}`, task_name: 'Xác nhận booking space', status: 'TODO', assignee_role: 'LOGISTICS' },
-    ],
-  };
-  return newShipment;
+  return buildUiShipment(payload);
 }
 
-export async function updateShipment(shipmentNumber: string, payload: Partial<ShipmentRecord>) {
-  const response = await http.patch<ApiResponse<ShipmentRecord>>(
-    `/shipments/${encodeURIComponent(shipmentNumber)}`,
-    payload
-  );
-  return response.data.data;
+export async function updateShipment(_shipmentNumber: string, payload: Partial<ShipmentRecord>) {
+  return { ...payload, id: payload.id ?? uiId('shp') } as ShipmentRecord;
 }
 
 export async function fetchQuotations() {
-  return readCollection<Quotation[]>('/quotations');
+  return [] as Quotation[];
 }
 
 export async function fetchPurchaseOrders() {
-  return readCollection<PurchaseOrder[]>('/purchase-orders');
+  return [] as PurchaseOrder[];
 }
 
 export async function fetchDeliveryOrders() {
-  return readCollection<DeliveryOrder[]>('/delivery-orders');
+  return [] as DeliveryOrder[];
 }
 
 export async function fetchLogisticsTasks() {
-  return readCollection<LogisticsTask[]>('/tasks');
+  return [] as LogisticsTask[];
 }
 
 export async function fetchDashboardStats() {
-  return readCollection<DashboardStats>('/dashboard/stats');
+  return emptyDashboardStats;
 }
 
 export async function fetchSlaAlerts() {
-  return readCollection<SlaAlert[]>('/sla/alerts');
+  return [] as SlaAlert[];
 }
 
-
-
 export async function createQuotation(payload: CreateQuotationPayload) {
-  const response = await http.post<ApiResponse<Quotation>>('/quotations', payload);
-  return response.data.data;
+  return buildUiQuotation(payload);
 }
 
 export async function createPurchaseOrder(payload: CreatePurchaseOrderPayload) {
-  const response = await http.post<ApiResponse<PurchaseOrder>>('/purchase-orders', payload);
-  return response.data.data;
+  return buildUiPurchaseOrder(payload);
 }
-
 
 export async function updatePurchaseOrderLotAllocation(
   poNumber: string,
-  payload: UpdatePurchaseOrderLotAllocationPayload,
+  _payload: UpdatePurchaseOrderLotAllocationPayload,
 ) {
-  const response = await http.patch<ApiResponse<PurchaseOrder>>(
-    `/purchase-orders/${encodeURIComponent(poNumber)}/lot-allocation`,
-    payload,
-  );
-  return response.data.data;
+  return buildUiPurchaseOrder({
+    currency: 'USD',
+    poNumber,
+    supplierCode: '',
+    supplierName: '',
+    totalAmount: 0,
+    warehouseCode: '',
+  });
 }
 
 export async function syncPurchaseOrderSap(poNumber: string) {
-  const response = await http.post<ApiResponse<PurchaseOrder>>(
-    `/purchase-orders/${encodeURIComponent(poNumber)}/sap-sync`,
-  );
-  return response.data.data;
+  return buildUiPurchaseOrder({
+    currency: 'USD',
+    poNumber,
+    supplierCode: '',
+    supplierName: '',
+    totalAmount: 0,
+    warehouseCode: '',
+  });
 }
 
 export async function createDeliveryOrder(payload: CreateDeliveryOrderPayload) {
-  const response = await http.post<ApiResponse<DeliveryOrder>>('/delivery-orders', payload);
-  return response.data.data;
+  return buildUiDeliveryOrder(payload);
 }
 
-
-
 export async function updateQuotationAction(quotationId: string, payload: UpdateQuotationActionPayload) {
-  const response = await http.patch<ApiResponse<Quotation>>(
-    `/quotations/${encodeURIComponent(quotationId)}/action`,
-    payload,
-  );
-  return response.data.data;
+  return { ...buildUiQuotation({ requestCode: quotationId, shippingMode: 'AIR' }), status: payload.action === 'CUSTOMER_APPROVED' ? 'APPROVED' : 'DRAFT' } as Quotation;
 }
 
 export async function confirmQuotationBooking(quotationId: string, payload: ConfirmQuotationBookingPayload) {
-  const response = await http.post<ApiResponse<Quotation>>(
-    `/quotations/${encodeURIComponent(quotationId)}/booking`,
-    payload,
-  );
-  return response.data.data;
+  return { ...buildUiQuotation({ requestCode: quotationId, shippingMode: 'AIR' }), bookingNumber: payload.bookingNumber } as Quotation;
 }
 
 export async function updateDeliveryOrder(orderNumber: string, payload: UpdateDeliveryOrderPayload) {
-  const response = await http.patch<ApiResponse<DeliveryOrder>>(
-    `/delivery-orders/${encodeURIComponent(orderNumber)}`,
-    payload,
-  );
-  return response.data.data;
+  return buildUiDeliveryOrder({ ...payload, requestCode: orderNumber });
 }
 
-export async function fetchEfmsControl(orderNumber: string) {
-  const response = await http.get<ApiResponse<EfmsControl>>(
-    `/delivery-orders/${encodeURIComponent(orderNumber)}/efms-control`,
-  );
-  return response.data.data;
+export async function fetchEfmsControl(_orderNumber: string) {
+  return {
+    advanceSettlements: [],
+    charges: [],
+    containers: [],
+    customs: null,
+    documentReviews: [],
+    financeNotes: [],
+    houseBills: [],
+    latestDriveDossier: null,
+    transport: null,
+  } satisfies EfmsControl;
 }
 
-export async function createAdvanceSettlement(orderNumber: string, payload: CreateAdvanceSettlementPayload) {
-  const response = await http.post<ApiResponse<AdvanceSettlement>>(
-    `/delivery-orders/${encodeURIComponent(orderNumber)}/advance-settlements`,
-    payload,
-  );
-  return response.data.data;
+export async function createAdvanceSettlement(_orderNumber: string, payload: CreateAdvanceSettlementPayload) {
+  return { ...payload, id: uiId('advance') } as AdvanceSettlement;
 }
 
 export async function updateAdvanceSettlementStatus(
   settlementId: string,
   payload: UpdateAdvanceSettlementStatusPayload,
 ) {
-  const response = await http.patch<ApiResponse<AdvanceSettlement>>(
-    `/advance-settlements/${encodeURIComponent(settlementId)}/status`,
-    payload,
-  );
-  return response.data.data;
+  return { id: settlementId, ...payload } as AdvanceSettlement;
 }
 
 export async function syncDriveDossier(orderNumber: string) {
-  const response = await http.post<ApiResponse<DriveDossier>>(
-    `/delivery-orders/${encodeURIComponent(orderNumber)}/drive-dossier`,
-  );
-  return response.data.data;
+  return { id: uiId('drive'), deliveryOrderId: orderNumber, status: 'PENDING_CONFIG' } as DriveDossier;
 }
 
 export async function updateShippingInstruction(orderNumber: string, payload: UpdateShippingInstructionPayload) {
-  const response = await http.patch<ApiResponse<EfmsTransportRecord>>(
-    `/delivery-orders/${encodeURIComponent(orderNumber)}/shipping-instruction`,
-    payload,
-  );
-  return response.data.data;
+  return { id: uiId('transport'), deliveryOrderId: orderNumber, ...payload } as EfmsTransportRecord;
 }
 
 export async function createHouseBill(orderNumber: string, payload: CreateHouseBillPayload) {
-  const response = await http.post<ApiResponse<EfmsHouseBill>>(
-    `/delivery-orders/${encodeURIComponent(orderNumber)}/hbls`,
-    payload,
-  );
-  return response.data.data;
+  return { id: uiId('hbl'), deliveryOrderId: orderNumber, ...payload } as EfmsHouseBill;
 }
 
 export async function createContainer(orderNumber: string, payload: CreateContainerPayload) {
-  const response = await http.post<ApiResponse<EfmsContainer>>(
-    `/delivery-orders/${encodeURIComponent(orderNumber)}/containers`,
-    payload,
-  );
-  return response.data.data;
+  return { id: uiId('container'), deliveryOrderId: orderNumber, ...payload } as EfmsContainer;
 }
 
 export async function createDocumentReview(orderNumber: string, payload: CreateDocumentReviewPayload) {
-  const response = await http.post<ApiResponse<DocumentReview>>(
-    `/delivery-orders/${encodeURIComponent(orderNumber)}/document-reviews`,
-    payload,
-  );
-  return response.data.data;
+  return { id: uiId('review'), deliveryOrderId: orderNumber, ...payload } as DocumentReview;
 }
 
 export async function confirmDocumentCrossCheck(reviewId: string, payload: ConfirmDocumentCrossCheckPayload) {
-  const response = await http.post<ApiResponse<DocumentReview>>(
-    `/document-reviews/${encodeURIComponent(reviewId)}/cross-check`,
-    payload,
-  );
-  return response.data.data;
+  return { id: reviewId, ...payload } as unknown as DocumentReview;
 }
 
 export async function confirmFinalBl(reviewId: string, payload: ConfirmFinalBlPayload) {
-  const response = await http.post<ApiResponse<DocumentReview>>(
-    `/document-reviews/${encodeURIComponent(reviewId)}/final-bl`,
-    payload,
-  );
-  return response.data.data;
+  return { id: reviewId, ...payload } as DocumentReview;
 }
 
-export async function fetchCharges(orderNumber: string) {
-  return readCollection<FinanceCharge[]>(`/delivery-orders/${encodeURIComponent(orderNumber)}/charges`);
+export async function fetchCharges(_orderNumber: string) {
+  return [] as FinanceCharge[];
 }
 
 export async function createCharge(orderNumber: string, payload: CreateChargePayload) {
-  const response = await http.post<ApiResponse<FinanceCharge>>(
-    `/delivery-orders/${encodeURIComponent(orderNumber)}/charges`,
-    payload,
-  );
-  return response.data.data;
+  return { id: uiId('charge'), deliveryOrderId: orderNumber, ...payload } as FinanceCharge;
 }
 
 export async function updateCharge(chargeId: string, payload: UpdateChargePayload) {
-  const response = await http.patch<ApiResponse<FinanceCharge>>(`/charges/${encodeURIComponent(chargeId)}`, payload);
-  return response.data.data;
+  return { id: chargeId, ...payload } as FinanceCharge;
 }
 
 export async function deleteCharge(chargeId: string) {
-  const response = await http.delete<ApiResponse<FinanceCharge>>(`/charges/${encodeURIComponent(chargeId)}`);
-  return response.data.data;
+  return { id: chargeId } as FinanceCharge;
 }
 
 export async function issueFinanceNote(orderNumber: string, payload: IssueFinanceNotePayload) {
-  const response = await http.post<ApiResponse<FinanceNote>>(
-    `/delivery-orders/${encodeURIComponent(orderNumber)}/finance-notes`,
-    payload,
-  );
-  return response.data.data;
+  return { id: uiId('finance-note'), deliveryOrderId: orderNumber, ...payload } as FinanceNote;
 }
 
 export async function sendFinanceNoteToAccounting(noteId: string) {
-  const response = await http.post<ApiResponse<FinanceNote>>(
-    `/finance-notes/${encodeURIComponent(noteId)}/send-to-accounting`,
-  );
-  return response.data.data;
+  return { id: noteId } as FinanceNote;
 }
 
-export async function fetchCustoms(orderNumber: string) {
-  const response = await http.get<ApiResponse<CustomsDeclaration | null>>(
-    `/delivery-orders/${encodeURIComponent(orderNumber)}/customs`,
-  );
-  return response.data.data;
+export async function fetchCustoms(_orderNumber: string) {
+  return null as CustomsDeclaration | null;
 }
 
 export async function updateCustoms(orderNumber: string, payload: UpdateCustomsPayload) {
-  const response = await http.patch<ApiResponse<CustomsDeclaration>>(
-    `/delivery-orders/${encodeURIComponent(orderNumber)}/customs`,
-    payload,
-  );
-  return response.data.data;
+  return { id: uiId('customs'), deliveryOrderId: orderNumber, ...payload } as CustomsDeclaration;
 }
 
-export async function fetchDeliveryOrderAttachments(orderNumber: string) {
-  return readCollection<LogisticsAttachment[]>(`/delivery-orders/${encodeURIComponent(orderNumber)}/attachments`);
+export async function fetchDeliveryOrderAttachments(_orderNumber: string) {
+  return [] as LogisticsAttachment[];
 }
 
 export async function uploadDeliveryOrderAttachment({
@@ -683,72 +745,56 @@ export async function uploadDeliveryOrderAttachment({
   hblNumber?: string | null;
   orderNumber: string;
 }) {
-  const formData = new FormData();
-  formData.append('documentType', documentType);
-  formData.append('file', file);
-  if (hblNumber) {
-    formData.append('hblNumber', hblNumber);
-  }
+  const attachment: LogisticsAttachment = {
+    documentType,
+    entityId: orderNumber,
+    entityType: 'delivery_order',
+    fileName: file.name,
+    hblNumber: hblNumber ?? null,
+    id: uiId('attachment'),
+    mimeType: file.type,
+    size: file.size,
+    storageUrl: '',
+    uploadedAt: new Date().toISOString(),
+    uploadedBy: null,
+  };
 
-  const response = await http.post<ApiResponse<UploadDeliveryOrderAttachmentResult>>(
-    `/delivery-orders/${encodeURIComponent(orderNumber)}/attachments`,
-    formData,
-  );
-  return response.data.data;
+  return {
+    attachment,
+    deliveryOrder: buildUiDeliveryOrder({ requestCode: orderNumber }),
+  } satisfies UploadDeliveryOrderAttachmentResult;
 }
 
 export async function updateLogisticsTask(taskId: string, payload: UpdateTaskPayload) {
-  const response = await http.patch<ApiResponse<LogisticsTask>>(`/tasks/${encodeURIComponent(taskId)}`, payload);
-  return response.data.data;
+  return { task_id: taskId, ...payload } as LogisticsTask;
 }
 
-
-
-// --- GD1 PO stage & PO-stage tasks endpoints ---
-export async function advancePurchaseOrderStage(poNumber: string, stage: Gd1PoStatus) {
-  const response = await http.patch<ApiResponse<{ success: boolean }>>(
-    `/purchase-orders/${encodeURIComponent(poNumber)}/stage`,
-    { stage }
-  );
-  return response.data.data;
+export async function advancePurchaseOrderStage(_poNumber: string, _stage: Gd1PoStatus) {
+  return uiOnlySuccess;
 }
 
-export async function fetchPurchaseOrderStageTasks(poNumber: string) {
-  const response = await http.get<ApiResponse<Gd1PoStageTask[]>>(
-    `/purchase-orders/${encodeURIComponent(poNumber)}/tasks`
-  );
-  return response.data.data;
+export async function fetchPurchaseOrderStageTasks(_poNumber: string) {
+  return [] as Gd1PoStageTask[];
 }
 
-// --- GD1 Shipment milestones & landed cost endpoints ---
-export async function fetchShipmentMilestones(orderNumber: string) {
-  const response = await http.get<ApiResponse<Gd1ShipmentMilestone[]>>(
-    `/delivery-orders/${encodeURIComponent(orderNumber)}/milestones`
-  );
-  return response.data.data;
+export async function fetchShipmentMilestones(_orderNumber: string) {
+  return [] as Gd1ShipmentMilestone[];
 }
 
 export async function updateShipmentMilestone(
-  orderNumber: string,
-  milestoneCode: string,
-  payload: { actualDate: string | null; note?: string; source?: string }
+  _orderNumber: string,
+  _milestoneCode: string,
+  _payload: { actualDate: string | null; note?: string; source?: string },
 ) {
-  const response = await http.patch<ApiResponse<{ success: boolean }>>(
-    `/delivery-orders/${encodeURIComponent(orderNumber)}/milestones/${encodeURIComponent(milestoneCode)}`,
-    payload
-  );
-  return response.data.data;
+  return uiOnlySuccess;
 }
 
-export async function fetchShipmentCosts(orderNumber: string) {
-  const response = await http.get<ApiResponse<Gd1ShipmentCost[]>>(
-    `/delivery-orders/${encodeURIComponent(orderNumber)}/costs`
-  );
-  return response.data.data;
+export async function fetchShipmentCosts(_orderNumber: string) {
+  return [] as Gd1ShipmentCost[];
 }
 
 export async function addShipmentCost(
-  orderNumber: string,
+  _orderNumber: string,
   payload: {
     costType: string;
     amount: number;
@@ -756,34 +802,19 @@ export async function addShipmentCost(
     exchangeRate: number;
     allocMethod: string;
     invoiceRef?: string | null;
-  }
+  },
 ) {
-  const response = await http.post<ApiResponse<Gd1ShipmentCost>>(
-    `/delivery-orders/${encodeURIComponent(orderNumber)}/costs`,
-    payload
-  );
-  return response.data.data;
+  return { id: uiId('cost'), ...payload } as unknown as Gd1ShipmentCost;
 }
 
-export async function deleteShipmentCost(costId: string) {
-  const response = await http.delete<ApiResponse<{ success: boolean }>>(
-    `/delivery-orders/costs/${encodeURIComponent(costId)}`
-  );
-  return response.data.data;
+export async function deleteShipmentCost(_costId: string) {
+  return uiOnlySuccess;
 }
 
-export async function updatePoStageTask(
-  taskId: string,
-  payload: { status: string; note?: string }
-) {
-  const response = await http.patch<ApiResponse<{ success: boolean }>>(
-    `/tasks/po/${encodeURIComponent(taskId)}`,
-    payload
-  );
-  return response.data.data;
+export async function updatePoStageTask(_taskId: string, _payload: { status: string; note?: string }) {
+  return uiOnlySuccess;
 }
 
 export async function fetchGlobalPoStageTasks() {
-  const response = await http.get<ApiResponse<Gd1PoStageTask[]>>('/tasks/po');
-  return response.data.data;
+  return [] as Gd1PoStageTask[];
 }

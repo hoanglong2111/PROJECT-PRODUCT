@@ -1,4 +1,4 @@
-import {
+﻿import {
   ActionIcon,
   Alert,
   Badge,
@@ -53,6 +53,7 @@ import {
   type ShipmentDocument,
   type ShipmentPoTask,
 } from '@shared/api/logistics';
+import { queryKeys } from '@shared/api/queryKeys';
 import { useEntityParam } from '@shared/hooks/useEntityParam';
 import { useI18n } from '@shared/i18n';
 
@@ -123,7 +124,7 @@ export function Shipments() {
   const queryClient = useQueryClient();
 
   const shipmentsQuery = useQuery({
-    queryKey: ['shipments'],
+    queryKey: queryKeys.shipments,
     queryFn: fetchShipments,
   });
   const shipments = shipmentsQuery.data ?? [];
@@ -200,7 +201,7 @@ export function Shipments() {
   const createMutation = useMutation({
     mutationFn: createShipment,
     onSuccess: (newShipment) => {
-      void queryClient.invalidateQueries({ queryKey: ['shipments'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
       setNewShpNumber('');
       setNewDoNumber('');
       setNewPoNumber('');
@@ -225,7 +226,7 @@ export function Shipments() {
   };
 
   const handleUpdateShipment = (updated: ShipmentRecord) => {
-    void queryClient.invalidateQueries({ queryKey: ['shipments'] });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
   };
 
   const closeWorkbench = () => {

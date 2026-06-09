@@ -22,7 +22,7 @@ import { IconPhoto, IconShieldLock, IconUpload, IconUserCircle } from '@tabler/i
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
-import { getApiErrorMessage } from '@shared/api/http';
+import { getApiErrorMessage } from '@shared/lib/errors';
 import type { AuthUser } from '@shared/auth/types';
 import { useAuth } from '@shared/auth/useAuth';
 import { PageLoading } from '@shared/components/PageFeedback';

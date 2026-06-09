@@ -1,4 +1,4 @@
-import {
+﻿import {
   Alert,
   Button,
   Checkbox,
@@ -25,7 +25,8 @@ import {
   updateDeliveryOrder,
   updateLogisticsTask,
 } from '@shared/api/logistics';
-import { getApiErrorMessage } from '@shared/api/http';
+import { queryKeys } from '@shared/api/queryKeys';
+import { getApiErrorMessage } from '@shared/lib/errors';
 import { useI18n } from '@shared/i18n';
 
 const priorityValues: Priority[] = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
@@ -136,11 +137,11 @@ export function UpdateDeliveryOrderForm({ deliveryOrder }: { deliveryOrder: Deli
       }),
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['delivery-orders'] }),
-        queryClient.invalidateQueries({ queryKey: ['purchase-orders'] }),
-        queryClient.invalidateQueries({ queryKey: ['tasks'] }),
-        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
-        queryClient.invalidateQueries({ queryKey: ['global-search'] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.deliveryOrders }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.purchaseOrders }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.tasks }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.globalSearch }),
       ]);
       setEditing(false);
     },
@@ -273,11 +274,11 @@ export function UpdateTaskProgressForm({
       }),
     onSuccess: async (updatedTask) => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['tasks'] }),
-        queryClient.invalidateQueries({ queryKey: ['delivery-orders'] }),
-        queryClient.invalidateQueries({ queryKey: ['purchase-orders'] }),
-        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
-        queryClient.invalidateQueries({ queryKey: ['global-search'] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.tasks }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.deliveryOrders }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.purchaseOrders }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.globalSearch }),
       ]);
       onUpdated?.(updatedTask);
       setEditing(false);

@@ -1,6 +1,5 @@
 import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 
-import { AUTH_TOKEN_STORAGE_KEY, http, setHttpAuthToken } from '@shared/api/http';
 import type { AppRole, AuthUser, UpdateEmailPayload, UpdatePasswordPayload, UpdateProfilePayload } from './types';
 
 type AuthContextValue = {
@@ -15,30 +14,72 @@ type AuthContextValue = {
   hasAnyRole: (roles: AppRole[]) => boolean;
 };
 
-type ApiResponse<T> = {
-  data: T;
-  errors?: unknown[];
-  meta?: Record<string, unknown>;
-};
-
-type LoginPayload = {
-  token: string;
-  user: AuthUser;
-};
-
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-function persistToken(token: string | null) {
+const UI_AUTH_USER_STORAGE_KEY = 'kbfe.ui.auth.user';
+
+const uiDefaultUser: AuthUser = {
+  avatarUrl: null,
+  defaultWarehouseCode: null,
+  department: 'Purchasing',
+  email: 'manager@kbfe.local',
+  fullName: 'KBFE Manager',
+  id: 'ui-manager',
+  operationFocus: null,
+  phoneNumber: null,
+  position: 'PIC Manager',
+  preferredModulePath: '/dashboard',
+  profileNote: null,
+  role: 'PIC_MANAGER',
+  workLocation: null,
+  workShift: null,
+};
+
+function makeUiUser(email: string): AuthUser {
+  const normalizedEmail = email.trim().toLowerCase() || uiDefaultUser.email;
+  const isAdmin = normalizedEmail.includes('admin');
+
+  return {
+    ...uiDefaultUser,
+    department: isAdmin ? 'IT Operations' : uiDefaultUser.department,
+    email: normalizedEmail,
+    fullName: isAdmin ? 'KBFE Admin' : uiDefaultUser.fullName,
+    id: isAdmin ? 'ui-admin' : uiDefaultUser.id,
+    position: isAdmin ? 'Admin' : uiDefaultUser.position,
+    preferredModulePath: '/dashboard',
+    role: isAdmin ? 'ADMIN' : 'PIC_MANAGER',
+  };
+}
+
+function readStoredUser() {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const stored = window.localStorage.getItem(UI_AUTH_USER_STORAGE_KEY);
+  if (!stored) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(stored) as AuthUser;
+  } catch {
+    window.localStorage.removeItem(UI_AUTH_USER_STORAGE_KEY);
+    return null;
+  }
+}
+
+function persistUser(user: AuthUser | null) {
   if (typeof window === 'undefined') {
     return;
   }
 
-  if (token) {
-    window.localStorage.setItem(AUTH_TOKEN_STORAGE_KEY, token);
+  if (user) {
+    window.localStorage.setItem(UI_AUTH_USER_STORAGE_KEY, JSON.stringify(user));
     return;
   }
 
-  window.localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
+  window.localStorage.removeItem(UI_AUTH_USER_STORAGE_KEY);
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -47,71 +88,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(() => {
     setUser(null);
-    persistToken(null);
-    setHttpAuthToken(null);
+    persistUser(null);
   }, []);
 
-  const login = useCallback(async ({ email, password }: { email: string; password: string }) => {
-    const response = await http.post<ApiResponse<LoginPayload>>('/auth/login', { email, password });
-    const payload = response.data.data;
-    persistToken(payload.token);
-    setHttpAuthToken(payload.token);
-    setUser(payload.user);
-    return payload.user;
+  const login = useCallback(async ({ email }: { email: string; password: string }) => {
+    const nextUser = makeUiUser(email);
+    persistUser(nextUser);
+    setUser(nextUser);
+    return nextUser;
   }, []);
 
   const updateEmail = useCallback(async (params: UpdateEmailPayload) => {
-    const response = await http.patch<ApiResponse<AuthUser>>('/profile/email', params);
-    const updatedUser = response.data.data;
+    const updatedUser = { ...(user ?? uiDefaultUser), email: params.email.trim().toLowerCase() };
     setUser(updatedUser);
+    persistUser(updatedUser);
     return updatedUser;
-  }, []);
+  }, [user]);
 
-  const updatePassword = useCallback(async (params: UpdatePasswordPayload) => {
-    await http.patch<ApiResponse<{ changed: boolean }>>('/profile/password', params);
+  const updatePassword = useCallback(async (_params: UpdatePasswordPayload) => {
+    return Promise.resolve();
   }, []);
 
   const updateProfile = useCallback(async (params: UpdateProfilePayload) => {
-    const response = await http.patch<ApiResponse<AuthUser>>('/profile', params);
-    const updatedUser = response.data.data;
+    const updatedUser = {
+      ...(user ?? uiDefaultUser),
+      ...params,
+    };
     setUser(updatedUser);
+    persistUser(updatedUser);
     return updatedUser;
-  }, []);
+  }, [user]);
 
   useEffect(() => {
-    let mounted = true;
-
-    async function bootstrapAuth() {
-      try {
-        const token =
-          typeof window !== 'undefined' ? window.localStorage.getItem(AUTH_TOKEN_STORAGE_KEY) : null;
-
-        if (!token) {
-          return;
-        }
-
-        setHttpAuthToken(token);
-        const response = await http.get<ApiResponse<AuthUser>>('/auth/me');
-        if (mounted) {
-          setUser(response.data.data);
-        }
-      } catch {
-        if (mounted) {
-          logout();
-        }
-      } finally {
-        if (mounted) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    void bootstrapAuth();
-
-    return () => {
-      mounted = false;
-    };
-  }, [logout]);
+    setUser(readStoredUser());
+    setIsLoading(false);
+  }, []);
 
   const value = useMemo<AuthContextValue>(
     () => ({

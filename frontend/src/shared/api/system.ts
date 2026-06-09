@@ -1,11 +1,4 @@
-import { http } from '@shared/api/http';
 import type { AppRole, AuthUser } from '@shared/auth/types';
-
-type ApiResponse<T> = {
-  data: T;
-  errors?: unknown[];
-  meta?: Record<string, unknown>;
-};
 
 export type GlobalSearchKind = 'purchase_request' | 'purchase_order' | 'delivery_order' | 'task' | 'account';
 
@@ -42,32 +35,75 @@ export type ExchangeRatesPayload = {
   updatedAt: string;
 };
 
-export async function fetchGlobalSearch(query: string) {
+const UI_USERS_STORAGE_KEY = 'kbfe.ui.users';
+
+function readUsers() {
+  if (typeof window === 'undefined') {
+    return [];
+  }
+
+  const stored = window.localStorage.getItem(UI_USERS_STORAGE_KEY);
+  if (!stored) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(stored);
+    return Array.isArray(parsed) ? (parsed as AuthUser[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveUsers(users: AuthUser[]) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.localStorage.setItem(UI_USERS_STORAGE_KEY, JSON.stringify(users));
+}
+
+export async function fetchGlobalSearch(query: string): Promise<GlobalSearchResult[]> {
   const trimmedQuery = query.trim();
   if (trimmedQuery.length < 2) {
     return [];
   }
 
-  const response = await http.get<ApiResponse<GlobalSearchResult[]>>('/search', {
-    params: { q: trimmedQuery },
-  });
-  return response.data.data;
+  return [];
 }
 
-export async function fetchUsers() {
-  const response = await http.get<ApiResponse<AuthUser[]>>('/users');
-  return response.data.data;
+export async function fetchUsers(): Promise<AuthUser[]> {
+  return readUsers();
 }
 
-export async function createUser(payload: CreateUserPayload) {
-  const response = await http.post<ApiResponse<AuthUser>>('/users', payload);
-  return response.data.data;
+export async function createUser(payload: CreateUserPayload): Promise<AuthUser> {
+  const user: AuthUser = {
+    avatarUrl: payload.avatarUrl,
+    defaultWarehouseCode: null,
+    department: payload.department,
+    email: payload.email,
+    fullName: payload.fullName,
+    id: `ui-user-${Date.now()}`,
+    operationFocus: null,
+    phoneNumber: null,
+    position: payload.position,
+    preferredModulePath: '/dashboard',
+    profileNote: null,
+    role: payload.role,
+    workLocation: null,
+    workShift: null,
+  };
+  saveUsers([...readUsers(), user]);
+  return user;
 }
 
-export async function fetchExchangeRates(base = 'USD') {
+export async function fetchExchangeRates(base = 'USD'): Promise<ExchangeRatesPayload> {
   const normalizedBase = base.trim().toUpperCase() || 'USD';
-  const response = await http.get<ApiResponse<ExchangeRatesPayload>>('/exchange-rates', {
-    params: { base: normalizedBase },
-  });
-  return response.data.data;
+  return {
+    base: normalizedBase,
+    nextUpdateAt: null,
+    provider: 'ui-only',
+    rates: [],
+    updatedAt: new Date().toISOString(),
+  } satisfies ExchangeRatesPayload;
 }

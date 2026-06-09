@@ -1,0 +1,17 @@
+export const queryKeys = {
+  dashboardStats: ['dashboard-stats'] as const,
+  deliveryOrderAttachments: (orderNumber: string) => ['delivery-order-attachments', orderNumber] as const,
+  deliveryOrders: ['delivery-orders'] as const,
+  globalPoStageTasks: ['global-po-stage-tasks'] as const,
+  globalSearch: ['global-search'] as const,
+  globalSearchResults: (query: string) => ['global-search', query] as const,
+  masterData: ['master-data'] as const,
+  purchaseOrderTasks: (poNumber: string) => ['purchase-order-tasks', poNumber] as const,
+  purchaseOrders: ['purchase-orders'] as const,
+  quotations: ['quotations'] as const,
+  shipmentMilestones: (shipmentId: string) => ['shipment-milestones', shipmentId] as const,
+  shipments: ['shipments'] as const,
+  taskTemplates: ['task-templates'] as const,
+  tasks: ['tasks'] as const,
+  users: ['users'] as const,
+};
