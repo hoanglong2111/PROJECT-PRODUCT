@@ -28,8 +28,6 @@
     ],
     "active": {
       "frontend": "docs/skills/frontend/SKILL.md",
-      "backendApi": "docs/skills/backend-api/SKILL.md",
-      "dataModel": "docs/skills/data-model/SKILL.md",
       "uiUx": "docs/skills/ui-ux/SKILL.md",
       "uiUxDebug": "docs/skills/ui-ux-debug/SKILL.md",
       "workflow": "docs/skills/workflow/SKILL.md",
@@ -118,7 +116,6 @@
     "authorizedWriteScope": [
       "AGENTS.md",
       "frontend/",
-      "backend/",
       "docs/",
       ".agents/"
     ]

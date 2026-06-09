@@ -22,8 +22,6 @@ Load these on demand:
 ## Active Skill Map
 
 - Frontend: `docs/skills/frontend/SKILL.md`
-- Backend/API: `docs/skills/backend-api/SKILL.md`
-- Data model: `docs/skills/data-model/SKILL.md`
 - UI/UX: `docs/skills/ui-ux/SKILL.md`
 - UI/UX debug: `docs/skills/ui-ux-debug/SKILL.md`
 - Workflow/business flow: `docs/skills/workflow/SKILL.md`
@@ -34,8 +32,6 @@ Load these on demand:
 ## Development Harness
 
 Use `.agents/harness/` as the development/IDE AI harness for building this repository. It coordinates AI coding agents, context packs, workflows, prompt templates, verification loops, and MCP readiness tools.
-
-Do not confuse it with the product/runtime AI harness in `backend/ai/harness`, which serves GD1 operational copilots inside the KBFE app.
 
 Development agents should:
 
@@ -49,9 +45,9 @@ Development agents should:
 ## Working Rules
 
 - Keep edits scoped to the user request.
-- Preserve frontend FSD under `frontend/src/` and backend layers under `backend/routes`, `backend/controllers`, `backend/services`, and `backend/models`.
+- Preserve frontend FSD under `frontend/src/`.
 - Do not rewrite unrelated files or revert user changes.
-- Run `pnpm --dir frontend verify` for frontend changes and `pnpm --dir backend verify` for backend changes.
+- Run `pnpm --dir frontend verify` for frontend changes.
 - Do not commit logs, caches, scratch files, generated secrets, or local environment files.
 
 ## Behavioral Guardrails

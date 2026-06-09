@@ -29,63 +29,7 @@
         "frontend/src/app/routes.tsx"
       ]
     },
-    {
-      "id": "backend_api",
-      "description": "Express routes, backend services, validation, auth, idempotency, audit, and API contracts.",
-      "triggerWhen": [
-        "Express route",
-        "backend service",
-        "API contract",
-        "auth, audit, idempotency, or integration write behavior"
-      ],
-      "readFirst": [
-        ".agents/agent-config.json",
-        ".agents/memory.md",
-        "AGENTS.md",
-        "docs/context/PROJECT_CONTEXT.md",
-        "docs/context/OPERATING_MODEL.md",
-        "docs/skills/backend-api/SKILL.md"
-      ],
-      "optionalWhenRelevant": [
-        "docs/database/GD1_DOCUMENT_ERD.md",
-        "docs/modules/integrations/erp-wms-outbox.md"
-      ],
-      "scanHints": [
-        "backend/routes",
-        "backend/controllers",
-        "backend/services",
-        "backend/models",
-        "backend/server.ts"
-      ]
-    },
-    {
-      "id": "data_model",
-      "description": "ERD, migration planning, table mapping, and GD1 runtime schema gaps.",
-      "triggerWhen": [
-        "database schema",
-        "ERD",
-        "migration planning",
-        "table or state mapping"
-      ],
-      "readFirst": [
-        ".agents/agent-config.json",
-        ".agents/memory.md",
-        "AGENTS.md",
-        "docs/context/PROJECT_CONTEXT.md",
-        "docs/context/OPERATING_MODEL.md",
-        "docs/skills/data-model/SKILL.md",
-        "docs/database/GD1_DOCUMENT_ERD.md"
-      ],
-      "optionalWhenRelevant": [
-        "docs/database/PHASE1_PROCUREMENT_IMPORT_ERD.md",
-        "docs/database/DATABASE_ANALYSIS_REPORT.md"
-      ],
-      "scanHints": [
-        "backend/migrations",
-        "backend/models",
-        "docs/database"
-      ]
-    },
+
     {
       "id": "workflow_docs",
       "description": "Business workflow, SLA, actor/state mapping, module docs, and acceptance criteria.",
@@ -134,12 +78,10 @@
       "optionalWhenRelevant": [
         "docs/context/PROJECT_CONTEXT.md",
         "docs/context/OPERATING_MODEL.md",
-        "docs/skills/frontend/SKILL.md",
-        "docs/skills/backend-api/SKILL.md"
+        "docs/skills/frontend/SKILL.md"
       ],
       "scanHints": [
         "frontend/src/**/*.test.*",
-        "backend/tests/**/*.test.*",
         "docs/skills/testing-qa"
       ]
     },
@@ -190,13 +132,10 @@
       ],
       "optionalWhenRelevant": [
         "docs/modules/platform/ai-harness.md",
-        "docs/future/mcp-ops/deployment-mcp-and-db-plan.md",
-        "backend/mcp/deployServer.ts"
+        "docs/future/mcp-ops/deployment-mcp-and-db-plan.md"
       ],
       "scanHints": [
         ".agents",
-        "backend/mcp",
-        "backend/ai",
         "docs/modules/platform"
       ]
     }

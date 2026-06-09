@@ -981,23 +981,24 @@ function PoLineAllocationTable({
   lots: string[];
   onMoveLine: (lineId: string, lotNo: string) => void;
 }) {
+  const { t } = useI18n();
   return (
     <Paper withBorder p={0}>
       <Group justify="space-between" p="sm">
-        <Text fw={700}>PO item allocation</Text>
-        <Badge variant="light">{lines.length} rows</Badge>
+        <Text fw={700}>{t('purchaseOrders.itemAllocation')}</Text>
+        <Badge variant="light">{t('purchaseOrders.itemAllocationRows', { count: lines.length })}</Badge>
       </Group>
       <ScrollArea type="always" offsetScrollbars scrollbarSize={8}>
         <Table miw={980} verticalSpacing="xs">
           <Table.Thead>
             <Table.Tr>
-              <Table.Th style={{ width: 105 }}>Mặt hàng #</Table.Th>
-              <Table.Th>Item</Table.Th>
-              <Table.Th style={{ width: 120 }}>Qty</Table.Th>
-              <Table.Th style={{ width: 100 }}>Unit</Table.Th>
-              <Table.Th style={{ width: 135 }}>Unit price</Table.Th>
-              <Table.Th style={{ width: 135 }}>LOT</Table.Th>
-              <Table.Th style={{ width: 145 }}>Expected ETA</Table.Th>
+              <Table.Th style={{ width: 105 }}>{t('purchaseOrders.itemNumHeader')}</Table.Th>
+              <Table.Th>{t('purchaseOrders.itemHeader')}</Table.Th>
+              <Table.Th style={{ width: 120 }}>{t('purchaseOrders.qtyHeader')}</Table.Th>
+              <Table.Th style={{ width: 100 }}>{t('purchaseOrders.unitHeader')}</Table.Th>
+              <Table.Th style={{ width: 135 }}>{t('purchaseOrders.unitPriceHeader')}</Table.Th>
+              <Table.Th style={{ width: 135 }}>{t('purchaseOrders.lotHeader')}</Table.Th>
+              <Table.Th style={{ width: 145 }}>{t('purchaseOrders.expectedEtaHeader')}</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>

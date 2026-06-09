@@ -130,9 +130,6 @@ export function AppShellLayout() {
                 <Text size="sm" fw={700} className="brand-title">
                   KBI
                 </Text>
-                <Text size="xs" c="dimmed">
-                  GD1 Logistics
-                </Text>
               </span>
             </UnstyledButton>
           </Group>

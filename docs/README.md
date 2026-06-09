@@ -19,10 +19,7 @@ Docs in this folder are project-local context for the KBFE GD1 Procurement & Imp
 | `frontend/src/features/` | Feature route pages, feature-local components, hooks, API wrappers, and constants. |
 | `frontend/src/shared/` | Cross-feature frontend API, auth, UI, i18n, stores, theme, hooks, and utilities. |
 | `frontend/src/models/` | Shared TypeScript contracts that must stay compatible with API payloads. |
-| `backend/routes/`, `backend/controllers/`, `backend/middlewares/` | Express HTTP boundary mounted under stable `/api/*` paths. |
-| `backend/services/`, `backend/models/` | Backend business orchestration and PostgreSQL persistence. |
 | `docs/context/` | GD1 scope, routes, entities, operating model, gaps. |
-| `docs/database/` | GD1 ERD, runtime schema analysis, and migration planning. |
 | `docs/modules/` | Module-level business truth for Procurement, Shipments, Tasks, Dashboard/Workflow, Integrations, and Platform support. |
 | `docs/skills/` | Active agent skill entries and module implementation guidance. |
 | `docs/future/` | Roadmap planning for GD2, GD3, full SCM, MCP/deploy, and cross-phase costing. |
@@ -34,8 +31,6 @@ Docs in this folder are project-local context for the KBFE GD1 Procurement & Imp
 |---|---|
 | Project context | `context/PROJECT_CONTEXT.md` |
 | Operating model | `context/OPERATING_MODEL.md` |
-| GD1 ERD | `database/GD1_DOCUMENT_ERD.md` |
-| Reduced ERD overview | `database/PHASE1_PROCUREMENT_IMPORT_ERD.md` |
 | PR module | `modules/procurement/purchase-requests.md` |
 | PO module | `modules/procurement/purchase-orders.md` |
 | Approval module | `modules/procurement/approvals.md` |
@@ -48,8 +43,6 @@ Docs in this folder are project-local context for the KBFE GD1 Procurement & Imp
 
 | Skill | Path |
 |---|---|
-| Backend/API | `skills/backend-api/SKILL.md` |
-| Data model | `skills/data-model/SKILL.md` |
 | Frontend | `skills/frontend/SKILL.md` |
 | MCP integration | `skills/mcp/SKILL.md` |
 | Testing/QA | `skills/testing-qa/SKILL.md` |
@@ -63,12 +56,8 @@ GD1 uses `shipment`. Current runtime code may still expose `delivery_orders` or 
 ## Local Run
 
 ```bash
-cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env
-pnpm --dir backend install --frozen-lockfile
 pnpm --dir frontend install --frozen-lockfile
-pnpm --dir backend seed:dev
-pnpm --dir backend dev
 pnpm --dir frontend dev
 ```
 

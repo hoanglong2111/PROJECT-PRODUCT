@@ -56,33 +56,15 @@
       "id": "mcp",
       "label": "MCP Tools",
       "role": "automation_and_readiness_layer",
-      "surfaces": ["backend/mcp/deployServer.ts"],
+      "surfaces": [],
       "responsibilities": [
         "inspect repository readiness",
         "inspect environment variable names without revealing values",
-        "inspect database schema and counts",
-        "check runtime health",
-        "trigger guarded deploy or migration flows only when confirmed"
+        "check runtime health"
       ],
       "boundaries": [
         "write/deploy tools require explicit confirmation",
         "read tools must redact secrets"
-      ]
-    },
-    {
-      "id": "product_ai_harness",
-      "label": "GD1 Product AI Harness",
-      "role": "read_only_product_context_provider",
-      "surfaces": ["backend/ai", "POST /api/ai/harness", "run_gd1_harness"],
-      "responsibilities": [
-        "summarize GD1 risks",
-        "draft operational recommendations",
-        "draft PO-stage tasks",
-        "provide model route and metrics"
-      ],
-      "boundaries": [
-        "does not coordinate repository edits",
-        "does not write operational data"
       ]
     }
   ]

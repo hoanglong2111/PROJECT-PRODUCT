@@ -615,7 +615,7 @@ function Gd1QuotationBiddingPanel({ requestCode }: { requestCode: string }) {
             disabled={compareIds.length !== 2}
             onClick={() => setShowComparison((current) => !current)}
           >
-            {showComparison ? 'Ẩn so sánh' : 'So sánh'} ({compareIds.length}/2)
+            {showComparison ? t('quotations.hideCompare') : t('quotations.compare')} ({compareIds.length}/2)
           </Button>
         </Group>
       </Group>
@@ -626,19 +626,19 @@ function Gd1QuotationBiddingPanel({ requestCode }: { requestCode: string }) {
         </Group>
       ) : quotations.length === 0 ? (
         <Text size="sm" c="dimmed">
-          Chưa có báo giá nào cho yêu cầu này.
+          {t('quotations.noQuotes')}
         </Text>
       ) : (
         <Table verticalSpacing="xs">
           <Table.Thead>
             <Table.Tr>
               <Table.Th style={{ width: 40 }}></Table.Th>
-              <Table.Th>Báo giá</Table.Th>
-              <Table.Th>Nhà vận chuyển</Table.Th>
-              <Table.Th>Giá đề xuất</Table.Th>
-              <Table.Th>Trạng thái</Table.Th>
-              <Table.Th>SLA</Table.Th>
-              <Table.Th style={{ textAlign: 'right' }}>Thao tác</Table.Th>
+              <Table.Th>{t('quotations.title')}</Table.Th>
+              <Table.Th>{t('quotations.carrier')}</Table.Th>
+              <Table.Th>{t('quotations.proposedPrice')}</Table.Th>
+              <Table.Th>{t('quotations.status')}</Table.Th>
+              <Table.Th>{t('quotations.sla')}</Table.Th>
+              <Table.Th style={{ textAlign: 'right' }}>{t('quotations.actions')}</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
@@ -704,7 +704,7 @@ function Gd1QuotationBiddingPanel({ requestCode }: { requestCode: string }) {
                           onClick={() => actionMutation.mutate({ id: quote.id, action: 'SEND_PRELIMINARY' })}
                           loading={actionMutation.isPending}
                         >
-                          Gửi
+                          {t('deliveryOrders.send')}
                         </Button>
                       )}
                       {(quote.status === 'PRELIMINARY_SENT' || quote.status === 'OFFICIAL_SENT') && (
@@ -715,7 +715,7 @@ function Gd1QuotationBiddingPanel({ requestCode }: { requestCode: string }) {
                             onClick={() => actionMutation.mutate({ id: quote.id, action: 'CUSTOMER_APPROVED' })}
                             loading={actionMutation.isPending}
                           >
-                            Duyệt (KBI)
+                            {t('deliveryOrders.approveKbi')}
                           </Button>
                           <Button
                             size="compact-xs"
@@ -724,7 +724,7 @@ function Gd1QuotationBiddingPanel({ requestCode }: { requestCode: string }) {
                             onClick={() => actionMutation.mutate({ id: quote.id, action: 'CUSTOMER_REJECTED' })}
                             loading={actionMutation.isPending}
                           >
-                            Từ chối
+                            {t('deliveryOrders.reject')}
                           </Button>
                         </>
                       )}
@@ -741,19 +741,19 @@ function Gd1QuotationBiddingPanel({ requestCode }: { requestCode: string }) {
       <Paper withBorder p="md" mt="md">
         <Stack gap="xs">
           <Text size="xs" fw={700}>
-            TẠO BÁO GIÁ MỚI
+            {t('quotations.newQuoteTitle')}
           </Text>
           <SimpleGrid cols={{ base: 1, sm: 3 }}>
             <TextInput
-              label="Nhà vận chuyển"
-              placeholder="VD: Logistics Hữu Nghị"
+              label={t('quotations.carrier')}
+              placeholder={t('quotations.carrierPlaceholder')}
               value={carrier}
               onChange={(e) => setCarrier(e.currentTarget.value)}
               size="xs"
               required
             />
             <TextInput
-              label="Tổng số tiền"
+              label={t('quotations.totalAmount')}
               type="number"
               placeholder="0.00"
               value={amount}
@@ -762,7 +762,7 @@ function Gd1QuotationBiddingPanel({ requestCode }: { requestCode: string }) {
               required
             />
             <Select
-              label="Tiền tệ"
+              label={t('quotations.currency')}
               value={currency}
               onChange={(val) => setCurrency(val || 'USD')}
               data={['USD', 'VND', 'EUR']}
@@ -772,14 +772,14 @@ function Gd1QuotationBiddingPanel({ requestCode }: { requestCode: string }) {
 
           <SimpleGrid cols={{ base: 1, sm: 4 }}>
             <Select
-              label="Hình thức vận chuyển"
+              label={t('quotations.shippingMode')}
               value={shippingMode}
               onChange={(val) => setShippingMode(val || 'FCL')}
               data={['FCL', 'LCL', 'AIR']}
               size="xs"
             />
             <TextInput
-              label="Cước biển/hàng không"
+              label={t('quotations.oceanAirFreight')}
               type="number"
               placeholder="Freight cost"
               value={freightCost}
@@ -787,7 +787,7 @@ function Gd1QuotationBiddingPanel({ requestCode }: { requestCode: string }) {
               size="xs"
             />
             <TextInput
-              label="Phí địa phương (Local charges)"
+              label={t('quotations.localCharges')}
               type="number"
               placeholder="Local charges"
               value={localCharges}
@@ -795,7 +795,7 @@ function Gd1QuotationBiddingPanel({ requestCode }: { requestCode: string }) {
               size="xs"
             />
             <TextInput
-              label="Phí hải quan (Customs fee)"
+              label={t('quotations.customsFee')}
               type="number"
               placeholder="Customs clearance fee"
               value={customsFee}
@@ -805,7 +805,7 @@ function Gd1QuotationBiddingPanel({ requestCode }: { requestCode: string }) {
           </SimpleGrid>
 
           <Switch
-            label="Giá trọn gói (All inclusive)"
+            label={t('quotations.allInclusive')}
             checked={isAllInclusive}
             onChange={(e) => setIsAllInclusive(e.currentTarget.checked)}
             size="xs"
@@ -831,7 +831,7 @@ function Gd1QuotationBiddingPanel({ requestCode }: { requestCode: string }) {
               loading={createMutation.isPending}
               disabled={!carrier || !amount}
             >
-              Tạo báo giá
+              {t('quotations.createBtn')}
             </Button>
           </Group>
         </Stack>
@@ -840,22 +840,22 @@ function Gd1QuotationBiddingPanel({ requestCode }: { requestCode: string }) {
       {showComparison && selectedQuotes.length === 2 ? (
         <Paper withBorder p="md">
           <Group justify="space-between" mb="md">
-            <Title order={4}>So sánh chi tiết Báo giá</Title>
+            <Title order={4}>{t('quotations.compareTitle')}</Title>
             <Button size="xs" variant="subtle" onClick={() => setShowComparison(false)} leftSection={<IconX size={14} />}>
-              Đóng
+              {t('common.close')}
             </Button>
           </Group>
           <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
             {selectedQuotes.map((quote: any, idx) => (
               <Paper key={quote.id} withBorder p="md">
                 <Title order={5} mb="md">
-                  Lựa chọn {idx + 1}: {quote.quoteNumber}
+                  {t('quotations.option', { num: idx + 1, code: quote.quoteNumber })}
                 </Title>
                 <Stack gap="xs">
-                  <Info label="Nhà vận chuyển" value={quote.carrierName || 'N/A'} />
-                  <Info label="Phương thức" value={quote.shippingMode} />
+                  <Info label={t('quotations.carrier')} value={quote.carrierName || 'N/A'} />
+                  <Info label={t('quotations.shippingMode')} value={quote.shippingMode} />
                   <Info
-                    label="Giá đề xuất"
+                    label={t('quotations.proposedPrice')}
                     value={
                       quote.quoteAmount
                         ? `${Number(quote.quoteAmount).toLocaleString()} ${quote.currency}`
@@ -863,13 +863,13 @@ function Gd1QuotationBiddingPanel({ requestCode }: { requestCode: string }) {
                     }
                   />
                   <Info
-                    label="Cước chính"
+                    label={t('quotations.mainFreight')}
                     value={
                       quote.freightCost ? `${Number(quote.freightCost).toLocaleString()} ${quote.currency}` : '0'
                     }
                   />
                   <Info
-                    label="Phí địa phương"
+                    label={t('quotations.localCharges')}
                     value={
                       quote.localCharges
                         ? `${Number(quote.localCharges).toLocaleString()} ${quote.currency}`
@@ -877,13 +877,13 @@ function Gd1QuotationBiddingPanel({ requestCode }: { requestCode: string }) {
                     }
                   />
                   <Info
-                    label="Phí hải quan"
+                    label={t('quotations.customsFee')}
                     value={
                       quote.customsFee ? `${Number(quote.customsFee).toLocaleString()} ${quote.currency}` : '0'
                     }
                   />
-                  <Info label="Trọn gói" value={quote.isAllInclusive ? 'Có' : 'Không'} />
-                  <Info label="Trạng thái" value={quote.status} />
+                  <Info label={t('quotations.allInclusive')} value={quote.isAllInclusive ? t('quotations.yes') : t('quotations.no')} />
+                  <Info label={t('quotations.status')} value={quote.status} />
                 </Stack>
               </Paper>
             ))}

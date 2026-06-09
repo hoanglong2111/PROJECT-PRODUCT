@@ -371,7 +371,7 @@ export function Shipments() {
               />
               <TextInput
                 label={t('shipments.vessel')}
-                placeholder="Tên tàu / chuyến bay"
+                placeholder={t('shipments.vessel')}
                 value={newVoyage}
                 onChange={(e) => setNewVoyage(e.currentTarget.value)}
               />

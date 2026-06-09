@@ -36,8 +36,8 @@ export function SourceLineTable({ lines }: { lines: SourceLine[] }) {
               <Table.Th>{t('forms.itemCode')}</Table.Th>
               <Table.Th>{t('forms.itemName')}</Table.Th>
               <Table.Th>HS</Table.Th>
-              <Table.Th>NK/VAT</Table.Th>
-              <Table.Th>Biểu thuế</Table.Th>
+              <Table.Th>{t('common.dutyVatHeader')}</Table.Th>
+              <Table.Th>{t('common.tariffHeader')}</Table.Th>
               <Table.Th>{t('forms.quantity')}</Table.Th>
               <Table.Th>{t('forms.warehouse')}</Table.Th>
             </Table.Tr>

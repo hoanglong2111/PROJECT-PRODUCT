@@ -8,8 +8,7 @@ Purpose: compact durable memory for development-agent navigation. This file is n
 - Do not build or assume a product/runtime AI harness unless explicitly requested.
 - Do not connect the KBFE app to external LLMs for runtime copilot behavior by default.
 - `.agents/harness/` is the development harness: workflows, context packs, prompt templates, and agent-role boundaries.
-- `backend/ai/harness` is a separate product/runtime concept and should not drive development-agent behavior.
-- Frontend and backend are standalone packages. Use `pnpm --dir frontend ...` and `pnpm --dir backend ...`; there is no root runtime package or workspace.
+- Frontend is a standalone package. Use `pnpm --dir frontend ...`; there is no root runtime package or workspace.
 
 ## Default Build Flow
 
