@@ -6,12 +6,5 @@ dist
 .env.*
 !.env.example
 
-.pnpm-store
-.pnpm-data
 .DS_Store
-
-# AI Agent directories
-.agents/logs/
-.agents/memory/
-.agents/scratch/
 

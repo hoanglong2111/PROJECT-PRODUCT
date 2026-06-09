@@ -5,7 +5,7 @@ This document replaces the older Sea FCL Export-specific workflow for GD1 docume
 The FDS-KBI freight-forwarding SOP (`SOP_FDS_KBI_R7.docx`, FDS-MD-SOP.KBI-2605.01) is the authoritative source for FDS ↔ KBI workflows including intake, quotation, booking, Ops handover, document exchange, settlement, and issue resolution. See `docs/modules/workflow/fds-kbi-sop.md` for the full SOP mapping.
 
 ```text
-PO confirmed -> Shipment created -> 10 milestones -> Documents -> Costs -> EDO delivery -> warehouse arrival event
+PO -> DO confirmed -> Shipment created -> 10 milestones -> Documents -> Costs -> EDO delivery -> warehouse arrival event
 ```
 
 ## Scope
@@ -13,8 +13,8 @@ PO confirmed -> Shipment created -> 10 milestones -> Documents -> Costs -> EDO d
 In scope:
 
 - SEA/AIR shipment tracking.
-- One shipment containing one or more PO lines.
-- One PO line split across multiple shipments.
+- One shipment created from one confirmed DO.
+- One PO can still have many shipments indirectly through many DOs.
 - 10 standard milestone rows per shipment.
 - Document upload attached to shipment/milestone.
 - Customs stream green/yellow/red.

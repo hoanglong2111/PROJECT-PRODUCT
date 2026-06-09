@@ -3,7 +3,7 @@
 KBFE is the Kim Binh Supply Chain Platform for GD1: Procurement & Import Tracking. GD1 digitizes the flow from purchase order creation to warehouse arrival for imported and domestic procurement:
 
 ```text
-PO -> DO -> Quotation -> Shipment -> 10 Milestones -> Documents + Landed Cost -> ERP/GRN Sync
+PO -> DO -> Quotation versions -> Final quotation -> Confirm DO -> Shipment -> 10 Milestones -> Documents + Landed Cost
 ```
 
 The current codebase still contains older Logistics Control Tower runtime names such as `delivery_orders`. For new documentation, data model planning, UI/API design, and migration planning, use the GD1 vocabulary below. If code still uses a legacy runtime name, document the mapping instead of silently renaming it.
@@ -13,22 +13,17 @@ The current codebase still contains older Logistics Control Tower runtime names 
 | Need | Canonical document |
 |---|---|
 | GD1 scope, modules, states, business rules | `docs/context/PROJECT_CONTEXT.md` and `docs/context/OPERATING_MODEL.md` |
-| FDS-KBI freight-forwarding SOP (intake, quotation, Ops, settlement, issue resolution) | `docs/modules/workflow/fds-kbi-sop.md` (source: `SOP_FDS_KBI_R7.docx`) |
-| GD1 table/type/constraint design | `docs/database/GD1_DOCUMENT_ERD.md` |
-| GD1 reduced ERD overview | `docs/database/PHASE1_PROCUREMENT_IMPORT_ERD.md` |
-| Runtime schema analysis and migration gap | `docs/database/DATABASE_ANALYSIS_REPORT.md` |
-| Procurement modules | `docs/modules/procurement/` |
+| Delivery Order module | `docs/modules/delivery-orders/README.md` |
 | Shipment modules | `docs/modules/shipments/` |
 | PO-stage task workflow | `docs/modules/tasks/po-stage-tasks.md` |
-| Integration events | `docs/modules/integrations/erp-wms-outbox.md` |
+| Dashboard/workflow module | `docs/modules/dashboard-workflow/README.md` |
+| Master data module | `docs/modules/master-data/README.md` |
+| Future roadmap | `docs/future/` |
 
 ## Stack
 
 - Frontend: Vite, React, TypeScript, Mantine, Tabler Icons, React Router, TanStack Query, Zustand.
-- Backend: standalone Express + PostgreSQL package in `backend/`, organized into layered MVC folders.
 - API client/types: `frontend/src/api/logistics.ts` compatibility exports backed by `frontend/src/shared/api`.
-- Seed data: `backend/seeds/logisticsSeed.ts`, loaded after build with `pnpm --dir backend seed:logistics`.
-- MCP/RAG: future planning documentation under `docs/future/mcp-ops/`.
 
 ## Architecture Map
 
@@ -49,11 +44,12 @@ The current codebase still contains older Logistics Control Tower runtime names 
 In scope:
 
 - PO creation (manual or template) with General Info + LOT-based item organization.
-- LOT management: default 1 LOT (= 1 DO). Split into N LOTs to create N DOs. Drag-and-drop items between LOTs for no-code reassignment.
-- Delivery Order (DO) as the unit of delivery between PO and Shipment: origin warehouse, destination warehouse, transport type, confirmation status.
-- FDS freight-forwarding Quotation with version workflow: Draft(n) → Sent → Reject/Revise loop → Final (Approved). Page-to-page version comparison.
+- PO to DO relationship: one PO can create many DOs. Each DO belongs to one PO.
+- Delivery Order (DO) as the unit between PO and Shipment: warehouse/delivery address, transport type, quotation selection, confirmation status, and delivery dates.
+- DO to Shipment relationship: one confirmed DO proceeds to exactly one Shipment / delivery execution record.
+- FDS freight-forwarding Quotation within the DO workflow: create quotation v1, revise if needed, create v2/v3..., select one final quotation, then confirm DO.
 - PO SEA/AIR/DOMESTIC lifecycle, supplier confirmation, and revision/versioning.
-- Import shipment creation from one or more DO lines.
+- Import shipment creation from one confirmed DO.
 - 10 shipment milestones from booking confirmation to EDO and delivery.
 - Document management per shipment milestone: import, edit, version chứng từ (CI, PL, CO, Draft B/L, Final B/L, AWB, customs declarations).
 - Landed cost per PO line, allocated by value, weight, or quantity.
@@ -77,9 +73,9 @@ Out of scope for GD1:
 | GD1 entity | Table in GD1 document | Purpose |
 |---|---|---|
 | Purchase Order | `purchase_order`, `purchase_order_line` | Supplier order with General Info (supplier, incoterm, payment terms, currency, ETD/ETA) and LOT-based item grouping. Revision, terms, ordered/shipped/received quantities. |
-| Delivery Order | `delivery_order`, `delivery_order_line` | Unit of delivery between PO and Shipment. Each LOT creates 1 DO. Contains origin warehouse, destination warehouse, transport type (SEA/AIR/ROAD/RAIL), confirmation status, and delivery dates. |
-| Quotation | `quotation`, `quotation_version` | FDS freight-forwarding quotation to KBI per SOP FDS-KBI R7. Draft/Sent/Rejected/Final workflow with versioning and page-to-page comparison. |
-| Shipment | `shipment`, `shipment_line` | Import lot linked to one or more DO lines, mode, forwarder, B/L/AWB, route, dates, customs stream. |
+| Delivery Order | `delivery_order`, `delivery_order_line` | Unit of delivery between PO and Shipment. One PO can have many DOs; each DO belongs to one PO and captures warehouse/delivery address, transport type, quotation selection, confirmation status, and delivery dates. |
+| Quotation | `quotation`, `quotation_version` | FDS freight-forwarding quotation created under a DO. A DO can have multiple quotation versions/candidates, but exactly one final quotation is selected before DO confirmation. |
+| Shipment | `shipment`, `shipment_line` | Delivery execution record linked 1:1 to a confirmed DO, with mode, forwarder, B/L/AWB, route, dates, customs stream, milestones, documents, and costs. |
 | Milestone | `shipment_milestone` | 10 runtime checkpoints with planned/actual dates and source. |
 | Cost | `shipment_cost` | Freight, insurance, duty, VAT, local charges, demurrage, and allocation method. |
 | Task | `po_stage_task`, `po_task_template` | Owned work generated per PO type and PO stage, optionally linked to shipment milestone. |
@@ -95,7 +91,7 @@ Group form fields logically by human workflow (Họ → Tên → ... pattern):
 |---|---|
 | **Thông tin chung (General)** | Supplier → PO Type (SEA/AIR/DOMESTIC) → Incoterm → Payment Term → Currency → Exchange Rate → ETD/ETA → Notes |
 | **Items** | Add items: Item → Qty → Unit Price → Tax → Discount → Expected ETA per line |
-| **LOT Management** | Default: all items in 1 LOT = 1 DO. Split button to create additional LOTs. Drag-and-drop items between LOTs for no-code reassignment. |
+| **DO Planning** | Default: one DO can be created from the PO. Additional DOs can be created when the PO needs multiple deliveries. Items/lines can be assigned to the target DO before quotation and confirmation. |
 
 ### PO Detail View
 
@@ -107,33 +103,39 @@ Group form fields logically by human workflow (Họ → Tên → ... pattern):
 | LOT view | Which LOT each item belongs to. If not split, shows "1 LOT (default)". If split, shows LOT breakdown with item assignments. |
 | DO links | Each LOT links to its corresponding DO |
 
-### LOT ↔ DO Relationship
+### PO, DO, Quotation, Shipment Relationship
 
-- 1 PO → mặc định 1 LOT = 1 DO
-- Tách LOT → mỗi LOT tạo 1 DO riêng
-- Kéo thả items giữa LOTs (no-code drag-and-drop) → hệ thống tự cập nhật DO tương ứng
-- Ở màn quản lý PO: hiển thị 1 PO
-- Ở màn quản lý DO: hiển thị N DO (mỗi DO chung mã PO)
+- 1 PO -> N DO.
+- Each DO belongs to exactly 1 PO.
+- 1 DO -> 1 Shipment after DO confirmation.
+- Shipment is not created from multiple DOs in the current business model.
+- Quotation is managed inside the DO workflow. A DO can have quotation v1, v2, v3... but only one final quotation can be selected.
+- DO cannot be confirmed until the warehouse/delivery address is selected and a final quotation is selected.
+- In the PO screen: show one PO with all linked DOs.
+- In the DO screen: show DO details, address/warehouse, quotation versions, selected final quotation, confirmation status, and shipment link.
 
 ## Quotation Workflow (FDS → KBI)
 
-Per SOP FDS-KBI R7, the quotation is the freight-forwarding pricing quote from FDS Sales to KBI:
+Per SOP FDS-KBI R7, the quotation is the freight-forwarding pricing quote created inside a DO:
 
 ```text
-Draft(v1) → Sent → [KBI reviews]
-  ├── Rejected → Draft(v1 revised) → Sent → [KBI reviews again]
-  ├── Yêu cầu điều chỉnh → Draft(v1 revised) → Sent → ...
-  └── Chấp thuận → Final Quotation (v1)
-
-If multiple revision cycles:
-  Draft(v1) → Sent → Rejected → Draft(v1 revised) → Sent → Rejected → Draft(v2) → Sent → Final(v2)
+Create DO
+-> Select warehouse / delivery address
+-> Create quotation v1
+-> Revise quotation if needed
+-> Create quotation v2, v3...
+-> Select final quotation
+-> Confirm DO
+-> Proceed to shipment / delivery
 ```
 
 ### Quotation Rules
 
-- Each rejection keeps the current version for revision (sửa lại cùng version) until the change is substantial enough to warrant a new version.
+- A DO can hold multiple quotation versions/candidates: v1, v2, v3...
+- A quotation can be revised before creating the next version.
 - Version history is preserved for audit trail.
-- **Page-to-page comparison**: users can compare any two versions side-by-side.
+- Exactly one quotation must be selected as final before DO confirmation.
+- **Page-to-page comparison**: users can compare any two quotation versions side-by-side.
 - Per SOP: if KBI does not respond (reject/request changes) within 1 hour, the quotation is considered APPROVED.
 - Quotation is all-inclusive pricing (giá trọn gói) per SOP operating principles.
 
@@ -168,10 +170,10 @@ These requirements are part of the GD1 production baseline, not optional polish:
 ```text
 purchase_order
   -> purchase_order_line
-  -> delivery_order (1 per LOT, default 1)
+  -> delivery_order (1 PO -> N DO)
   -> delivery_order_line
-  -> quotation (FDS freight-forwarding quote)
-  -> shipment
+  -> quotation / quotation_version (N versions per DO, 1 selected final)
+  -> shipment (1 DO -> 1 Shipment)
   -> shipment_line
   -> shipment_milestone
   -> shipment_cost
@@ -194,7 +196,7 @@ DRAFT -> CONFIRMED -> READY_TO_SHIP -> IN_TRANSIT -> DELIVERED -> CLOSED
 CANCELLED
 ```
 
-DO fields: origin warehouse, destination warehouse, transport type (SEA/AIR/ROAD/RAIL), confirmation date.
+DO fields: warehouse / delivery address, origin warehouse when applicable, destination warehouse when applicable, transport type (SEA/AIR/ROAD/RAIL), selected final quotation, confirmation date.
 
 Quotation:
 
@@ -218,11 +220,11 @@ CANCELLED
 | Route | GD1 purpose |
 |---|---|
 | `/` | GD1 dashboard: PO delivery risk, DO status, shipment risk, task workload, landed-cost attention. |
-| `/workflow` | Trace PO -> DO -> Shipment -> milestones/tasks/cost. |
+| `/workflow` | Trace PO -> DO -> selected quotation -> Shipment -> milestones/tasks/cost. |
 | `/purchase-orders` | PO list/detail, LOT management, drag-and-drop items, revision, supplier confirmation, shipment progress. |
-| `/delivery-orders` | DO list/detail — shows all DOs grouped by PO. Each DO shows origin/destination warehouse, transport type, status. |
-| `/quotations` | Quotation management: draft/send/reject/approve workflow, version history, page-to-page comparison. |
-| `/shipments` | Shipment board: list, milestones, document management (import/edit/Draft B/L), costs. |
+| `/delivery-orders` | DO list/detail: shows all DOs grouped by PO. Each DO shows warehouse/delivery address, transport type, quotation versions, selected final quotation, confirmation status, and shipment link. |
+| `/quotations` | Quotation management within DO context: create v1, revise, create v2/v3, compare versions, select final quotation. |
+| `/shipments` | Shipment board: one shipment per confirmed DO, milestones, document management (import/edit/Draft B/L), costs. |
 | `/tasks` | PO-stage tasks, assignee workload, overdue/blocker management. |
 | `/settings` | Theme, language, admin account management. |
 
@@ -247,9 +249,9 @@ Use query params for shareable context:
 All create/edit forms must group fields logically by human workflow, following the "Họ → Tên → ..." principle:
 
 - **PO Create**: Supplier → PO Type → Incoterm → Payment → Currency → Dates → Items → LOT
-- **DO Create** (from PO LOT): Origin warehouse → Destination warehouse → Transport type → Delivery dates → Confirm
-- **Quotation Create**: Reference DO/Shipment → Pricing → Terms → Documents → Submit
-- **Shipment Create**: Mode → Forwarder → Carrier → B/L/AWB → Route → Dates → DO lines
+- **DO Create**: Select PO/PO lines -> Select warehouse / delivery address -> Transport type -> Delivery dates -> Create quotation v1
+- **Quotation Create/Revise**: DO -> Pricing -> Terms -> Documents -> Submit version -> Revise/create next version if needed -> Select final quotation
+- **Shipment Create**: Confirmed DO -> Mode -> Forwarder -> Carrier -> B/L/AWB -> Route -> Dates
 
 Each form section should be visually grouped (card or section header) and ordered to match how a human would naturally fill in the information.
 

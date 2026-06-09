@@ -1,9 +1,9 @@
 # Shipment Entity
 
-GD1 uses `shipment` for the import lot created from one or more PO lines. The current runtime may still call this concept `delivery_order` or expose `/delivery-orders`; treat that as a compatibility name until migration.
+GD1 uses `shipment` for the delivery execution record created from one confirmed DO. The business relationship is PO 1-n DO and DO 1-1 Shipment. The current runtime may still call older shipment concepts `delivery_order` or expose `/delivery-orders`; treat that as a compatibility name until migration.
 
 ```text
-purchase_order_line -> shipment_line -> shipment -> shipment_milestone -> shipment_cost
+purchase_order -> delivery_order -> shipment -> shipment_milestone -> shipment_cost
 ```
 
 ## Purpose
@@ -13,7 +13,8 @@ Shipment tracks:
 - SEA/AIR import movement
 - forwarder/carrier and B/L or AWB identity
 - route, ETD/ETA, ATD/ATA
-- one or many PO lines in the shipment
+- the confirmed DO that owns this shipment
+- the PO lines carried by that DO
 - 10 standard milestones
 - customs stream green/yellow/red
 - documents uploaded per milestone
@@ -24,8 +25,8 @@ Shipment tracks:
 
 | Table | Purpose |
 |---|---|
-| `shipment` | Shipment header: number, mode, forwarder, carrier, route, B/L/AWB, dates, status, customs stream. |
-| `shipment_line` | Bridge from shipment to PO line with shipped quantity and lot number. |
+| `shipment` | Shipment header linked 1:1 to a confirmed DO: number, mode, forwarder, carrier, route, B/L/AWB, dates, status, customs stream. |
+| `shipment_line` | Lines derived from the owning DO lines / PO lines with shipped quantity and lot number. |
 | `shipment_milestone` | 10 runtime checkpoints with planned/actual date, source, recorder, note. |
 | `shipment_cost` | Shipment-level cost components and allocation method. |
 
@@ -34,6 +35,7 @@ Shipment tracks:
 | Field | Meaning |
 |---|---|
 | `shipment_no` | business shipment code |
+| `delivery_order_id` | owning confirmed DO; unique per shipment in the current business model |
 | `mode` | `SEA` or `AIR` |
 | `forwarder_id` | supplier master reference where supplier type is forwarder |
 | `carrier` | shipping line or airline |
@@ -55,7 +57,7 @@ Each `shipment_line` row includes:
 - `qty_shipped`
 - `lot_no`
 
-One shipment can contain multiple PO lines. One PO line can be split across multiple shipments.
+One shipment belongs to exactly one confirmed DO. It can contain multiple PO lines only through that DO's lines. A PO can still have many shipments indirectly because one PO can have many DOs.
 
 ## Status And Milestone Mapping
 
@@ -75,6 +77,8 @@ One shipment can contain multiple PO lines. One PO line can be split across mult
 ## Rules
 
 - A shipment must contain at least one active `shipment_line`.
+- A shipment must belong to exactly one confirmed DO.
+- A confirmed DO can create at most one active shipment.
 - `shipment_line.qty_shipped > 0`.
 - Total shipped quantity per PO line cannot exceed `qty_ordered * (1 + tolerance_over_pct / 100)`.
 - Each new shipment must generate exactly 10 active `shipment_milestone` rows.
@@ -95,9 +99,9 @@ One shipment can contain multiple PO lines. One PO line can be split across mult
 
 ## UI Notes
 
-Shipment board should show shipment number, linked PO lines, mode, forwarder, carrier, B/L/AWB, ETA/ATA, status, customs stream, milestone progress, missing documents, cost allocation status, and next action.
+Shipment board should show shipment number, owning DO, linked PO lines, mode, forwarder, carrier, B/L/AWB, ETA/ATA, status, customs stream, milestone progress, missing documents, cost allocation status, and next action.
 
-Detail should prioritize overview, milestone timeline, PO lines, documents, costs, tasks, and audit history.
+Detail should prioritize overview, owning DO, selected final quotation, milestone timeline, PO lines, documents, costs, tasks, and audit history.
 
 ## API Notes
 
@@ -105,6 +109,7 @@ Create shipment payload should include:
 
 ```ts
 {
+  delivery_order_id: string,
   mode: 'SEA' | 'AIR',
   forwarder_id?: string,
   carrier?: string,

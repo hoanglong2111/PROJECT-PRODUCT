@@ -5,7 +5,7 @@ Source format for dbdiagram.io. Detailed constraints live in `docs/database/GD1_
 ```dbml
 Project kbfe_gd1_procurement_import {
   database_type: 'PostgreSQL'
-  Note: 'GD1 Procurement & Import Tracking: PR -> Approval -> PO -> Shipment -> Milestones -> Costs -> Tasks.'
+  Note: 'GD1 Procurement & Import Tracking: PO 1-n DO, DO 1-1 Shipment, with DO quotation versioning before confirmation.'
 }
 
 Table purchase_request {

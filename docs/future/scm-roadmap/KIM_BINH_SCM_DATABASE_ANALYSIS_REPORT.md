@@ -10,7 +10,7 @@ Kim Binh SCM Platform giải quyết bài toán một dòng dữ liệu xuyên s
 Trong repo hiện tại, GD1 chính thức là Procurement & Import Tracking:
 
 ```text
-PR -> Approval -> PO -> Import Shipment -> 10 Milestones -> Documents + Landed Cost -> ERP/GRN Sync
+PO -> DO -> Quotation versions -> Final quotation -> Confirm DO -> Shipment -> 10 Milestones -> Documents + Landed Cost
 ```
 
 Pitch deck và mind map mở rộng roadmap thành:

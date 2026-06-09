@@ -104,17 +104,6 @@ docs/future/scm-roadmap/KIM_BINH_SCM_EXPANDED_ERD.mermaid
 
 The separate source file is kept outside this Markdown document so it can be pasted directly into Mermaid, draw.io, or documentation tooling.
 
-## Component Draw.io XML ERDs
+## Component ERDs
 
-The full expanded ERD above remains the complete source. Smaller component ERDs are available as draw.io XML files for focused review:
-
-| Component | Draw.io XML source |
-|---|---|
-| Shared platform and master data | `docs/database/component-erds/01_shared_platform_master_data.drawio.xml` |
-| GD1 procurement and approval | `docs/database/component-erds/02_gd1_procurement_approval.drawio.xml` |
-| GD1 shipment operations | `docs/database/component-erds/03_gd1_shipment_operations.drawio.xml` |
-| Documents, SLA, integration, audit | `docs/database/component-erds/04_documents_sla_integration_audit.drawio.xml` |
-| GD2 WMS receiving and inventory | `docs/future/gd2-wms/05_gd2_wms_receiving_inventory.drawio.xml` |
-| GD2 WMS outbound | `docs/future/gd2-wms/06_gd2_wms_outbound.drawio.xml` |
-| GD3 production, MRP, forecast | `docs/future/gd3-mrp/07_gd3_production_mrp_forecast.drawio.xml` |
-| Costing and financial rollups | `docs/future/costing/08_costing_financial_rollups.drawio.xml` |
+The full expanded ERD above remains the complete source. Older component Draw.io XML files were removed during the frontend/GD1 documentation cleanup because they described future GD2/GD3/costing planning and were not needed by the current frontend scope.

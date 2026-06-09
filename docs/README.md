@@ -1,67 +1,75 @@
 # KBFE Docs
 
-Docs in this folder are project-local context for the KBFE GD1 Procurement & Import Tracking platform. GD1 is the current documentation baseline.
+This folder is product and business reference for the KBFE frontend. It is not an AI-agent instruction system.
 
-## Read Order
+## Current Business Baseline
 
-1. `DOCS_WORKFLOW.md` when creating or changing docs.
-2. `context/PROJECT_CONTEXT.md` for GD1 project truth.
-3. `context/OPERATING_MODEL.md` for state machines, business rules, SLA, ERP/WMS events, and operating flow.
-4. `database/GD1_DOCUMENT_ERD.md` for tables, types, constraints, and indexes from the GD1 document.
-5. One focused module or skill file for the request.
-6. Module/pattern files only when changing that exact screen or pattern.
+GD1 focuses on Procurement & Import Tracking.
 
-## Project Map
+```text
+PO -> DO -> Quotation versions -> Final quotation -> Confirm DO -> Shipment -> 10 Milestones -> Documents + Landed Cost
+```
 
-| Path | Use |
-|---|---|
-| `frontend/src/app/` | React app shell, route config, and role guards. |
-| `frontend/src/features/` | Feature route pages, feature-local components, hooks, API wrappers, and constants. |
-| `frontend/src/shared/` | Cross-feature frontend API, auth, UI, i18n, stores, theme, hooks, and utilities. |
-| `frontend/src/models/` | Shared TypeScript contracts that must stay compatible with API payloads. |
-| `docs/context/` | GD1 scope, routes, entities, operating model, gaps. |
-| `docs/modules/` | Module-level business truth for Procurement, Shipments, Tasks, Dashboard/Workflow, Integrations, and Platform support. |
-| `docs/skills/` | Active agent skill entries and module implementation guidance. |
-| `docs/future/` | Roadmap planning for GD2, GD3, full SCM, MCP/deploy, and cross-phase costing. |
-| `docs/archive/` | One-off prompts, local command notes, pointer diagrams, and older generated artifacts. |
+Canonical relationship:
 
-## Canonical GD1 Docs
+```text
+Purchase Order 1 -> N Delivery Orders
+Delivery Order 1 -> 1 Shipment
+```
 
-| Document | Path |
+DO workflow:
+
+```text
+Create DO
+-> Select warehouse / delivery address
+-> Create quotation v1
+-> Revise quotation if needed
+-> Create quotation v2, v3...
+-> Select final quotation
+-> Confirm DO
+-> Proceed to shipment / delivery
+```
+
+## Read Order For Frontend Work
+
+1. `context/PROJECT_CONTEXT.md` for product scope, entities, routes, and vocabulary.
+2. `context/OPERATING_MODEL.md` for state machines, hard rules, SLA, and workflow behavior.
+3. One focused module doc under `modules/` when a screen needs business detail.
+
+Do not treat files in `docs/` as agent instructions. Use them only to clarify UI behavior, labels, states, and business meaning.
+
+## Current Module Docs
+
+| Module | Path |
 |---|---|
 | Project context | `context/PROJECT_CONTEXT.md` |
 | Operating model | `context/OPERATING_MODEL.md` |
-| PR module | `modules/procurement/purchase-requests.md` |
-| PO module | `modules/procurement/purchase-orders.md` |
-| Approval module | `modules/procurement/approvals.md` |
-| Shipment module | `modules/shipments/shipment.md` |
-| Shipment/SOP workflow | `modules/shipments/import-shipment-sop-sla.md` |
+| Delivery Orders | `modules/delivery-orders/README.md` |
+| Shipments | `modules/shipments/shipment.md` |
+| Shipment SOP/SLA | `modules/shipments/import-shipment-sop-sla.md` |
 | PO-stage tasks | `modules/tasks/po-stage-tasks.md` |
-| Integration events | `modules/integrations/erp-wms-outbox.md` |
+| Dashboard / Workflow | `modules/dashboard-workflow/README.md` |
+| DTO | `modules/dto/README.md` |
+| Master Data | `modules/master-data/README.md` |
+| Platform support | `modules/platform/README.md` |
 
-## Skill Map
+## Audit Notes
 
-| Skill | Path |
-|---|---|
-| Frontend | `skills/frontend/SKILL.md` |
-| MCP integration | `skills/mcp/SKILL.md` |
-| Testing/QA | `skills/testing-qa/SKILL.md` |
-| UI/UX | `skills/ui-ux/SKILL.md` |
-| Workflow | `skills/workflow/SKILL.md` |
+- `docs/archive/` contains older or historical notes. PR/Approval/Integration files there are not current GD1 frontend truth unless explicitly re-approved.
+- `docs/future/` contains planning for later phases such as GD2 WMS, GD3 MRP, costing, and SCM roadmap.
+- Runtime code may still expose legacy names such as `delivery_orders`; frontend changes should preserve compatibility until a deliberate migration is implemented.
 
-## Naming Note
-
-GD1 uses `shipment`. Current runtime code may still expose `delivery_orders` or route `/delivery-orders`. Treat those as legacy/runtime names for the shipment concept until an explicit migration is implemented.
-
-## Local Run
+## Local Frontend Run
 
 ```bash
-cp frontend/.env.example frontend/.env
-pnpm --dir frontend install --frozen-lockfile
-pnpm --dir frontend dev
+cd frontend
+npm ci
+npm run dev
 ```
 
-Default users:
+Verification:
 
-- `manager@kbfe.local / manager123`
-- `admin@kbfe.local / admin123`
+```bash
+cd frontend
+npm run verify
+```
