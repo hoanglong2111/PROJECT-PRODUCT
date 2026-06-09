@@ -43,8 +43,6 @@ export default defineConfig({
     port: 5173,
     watch: {
       ignored: [
-        '**/.pnpm-store/**',
-        '**/.pnpm-data/**',
         '**/node_modules/**',
         '**/dist/**',
         '**/.agents/**',

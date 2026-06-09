@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@10.33.4",
+  "packageManager": "npm@10",
   "engines": {
     "node": ">=20.19.0"
   },
@@ -15,7 +15,7 @@
     "test:watch": "vitest",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "verify": "pnpm check:boundaries && pnpm typecheck && pnpm test && pnpm build"
+    "verify": "npm run check:boundaries && npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {
     "@mantine/core": "^9.3.0",
