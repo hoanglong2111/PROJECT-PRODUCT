@@ -57,6 +57,7 @@ const priorityColor = {
 } as const;
 
 function Gd1PoTasksBoard() {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -94,7 +95,7 @@ function Gd1PoTasksBoard() {
 
   if (tasksQuery.isError) {
     return (
-      <Alert color="red" title="Lỗi tải danh sách checklist">
+      <Alert color="red" title={t('tasks.loadError')}>
         {getApiErrorMessage(tasksQuery.error)}
       </Alert>
     );
@@ -105,7 +106,7 @@ function Gd1PoTasksBoard() {
       <Paper withBorder p="md">
         <Group gap="md">
           <TextInput
-            placeholder="Tìm theo tên task, số PO hoặc vai trò..."
+            placeholder={t('tasks.poChecklistSearch')}
             value={search}
             onChange={(e) => setSearch(e.currentTarget.value)}
             style={{ flex: 1 }}
@@ -115,10 +116,10 @@ function Gd1PoTasksBoard() {
             value={statusFilter}
             onChange={(val) => setStatusFilter(val || 'all')}
             data={[
-              { label: 'Tất cả trạng thái', value: 'all' },
-              { label: 'Chưa làm (PENDING)', value: 'PENDING' },
-              { label: 'Đang làm (IN_PROGRESS)', value: 'IN_PROGRESS' },
-              { label: 'Hoàn thành (DONE)', value: 'DONE' },
+              { label: t('tasks.allPoStatuses'), value: 'all' },
+              { label: t('tasks.pendingStatus') + ' (PENDING)', value: 'PENDING' },
+              { label: t('tasks.inProgressStatus') + ' (IN_PROGRESS)', value: 'IN_PROGRESS' },
+              { label: t('tasks.doneStatus') + ' (DONE)', value: 'DONE' },
             ]}
           />
         </Group>
@@ -127,21 +128,21 @@ function Gd1PoTasksBoard() {
       {tasksQuery.isLoading ? (
         <Group justify="center" p="xl">
           <Loader size="md" />
-          <Text c="dimmed">Đang tải danh sách checklist...</Text>
+          <Text c="dimmed">{t('tasks.loadingChecklist')}</Text>
         </Group>
       ) : filteredTasks.length === 0 ? (
-        <EmptyState title="Không tìm thấy công việc nào" description="Không có công việc checklist PO nào khớp với bộ lọc của bạn." />
+        <EmptyState title={t('tasks.noChecklistFound')} description={t('tasks.noChecklistDesc')} />
       ) : (
         <Paper withBorder p="0" style={{ overflow: 'hidden' }}>
           <Table verticalSpacing="sm" highlightOnHover>
             <Table.Thead>
               <Table.Tr>
                 <Table.Th style={{ width: 40 }}></Table.Th>
-                <Table.Th>Công việc checklist PO</Table.Th>
-                <Table.Th>Mã PO</Table.Th>
-                <Table.Th>Chặng</Table.Th>
-                <Table.Th>Vai trò</Table.Th>
-                <Table.Th>Hạn hoàn thành</Table.Th>
+                <Table.Th>{t('tasks.poChecklistTask')}</Table.Th>
+                <Table.Th>{t('tasks.poNumber')}</Table.Th>
+                <Table.Th>{t('tasks.poStage')}</Table.Th>
+                <Table.Th>{t('tasks.assignedRole')}</Table.Th>
+                <Table.Th>{t('tasks.dueCompletion')}</Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -170,7 +171,7 @@ function Gd1PoTasksBoard() {
                       </Text>
                       {task.note && (
                         <Text size="xs" c="dimmed" fs="italic">
-                          Ghi chú: {task.note}
+                          {t('tasks.notePrefix')}{task.note}
                         </Text>
                       )}
                     </Table.Td>

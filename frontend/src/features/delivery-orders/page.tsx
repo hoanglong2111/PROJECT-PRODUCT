@@ -261,8 +261,13 @@ export function DeliveryOrders() {
           </Text>
         </div>
         <Group gap="xs">
+          {selectedDeliveryOrder ? (
+            <Button onClick={closeDetail} leftSection={<IconX size={16} />} variant="subtle">
+              {t('common.backToList')}
+            </Button>
+          ) : null}
           <Badge leftSection={<IconGitBranch size={14} />} size="lg" variant="light">
-            Generated from PO LOTs
+            {t('deliveryOrders.generatedFromLots')}
           </Badge>
           <Button component={Link} to="/workflow" leftSection={<IconGitBranch size={16} />} variant="light">
             {t('purchaseRequests.inspectWorkflow')}
@@ -283,221 +288,218 @@ export function DeliveryOrders() {
         </Paper>
       ) : null}
 
-      <SimpleGrid cols={{ base: 1, sm: 3 }}>
-        <Metric label={t('deliveryOrders.activeDo')} value={deliveryOrders.filter((deliveryOrder) => deliveryOrder.order_info.status !== 'DELIVERED').length} color="blue" icon={<IconTruckDelivery size={22} />} />
-        <Metric label={t('deliveryOrders.riskQueue')} value={riskCount} color="red" icon={<IconAlertTriangle size={22} />} />
-        <Metric
-          label={t('deliveryOrders.completedTasks')}
-          value={deliveryOrders.reduce((total, deliveryOrder) => total + deliveryOrder.task_summary.completed_tasks, 0)}
-          color="teal"
-          icon={<IconChecklist size={22} />}
-        />
-      </SimpleGrid>
-
-      <Paper withBorder p="md">
-        <Stack gap="sm">
-          <Tabs value={activeTab} onChange={(value) => setActiveTab((value as DeliveryOrderTab) ?? 'processing')} variant="pills" radius="xl">
-            <Tabs.List grow>
-              <Tabs.Tab value="processing">
-                {t('deliveryOrders.tabProcessing')} ({tabCounts.processing})
-              </Tabs.Tab>
-              <Tabs.Tab value="handover">
-                {t('deliveryOrders.tabHandover')} ({tabCounts.handover})
-              </Tabs.Tab>
-              <Tabs.Tab value="completed">
-                {t('deliveryOrders.tabCompleted')} ({tabCounts.completed})
-              </Tabs.Tab>
-              <Tabs.Tab value="issues">
-                {t('deliveryOrders.tabIssues')} ({tabCounts.issues})
-              </Tabs.Tab>
-              <Tabs.Tab value="all">
-                {t('deliveryOrders.tabAll')} ({tabCounts.all})
-              </Tabs.Tab>
-            </Tabs.List>
-          </Tabs>
-
-          <SimpleGrid cols={{ base: 1, md: 4 }}>
-            <TextInput
-              label={t('common.search')}
-              placeholder={t('deliveryOrders.searchPlaceholder')}
-              leftSection={<IconSearch size={16} />}
-              value={search}
-              onChange={(event) => setSearch(event.currentTarget.value)}
-            />
-            <Select
-              label={t('common.flow')}
-              value={flowFilter}
-              onChange={(value) => setFlowFilter((value ?? 'all') as BusinessFlowTag | 'all')}
-              data={[
-                { label: t('common.all'), value: 'all' },
-                { label: flowTagLabel('LINEAR'), value: 'LINEAR' },
-                { label: flowTagLabel('PARTIAL_DELIVERY'), value: 'PARTIAL_DELIVERY' },
-                { label: flowTagLabel('CONTAINER_CONSOLIDATION'), value: 'CONTAINER_CONSOLIDATION' },
-                { label: flowTagLabel('BULK_PURCHASE'), value: 'BULK_PURCHASE' },
-              ]}
-            />
-            <Switch
-              className="filter-switch"
-              checked={riskOnly}
-              onChange={(event) => setRiskOnly(event.currentTarget.checked)}
-              label={t('deliveryOrders.filterRiskOnly')}
-            />
-            <Group className="filter-actions" gap="xs">
-              {isFetching ? <Loader size="sm" /> : null}
-              <Text size="sm" c="dimmed">
-                {t('common.shown', { count: filteredDeliveryOrders.length })}
-              </Text>
-            </Group>
-          </SimpleGrid>
-        </Stack>
-      </Paper>
-
       {selectedDeliveryOrder ? (
         <DeliveryOrderDetail deliveryOrder={selectedDeliveryOrder} onClose={closeDetail} />
-      ) : null}
+      ) : (
+        <>
+          <SimpleGrid cols={{ base: 1, sm: 3 }}>
+            <Metric label={t('deliveryOrders.activeDo')} value={deliveryOrders.filter((deliveryOrder) => deliveryOrder.order_info.status !== 'DELIVERED').length} color="blue" icon={<IconTruckDelivery size={22} />} />
+            <Metric label={t('deliveryOrders.riskQueue')} value={riskCount} color="red" icon={<IconAlertTriangle size={22} />} />
+            <Metric
+              label={t('deliveryOrders.completedTasks')}
+              value={deliveryOrders.reduce((total, deliveryOrder) => total + deliveryOrder.task_summary.completed_tasks, 0)}
+              color="teal"
+              icon={<IconChecklist size={22} />}
+            />
+          </SimpleGrid>
 
-      <Paper withBorder p={0}>
-        <ScrollArea className="data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
-          <Table miw={1180} verticalSpacing="sm" highlightOnHover>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>{t('deliveryOrders.doColumn')}</Table.Th>
-                <Table.Th>Source PO / Lot</Table.Th>
-                <Table.Th>{t('common.supplier')} / Allocation</Table.Th>
-                <Table.Th>{t('common.route')}</Table.Th>
-                <Table.Th>Linked shipment / ETA</Table.Th>
-                <Table.Th>{t('common.status')}</Table.Th>
-                <Table.Th />
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {visibleDeliveryOrders.map((deliveryOrder) => {
-                const ShippingIcon = shippingIcon[deliveryOrder.logistics_shipping.shipping_method];
-                const delay = calcDelay({
-                  actualEntryDate: deliveryOrder.warehouse_tracking.actual_entry_date,
-                  plannedEntryDate: deliveryOrder.warehouse_tracking.planned_entry_date,
-                  warehouseDeadline: deliveryOrder.warehouse_tracking.warehouse_deadline,
-                });
-                const taskProgress =
-                  deliveryOrder.task_summary.total_tasks > 0
-                    ? Math.round(
-                        (deliveryOrder.task_summary.completed_tasks / deliveryOrder.task_summary.total_tasks) * 100,
-                      )
-                    : 0;
+          <Paper withBorder p="md">
+            <Stack gap="sm">
+              <Tabs value={activeTab} onChange={(value) => setActiveTab((value as DeliveryOrderTab) ?? 'processing')} variant="pills" radius="xl">
+                <Tabs.List grow>
+                  <Tabs.Tab value="processing">
+                    {t('deliveryOrders.tabProcessing')} ({tabCounts.processing})
+                  </Tabs.Tab>
+                  <Tabs.Tab value="handover">
+                    {t('deliveryOrders.tabHandover')} ({tabCounts.handover})
+                  </Tabs.Tab>
+                  <Tabs.Tab value="completed">
+                    {t('deliveryOrders.tabCompleted')} ({tabCounts.completed})
+                  </Tabs.Tab>
+                  <Tabs.Tab value="issues">
+                    {t('deliveryOrders.tabIssues')} ({tabCounts.issues})
+                  </Tabs.Tab>
+                  <Tabs.Tab value="all">
+                    {t('deliveryOrders.tabAll')} ({tabCounts.all})
+                  </Tabs.Tab>
+                </Tabs.List>
+              </Tabs>
 
-                return (
-                  <Table.Tr
-                    key={deliveryOrder.id}
-                    onClick={() => {
-                      setSelectedId(deliveryOrder.id);
-                      openDoParam(deliveryOrder.order_info.order_number, { clear: ['pr', 'po', 'task'] });
-                    }}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <Table.Td>
-                      <Text fw={700}>{deliveryOrder.order_info.order_number}</Text>
-                      <Text size="xs" c="dimmed">
-                        {deliveryOrder.source_lot_no ?? deliveryOrder.product_details.lot_number ?? 'Lot pending'}
-                      </Text>
-                      <FlowTagBadge compact tags={deliveryOrder.flow_tags} />
-                    </Table.Td>
-                    <Table.Td>
-                      <EntityLink type="po" id={deliveryOrder.source_po_number ?? deliveryOrder.sap_integration.po_number} compact />
-                      <Text size="xs" c="dimmed">{deliveryOrder.source_lot_no ?? deliveryOrder.product_details.lot_number}</Text>
-                    </Table.Td>
-                    <Table.Td className="table-cell-truncate" style={{ maxWidth: '18rem' }}>
-                      <Text size="sm" fw={600} lineClamp={1} title={deliveryOrder.sap_integration.supplier_name ?? t('deliveryOrders.supplierPending')}>
-                        {deliveryOrder.sap_integration.supplier_name ?? t('deliveryOrders.supplierPending')}
-                      </Text>
-                      <Text size="sm" c="dimmed" lineClamp={1}>
-                        {deliveryOrder.source_lines.length} items · {deliveryOrder.product_details.quantity.toLocaleString()} {deliveryOrder.product_details.unit}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td className="table-cell-truncate" style={{ maxWidth: '17rem' }}>
-                      <Group gap={6} wrap="nowrap">
-                        <ShippingIcon size={18} />
-                        <div>
-                          <Text size="sm" lineClamp={1} title={deliveryOrder.logistics_shipping.port_of_departure}>{deliveryOrder.logistics_shipping.port_of_departure}</Text>
-                          <Text size="sm" c="dimmed" lineClamp={1} title={deliveryOrder.logistics_shipping.port_of_destination}>
-                            {deliveryOrder.logistics_shipping.port_of_destination}
-                          </Text>
-                        </div>
-                      </Group>
-                      <Text size="xs" c="dimmed" mt={4}>
-                        {t('deliveryOrders.eta')} {deliveryOrder.logistics_shipping.eta_planned ?? '-'}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      {deliveryOrder.linked_shipment_number ? (
-                        <Badge size="xs" color="blue" variant="light">{deliveryOrder.linked_shipment_number}</Badge>
-                      ) : (
-                        <Badge size="xs" color="gray" variant="light">No shipment</Badge>
-                      )}
-                      <Text size="xs" c={delay.isLate ? 'red' : 'dimmed'} mt={4}>
-                        ETA {deliveryOrder.logistics_shipping.eta_planned ?? '-'}
-                      </Text>
-                      <Group gap="xs" mt={6}>
-                        <DelayBadge days={delay.days} type={delay.type} />
-                        <Text size="xs" c="dimmed">
-                          {deliveryOrder.task_summary.completed_tasks}/{deliveryOrder.task_summary.total_tasks} {t('shell.tasks')}
-                        </Text>
-                      </Group>
-                      <Progress value={taskProgress} size="sm" mt={6} color={taskProgress === 100 ? 'teal' : 'blue'} />
-                    </Table.Td>
-                    <Table.Td>
-                      <Stack gap={6}>
-                        <StatusBadge status={deliveryOrder.order_info.status} />
-                        <Group gap={6}>
-                          {deliveryOrder.logistics_shipping.missing_documents.length > 0 ? (
-                            <Badge size="xs" color="red" variant="light">
-                              {t('deliveryOrders.missingDocuments', { count: deliveryOrder.logistics_shipping.missing_documents.length })}
-                            </Badge>
-                          ) : (
-                            <Badge size="xs" color="teal" variant="light">
-                              {t('deliveryOrders.complete')}
-                            </Badge>
-                          )}
-                          {deliveryOrder.task_summary.blocked_tasks > 0 ? (
-                            <Badge size="xs" color="orange" variant="light">
-                              {t('deliveryOrders.blockedSuffix', { count: deliveryOrder.task_summary.blocked_tasks })}
-                            </Badge>
-                          ) : null}
-                        </Group>
-                      </Stack>
-                    </Table.Td>
-                    <Table.Td>
-                      <Tooltip label={t('deliveryOrders.inspect')}>
-                        <ActionIcon
-                          variant="subtle"
-                          aria-label={t('deliveryOrders.inspect')}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            setSelectedId(deliveryOrder.id);
-                            openDoParam(deliveryOrder.order_info.order_number, { clear: ['pr', 'po', 'task'] });
-                          }}
-                        >
-                          <IconEye size={18} />
-                        </ActionIcon>
-                      </Tooltip>
-                    </Table.Td>
+              <SimpleGrid cols={{ base: 1, md: 4 }}>
+                <TextInput
+                  label={t('common.search')}
+                  placeholder={t('deliveryOrders.searchPlaceholder')}
+                  leftSection={<IconSearch size={16} />}
+                  value={search}
+                  onChange={(event) => setSearch(event.currentTarget.value)}
+                />
+                <Select
+                  label={t('common.flow')}
+                  value={flowFilter}
+                  onChange={(value) => setFlowFilter((value ?? 'all') as BusinessFlowTag | 'all')}
+                  data={[
+                    { label: t('common.all'), value: 'all' },
+                    { label: flowTagLabel('LINEAR'), value: 'LINEAR' },
+                    { label: flowTagLabel('PARTIAL_DELIVERY'), value: 'PARTIAL_DELIVERY' },
+                    { label: flowTagLabel('CONTAINER_CONSOLIDATION'), value: 'CONTAINER_CONSOLIDATION' },
+                    { label: flowTagLabel('BULK_PURCHASE'), value: 'BULK_PURCHASE' },
+                  ]}
+                />
+                <Switch
+                  className="filter-switch"
+                  checked={riskOnly}
+                  onChange={(event) => setRiskOnly(event.currentTarget.checked)}
+                  label={t('deliveryOrders.filterRiskOnly')}
+                />
+                <Group className="filter-actions" gap="xs">
+                  {isFetching ? <Loader size="sm" /> : null}
+                  <Text size="sm" c="dimmed">
+                    {t('common.shown', { count: filteredDeliveryOrders.length })}
+                  </Text>
+                </Group>
+              </SimpleGrid>
+            </Stack>
+          </Paper>
+
+          <Paper withBorder p={0}>
+            <ScrollArea className="data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
+              <Table miw={1180} verticalSpacing="sm" highlightOnHover>
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th>{t('deliveryOrders.doColumn')}</Table.Th>
+                    <Table.Th>{t('deliveryOrders.sourcePoLot')}</Table.Th>
+                    <Table.Th>{t('common.supplier')} / Allocation</Table.Th>
+                    <Table.Th>{t('common.route')}</Table.Th>
+                    <Table.Th>{t('deliveryOrders.linkedShipmentEta')}</Table.Th>
+                    <Table.Th>{t('common.status')}</Table.Th>
+                    <Table.Th />
                   </Table.Tr>
-                );
-              })}
-            </Table.Tbody>
-          </Table>
-        </ScrollArea>
-        {filteredDeliveryOrders.length === 0 ? (
-          <EmptyState title={t('deliveryOrders.emptyTitle')} description={t('deliveryOrders.emptyDescription')} />
-        ) : null}
-        <ListPagination
-          page={page}
-          pageCount={pageCount}
-          pageEnd={pageEnd}
-          pageStart={pageStart}
-          setPage={setPage}
-          total={filteredDeliveryOrders.length}
-        />
-      </Paper>
+                </Table.Thead>
+                <Table.Tbody>
+                  {visibleDeliveryOrders.map((deliveryOrder) => {
+                    const ShippingIcon = shippingIcon[deliveryOrder.logistics_shipping.shipping_method];
+                    const delay = calcDelay({
+                      actualEntryDate: deliveryOrder.warehouse_tracking.actual_entry_date,
+                      plannedEntryDate: deliveryOrder.warehouse_tracking.planned_entry_date,
+                      warehouseDeadline: deliveryOrder.warehouse_tracking.warehouse_deadline,
+                    });
+                    const taskProgress =
+                      deliveryOrder.task_summary.total_tasks > 0
+                        ? Math.round(
+                            (deliveryOrder.task_summary.completed_tasks / deliveryOrder.task_summary.total_tasks) * 100,
+                          )
+                        : 0;
+
+                    return (
+                      <Table.Tr key={deliveryOrder.id}>
+                        <Table.Td className="table-cell-truncate" style={{ maxWidth: '17rem' }}>
+                          <Text fw={700} lineClamp={1} title={deliveryOrder.order_info.order_number}>
+                            {deliveryOrder.order_info.order_number}
+                          </Text>
+                          <Text size="xs" c="dimmed" lineClamp={1}>
+                            {deliveryOrder.source_lot_no ?? deliveryOrder.product_details.lot_number ?? t('deliveryOrders.lotPending')}
+                          </Text>
+                          <FlowTagBadge compact tags={deliveryOrder.flow_tags} />
+                        </Table.Td>
+                        <Table.Td>
+                          <EntityLink type="po" id={deliveryOrder.source_po_number ?? deliveryOrder.sap_integration.po_number} compact />
+                          <Text size="xs" c="dimmed">{deliveryOrder.source_lot_no ?? deliveryOrder.product_details.lot_number}</Text>
+                        </Table.Td>
+                        <Table.Td className="table-cell-truncate" style={{ maxWidth: '18rem' }}>
+                          <Text size="sm" fw={600} lineClamp={1} title={deliveryOrder.sap_integration.supplier_name ?? t('deliveryOrders.supplierPending')}>
+                            {deliveryOrder.sap_integration.supplier_name ?? t('deliveryOrders.supplierPending')}
+                          </Text>
+                          <Text size="sm" c="dimmed" lineClamp={1}>
+                            {deliveryOrder.source_lines.length} items · {deliveryOrder.product_details.quantity.toLocaleString()} {deliveryOrder.product_details.unit}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td className="table-cell-truncate" style={{ maxWidth: '17rem' }}>
+                          <Group gap={6} wrap="nowrap">
+                            <ShippingIcon size={18} />
+                            <div>
+                              <Text size="sm" lineClamp={1} title={deliveryOrder.logistics_shipping.port_of_departure}>{deliveryOrder.logistics_shipping.port_of_departure}</Text>
+                              <Text size="sm" c="dimmed" lineClamp={1} title={deliveryOrder.logistics_shipping.port_of_destination}>
+                                {deliveryOrder.logistics_shipping.port_of_destination}
+                              </Text>
+                            </div>
+                          </Group>
+                          <Text size="xs" c="dimmed" mt={4}>
+                            {t('deliveryOrders.eta')} {deliveryOrder.logistics_shipping.eta_planned ?? '-'}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          {deliveryOrder.linked_shipment_number ? (
+                            <Badge size="xs" color="blue" variant="light">{deliveryOrder.linked_shipment_number}</Badge>
+                          ) : (
+                            <Badge size="xs" color="gray" variant="light">{t('deliveryOrders.noShipment')}</Badge>
+                          )}
+                          <Text size="xs" c={delay.isLate ? 'red' : 'dimmed'} mt={4}>
+                            ETA {deliveryOrder.logistics_shipping.eta_planned ?? '-'}
+                          </Text>
+                          <Group gap="xs" mt={6}>
+                            <DelayBadge days={delay.days} type={delay.type} />
+                            <Text size="xs" c="dimmed">
+                              {deliveryOrder.task_summary.completed_tasks}/{deliveryOrder.task_summary.total_tasks} {t('shell.tasks')}
+                            </Text>
+                          </Group>
+                          <Progress value={taskProgress} size="sm" mt={6} color={taskProgress === 100 ? 'teal' : 'blue'} />
+                        </Table.Td>
+                        <Table.Td>
+                          <Stack gap={6}>
+                            <StatusBadge status={deliveryOrder.order_info.status} />
+                            <Group gap={6}>
+                              {deliveryOrder.logistics_shipping.missing_documents.length > 0 ? (
+                                <Badge size="xs" color="red" variant="light">
+                                  {t('deliveryOrders.missingDocuments', { count: deliveryOrder.logistics_shipping.missing_documents.length })}
+                                </Badge>
+                              ) : (
+                                <Badge size="xs" color="teal" variant="light">
+                                  {t('deliveryOrders.complete')}
+                                </Badge>
+                              )}
+                              {deliveryOrder.task_summary.blocked_tasks > 0 ? (
+                                <Badge size="xs" color="orange" variant="light">
+                                  {t('deliveryOrders.blockedSuffix', { count: deliveryOrder.task_summary.blocked_tasks })}
+                                </Badge>
+                              ) : null}
+                            </Group>
+                          </Stack>
+                        </Table.Td>
+                        <Table.Td>
+                          <Tooltip label={t('deliveryOrders.inspect')}>
+                            <ActionIcon
+                              variant="subtle"
+                              aria-label={t('deliveryOrders.inspect')}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setSelectedId(deliveryOrder.id);
+                                openDoParam(deliveryOrder.order_info.order_number, { clear: ['pr', 'po', 'task'] });
+                              }}
+                            >
+                              <IconEye size={18} />
+                            </ActionIcon>
+                          </Tooltip>
+                        </Table.Td>
+                      </Table.Tr>
+                    );
+                  })}
+                </Table.Tbody>
+              </Table>
+            </ScrollArea>
+            {filteredDeliveryOrders.length === 0 ? (
+              <EmptyState title={t('deliveryOrders.emptyTitle')} description={t('deliveryOrders.emptyDescription')} />
+            ) : null}
+            <ListPagination
+              page={page}
+              pageCount={pageCount}
+              pageEnd={pageEnd}
+              pageStart={pageStart}
+              setPage={setPage}
+              total={filteredDeliveryOrders.length}
+            />
+          </Paper>
+        </>
+      )}
 
     </Stack>
   );
@@ -904,7 +906,7 @@ function DeliveryOrderDetail({ deliveryOrder, onClose }: { deliveryOrder: Delive
         <Group gap="xs">
           <StatusBadge status={deliveryOrder.order_info.status} />
           <Button variant="subtle" onClick={onClose} leftSection={<IconX size={16} />}>
-            Close detail
+            {t('common.backToList')}
           </Button>
         </Group>
       </Group>

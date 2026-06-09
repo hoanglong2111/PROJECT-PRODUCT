@@ -232,7 +232,7 @@ export function PurchaseOrders() {
           ) : null}
           {workbench !== 'list' ? (
             <Button onClick={closeWorkbench} leftSection={<IconX size={16} />} variant="subtle">
-              Back to list
+              {t('common.backToList')}
             </Button>
           ) : null}
           <Badge leftSection={<IconGitBranch size={14} />} size="lg" variant="light">
@@ -240,12 +240,6 @@ export function PurchaseOrders() {
           </Badge>
         </Group>
       </Group>
-
-      <SimpleGrid cols={{ base: 1, sm: 3 }}>
-        <Metric label={t('purchaseOrders.totalPo')} value={purchaseOrders.length} color="blue" icon={<IconShoppingCart size={22} />} />
-        <Metric label="Lots planned" value={purchaseOrders.reduce((total, order) => total + (order.lots?.length ?? 1), 0)} color="teal" icon={<IconGitBranch size={22} />} />
-        <Metric label="Generated DOs" value={purchaseOrders.reduce((total, order) => total + order.linked_do_numbers.length, 0)} color="blue" icon={<IconCircleCheck size={22} />} />
-      </SimpleGrid>
 
       {workbench === 'create' ? (
         <PurchaseOrderCreatePanel onCancel={closeWorkbench} onCreated={openDetail} />
@@ -255,107 +249,117 @@ export function PurchaseOrders() {
         <PurchaseOrderDetailPanel order={selectedPo} onClose={closeWorkbench} onUpdated={setSelectedPo} />
       ) : null}
 
-      <FilterToolbar
-        activeTab={activeTab}
-        isFetching={isFetching}
-        onTabChange={setActiveTab}
-        shown={filteredPurchaseOrders.length}
-        tabs={[
-          { label: t('common.all'), value: 'all', count: tabCounts.all },
-          { label: t('common.singleSource'), value: 'single', count: tabCounts.single },
-          { label: flowTagLabel('BULK_PURCHASE'), value: 'bulk', count: tabCounts.bulk },
-          { label: t('common.awaitingDo'), value: 'awaiting', count: tabCounts.awaiting },
-          { label: flowTagLabel('PARTIAL_DELIVERY'), value: 'partial', count: tabCounts.partial },
-          { label: t('common.closed'), value: 'closed', count: tabCounts.closed },
-        ]}
-      >
-        <TextInput
-          label={t('common.search')}
-          placeholder={t('purchaseOrders.searchPlaceholder')}
-          leftSection={<IconSearch size={16} />}
-          value={search}
-          onChange={(event) => setSearch(event.currentTarget.value)}
-          w={{ base: '100%', sm: 360 }}
-        />
-      </FilterToolbar>
+      {workbench === 'list' ? (
+        <>
+          <SimpleGrid cols={{ base: 1, sm: 3 }}>
+            <Metric label={t('purchaseOrders.totalPo')} value={purchaseOrders.length} color="blue" icon={<IconShoppingCart size={22} />} />
+            <Metric label={t('purchaseOrders.lotsPlanned')} value={purchaseOrders.reduce((total, order) => total + (order.lots?.length ?? 1), 0)} color="teal" icon={<IconGitBranch size={22} />} />
+            <Metric label="Generated DOs" value={purchaseOrders.reduce((total, order) => total + order.linked_do_numbers.length, 0)} color="blue" icon={<IconCircleCheck size={22} />} />
+          </SimpleGrid>
 
-      <Paper withBorder p={0}>
-        {filteredPurchaseOrders.length === 0 ? (
-          <EmptyState title={t('purchaseOrders.emptyTitle')} description={t('purchaseOrders.emptyDescription')} />
-        ) : (
-          <ScrollArea className="data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
-            <Table miw={1220} verticalSpacing="sm" highlightOnHover>
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>PO</Table.Th>
-                  <Table.Th>{t('common.supplier')}</Table.Th>
-                  <Table.Th>{t('common.linkedDo')}</Table.Th>
-                  <Table.Th>Lots</Table.Th>
-                  <Table.Th>{t('purchaseOrders.total')}</Table.Th>
-                  <Table.Th>{t('common.status')}</Table.Th>
-                  <Table.Th />
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {visiblePurchaseOrders.map((order) => (
-                  <Table.Tr key={order.id}>
-                    <Table.Td className="table-cell-truncate" style={{ maxWidth: '20rem' }}>
-                      <Text fw={700} lineClamp={1} title={order.po_number}>{order.po_number}</Text>
-                      <Text size="xs" c="dimmed">
-                        {order.order_date}
-                      </Text>
-                      <FlowTagBadge compact tags={order.flow_tags} />
-                    </Table.Td>
-                    <Table.Td className="table-cell-truncate" style={{ maxWidth: '18rem' }}>
-                      <Text size="sm" fw={600} lineClamp={1} title={order.supplier_name}>
-                        {order.supplier_name}
-                      </Text>
-                      <Text size="xs" c="dimmed">
-                        {order.supplier_code}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Group gap="xs">
-                        {order.linked_do_numbers.map((doCode) => (
-                          <EntityLink key={doCode} type="do" id={doCode} compact />
-                        ))}
-                      </Group>
-                    </Table.Td>
-                    <Table.Td>
-                      <Badge color="teal" variant="light">
-                        {order.lots?.length ?? 1} lot / {order.linked_do_numbers.length} DO
-                      </Badge>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text fw={600}>
-                        <NumberFormatter value={order.total_amount} thousandSeparator /> {order.currency}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <StatusBadge status={order.status} />
-                    </Table.Td>
-                    <Table.Td>
-                      <Tooltip label={t('purchaseOrders.openDetail')}>
-                        <ActionIcon variant="subtle" aria-label={t('purchaseOrders.openDetail')} onClick={() => openDetail(order)}>
-                          <IconEye size={18} />
-                        </ActionIcon>
-                      </Tooltip>
-                    </Table.Td>
-                  </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
-          </ScrollArea>
-        )}
-        <ListPagination
-          page={page}
-          pageCount={pageCount}
-          pageEnd={pageEnd}
-          pageStart={pageStart}
-          setPage={setPage}
-          total={filteredPurchaseOrders.length}
-        />
-      </Paper>
+          <FilterToolbar
+            activeTab={activeTab}
+            isFetching={isFetching}
+            onTabChange={setActiveTab}
+            shown={filteredPurchaseOrders.length}
+            tabs={[
+              { label: t('common.all'), value: 'all', count: tabCounts.all },
+              { label: t('common.singleSource'), value: 'single', count: tabCounts.single },
+              { label: flowTagLabel('BULK_PURCHASE'), value: 'bulk', count: tabCounts.bulk },
+              { label: t('common.awaitingDo'), value: 'awaiting', count: tabCounts.awaiting },
+              { label: flowTagLabel('PARTIAL_DELIVERY'), value: 'partial', count: tabCounts.partial },
+              { label: t('common.closed'), value: 'closed', count: tabCounts.closed },
+            ]}
+          >
+            <TextInput
+              label={t('common.search')}
+              placeholder={t('purchaseOrders.searchPlaceholder')}
+              leftSection={<IconSearch size={16} />}
+              value={search}
+              onChange={(event) => setSearch(event.currentTarget.value)}
+              w={{ base: '100%', sm: 360 }}
+            />
+          </FilterToolbar>
+
+          <Paper withBorder p={0}>
+            {filteredPurchaseOrders.length === 0 ? (
+              <EmptyState title={t('purchaseOrders.emptyTitle')} description={t('purchaseOrders.emptyDescription')} />
+            ) : (
+              <ScrollArea className="data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
+                <Table miw={1220} verticalSpacing="sm" highlightOnHover>
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th>PO</Table.Th>
+                      <Table.Th>{t('common.supplier')}</Table.Th>
+                      <Table.Th>{t('common.linkedDo')}</Table.Th>
+                      <Table.Th>Lots</Table.Th>
+                      <Table.Th>{t('purchaseOrders.total')}</Table.Th>
+                      <Table.Th>{t('common.status')}</Table.Th>
+                      <Table.Th />
+                    </Table.Tr>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {visiblePurchaseOrders.map((order) => (
+                      <Table.Tr key={order.id}>
+                        <Table.Td className="table-cell-truncate" style={{ maxWidth: '20rem' }}>
+                          <Text fw={700} lineClamp={1} title={order.po_number}>{order.po_number}</Text>
+                          <Text size="xs" c="dimmed">
+                            {order.order_date}
+                          </Text>
+                          <FlowTagBadge compact tags={order.flow_tags} />
+                        </Table.Td>
+                        <Table.Td className="table-cell-truncate" style={{ maxWidth: '18rem' }}>
+                          <Text size="sm" fw={600} lineClamp={1} title={order.supplier_name}>
+                            {order.supplier_name}
+                          </Text>
+                          <Text size="xs" c="dimmed">
+                            {order.supplier_code}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Group gap="xs">
+                            {order.linked_do_numbers.map((doCode) => (
+                              <EntityLink key={doCode} type="do" id={doCode} compact />
+                            ))}
+                          </Group>
+                        </Table.Td>
+                        <Table.Td>
+                          <Badge color="teal" variant="light">
+                            {order.lots?.length ?? 1} lot / {order.linked_do_numbers.length} DO
+                          </Badge>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text fw={600}>
+                            <NumberFormatter value={order.total_amount} thousandSeparator /> {order.currency}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <StatusBadge status={order.status} />
+                        </Table.Td>
+                        <Table.Td>
+                          <Tooltip label={t('purchaseOrders.openDetail')}>
+                            <ActionIcon variant="subtle" aria-label={t('purchaseOrders.openDetail')} onClick={() => openDetail(order)}>
+                              <IconEye size={18} />
+                            </ActionIcon>
+                          </Tooltip>
+                        </Table.Td>
+                      </Table.Tr>
+                    ))}
+                  </Table.Tbody>
+                </Table>
+              </ScrollArea>
+            )}
+            <ListPagination
+              page={page}
+              pageCount={pageCount}
+              pageEnd={pageEnd}
+              pageStart={pageStart}
+              setPage={setPage}
+              total={filteredPurchaseOrders.length}
+            />
+          </Paper>
+        </>
+      ) : null}
     </Stack>
   );
 }
@@ -368,6 +372,7 @@ function PurchaseOrderCreatePanel({
   onCreated: (order: PurchaseOrder) => void;
 }) {
   const queryClient = useQueryClient();
+  const { t } = useI18n();
   const [lots, setLots] = useState<string[]>([DEFAULT_LOT]);
   const [lines, setLines] = useState<CreatePoLine[]>([newCreateLine(0)]);
   const [poNumber, setPoNumber] = useState(`PO-2026-${String(Date.now()).slice(-6)}`);
@@ -438,17 +443,17 @@ function PurchaseOrderCreatePanel({
       <Stack gap="md">
         <Group justify="space-between" align="flex-start">
           <div>
-            <Title order={3}>Create Purchase Order</Title>
+            <Title order={3}>{t('forms.createPoTitle')}</Title>
             <Text size="sm" c="dimmed">
               Supplier order, item rows, and initial LOT plan.
             </Text>
           </div>
           <Group gap="xs">
             <Button type="button" variant="subtle" onClick={onCancel} leftSection={<IconX size={16} />}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" loading={mutation.isPending} leftSection={<IconShoppingCart size={16} />}>
-              Save PO
+              {t('common.save')}
             </Button>
           </Group>
         </Group>
@@ -461,13 +466,13 @@ function PurchaseOrderCreatePanel({
 
         <SimpleGrid cols={{ base: 1, md: 4 }}>
           <TextInput label="PO number" value={poNumber} onChange={(event) => setPoNumber(event.currentTarget.value)} required />
-          <TextInput label="Supplier code" value={supplierCode} onChange={(event) => setSupplierCode(event.currentTarget.value)} required />
-          <TextInput label="Supplier name" value={supplierName} onChange={(event) => setSupplierName(event.currentTarget.value)} required />
-          <TextInput label="Order date" type="date" value={orderDate} onChange={(event) => setOrderDate(event.currentTarget.value)} />
-          <TextInput label="Currency" value={currency} onChange={(event) => setCurrency(event.currentTarget.value)} />
-          <TextInput label="Warehouse" value={warehouseCode} onChange={(event) => setWarehouseCode(event.currentTarget.value)} />
+          <TextInput label={t('purchaseOrders.supplierCode')} value={supplierCode} onChange={(event) => setSupplierCode(event.currentTarget.value)} required />
+          <TextInput label={t('purchaseOrders.supplierName')} value={supplierName} onChange={(event) => setSupplierName(event.currentTarget.value)} required />
+          <TextInput label={t('purchaseOrders.orderDate')} type="date" value={orderDate} onChange={(event) => setOrderDate(event.currentTarget.value)} />
+          <TextInput label={t('forms.currency')} value={currency} onChange={(event) => setCurrency(event.currentTarget.value)} />
+          <TextInput label={t('forms.warehouse')} value={warehouseCode} onChange={(event) => setWarehouseCode(event.currentTarget.value)} />
           <Info label="Lots" value={String(lots.length)} />
-          <Info label="Total" value={`${totalAmount.toLocaleString()} ${currency}`} />
+          <Info label={t('purchaseOrders.total')} value={`${totalAmount.toLocaleString()} ${currency}`} />
         </SimpleGrid>
 
         <CompactPoItemTable
@@ -482,8 +487,8 @@ function PurchaseOrderCreatePanel({
           lots={lots}
           lineSummaries={lines.map((line) => ({
             id: line.id,
-            itemCode: line.itemCode || 'New item',
-            itemName: line.itemName || 'Unnamed item',
+            itemCode: line.itemCode || t('purchaseOrders.newItem'),
+            itemName: line.itemName || t('purchaseOrders.unnamedItem'),
             quantity: line.quantity,
             unit: line.unit,
             lotNo: line.lotNumber,
@@ -511,24 +516,25 @@ function CompactPoItemTable({
   onRemoveLine: (lineId: string) => void;
   onUpdateLine: (lineId: string, patch: Partial<CreatePoLine>) => void;
 }) {
+  const { t } = useI18n();
   return (
     <Paper withBorder p={0}>
       <Group justify="space-between" p="sm">
-        <Text fw={700}>PO items</Text>
+        <Text fw={700}>{t('purchaseOrders.poItems')}</Text>
         <Button size="xs" variant="light" onClick={onAddLine} leftSection={<IconPlus size={14} />}>
-          Add item
+          {t('purchaseOrders.addItem')}
         </Button>
       </Group>
       <ScrollArea type="always" offsetScrollbars scrollbarSize={8}>
         <Table miw={980} verticalSpacing="xs">
           <Table.Thead>
             <Table.Tr>
-              <Table.Th style={{ width: 105 }}>Mặt hàng #</Table.Th>
-              <Table.Th>Item code</Table.Th>
-              <Table.Th>Item name</Table.Th>
-              <Table.Th style={{ width: 120 }}>Qty</Table.Th>
-              <Table.Th style={{ width: 100 }}>Unit</Table.Th>
-              <Table.Th style={{ width: 130 }}>Unit price</Table.Th>
+              <Table.Th style={{ width: 105 }}>{t('common.item')} #</Table.Th>
+              <Table.Th>{t('masterData.itemCode')}</Table.Th>
+              <Table.Th>{t('masterData.itemName')}</Table.Th>
+              <Table.Th style={{ width: 120 }}>{t('forms.quantity')}</Table.Th>
+              <Table.Th style={{ width: 100 }}>{t('forms.unit')}</Table.Th>
+              <Table.Th style={{ width: 130 }}>{t('purchaseOrders.unitPrice')}</Table.Th>
               <Table.Th style={{ width: 135 }}>LOT</Table.Th>
               <Table.Th style={{ width: 140 }}>ETA</Table.Th>
               <Table.Th style={{ width: 56 }} />
@@ -562,7 +568,7 @@ function CompactPoItemTable({
                   <TextInput size="xs" type="date" value={line.expectedEta} onChange={(event) => onUpdateLine(line.id, { expectedEta: event.currentTarget.value })} />
                 </Table.Td>
                 <Table.Td>
-                  <ActionIcon variant="subtle" color="red" disabled={lines.length === 1} onClick={() => onRemoveLine(line.id)} aria-label="Remove item">
+                  <ActionIcon variant="subtle" color="red" disabled={lines.length === 1} onClick={() => onRemoveLine(line.id)} aria-label={t('purchaseOrders.removeItem')}>
                     <IconTrash size={16} />
                   </ActionIcon>
                 </Table.Td>

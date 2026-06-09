@@ -5,7 +5,6 @@ import {
   Button,
   Group,
   Modal,
-  NumberInput,
   Paper,
   ScrollArea,
   Select,
@@ -31,6 +30,8 @@ import {
 import { useMemo, useState, useEffect } from 'react';
 
 import { useAuth } from '@shared/auth/useAuth';
+import { useI18n } from '@shared/i18n';
+import { ListPagination, useListPagination } from '@shared/components/ListPagination';
 import {
   getPartners,
   savePartners,
@@ -43,6 +44,7 @@ import type { PartnerRecord, PortRecord, ItemRecord } from './mockData';
 
 export function MasterData() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const isAdmin = user?.role === 'ADMIN';
 
   const [activeTab, setActiveTab] = useState<string>('partners');
@@ -138,6 +140,15 @@ export function MasterData() {
         (i.tax_note || '').toLowerCase().includes(q)
     );
   }, [items, itemSearch]);
+
+  const {
+    visibleItems,
+    page,
+    setPage,
+    pageCount,
+    pageStart,
+    pageEnd,
+  } = useListPagination(filteredItems, [itemSearch]);
 
   // Open forms for Add
   const openAddPartner = () => {
@@ -328,21 +339,21 @@ export function MasterData() {
 
   // Delete actions
   const handleDeletePartner = (id: string) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa đối tác này?')) return;
+    if (!window.confirm(t('masterData.confirmDeletePartner'))) return;
     const updated = partners.filter((p) => p.id !== id);
     setPartners(updated);
     savePartners(updated);
   };
 
   const handleDeletePort = (id: string) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa cảng này?')) return;
+    if (!window.confirm(t('masterData.confirmDeletePort'))) return;
     const updated = ports.filter((p) => p.id !== id);
     setPorts(updated);
     savePorts(updated);
   };
 
   const handleDeleteItem = (id: string) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) return;
+    if (!window.confirm(t('masterData.confirmDeleteItem'))) return;
     const updated = items.filter((i) => i.id !== id);
     setItems(updated);
     saveItems(updated);
@@ -352,34 +363,34 @@ export function MasterData() {
     <Stack gap="lg">
       <Group justify="space-between" align="center">
         <div>
-          <Title order={1}>Quản lý Dữ liệu gốc (Master Data)</Title>
+          <Title order={1}>{t('masterData.title')}</Title>
           <Text c="dimmed" mt={4}>
-            Định nghĩa thông tin Đối tác (Supplier, Carrier), Danh sách Cảng biển/Sân bay và biểu thuế hải quan HS Code.
+            {t('masterData.subtitle')}
           </Text>
         </div>
         {!isAdmin && (
           <Badge color="blue" variant="filled" size="lg" leftSection={<IconAlertCircle size={14} />}>
-            Chế độ Xem (Read-only)
+            {t('masterData.readOnlyBadge')}
           </Badge>
         )}
       </Group>
 
       {!isAdmin && (
-        <Alert color="blue" variant="light" title="Quyền truy cập hạn chế" icon={<IconAlertCircle size={18} />}>
-          Bạn đang đăng nhập dưới vai trò <strong>{user?.role}</strong>. Chỉ người dùng có vai trò <strong>ADMIN</strong> mới được quyền thêm, sửa hoặc xóa thông tin Dữ liệu gốc.
+        <Alert color="blue" variant="light" title={t('masterData.readOnlyBadge')} icon={<IconAlertCircle size={18} />}>
+          {t('masterData.readOnlyAlert')}
         </Alert>
       )}
 
       <Tabs value={activeTab} onChange={(val) => setActiveTab(val || 'partners')}>
         <Tabs.List>
           <Tabs.Tab value="partners" leftSection={<IconBuilding size={16} />}>
-            Đối tác (Partners)
+            {t('masterData.tabPartners')}
           </Tabs.Tab>
           <Tabs.Tab value="ports" leftSection={<IconMapPin size={16} />}>
-            Cảng & Cửa khẩu (Ports)
+            {t('masterData.tabPorts')}
           </Tabs.Tab>
           <Tabs.Tab value="items" leftSection={<IconFileCode size={16} />}>
-            HS Code & Tariff Matrix
+            {t('masterData.tabHsCode')}
           </Tabs.Tab>
         </Tabs.List>
 
@@ -388,7 +399,7 @@ export function MasterData() {
           <Stack gap="md">
             <Group justify="space-between">
               <TextInput
-                placeholder="Tìm kiếm đối tác..."
+                placeholder={t('masterData.searchPartners')}
                 leftSection={<IconSearch size={16} />}
                 value={partnerSearch}
                 onChange={(e) => setPartnerSearch(e.currentTarget.value)}
@@ -396,7 +407,7 @@ export function MasterData() {
               />
               {isAdmin && (
                 <Button onClick={openAddPartner} leftSection={<IconPlus size={16} />}>
-                  Thêm Đối tác
+                  {t('masterData.addPartner')}
                 </Button>
               )}
             </Group>
@@ -406,13 +417,13 @@ export function MasterData() {
                 <Table verticalSpacing="md" highlightOnHover>
                   <Table.Thead>
                     <Table.Tr>
-                      <Table.Th>Mã đối tác</Table.Th>
-                      <Table.Th>Tên đối tác</Table.Th>
-                      <Table.Th>Loại hình</Table.Th>
-                      <Table.Th>MST</Table.Th>
-                      <Table.Th>Địa chỉ</Table.Th>
-                      <Table.Th>Email liên hệ</Table.Th>
-                      {isAdmin && <Table.Th style={{ width: 100 }}>Thao tác</Table.Th>}
+                      <Table.Th>{t('masterData.partnerCode')}</Table.Th>
+                      <Table.Th>{t('masterData.partnerName')}</Table.Th>
+                      <Table.Th>{t('masterData.partnerType')}</Table.Th>
+                      <Table.Th>{t('masterData.taxCode')}</Table.Th>
+                      <Table.Th>{t('masterData.address')}</Table.Th>
+                      <Table.Th>{t('masterData.contactEmail')}</Table.Th>
+                      {isAdmin && <Table.Th style={{ width: 100 }}>{t('masterData.actions')}</Table.Th>}
                     </Table.Tr>
                   </Table.Thead>
                   <Table.Tbody>
@@ -463,7 +474,7 @@ export function MasterData() {
           <Stack gap="md">
             <Group justify="space-between">
               <TextInput
-                placeholder="Tìm kiếm cảng biển/sân bay..."
+                placeholder={t('masterData.searchPorts')}
                 leftSection={<IconSearch size={16} />}
                 value={portSearch}
                 onChange={(e) => setPortSearch(e.currentTarget.value)}
@@ -471,7 +482,7 @@ export function MasterData() {
               />
               {isAdmin && (
                 <Button onClick={openAddPort} leftSection={<IconPlus size={16} />}>
-                  Thêm Cảng / Cửa khẩu
+                  {t('masterData.addPort')}
                 </Button>
               )}
             </Group>
@@ -481,11 +492,11 @@ export function MasterData() {
                 <Table verticalSpacing="md" highlightOnHover>
                   <Table.Thead>
                     <Table.Tr>
-                      <Table.Th>Mã cảng</Table.Th>
-                      <Table.Th>Tên cảng</Table.Th>
-                      <Table.Th>Loại hình</Table.Th>
-                      <Table.Th>Quốc gia</Table.Th>
-                      {isAdmin && <Table.Th style={{ width: 100 }}>Thao tác</Table.Th>}
+                      <Table.Th>{t('masterData.portCode')}</Table.Th>
+                      <Table.Th>{t('masterData.portName')}</Table.Th>
+                      <Table.Th>{t('masterData.portType')}</Table.Th>
+                      <Table.Th>{t('masterData.country')}</Table.Th>
+                      {isAdmin && <Table.Th style={{ width: 100 }}>{t('masterData.actions')}</Table.Th>}
                     </Table.Tr>
                   </Table.Thead>
                   <Table.Tbody>
@@ -530,7 +541,7 @@ export function MasterData() {
           <Stack gap="md">
             <Group justify="space-between">
               <TextInput
-                placeholder="Tìm kiếm sản phẩm, HS Code..."
+                placeholder={t('masterData.searchItems')}
                 leftSection={<IconSearch size={16} />}
                 value={itemSearch}
                 onChange={(e) => setItemSearch(e.currentTarget.value)}
@@ -538,7 +549,7 @@ export function MasterData() {
               />
               {isAdmin && (
                 <Button onClick={openAddItem} leftSection={<IconPlus size={16} />}>
-                  Khai báo mã HS Code / Thuế
+                  {t('masterData.addItem')}
                 </Button>
               )}
             </Group>
@@ -548,23 +559,23 @@ export function MasterData() {
                 <Table miw={1680} verticalSpacing="md" highlightOnHover>
                   <Table.Thead>
                     <Table.Tr>
-                      <Table.Th>Nhóm/Mã định danh</Table.Th>
-                      <Table.Th>GRPO / Hợp đồng</Table.Th>
-                      <Table.Th>Loại hình / PTVC</Table.Th>
-                      <Table.Th>Mã linh kiện</Table.Th>
-                      <Table.Th>Tên hàng khai báo</Table.Th>
-                      <Table.Th>Mã HS</Table.Th>
-                      <Table.Th>Thuế NK</Table.Th>
-                      <Table.Th>VAT</Table.Th>
-                      <Table.Th>Mã biểu thuế</Table.Th>
-                      <Table.Th>Mã phân loại</Table.Th>
-                      <Table.Th>C/O</Table.Th>
-                      <Table.Th>Ghi chú</Table.Th>
-                      {isAdmin && <Table.Th style={{ width: 100 }}>Thao tác</Table.Th>}
+                      <Table.Th>{t('masterData.itemGroup')}</Table.Th>
+                      <Table.Th>{t('masterData.sourceReference')}</Table.Th>
+                      <Table.Th>{t('masterData.declarationType')}</Table.Th>
+                      <Table.Th>{t('masterData.itemCode')}</Table.Th>
+                      <Table.Th>{t('masterData.itemName')}</Table.Th>
+                      <Table.Th>{t('masterData.hsCode')}</Table.Th>
+                      <Table.Th>{t('masterData.dutyRate')}</Table.Th>
+                      <Table.Th>{t('masterData.vatRate')}</Table.Th>
+                      <Table.Th>{t('masterData.tariffCode')}</Table.Th>
+                      <Table.Th>{t('masterData.classificationCode')}</Table.Th>
+                      <Table.Th>{t('masterData.coNote')}</Table.Th>
+                      <Table.Th>{t('masterData.taxNote')}</Table.Th>
+                      {isAdmin && <Table.Th style={{ width: 100 }}>{t('masterData.actions')}</Table.Th>}
                     </Table.Tr>
                   </Table.Thead>
                   <Table.Tbody>
-                    {filteredItems.map((i) => (
+                    {visibleItems.map((i) => (
                       <Table.Tr key={i.id}>
                         <Table.Td>{i.item_group || '-'}</Table.Td>
                         <Table.Td>{i.source_reference || '-'}</Table.Td>
@@ -605,6 +616,14 @@ export function MasterData() {
                   </Table.Tbody>
                 </Table>
               </ScrollArea>
+              <ListPagination
+                page={page}
+                pageCount={pageCount}
+                pageEnd={pageEnd}
+                pageStart={pageStart}
+                setPage={setPage}
+                total={filteredItems.length}
+              />
             </Paper>
           </Stack>
         </Tabs.Panel>
@@ -614,54 +633,54 @@ export function MasterData() {
       <Modal
         opened={partnerModalOpened}
         onClose={partnerModalHandlers.close}
-        title={editingPartner ? 'Cập nhật thông tin Đối tác' : 'Thêm Đối tác Mới'}
+        title={editingPartner ? t('masterData.editPartner') : t('masterData.createPartner')}
       >
         <Stack gap="md">
           <TextInput
-            label="Mã đối tác"
-            placeholder="Ví dụ: SUP-LGE"
+            label={t('masterData.partnerCode')}
+            placeholder={t('masterData.partnerCodePlaceholder')}
             value={partCode}
             onChange={(e) => setPartCode(e.currentTarget.value)}
             required
             disabled={Boolean(editingPartner)}
           />
           <TextInput
-            label="Tên đối tác"
-            placeholder="Ví dụ: LG Electronics Corp"
+            label={t('masterData.partnerName')}
+            placeholder={t('masterData.partnerNamePlaceholder')}
             value={partName}
             onChange={(e) => setPartName(e.currentTarget.value)}
             required
           />
           <Select
-            label="Phân loại đối tác"
+            label={t('masterData.partnerType')}
             value={partType}
             onChange={(val) => setPartType(val || 'SUPPLIER')}
             data={[
-              { label: 'SUPPLIER (Nhà cung cấp)', value: 'SUPPLIER' },
-              { label: 'CARRIER (Nhà xe nội địa)', value: 'CARRIER' },
-              { label: 'FORWARDER (Đại lý vận chuyển)', value: 'FORWARDER' },
+              { label: t('masterData.supplierType'), value: 'SUPPLIER' },
+              { label: t('masterData.carrierType'), value: 'CARRIER' },
+              { label: t('masterData.forwarderType'), value: 'FORWARDER' },
             ]}
           />
           <TextInput
-            label="Mã số thuế"
-            placeholder="MST doanh nghiệp"
+            label={t('masterData.taxCode')}
+            placeholder={t('masterData.taxCodePlaceholder')}
             value={partTax}
             onChange={(e) => setPartTax(e.currentTarget.value)}
           />
           <TextInput
-            label="Địa chỉ văn phòng"
-            placeholder="Địa chỉ trụ sở chính"
+            label={t('masterData.address')}
+            placeholder={t('masterData.addressPlaceholder')}
             value={partAddress}
             onChange={(e) => setPartAddress(e.currentTarget.value)}
           />
           <TextInput
-            label="Email liên hệ nghiệp vụ"
-            placeholder="operations@company.com"
+            label={t('masterData.contactEmail')}
+            placeholder={t('masterData.emailPlaceholder')}
             value={partEmail}
             onChange={(e) => setPartEmail(e.currentTarget.value)}
           />
           <Button onClick={handleSavePartner} fullWidth mt="md">
-            Lưu thông tin Đối tác
+            {t('masterData.savePartner')}
           </Button>
         </Stack>
       </Modal>
@@ -670,43 +689,43 @@ export function MasterData() {
       <Modal
         opened={portModalOpened}
         onClose={portModalHandlers.close}
-        title={editingPort ? 'Cập nhật thông tin Cảng / Cửa khẩu' : 'Thêm Cảng / Cửa khẩu mới'}
+        title={editingPort ? t('masterData.editPort') : t('masterData.createPort')}
       >
         <Stack gap="md">
           <TextInput
-            label="Mã cảng hàng không/hải quan (UN/LOCODE)"
-            placeholder="Ví dụ: VNSGN, CNSHA, SGN"
+            label={t('masterData.portCodeLabel')}
+            placeholder={t('masterData.portCodePlaceholder')}
             value={portCode}
             onChange={(e) => setPortCode(e.currentTarget.value)}
             required
             disabled={Boolean(editingPort)}
           />
           <TextInput
-            label="Tên cảng/cửa khẩu"
-            placeholder="Ví dụ: Cát Lái Sea Port"
+            label={t('masterData.portName')}
+            placeholder={t('masterData.portNamePlaceholder')}
             value={portName}
             onChange={(e) => setPortName(e.currentTarget.value)}
             required
           />
           <TextInput
-            label="Quốc gia"
-            placeholder="Ví dụ: Vietnam, China, Korea"
+            label={t('masterData.country')}
+            placeholder={t('masterData.countryPlaceholder')}
             value={portCountry}
             onChange={(e) => setPortCountry(e.currentTarget.value)}
             required
           />
           <Select
-            label="Loại hình cảng"
+            label={t('masterData.portType')}
             value={portType}
             onChange={(val) => setPortType(val || 'SEA')}
             data={[
-              { label: 'SEA (Cảng biển)', value: 'SEA' },
-              { label: 'AIR (Sân bay)', value: 'AIR' },
-              { label: 'BORDER (Cửa khẩu đường bộ)', value: 'BORDER' },
+              { label: t('masterData.seaPortLabel'), value: 'SEA' },
+              { label: t('masterData.airPortLabel'), value: 'AIR' },
+              { label: t('masterData.borderPortLabel'), value: 'BORDER' },
             ]}
           />
           <Button onClick={handleSavePort} fullWidth mt="md">
-            Lưu thông tin Cảng
+            {t('masterData.savePort')}
           </Button>
         </Stack>
       </Modal>
@@ -716,31 +735,31 @@ export function MasterData() {
         opened={itemModalOpened}
         onClose={itemModalHandlers.close}
         size="lg"
-        title={editingItem ? 'Cập nhật master item / HS Code' : 'Khai báo master item / HS Code'}
+        title={editingItem ? t('masterData.editItem') : t('masterData.createItem')}
       >
         <Stack gap="md">
           <SimpleGrid cols={{ base: 1, sm: 2 }}>
             <TextInput
-              label="Nhóm hàng / Mã định danh"
-              placeholder="Ví dụ: Động cơ dầu SDEC / 850440"
+              label={t('masterData.itemGroupLabel')}
+              placeholder={t('masterData.itemGroupPlaceholder')}
               value={itemGroup}
               onChange={(e) => setItemGroup(e.currentTarget.value)}
             />
             <TextInput
-              label="Mã đơn hàng / GRPO / Hợp đồng"
-              placeholder="Ví dụ: KBI-SDEC-2512"
+              label={t('masterData.sourceRefLabel')}
+              placeholder={t('masterData.sourceRefPlaceholder')}
               value={itemSourceReference}
               onChange={(e) => setItemSourceReference(e.currentTarget.value)}
             />
             <TextInput
-              label="Loại hình / Phương thức vận chuyển"
-              placeholder="Ví dụ: A12, E31, Sea, Air"
+              label={t('masterData.declTypeLabel')}
+              placeholder={t('masterData.declTypePlaceholder')}
               value={itemDeclarationType}
               onChange={(e) => setItemDeclarationType(e.currentTarget.value)}
             />
             <TextInput
-              label="Mã vật tư linh kiện"
-              placeholder="Ví dụ: ITEM-85030090-2"
+              label={t('masterData.itemCodeLabel')}
+              placeholder={t('masterData.itemCodePlaceholder')}
               value={itemCode}
               onChange={(e) => setItemCode(e.currentTarget.value)}
               required
@@ -748,28 +767,28 @@ export function MasterData() {
             />
           </SimpleGrid>
           <TextInput
-            label="Tên hàng khai báo"
-            placeholder="Ví dụ: Phụ tùng dùng cho tổ máy phát điện..."
+            label={t('masterData.itemNameLabel')}
+            placeholder={t('masterData.itemNamePlaceholder')}
             value={itemName}
             onChange={(e) => setItemName(e.currentTarget.value)}
             required
           />
           <SimpleGrid cols={{ base: 1, sm: 3 }}>
             <TextInput
-              label="Mã HS"
-              placeholder="Ví dụ: 85030090"
+              label={t('masterData.hsCode')}
+              placeholder={t('masterData.hsCodePlaceholder')}
               value={itemHs}
               onChange={(e) => setItemHs(e.currentTarget.value)}
               required
             />
             <TextInput
-              label="Thuế suất nhập khẩu (%)"
+              label={t('masterData.dutyRateLabel')}
               type="number"
               value={itemDuty}
               onChange={(e) => setItemDuty(e.currentTarget.value)}
             />
             <TextInput
-              label="Thuế suất GTGT (%)"
+              label={t('masterData.vatRateLabel')}
               type="number"
               value={itemVat}
               onChange={(e) => setItemVat(e.currentTarget.value)}
@@ -777,32 +796,32 @@ export function MasterData() {
           </SimpleGrid>
           <SimpleGrid cols={{ base: 1, sm: 2 }}>
             <TextInput
-              label="Mã biểu thuế"
-              placeholder="Ví dụ: VB245, VK120"
+              label={t('masterData.tariffCode')}
+              placeholder={t('masterData.tariffCodePlaceholder')}
               value={itemTariffCode}
               onChange={(e) => setItemTariffCode(e.currentTarget.value)}
             />
             <TextInput
-              label="Mã phân loại bổ sung"
-              placeholder="Ví dụ: B05, B01, A12"
+              label={t('masterData.classificationCode')}
+              placeholder={t('masterData.classificationPlaceholder')}
               value={itemClassificationCode}
               onChange={(e) => setItemClassificationCode(e.currentTarget.value)}
             />
             <TextInput
-              label="Ghi chú C/O"
-              placeholder="Ví dụ: CO FORM E = 0%"
+              label={t('masterData.coNote')}
+              placeholder={t('masterData.coNotePlaceholder')}
               value={itemCoNote}
               onChange={(e) => setItemCoNote(e.currentTarget.value)}
             />
             <TextInput
-              label="Ghi chú khác"
-              placeholder="Ví dụ: Thuế suất: C"
+              label={t('masterData.taxNote')}
+              placeholder={t('masterData.taxNotePlaceholder')}
               value={itemTaxNote}
               onChange={(e) => setItemTaxNote(e.currentTarget.value)}
             />
           </SimpleGrid>
           <Button onClick={handleSaveItem} fullWidth mt="md">
-            Lưu thông tin master item
+            {t('masterData.saveItem')}
           </Button>
         </Stack>
       </Modal>

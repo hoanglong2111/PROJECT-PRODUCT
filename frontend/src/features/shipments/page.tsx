@@ -286,7 +286,7 @@ export function Shipments() {
           </Button>
           {workbench !== 'list' ? (
             <Button onClick={closeWorkbench} leftSection={<IconX size={16} />} variant="subtle">
-              Back to list
+              {t('common.backToList')}
             </Button>
           ) : null}
           <Badge leftSection={<IconAnchor size={14} />} size="lg" variant="light">
@@ -295,12 +295,14 @@ export function Shipments() {
         </Group>
       </Group>
 
-      <SimpleGrid cols={{ base: 1, sm: 4 }}>
-        <Metric label={t('shipments.total')} value={shipments.length} color="blue" icon={<IconAnchor size={22} />} />
-        <Metric label={t('shipments.inTransit')} value={tabCounts.in_transit} color="orange" icon={<IconClock size={22} />} />
-        <Metric label={t('shipments.customsProcessing')} value={tabCounts.customs} color="yellow" icon={<IconShield size={22} />} />
-        <Metric label={t('shipments.delivered')} value={tabCounts.delivered} color="teal" icon={<IconCheck size={22} />} />
-      </SimpleGrid>
+      {workbench === 'list' ? (
+        <SimpleGrid cols={{ base: 1, sm: 4 }}>
+          <Metric label={t('shipments.total')} value={shipments.length} color="blue" icon={<IconAnchor size={22} />} />
+          <Metric label={t('shipments.inTransit')} value={tabCounts.in_transit} color="orange" icon={<IconClock size={22} />} />
+          <Metric label={t('shipments.customsProcessing')} value={tabCounts.customs} color="yellow" icon={<IconShield size={22} />} />
+          <Metric label={t('shipments.delivered')} value={tabCounts.delivered} color="teal" icon={<IconCheck size={22} />} />
+        </SimpleGrid>
+      ) : null}
 
       {workbench === 'create' ? (
         <Paper withBorder p="md">
@@ -379,7 +381,7 @@ export function Shipments() {
               <Group gap="xs">
                 <StatusBadge status={selectedShipment.status} />
                 <Button variant="subtle" onClick={closeWorkbench} leftSection={<IconX size={16} />}>
-                  Close detail
+                  {t('common.backToList')}
                 </Button>
               </Group>
             </Group>
@@ -448,110 +450,114 @@ export function Shipments() {
         </Paper>
       ) : null}
 
-      <FilterToolbar
-        activeTab={activeTab}
-        isFetching={isFetching}
-        onTabChange={setActiveTab}
-        shown={filteredShipments.length}
-        tabs={[
-          { label: t('common.all'), value: 'all', count: tabCounts.all },
-          { label: t('shipments.inTransit'), value: 'in_transit', count: tabCounts.in_transit },
-          { label: t('shipments.customsProcessing'), value: 'customs', count: tabCounts.customs },
-          { label: t('shipments.delivered'), value: 'delivered', count: tabCounts.delivered },
-        ]}
-      >
-        <TextInput
-          label={t('common.search')}
-          placeholder={t('shipments.searchPlaceholder')}
-          leftSection={<IconSearch size={16} />}
-          value={search}
-          onChange={(event) => setSearch(event.currentTarget.value)}
-          w={{ base: '100%', sm: 360 }}
-        />
-      </FilterToolbar>
+      {workbench === 'list' ? (
+        <>
+          <FilterToolbar
+            activeTab={activeTab}
+            isFetching={isFetching}
+            onTabChange={setActiveTab}
+            shown={filteredShipments.length}
+            tabs={[
+              { label: t('common.all'), value: 'all', count: tabCounts.all },
+              { label: t('shipments.inTransit'), value: 'in_transit', count: tabCounts.in_transit },
+              { label: t('shipments.customsProcessing'), value: 'customs', count: tabCounts.customs },
+              { label: t('shipments.delivered'), value: 'delivered', count: tabCounts.delivered },
+            ]}
+          >
+            <TextInput
+              label={t('common.search')}
+              placeholder={t('shipments.searchPlaceholder')}
+              leftSection={<IconSearch size={16} />}
+              value={search}
+              onChange={(event) => setSearch(event.currentTarget.value)}
+              w={{ base: '100%', sm: 360 }}
+            />
+          </FilterToolbar>
 
-      <Paper withBorder p={0}>
-        {filteredShipments.length === 0 ? (
-          <EmptyState title={t('shipments.emptyTitle')} description={t('shipments.emptyDescription')} />
-        ) : (
-          <ScrollArea className="data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
-            <Table miw={1180} verticalSpacing="sm" highlightOnHover>
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>{t('shipments.shipmentNumber')}</Table.Th>
-                  <Table.Th>{t('shipments.linkedDo')}</Table.Th>
-                  <Table.Th>{t('common.carrier')}</Table.Th>
-                  <Table.Th>{t('shipments.vessel')}</Table.Th>
-                  <Table.Th>{t('common.route')}</Table.Th>
-                  <Table.Th>{t('shipments.etd')}</Table.Th>
-                  <Table.Th>{t('shipments.eta')}</Table.Th>
-                  <Table.Th>{t('common.status')}</Table.Th>
-                  <Table.Th />
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {visibleShipments.map((shp) => (
-                  <Table.Tr
-                    key={shp.id}
-                    onClick={() => {
-                      setSelectedShpId(shp.id);
-                      setWorkbench('detail');
-                      openShpParam(shp.shipment_number, { clear: ['pr', 'po', 'do', 'task'] });
-                    }}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <Table.Td>
-                      <Text fw={700}>{shp.shipment_number}</Text>
-                      <FlowTagBadge tags={[]} />
-                    </Table.Td>
-                    <Table.Td>
-                      <Group gap="xs">
-                        <EntityLink type="do" id={shp.do_number} compact />
-                        <EntityLink type="po" id={shp.po_number} compact />
-                      </Group>
-                    </Table.Td>
-                    <Table.Td>{shp.carrier_name}</Table.Td>
-                    <Table.Td>{shp.vessel_voyage}</Table.Td>
-                    <Table.Td>
-                      <Text size="sm" fw={600}>{shp.origin_port}</Text>
-                      <Text size="xs" c="dimmed">{shp.dest_port}</Text>
-                    </Table.Td>
-                    <Table.Td>{shp.etd}</Table.Td>
-                    <Table.Td>{shp.eta}</Table.Td>
-                    <Table.Td>
-                      <StatusBadge status={shp.status} />
-                    </Table.Td>
-                    <Table.Td>
-                      <Tooltip label={t('shipments.inTransit')}>
-                        <ActionIcon
-                          variant="subtle"
-                          aria-label={t('common.view')}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            setSelectedShpId(shp.id);
-                            setWorkbench('detail');
-                            openShpParam(shp.shipment_number, { clear: ['pr', 'po', 'do', 'task'] });
-                          }}
-                        >
-                          <IconExternalLink size={18} />
-                        </ActionIcon>
-                      </Tooltip>
-                    </Table.Td>
-                  </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
-          </ScrollArea>
-        )}
-        <ListPagination
-          page={page}
-          pageCount={pageCount}
-          pageEnd={pageEnd}
-          pageStart={pageStart}
-          setPage={setPage}
-          total={filteredShipments.length}
-        />
-      </Paper>
+          <Paper withBorder p={0}>
+            {filteredShipments.length === 0 ? (
+              <EmptyState title={t('shipments.emptyTitle')} description={t('shipments.emptyDescription')} />
+            ) : (
+              <ScrollArea className="data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
+                <Table miw={1180} verticalSpacing="sm" highlightOnHover>
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th>{t('shipments.shipmentNumber')}</Table.Th>
+                      <Table.Th>{t('shipments.linkedDo')}</Table.Th>
+                      <Table.Th>{t('common.carrier')}</Table.Th>
+                      <Table.Th>{t('shipments.vessel')}</Table.Th>
+                      <Table.Th>{t('common.route')}</Table.Th>
+                      <Table.Th>{t('shipments.etd')}</Table.Th>
+                      <Table.Th>{t('shipments.eta')}</Table.Th>
+                      <Table.Th>{t('common.status')}</Table.Th>
+                      <Table.Th />
+                    </Table.Tr>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {visibleShipments.map((shp) => (
+                      <Table.Tr
+                        key={shp.id}
+                        onClick={() => {
+                          setSelectedShpId(shp.id);
+                          setWorkbench('detail');
+                          openShpParam(shp.shipment_number, { clear: ['pr', 'po', 'do', 'task'] });
+                        }}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <Table.Td>
+                          <Text fw={700}>{shp.shipment_number}</Text>
+                          <FlowTagBadge tags={[]} />
+                        </Table.Td>
+                        <Table.Td>
+                          <Group gap="xs">
+                            <EntityLink type="do" id={shp.do_number} compact />
+                            <EntityLink type="po" id={shp.po_number} compact />
+                          </Group>
+                        </Table.Td>
+                        <Table.Td>{shp.carrier_name}</Table.Td>
+                        <Table.Td>{shp.vessel_voyage}</Table.Td>
+                        <Table.Td>
+                          <Text size="sm" fw={600}>{shp.origin_port}</Text>
+                          <Text size="xs" c="dimmed">{shp.dest_port}</Text>
+                        </Table.Td>
+                        <Table.Td>{shp.etd}</Table.Td>
+                        <Table.Td>{shp.eta}</Table.Td>
+                        <Table.Td>
+                          <StatusBadge status={shp.status} />
+                        </Table.Td>
+                        <Table.Td>
+                          <Tooltip label={t('shipments.inTransit')}>
+                            <ActionIcon
+                              variant="subtle"
+                              aria-label={t('common.view')}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setSelectedShpId(shp.id);
+                                setWorkbench('detail');
+                                openShpParam(shp.shipment_number, { clear: ['pr', 'po', 'do', 'task'] });
+                              }}
+                            >
+                              <IconExternalLink size={18} />
+                            </ActionIcon>
+                          </Tooltip>
+                        </Table.Td>
+                      </Table.Tr>
+                    ))}
+                  </Table.Tbody>
+                </Table>
+              </ScrollArea>
+            )}
+            <ListPagination
+              page={page}
+              pageCount={pageCount}
+              pageEnd={pageEnd}
+              pageStart={pageStart}
+              setPage={setPage}
+              total={filteredShipments.length}
+            />
+          </Paper>
+        </>
+      ) : null}
     </Stack>
   );
 }
