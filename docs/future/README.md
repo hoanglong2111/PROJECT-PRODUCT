@@ -1,9 +1,17 @@
 # Future Planning Docs
 
-This folder stores planning docs that are useful for roadmap decisions but are not the current GD1 implementation baseline.
+This folder intentionally stays small. Current implementation decisions should come from:
 
-| Folder | Scope |
+- `docs/offical/SOP.md`
+- `docs/offical/TRD.md`
+- `docs/context/PROJECT_CONTEXT.md`
+- `docs/context/OPERATING_MODEL.md`
+
+## Outside GD1
+
+| Phase | Scope |
 |---|---|
-| `scm-roadmap/` | Full Kim Binh SCM planning across GD1, GD2, and GD3. |
+| GD2 | WMS: bin/rack, putaway, scanning, warehouse execution, richer GRN operations. |
+| GD3 | Production planning: BOM, production orders, MRP, and demand forecasting. |
 
-For current GD1 schema and workflow decisions, use `docs/context/PROJECT_CONTEXT.md`, `docs/context/OPERATING_MODEL.md`, and `docs/modules/`.
+Generated expanded roadmap/ERD drafts were removed to avoid drift from the official SOP/TRD baseline.

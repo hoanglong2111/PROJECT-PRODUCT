@@ -1,14 +1,61 @@
-# Domestic Transport Order (DTO) Module (GD1)
+# Domestic Transport Order (DTO) Module
 
-The DTO module handles domestic carriage planning, dispatch, cost adjustments, and proof-of-delivery tracking after a Shipment achieves the Customs Cleared milestone.
+DTO handles inland trucking after an import shipment reaches customs clearance.
 
-## Key Workflows
+## Trigger
 
-1. **DTO Initialization:** Auto-generated upon `CUSTOMS_CLEARED` shipment event or manually created. Linked 1:1 with a Shipment/DO.
-2. **Quotation & Versioning (Quote 1 / Quote 2):**
-   - Supports carrier bidding records.
-   - Adjusts final freight prices using formula-based fuel triggers against fuel reference price.
-3. **Vehicle & Driver Assignment:** Details truck registration plate, driver fullName, and contact phone.
-4. **Delivery & POD Upload:** Records actual delivery timestamp and stores the PDF/Image proof of delivery.
-5. **Debit Note Linkage:** Links logistics cost allocation logs to specific carrier debit note IDs.
-6. **Transport Issues Log:** Flags transit delays, vehicle breakdowns, or cargo damage.
+```text
+Shipment milestone CUSTOM_CLEARED
+-> DTO created or enabled
+-> trucking quotation / price adjustment
+-> vehicle and driver assignment
+-> delivery
+-> POD upload
+-> close
+```
+
+## Scope
+
+In scope:
+
+- Link DTO to the cleared shipment.
+- Capture delivery warehouse/address and schedule.
+- Store carrier, vehicle plate, driver name, and driver contact.
+- Track quoted price, fuel reference snapshots, adjusted price, and exception reason.
+- Upload Proof of Delivery (POD).
+- Log delivery issues such as delay, vehicle breakdown, or cargo damage.
+- Link carrier debit note or settlement reference when available.
+
+Out of scope:
+
+- Bin/rack putaway and warehouse scanning.
+- Full accounting ledger.
+
+## Fuel Adjustment Rule
+
+Per SOP/TRD, trucking price can be adjusted from fuel movement:
+
+```text
+Adjusted price = Original price * (1 + ((Petrol price at delivery - Petrol price at quote) / Petrol price at quote) * 0.36)
+```
+
+Required data:
+
+- Quotation date.
+- Petrol price at quote date.
+- Delivery date.
+- Petrol price at delivery date.
+- Original quoted price.
+- Adjusted price.
+- Adjustment reason/audit log.
+
+## DTO States
+
+```text
+DRAFT -> QUOTED -> ASSIGNED -> IN_TRANSIT -> DELIVERED -> CLOSED
+CANCELLED
+```
+
+## UI Notes
+
+DTO list should show shipment number, PO references, destination, carrier, driver, planned/actual delivery, state, fuel adjustment status, POD status, and issue flag.

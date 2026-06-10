@@ -1,52 +1,51 @@
 # Shipment Entity
 
-GD1 uses `shipment` for the delivery execution record created from one confirmed DO. The business relationship is PO 1-n DO and DO 1-1 Shipment. The current runtime may still call older shipment concepts `delivery_order` or expose `/delivery-orders`; treat that as a compatibility name until migration.
+GD1 uses `shipment` for SEA/AIR import execution and tracking.
 
 ```text
-purchase_order -> delivery_order -> shipment -> shipment_milestone -> shipment_cost
+purchase_order -> delivery_order -> shipment -> shipment_milestone -> shipment_cost -> domestic_transport_order
 ```
 
 ## Purpose
 
 Shipment tracks:
 
-- SEA/AIR import movement
-- forwarder/carrier and B/L or AWB identity
-- route, ETD/ETA, ATD/ATA
-- the confirmed DO that owns this shipment
-- the PO lines carried by that DO
-- 10 standard milestones
-- customs stream green/yellow/red
-- documents uploaded per milestone
-- landed cost inputs for allocation to PO lines
-- warehouse-arrival event for later WMS/GRN work
+- SEA/AIR import movement.
+- Forwarder/carrier and B/L or AWB identity.
+- Route, ETD/ETA, ATD/ATA.
+- Confirmed DO and shipped quantities derived from DO lines / PO lines.
+- 10 standard milestones.
+- Customs stream: green, yellow, red.
+- Documents uploaded per shipment or milestone.
+- Landed cost inputs for allocation to PO lines.
+- Customs-cleared trigger for DTO.
+- EDO delivery / warehouse-arrival event.
 
 ## Tables
 
 | Table | Purpose |
 |---|---|
-| `shipment` | Shipment header linked 1:1 to a confirmed DO: number, mode, forwarder, carrier, route, B/L/AWB, dates, status, customs stream. |
-| `shipment_line` | Lines derived from the owning DO lines / PO lines with shipped quantity and lot number. |
-| `shipment_milestone` | 10 runtime checkpoints with planned/actual date, source, recorder, note. |
+| `shipment` | Shipment header linked 1:1 to a confirmed DO, with mode, forwarder, carrier, route, B/L/AWB, dates, status, and customs stream. |
+| `shipment_line` | Lines derived from the owning DO lines / PO lines, with shipped quantity and lot number. |
+| `shipment_milestone` | 10 runtime checkpoints with planned/actual date, source, recorder, and note. |
 | `shipment_cost` | Shipment-level cost components and allocation method. |
 
 ## Header Shape
 
 | Field | Meaning |
 |---|---|
-| `shipment_no` | business shipment code |
-| `delivery_order_id` | owning confirmed DO; unique per shipment in the current business model |
-| `mode` | `SEA` or `AIR` |
-| `forwarder_id` | supplier master reference where supplier type is forwarder |
-| `carrier` | shipping line or airline |
-| `vessel_flight` | vessel name or flight number |
-| `bl_awb_no` | Bill of Lading or Air Waybill |
-| `container_no` | JSON array of container numbers |
-| `pol`, `pod` | port of loading and port of discharge |
-| `etd`, `eta` | estimated departure/arrival |
-| `atd`, `ata` | actual departure/arrival |
-| `status` | shipment state machine |
-| `customs_stream` | `GREEN`, `YELLOW`, `RED` |
+| `shipment_no` | Business shipment code. |
+| `mode` | `SEA` or `AIR`. |
+| `forwarder_id` | Forwarder master reference. |
+| `carrier` | Shipping line or airline. |
+| `vessel_flight` | Vessel name or flight number. |
+| `bl_awb_no` | Bill of Lading or Air Waybill. |
+| `container_no` | Container numbers when applicable. |
+| `pol`, `pod` | Port of loading and port of discharge. |
+| `etd`, `eta` | Estimated departure/arrival. |
+| `atd`, `ata` | Actual departure/arrival. |
+| `status` | Shipment state machine. |
+| `customs_stream` | `GREEN`, `YELLOW`, or `RED`. |
 
 ## Shipment Line
 
@@ -57,7 +56,12 @@ Each `shipment_line` row includes:
 - `qty_shipped`
 - `lot_no`
 
-One shipment belongs to exactly one confirmed DO. It can contain multiple PO lines only through that DO's lines. A PO can still have many shipments indirectly because one PO can have many DOs.
+Rules:
+
+- One confirmed DO can create at most one active shipment.
+- One shipment belongs to exactly one confirmed DO.
+- A shipment can contain multiple PO lines through that DO's lines.
+- A PO can have many shipments indirectly because one PO can have many DOs.
 
 ## Status And Milestone Mapping
 
@@ -78,50 +82,26 @@ One shipment belongs to exactly one confirmed DO. It can contain multiple PO lin
 
 - A shipment must contain at least one active `shipment_line`.
 - A shipment must belong to exactly one confirmed DO.
-- A confirmed DO can create at most one active shipment.
 - `shipment_line.qty_shipped > 0`.
-- Total shipped quantity per PO line cannot exceed `qty_ordered * (1 + tolerance_over_pct / 100)`.
+- Total shipped quantity per PO line cannot exceed ordered quantity plus tolerance.
 - Each new shipment must generate exactly 10 active `shipment_milestone` rows.
 - Milestone uniqueness: `(shipment_id, sequence_no)` and `(shipment_id, milestone_code)`.
 - `eta >= etd` when both exist.
 - `ata >= atd` when both exist.
 - `DELIVERED` requires `EDO_DELIVERY.actual_date`.
-- `container_no` must be a JSON array when present.
-- Customs stream is only required once customs result is known.
-- When `EDO_DELIVERY.actual_date` is recorded, emit `shipment.arrived_at_warehouse` for GD2/WMS.
+- Customs stream is required once customs result is known.
+- `CUSTOM_CLEARED` can trigger DTO creation.
+- `EDO_DELIVERY.actual_date` emits warehouse-arrival event for later WMS/GRN work.
 
 ## Cost Rules
 
 - `shipment_cost.amount >= 0`.
 - `exchange_rate > 0`.
 - Allocation method is `BY_VALUE`, `BY_WEIGHT`, or `BY_QTY`.
-- Changing cost or allocation method must recalculate `purchase_order_line.landed_cost_alloc`.
+- Changing cost or allocation method recalculates landed cost on affected PO lines.
 
 ## UI Notes
 
-Shipment board should show shipment number, owning DO, linked PO lines, mode, forwarder, carrier, B/L/AWB, ETA/ATA, status, customs stream, milestone progress, missing documents, cost allocation status, and next action.
+Shipment board should show shipment number, owning DO, PO references, mode, forwarder, carrier, B/L/AWB, ETA/ATA, status, customs stream, milestone progress, missing documents, cost allocation status, DTO status, and next action.
 
-Detail should prioritize overview, owning DO, selected final quotation, milestone timeline, PO lines, documents, costs, tasks, and audit history.
-
-## API Notes
-
-Create shipment payload should include:
-
-```ts
-{
-  delivery_order_id: string,
-  mode: 'SEA' | 'AIR',
-  forwarder_id?: string,
-  carrier?: string,
-  vessel_flight?: string,
-  bl_awb_no?: string,
-  container_no?: string[],
-  pol?: string,
-  pod?: string,
-  etd?: string,
-  eta?: string,
-  po_lines: [{ purchase_order_line_id: string, qty_shipped: number, lot_no?: string }]
-}
-```
-
-Milestone update must validate milestone code and state transition. Cost update must trigger landed-cost recalculation.
+Detail should prioritize overview, owning DO, selected final quotation, milestone timeline, PO lines, documents, costs, tasks, DTO, incidents, and audit history.

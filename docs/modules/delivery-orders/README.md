@@ -1,18 +1,21 @@
 # Delivery Order Module
 
-Delivery Order (DO) is the operational bridge between PO and Shipment.
+Delivery Order (DO) is the operational unit between Purchase Order and Shipment.
+
+DO is not DTO. DTO means Domestic Transport Order and belongs to inland trucking after shipment customs clearance.
 
 ## Relationship
 
 ```text
 Purchase Order 1 -> N Delivery Orders
 Delivery Order 1 -> 1 Shipment
+Shipment 1 -> 0..1 Domestic Transport Order
 ```
 
 - A PO can create many DOs.
 - Each DO belongs to exactly one PO.
 - Each confirmed DO proceeds to exactly one Shipment / delivery execution record.
-- Shipment is not created from multiple DOs in the current business model.
+- DTO is created/enabled later for domestic trucking when shipment reaches customs clearance or delivery planning.
 
 ## DO Workflow
 
@@ -36,7 +39,7 @@ Core DO fields:
 - Warehouse / delivery address
 - Origin warehouse when applicable
 - Destination warehouse when applicable
-- Transport type: `SEA`, `AIR`, `ROAD`, or `RAIL`
+- Transport/service type
 - Delivery dates
 - Quotation versions
 - Selected final quotation
@@ -56,7 +59,6 @@ Core DO fields:
 A DO can be confirmed only when:
 
 - warehouse / delivery address is selected
-- transport type is selected
 - at least one DO line exists
 - final quotation is selected
 - required delivery dates are present

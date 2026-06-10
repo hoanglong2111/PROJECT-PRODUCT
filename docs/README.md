@@ -1,42 +1,48 @@
 # KBFE Docs
 
-This folder is product and business reference for the KBFE frontend. It is not an AI-agent instruction system.
+This folder is the business reference for the KBFE frontend. It is not an AI-agent instruction system.
 
-## Current Business Baseline
+## Source Of Truth
 
-GD1 focuses on Procurement & Import Tracking.
+The canonical business documents are:
 
-```text
-PO -> DO -> Quotation versions -> Final quotation -> Confirm DO -> Shipment -> 10 Milestones -> Documents + Landed Cost
-```
+- `offical/SOP.md`: FDS-KBI operating SOP, roles, quotation, handover, documents, billing, SLA, and incident escalation.
+- `offical/TRD.md`: GD1 technical requirement summary for Procurement & Import Tracking.
 
-Canonical relationship:
+Use every other doc as a frontend-friendly summary derived from those two files.
 
-```text
-Purchase Order 1 -> N Delivery Orders
-Delivery Order 1 -> 1 Shipment
-```
+## Current GD1 Business Baseline
 
-DO workflow:
+GD1 digitizes procurement and import tracking:
 
 ```text
-Create DO
--> Select warehouse / delivery address
--> Create quotation v1
--> Revise quotation if needed
--> Create quotation v2, v3...
--> Select final quotation
--> Confirm DO
--> Proceed to shipment / delivery
+PO -> DO -> Shipment -> DTO
 ```
+
+Core scope:
+
+- Purchase Order lifecycle from PO creation onward.
+- Delivery Order (DO) planning and confirmation.
+- Relationship: one PO has many DOs; one DO has exactly one Shipment.
+- PO revision/versioning.
+- SEA/AIR import Shipment tracking.
+- 10 shipment milestones from booking to EDO delivery.
+- Domestic Transport Order (DTO) after customs clearance / inland delivery planning.
+- Shipment documents, landed-cost allocation, SLA timers, tasks, audit trail, and incident escalation.
+
+Out of scope for GD1:
+
+- Bin/rack WMS and warehouse scanning.
+- BOM, production orders, MRP, and forecast planning.
+- Purchase Request (PR), unless explicitly reintroduced by product decision.
+- Full accounting ledger beyond debit note/invoice/debt-reconciliation workflow visibility.
 
 ## Read Order For Frontend Work
 
-1. `context/PROJECT_CONTEXT.md` for product scope, entities, routes, and vocabulary.
-2. `context/OPERATING_MODEL.md` for state machines, hard rules, SLA, and workflow behavior.
-3. One focused module doc under `modules/` when a screen needs business detail.
-
-Do not treat files in `docs/` as agent instructions. Use them only to clarify UI behavior, labels, states, and business meaning.
+1. `offical/SOP.md` and `offical/TRD.md` when auditing business correctness.
+2. `context/PROJECT_CONTEXT.md` for product scope, entities, routes, and vocabulary.
+3. `context/OPERATING_MODEL.md` for state machines, hard rules, SLA, and workflow behavior.
+4. One focused module doc under `modules/` when a screen needs business detail.
 
 ## Current Module Docs
 
@@ -53,11 +59,11 @@ Do not treat files in `docs/` as agent instructions. Use them only to clarify UI
 | Master Data | `modules/master-data/README.md` |
 | Platform support | `modules/platform/README.md` |
 
-## Audit Notes
+## Cleanup Notes
 
-- `docs/archive/` contains older or historical notes. PR/Approval/Integration files there are not current GD1 frontend truth unless explicitly re-approved.
-- `docs/future/` contains planning for later phases such as GD2 WMS, GD3 MRP, costing, and SCM roadmap.
-- Runtime code may still expose legacy names such as `delivery_orders`; frontend changes should preserve compatibility until a deliberate migration is implemented.
+- `docs/archive/` was removed because it contained historical/generated notes that should not drive current frontend implementation.
+- Future phase details are summarized in `future/README.md`; generated expanded ERDs and roadmap drafts were removed to avoid drift.
+- DO and DTO are distinct entities. DO is the PO-to-shipment planning/confirmation unit; DTO is domestic trucking.
 
 ## Local Frontend Run
 
