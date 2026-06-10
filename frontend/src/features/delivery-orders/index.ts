@@ -1,1 +1,0 @@
-export { DeliveryOrders } from './page';

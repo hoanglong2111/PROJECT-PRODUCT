@@ -20,4 +20,16 @@ describe('queryKeys', () => {
     ]);
     expect(queryKeys.globalSearchResults('po')).toEqual(['global-search', 'po']);
   });
+
+  it('builds item master data keys with query params', () => {
+    expect(queryKeys.itemGroups({ page: 1, limit: 20 })).toEqual([
+      'item-groups',
+      { page: 1, limit: 20 },
+    ]);
+    expect(queryKeys.items({ page: 2, limit: 20, q: 'steel' })).toEqual([
+      'items',
+      { page: 2, limit: 20, q: 'steel' },
+    ]);
+    expect(queryKeys.itemTaxProfiles('item-1')).toEqual(['items', 'item-1', 'tax-profiles']);
+  });
 });

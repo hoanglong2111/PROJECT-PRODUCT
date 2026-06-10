@@ -20,17 +20,17 @@ type RouteConfig = {
   path?: string;
 };
 
-const Dashboard = lazyFeature(() => import('@features/dashboard'), 'Dashboard');
-const DeliveryOrders = lazyFeature(() => import('@features/delivery-orders'), 'DeliveryOrders');
-const Shipments = lazyFeature(() => import('@features/shipments'), 'Shipments');
-const MasterData = lazyFeature(() => import('@features/master-data'), 'MasterData');
-const Login = lazyFeature(() => import('@features/login'), 'Login');
-const NotFound = lazyFeature(() => import('@features/not-found'), 'NotFound');
-const Profile = lazyFeature(() => import('@features/profile'), 'Profile');
-const PurchaseOrders = lazyFeature(() => import('@features/purchase-orders'), 'PurchaseOrders');
-const Settings = lazyFeature(() => import('@features/settings'), 'Settings');
-const Tasks = lazyFeature(() => import('@features/tasks'), 'Tasks');
-const Unauthorized = lazyFeature(() => import('@features/unauthorized'), 'Unauthorized');
+const Dashboard = lazyFeature(() => import('@features/dashboard/page'), 'Dashboard');
+const DeliveryOrders = lazyFeature(() => import('@features/delivery-orders/page'), 'DeliveryOrders');
+const Shipments = lazyFeature(() => import('@features/shipments/page'), 'Shipments');
+const MasterData = lazyFeature(() => import('@features/master-data/page'), 'MasterData');
+const Login = lazyFeature(() => import('@features/login/page'), 'Login');
+const NotFound = lazyFeature(() => import('@features/not-found/page'), 'NotFound');
+const Profile = lazyFeature(() => import('@features/profile/page'), 'Profile');
+const PurchaseOrders = lazyFeature(() => import('@features/purchase-orders/page'), 'PurchaseOrders');
+const Settings = lazyFeature(() => import('@features/settings/page'), 'Settings');
+const Tasks = lazyFeature(() => import('@features/tasks/page'), 'Tasks');
+const Unauthorized = lazyFeature(() => import('@features/unauthorized/page'), 'Unauthorized');
 
 const publicRoutes: RouteConfig[] = [
   { path: '/login', element: <Login /> },

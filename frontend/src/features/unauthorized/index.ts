@@ -1,1 +1,0 @@
-export { Unauthorized } from './page';

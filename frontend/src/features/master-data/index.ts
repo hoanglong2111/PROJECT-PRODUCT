@@ -1,1 +1,0 @@
-export { MasterData } from './page';
