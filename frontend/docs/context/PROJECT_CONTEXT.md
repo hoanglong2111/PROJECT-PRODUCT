@@ -123,6 +123,8 @@ Shipments support document upload, review, and versioning per milestone.
 
 - PR is intentionally out of current frontend scope.
 - DO and DTO must stay distinct in UI labels, API mapping, and docs.
-- Some runtime models may still need migration/alignment to the PO -> DO -> Shipment -> DTO business chain.
+- Master data, item master, PO V1, PO LOT planning, and DO V1 are wired to the mock API.
+- The Delivery Orders screen adapts backend DO V1 data into the older UI model while the UI is migrated.
+- Shipment, task, quotation, and dashboard-stat runtime models still need migration/alignment to the PO -> DO -> Shipment -> DTO business chain when backend endpoints are available.
 - DTO is conceptually required by TRD after customs clearance, but frontend route/implementation may still be pending.
 - Full SLA scheduler, carrier integrations, landed-cost allocation, and audit visibility should be verified before production.

@@ -13,7 +13,7 @@ This folder groups current GD1 business documentation by frontend module.
 | Dashboard / Workflow | `dashboard-workflow/README.md` | `frontend/src/features/dashboard`, `frontend/src/features/workflow` |
 | DTO | `dto/README.md` | route/implementation pending |
 | Master Data | `master-data/README.md` | route/implementation pending |
-| Platform | `platform/README.md` | `frontend/src/features/settings`, `frontend/src/features/profile` |
+| Platform | `platform/README.md`, `platform/api-integration.md` | `frontend/src/features/settings`, `frontend/src/features/profile`, `frontend/src/shared/api` |
 
 ## Boundaries
 
@@ -21,4 +21,5 @@ This folder groups current GD1 business documentation by frontend module.
 - Relationship: `PO 1-n DO`, `DO 1-1 Shipment`.
 - DO and DTO are distinct. DO is Delivery Order between PO and Shipment; DTO is Domestic Transport Order for inland trucking.
 - Runtime code may still use legacy names in places; docs should use the canonical business names above.
+- Runtime API coverage and compatibility adapters are tracked in `platform/api-integration.md`.
 - Future GD2/GD3 planning is summarized under `docs/future/`.

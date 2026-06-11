@@ -18,6 +18,16 @@ describe('queryKeys', () => {
       'delivery-order-attachments',
       'DO-2026-000001',
     ]);
+    expect(queryKeys.deliveryOrderDetail('do-1')).toEqual([
+      'delivery-orders',
+      'detail',
+      'do-1',
+    ]);
+    expect(queryKeys.purchaseOrderDeliveryOrders('po-1')).toEqual([
+      'purchase-orders',
+      'po-1',
+      'delivery-orders',
+    ]);
     expect(queryKeys.globalSearchResults('po')).toEqual(['global-search', 'po']);
   });
 
@@ -55,5 +65,37 @@ describe('queryKeys', () => {
       'master-data-options',
       { types: 'currencies,suppliers' },
     ]);
+  });
+
+  it('builds delivery order V1 keys with query params', () => {
+    expect(queryKeys.deliveryOrdersList({ page: 1, limit: 20, status: 'DRAFT' })).toEqual([
+      'delivery-orders',
+      'list',
+      { page: 1, limit: 20, status: 'DRAFT' },
+    ]);
+    expect(queryKeys.deliveryOrderLots('do-1')).toEqual(['delivery-orders', 'do-1', 'lots']);
+    expect(queryKeys.deliveryOrderLines('do-1')).toEqual(['delivery-orders', 'do-1', 'lines']);
+  });
+
+  it('builds quotation V1 keys with query params and identifiers', () => {
+    expect(queryKeys.quotationsList({ ref_type: 'DELIVERY_ORDER', ref_id: 'do-1' })).toEqual([
+      'quotations',
+      'list',
+      { ref_type: 'DELIVERY_ORDER', ref_id: 'do-1' },
+    ]);
+    expect(queryKeys.quotationChargeLines('qt-1')).toEqual(['quotations', 'qt-1', 'charge-lines']);
+    expect(queryKeys.quotationVersions('qt-1')).toEqual(['quotations', 'qt-1', 'versions']);
+    expect(queryKeys.quotationEvents('qt-1')).toEqual(['quotations', 'qt-1', 'events']);
+  });
+
+  it('builds shipment V1 keys with query params and identifiers', () => {
+    expect(queryKeys.shipmentsList({ status: 'IN_TRANSIT', page: 1 })).toEqual([
+      'shipments',
+      'list',
+      { status: 'IN_TRANSIT', page: 1 },
+    ]);
+    expect(queryKeys.shipmentDetail('shp-1')).toEqual(['shipments', 'detail', 'shp-1']);
+    expect(queryKeys.shipmentMilestones('shp-1')).toEqual(['shipments', 'shp-1', 'milestones']);
+    expect(queryKeys.shipmentDocuments('shp-1')).toEqual(['shipments', 'shp-1', 'documents']);
   });
 });

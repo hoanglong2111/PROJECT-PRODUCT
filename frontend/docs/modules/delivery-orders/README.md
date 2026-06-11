@@ -19,6 +19,8 @@ Shipment 1 -> 0..1 Domestic Transport Order
 
 ## DO Workflow
 
+Business target:
+
 ```text
 Create DO
 -> Select warehouse / delivery address
@@ -29,6 +31,19 @@ Create DO
 -> Confirm DO
 -> Proceed to shipment / delivery
 ```
+
+Current backend V1 runtime:
+
+```text
+DRAFT
+-> READY_FOR_QUOTATION
+-> QUOTATION_CONFIRMED
+-> ASSIGNED_TO_SHIPMENT
+-> CLOSED
+CANCELLED
+```
+
+The frontend Delivery Orders page reads real DO rows from `/api/v1/delivery-orders` through `src/shared/api/deliveryOrders.ts` and a compatibility adapter in `src/shared/api/logistics.ts`.
 
 ## DO Data
 
@@ -45,6 +60,19 @@ Core DO fields:
 - Selected final quotation
 - Confirmation status and confirmed date
 - Linked shipment
+
+Current V1 response-backed fields:
+
+- DO number
+- PO reference
+- PO supplier
+- Transport mode
+- Planned cargo ready date, ETD, ETA
+- Origin and destination address
+- Warehouse name
+- LOT links
+- DO lines derived from active PO LOT lines
+- DO lifecycle status
 
 ## Quotation Rules
 
@@ -64,3 +92,11 @@ A DO can be confirmed only when:
 - required delivery dates are present
 
 After confirmation, the next operational step is Shipment / delivery execution.
+
+## Frontend Integration Notes
+
+- The backend-preferred create path is `POST /api/v1/delivery-orders/from-lots`, using selected active PO LOT IDs.
+- The current DO list/detail screen uses real backend DO data.
+- The current DO detail screen can run real lifecycle actions: ready for quotation, confirm quotation, assign to shipment, cancel, and close.
+- Quotation comparison and document upload panels remain UI-only compatibility views until matching backend endpoints are added.
+- Shipment creation from assigned DO remains pending backend/API integration.

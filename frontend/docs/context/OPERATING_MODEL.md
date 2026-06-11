@@ -59,8 +59,21 @@ Notes:
 
 ### Delivery Order
 
+Business target:
+
 ```text
 DRAFT -> CONFIRMED -> READY_TO_SHIP -> IN_TRANSIT -> DELIVERED -> CLOSED
+CANCELLED
+```
+
+Current backend V1 state machine:
+
+```text
+DRAFT
+-> READY_FOR_QUOTATION
+-> QUOTATION_CONFIRMED
+-> ASSIGNED_TO_SHIPMENT
+-> CLOSED
 CANCELLED
 ```
 
@@ -70,6 +83,8 @@ Rules:
 - Each DO belongs to exactly one PO.
 - Each confirmed DO proceeds to exactly one Shipment.
 - DO cannot be confirmed without warehouse/delivery address and selected final quotation.
+- Current frontend V1 integration uses the backend state machine above for DO list/detail/actions.
+- Shipment/task/quotation state machines remain frontend compatibility views until matching backend endpoints are available.
 
 ### Shipment
 

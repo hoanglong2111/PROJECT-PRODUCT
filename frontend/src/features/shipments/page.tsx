@@ -53,6 +53,15 @@ import {
   type ShipmentDocument,
   type ShipmentPoTask,
 } from '@shared/api/logistics';
+import { fetchDeliveryOrdersV1, type DeliveryOrderV1 } from '@shared/api/deliveryOrders';
+import {
+  createShipmentDocument,
+  markShipmentMilestoneDone,
+  updateShipmentDocument,
+  type ShipmentDocumentPayload,
+  type ShipmentMilestoneCodeV1,
+  type ShipmentModeV1,
+} from '@shared/api/shipments';
 import { queryKeys } from '@shared/api/queryKeys';
 import { useEntityParam } from '@shared/hooks/useEntityParam';
 import { useI18n } from '@shared/i18n';
@@ -60,12 +69,43 @@ import { useI18n } from '@shared/i18n';
 type ShipmentTab = 'all' | 'in_transit' | 'customs' | 'delivered';
 type ShipmentWorkbench = 'list' | 'create' | 'detail';
 
-const shipmentStatusTabs: Record<ShipmentTab, ShipmentRecord['status'] | 'all'> = {
-  all: 'all',
-  in_transit: 'IN_TRANSIT',
-  customs: 'CUSTOMS_PROCESSING',
-  delivered: 'DELIVERED',
-};
+const inTransitStatuses = new Set<ShipmentRecord['status']>([
+  'BOOKED',
+  'BOOKING_PENDING',
+  'BOOKING_CONFIRMED',
+  'CARGO_READY',
+  'PICKED_UP',
+  'BL_ISSUED',
+  'GATE_IN_POL',
+  'IN_TRANSIT',
+  'ARRIVED',
+  'ARRIVED_PORT',
+]);
+
+const customsStatuses = new Set<ShipmentRecord['status']>([
+  'CUSTOMS_DRAFT',
+  'CUSTOMS_CLEARED',
+  'CUSTOMS_PROCESSING',
+]);
+
+const shipmentModeOptions: Array<{ label: string; value: ShipmentModeV1 }> = [
+  { label: 'Sea', value: 'SEA' },
+  { label: 'Air', value: 'AIR' },
+  { label: 'Road', value: 'ROAD' },
+  { label: 'Rail', value: 'RAIL' },
+  { label: 'Multimodal', value: 'MULTIMODAL' },
+  { label: 'Trucking', value: 'TRUCKING' },
+  { label: 'Other', value: 'OTHER' },
+];
+
+function inferShipmentModeFromDeliveryOrder(deliveryOrder: DeliveryOrderV1): ShipmentModeV1 {
+  const modeType = deliveryOrder.transport_mode?.mode_type?.toUpperCase();
+  if (modeType === 'AIR') return 'AIR';
+  if (modeType === 'ROAD' || modeType === 'TRUCKING') return 'ROAD';
+  if (modeType === 'RAIL') return 'RAIL';
+  if (modeType === 'MULTIMODAL') return 'MULTIMODAL';
+  return 'SEA';
+}
 
 function Metric({
   color = 'blue',
@@ -116,10 +156,18 @@ export function Shipments() {
 
   // Create form states
   const [newShpNumber, setNewShpNumber] = useState('');
+  const [newDeliveryOrderId, setNewDeliveryOrderId] = useState('');
   const [newDoNumber, setNewDoNumber] = useState('');
   const [newPoNumber, setNewPoNumber] = useState('');
+  const [newMode, setNewMode] = useState<ShipmentModeV1>('SEA');
   const [newCarrier, setNewCarrier] = useState('');
   const [newVoyage, setNewVoyage] = useState('');
+  const [newVoyageNo, setNewVoyageNo] = useState('');
+  const [newBlAwbNo, setNewBlAwbNo] = useState('');
+  const [newOriginPort, setNewOriginPort] = useState('');
+  const [newDestPort, setNewDestPort] = useState('');
+  const [newEtd, setNewEtd] = useState('');
+  const [newEta, setNewEta] = useState('');
 
   const queryClient = useQueryClient();
 
@@ -129,6 +177,20 @@ export function Shipments() {
   });
   const shipments = shipmentsQuery.data ?? [];
   const isFetching = shipmentsQuery.isFetching;
+  const availableDeliveryOrdersQuery = useQuery({
+    enabled: workbench === 'create',
+    queryKey: queryKeys.deliveryOrdersList({ status: 'QUOTATION_CONFIRMED', page: 1, limit: 100 }),
+    queryFn: () => fetchDeliveryOrdersV1({ status: 'QUOTATION_CONFIRMED', page: 1, limit: 100 }),
+  });
+  const availableDeliveryOrders = availableDeliveryOrdersQuery.data?.data ?? [];
+  const deliveryOrderOptions = availableDeliveryOrders.map((deliveryOrder) => ({
+    label: [
+      deliveryOrder.do_no,
+      deliveryOrder.purchase_order?.po_no,
+      deliveryOrder.transport_mode?.mode_name,
+    ].filter(Boolean).join(' · '),
+    value: deliveryOrder.id,
+  }));
 
   useEffect(() => {
     if (!focusedShp) {
@@ -153,8 +215,8 @@ export function Shipments() {
     return shipments.filter((shp) => {
       const statusMatches =
         activeTab === 'all' ||
-        (activeTab === 'in_transit' && shp.status === 'IN_TRANSIT') ||
-        (activeTab === 'customs' && shp.status === 'CUSTOMS_PROCESSING') ||
+        (activeTab === 'in_transit' && inTransitStatuses.has(shp.status)) ||
+        (activeTab === 'customs' && customsStatuses.has(shp.status)) ||
         (activeTab === 'delivered' && shp.status === 'DELIVERED');
 
       const matchesSearch = [
@@ -184,8 +246,8 @@ export function Shipments() {
   const tabCounts = useMemo(
     () => ({
       all: shipments.length,
-      in_transit: shipments.filter((s) => s.status === 'IN_TRANSIT').length,
-      customs: shipments.filter((s) => s.status === 'CUSTOMS_PROCESSING').length,
+      in_transit: shipments.filter((s) => inTransitStatuses.has(s.status)).length,
+      customs: shipments.filter((s) => customsStatuses.has(s.status)).length,
       delivered: shipments.filter((s) => s.status === 'DELIVERED').length,
     }),
     [shipments]
@@ -203,30 +265,98 @@ export function Shipments() {
     onSuccess: (newShipment) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
       setNewShpNumber('');
+      setNewDeliveryOrderId('');
       setNewDoNumber('');
       setNewPoNumber('');
+      setNewMode('SEA');
       setNewCarrier('');
       setNewVoyage('');
+      setNewVoyageNo('');
+      setNewBlAwbNo('');
+      setNewOriginPort('');
+      setNewDestPort('');
+      setNewEtd('');
+      setNewEta('');
       setSelectedShpId(newShipment.id);
       setWorkbench('detail');
       openShpParam(newShipment.shipment_number, { clear: ['pr', 'po', 'do', 'task'] });
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: (updated: ShipmentRecord) => updateShipment(updated.id, updated),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
+    },
+  });
+
+  const milestoneMutation = useMutation({
+    mutationFn: ({
+      actualAt,
+      milestoneCode,
+      notes,
+      shipmentId,
+    }: {
+      actualAt: string;
+      milestoneCode: ShipmentMilestoneCodeV1;
+      notes?: string | null;
+      shipmentId: string;
+    }) => markShipmentMilestoneDone(shipmentId, milestoneCode, { actual_at: actualAt, notes }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
+    },
+  });
+
+  const updateDocumentMutation = useMutation({
+    mutationFn: ({ documentId, payload }: { documentId: string; payload: Partial<ShipmentDocumentPayload> }) =>
+      updateShipmentDocument(documentId, payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
+    },
+  });
+
+  const createDocumentMutation = useMutation({
+    mutationFn: ({ payload, shipmentId }: { payload: ShipmentDocumentPayload; shipmentId: string }) =>
+      createShipmentDocument(shipmentId, payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
+    },
+  });
+
+  const handleDeliveryOrderChange = (value: string | null) => {
+    const deliveryOrderId = value ?? '';
+    const deliveryOrder = availableDeliveryOrders.find((item) => item.id === deliveryOrderId);
+    setNewDeliveryOrderId(deliveryOrderId);
+    setNewDoNumber(deliveryOrder?.do_no ?? '');
+    setNewPoNumber(deliveryOrder?.purchase_order?.po_no ?? '');
+    setNewMode(deliveryOrder ? inferShipmentModeFromDeliveryOrder(deliveryOrder) : 'SEA');
+    setNewOriginPort(deliveryOrder?.origin_address ?? '');
+    setNewDestPort(deliveryOrder?.destination_address ?? '');
+    setNewEtd(deliveryOrder?.planned_etd?.slice(0, 10) ?? '');
+    setNewEta(deliveryOrder?.planned_eta?.slice(0, 10) ?? '');
+  };
+
   const handleCreateShipment = () => {
-    if (!newShpNumber || !newDoNumber || !newPoNumber) return;
+    if (!newShpNumber || !newDeliveryOrderId) return;
     createMutation.mutate({
+      blAwbNo: newBlAwbNo || undefined,
+      deliveryOrderId: newDeliveryOrderId,
+      destPort: newDestPort || undefined,
+      eta: newEta || undefined,
+      etd: newEtd || undefined,
       shipmentNumber: newShpNumber,
       doNumber: newDoNumber,
       poNumber: newPoNumber,
-      shippingMode: 'SEA',
+      shippingMode: newMode,
       carrierName: newCarrier || undefined,
+      originPort: newOriginPort || undefined,
       vesselVoyage: newVoyage || undefined,
+      voyageNo: newVoyageNo || undefined,
     });
   };
 
   const handleUpdateShipment = (updated: ShipmentRecord) => {
-    void queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
+    updateMutation.mutate(updated);
   };
 
   const closeWorkbench = () => {
@@ -334,7 +464,7 @@ export function Shipments() {
                 <Button
                   onClick={handleCreateShipment}
                   leftSection={<IconAnchor size={16} />}
-                  disabled={!newShpNumber || !newDoNumber || !newPoNumber}
+                  disabled={!newShpNumber || !newDeliveryOrderId}
                   loading={createMutation.isPending}
                 >
                   {t('shipments.create')}
@@ -350,19 +480,31 @@ export function Shipments() {
                 onChange={(e) => setNewShpNumber(e.currentTarget.value)}
                 required
               />
-              <TextInput
+              <Select
                 label={t('shipments.linkedDo')}
-                placeholder="DO-2026-XXXX"
-                value={newDoNumber}
-                onChange={(e) => setNewDoNumber(e.currentTarget.value)}
+                placeholder="Select quotation-confirmed DO"
+                data={deliveryOrderOptions}
+                value={newDeliveryOrderId || null}
+                onChange={handleDeliveryOrderChange}
+                searchable
+                nothingFoundMessage={
+                  availableDeliveryOrdersQuery.isLoading
+                    ? 'Loading delivery orders...'
+                    : 'No quotation-confirmed DO'
+                }
                 required
               />
               <TextInput
                 label={t('shipments.linkedPo')}
                 placeholder="PO-2026-XXXX"
                 value={newPoNumber}
-                onChange={(e) => setNewPoNumber(e.currentTarget.value)}
-                required
+                readOnly
+              />
+              <Select
+                label={t('shipments.shipmentMode')}
+                data={shipmentModeOptions}
+                value={newMode}
+                onChange={(value) => setNewMode((value as ShipmentModeV1 | null) ?? 'SEA')}
               />
               <TextInput
                 label={t('shipments.carrier')}
@@ -375,6 +517,42 @@ export function Shipments() {
                 placeholder={t('shipments.vessel')}
                 value={newVoyage}
                 onChange={(e) => setNewVoyage(e.currentTarget.value)}
+              />
+              <TextInput
+                label="Voyage no."
+                placeholder="001E"
+                value={newVoyageNo}
+                onChange={(e) => setNewVoyageNo(e.currentTarget.value)}
+              />
+              <TextInput
+                label="BL/AWB"
+                placeholder="BL123456"
+                value={newBlAwbNo}
+                onChange={(e) => setNewBlAwbNo(e.currentTarget.value)}
+              />
+              <TextInput
+                label="POL"
+                placeholder="Shanghai"
+                value={newOriginPort}
+                onChange={(e) => setNewOriginPort(e.currentTarget.value)}
+              />
+              <TextInput
+                label="POD"
+                placeholder="Cat Lai"
+                value={newDestPort}
+                onChange={(e) => setNewDestPort(e.currentTarget.value)}
+              />
+              <TextInput
+                label={t('shipments.etd')}
+                type="date"
+                value={newEtd}
+                onChange={(e) => setNewEtd(e.currentTarget.value)}
+              />
+              <TextInput
+                label={t('shipments.eta')}
+                type="date"
+                value={newEta}
+                onChange={(e) => setNewEta(e.currentTarget.value)}
               />
             </SimpleGrid>
           </Stack>
@@ -438,11 +616,33 @@ export function Shipments() {
             </Tabs.Panel>
 
             <Tabs.Panel value="milestones" pt="md">
-              <ShipmentMilestonesPanel shipment={selectedShipment} onUpdate={handleUpdateShipment} t={t} />
+              <ShipmentMilestonesPanel
+                shipment={selectedShipment}
+                isSaving={milestoneMutation.isPending}
+                onMarkDone={(milestoneCode, payload) => {
+                  milestoneMutation.mutate({
+                    actualAt: payload.actualAt,
+                    milestoneCode,
+                    notes: payload.notes,
+                    shipmentId: selectedShipment.id,
+                  });
+                }}
+                t={t}
+              />
             </Tabs.Panel>
 
             <Tabs.Panel value="documents" pt="md">
-              <ShipmentDocumentsPanel shipment={selectedShipment} onUpdate={handleUpdateShipment} t={t} />
+              <ShipmentDocumentsPanel
+                shipment={selectedShipment}
+                isSaving={updateDocumentMutation.isPending || createDocumentMutation.isPending}
+                onCreateDocument={(payload) => {
+                  createDocumentMutation.mutate({ payload, shipmentId: selectedShipment.id });
+                }}
+                onUpdateDocument={(documentId, payload) => {
+                  updateDocumentMutation.mutate({ documentId, payload });
+                }}
+                t={t}
+              />
             </Tabs.Panel>
 
             <Tabs.Panel value="customs" pt="md">
@@ -573,11 +773,13 @@ export function Shipments() {
 }
 
 function ShipmentMilestonesPanel({
-  onUpdate,
+  isSaving,
+  onMarkDone,
   shipment,
   t,
 }: {
-  onUpdate: (updated: ShipmentRecord) => void;
+  isSaving: boolean;
+  onMarkDone: (milestoneCode: ShipmentMilestoneCodeV1, payload: { actualAt: string; notes?: string | null }) => void;
   shipment: ShipmentRecord;
   t: (key: string) => string;
 }) {
@@ -589,28 +791,28 @@ function ShipmentMilestonesPanel({
   const milestoneLabels: Record<string, string> = {
     BOOKING_CONFIRMED: '1. Booking Confirmed',
     CARGO_READY: '2. Cargo Ready',
-    PICK_UP: '3. Pick up',
+    PICKED_UP: '3. Picked up',
     BL_ISSUED: '4. B/L Issued',
     GATE_IN_POL: '5. Gate in POL',
     ATD: '6. ATD',
-    CUSTOM_DRAFT_SUBMITTED: '7. Customs Draft Submitted',
-    AN_ATA: '8. AN/ATA',
-    CUSTOM_CLEARED: '9. Customs Cleared',
-    EDO_DELIVERY: '10. eDO Delivery',
+    CUSTOMS_DRAFT: '7. Customs Draft',
+    ARRIVAL_NOTICE: '8. Arrival Notice',
+    CUSTOMS_CLEARED: '9. Customs Cleared',
+    DELIVERED: '10. Delivered',
   };
 
   const renderedMilestones = useMemo(() => {
     const sequence = [
       'BOOKING_CONFIRMED',
       'CARGO_READY',
-      'PICK_UP',
+      'PICKED_UP',
       'BL_ISSUED',
       'GATE_IN_POL',
       'ATD',
-      'CUSTOM_DRAFT_SUBMITTED',
-      'AN_ATA',
-      'CUSTOM_CLEARED',
-      'EDO_DELIVERY',
+      'CUSTOMS_DRAFT',
+      'ARRIVAL_NOTICE',
+      'CUSTOMS_CLEARED',
+      'DELIVERED',
     ];
     return sequence.map((code) => {
       const found = shipment.milestones.find((m) => m.milestone_code === code);
@@ -626,18 +828,13 @@ function ShipmentMilestonesPanel({
   }, [shipment.milestones]);
 
   const handleUpdateMilestone = (milestoneId: string) => {
-    const updatedMilestones = shipment.milestones.map((m) => {
-      if (m.id === milestoneId) {
-        return {
-          ...m,
-          actual_date: milestoneDate || null,
-          source: milestoneSource,
-          note: milestoneNote || null,
-        };
-      }
-      return m;
+    const milestone = renderedMilestones.find((item) => item.id === milestoneId);
+    if (!milestone) return;
+    const actualAt = milestoneDate ? new Date(milestoneDate).toISOString() : new Date().toISOString();
+    onMarkDone(milestone.milestone_code as ShipmentMilestoneCodeV1, {
+      actualAt,
+      notes: milestoneNote || null,
     });
-    onUpdate({ ...shipment, milestones: updatedMilestones });
     setEditingMilestoneId(null);
     setMilestoneDate('');
     setMilestoneNote('');
@@ -653,8 +850,7 @@ function ShipmentMilestonesPanel({
           {renderedMilestones.map((m, idx) => {
             const label = milestoneLabels[m.milestone_code] || m.milestone_code;
             const isCompleted = !!m.actual_date;
-            const isBlocked = m.milestone_code === 'ATD' || m.milestone_code === 'CUSTOM_DRAFT_SUBMITTED';
-            const isNested = m.milestone_code === 'PICK_UP' || m.milestone_code === 'GATE_IN_POL';
+            const isNested = m.milestone_code === 'PICKED_UP' || m.milestone_code === 'GATE_IN_POL';
 
             return (
               <div
@@ -663,7 +859,6 @@ function ShipmentMilestonesPanel({
                   paddingLeft: isNested ? '24px' : '0px',
                   borderLeft: isNested ? '2px dashed var(--mantine-color-blue-light)' : 'none',
                   marginLeft: isNested ? '12px' : '0px',
-                  opacity: isBlocked ? 0.4 : 1,
                 }}
               >
                 <Paper
@@ -678,21 +873,20 @@ function ShipmentMilestonesPanel({
                     <Text size="sm" fw={isCompleted ? 700 : 400}>
                       {label}
                     </Text>
-                    {!isBlocked && (
-                      <Button
-                        size="xs"
-                        variant="light"
-                        color={isCompleted ? 'teal' : 'blue'}
-                        onClick={() => {
-                          setEditingMilestoneId(m.id);
-                          setMilestoneDate(m.actual_date || '');
-                          setMilestoneSource(m.source);
-                          setMilestoneNote(m.note || '');
-                        }}
-                      >
-                        {isCompleted ? 'Update' : 'Mark done'}
-                      </Button>
-                    )}
+                    <Button
+                      size="xs"
+                      variant="light"
+                      color={isCompleted ? 'teal' : 'blue'}
+                      loading={isSaving && editingMilestoneId === m.id}
+                      onClick={() => {
+                        setEditingMilestoneId(m.id);
+                        setMilestoneDate(m.actual_date ? m.actual_date.slice(0, 10) : '');
+                        setMilestoneSource(m.source);
+                        setMilestoneNote(m.note || '');
+                      }}
+                    >
+                      {isCompleted ? 'Update' : 'Mark done'}
+                    </Button>
                   </Group>
                   {isCompleted ? (
                     <Text size="xs" c="teal">
@@ -749,57 +943,79 @@ size="xs"
 }
 
 function ShipmentDocumentsPanel({
-  onUpdate,
+  isSaving,
+  onCreateDocument,
+  onUpdateDocument,
   shipment,
   t,
 }: {
-  onUpdate: (updated: ShipmentRecord) => void;
+  isSaving: boolean;
+  onCreateDocument: (payload: ShipmentDocumentPayload) => void;
+  onUpdateDocument: (documentId: string, payload: Partial<ShipmentDocumentPayload>) => void;
   shipment: ShipmentRecord;
   t: (key: string) => string;
 }) {
   const [rejectingDocId, setRejectingDocId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [newDocumentType, setNewDocumentType] = useState<ShipmentDocumentPayload['document_type']>('BILL_OF_LADING');
+  const [newDocumentNo, setNewDocumentNo] = useState('');
+
+  const documentTypeOptions: Array<{ label: string; value: ShipmentDocumentPayload['document_type'] }> = [
+    { label: 'Commercial invoice', value: 'COMMERCIAL_INVOICE' },
+    { label: 'Packing list', value: 'PACKING_LIST' },
+    { label: 'Contract', value: 'CONTRACT' },
+    { label: 'Booking confirmation', value: 'BOOKING_CONFIRMATION' },
+    { label: 'Bill of lading', value: 'BILL_OF_LADING' },
+    { label: 'Air waybill', value: 'AIR_WAYBILL' },
+    { label: 'Arrival notice', value: 'ARRIVAL_NOTICE' },
+    { label: 'Certificate of origin', value: 'CERTIFICATE_OF_ORIGIN' },
+    { label: 'Insurance', value: 'INSURANCE' },
+    { label: 'Customs declaration', value: 'CUSTOMS_DECLARATION' },
+    { label: 'eDO', value: 'EDO' },
+    { label: 'POD', value: 'POD' },
+    { label: 'Other', value: 'OTHER' },
+  ];
 
   const getStatusColor = (status: ShipmentDocument['status']) => {
     switch (status) {
-      case 'APPROVED': return 'green';
+      case 'APPROVED':
+      case 'VERIFIED': return 'green';
+      case 'RECEIVED':
       case 'WAITING_REVIEW': return 'orange';
       case 'REJECTED': return 'red';
+      case 'CANCELLED': return 'gray';
       default: return 'gray';
     }
   };
 
   const handleDocumentApprove = (docId: string) => {
-    const updated = shipment.documents.map((d) =>
-      d.id === docId ? { ...d, status: 'APPROVED' as const } : d
-    );
-    onUpdate({ ...shipment, documents: updated });
+    onUpdateDocument(docId, { status: 'VERIFIED' });
   };
 
   const handleDocumentReject = (docId: string) => {
     if (!rejectReason) return;
-    const updated = shipment.documents.map((d) =>
-      d.id === docId ? { ...d, status: 'REJECTED' as const, reject_reason: rejectReason } : d
-    );
-    onUpdate({ ...shipment, documents: updated });
+    onUpdateDocument(docId, { notes: rejectReason, status: 'REJECTED' });
     setRejectingDocId(null);
     setRejectReason('');
   };
 
   const handleDocumentUpload = (docId: string, file: File | null) => {
     if (!file) return;
-    const updated = shipment.documents.map((d) =>
-      d.id === docId
-        ? {
-            ...d,
-            file_name: file.name,
-            status: 'WAITING_REVIEW' as const,
-            uploaded_at: new Date().toISOString(),
-            review_due_at: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-          }
-        : d
-    );
-    onUpdate({ ...shipment, documents: updated });
+    onUpdateDocument(docId, {
+      file_name: file.name,
+      mime_type: file.type || null,
+      received_at: new Date().toISOString(),
+      status: 'RECEIVED',
+    });
+  };
+
+  const handleCreateDocument = () => {
+    onCreateDocument({
+      document_no: newDocumentNo || null,
+      document_type: newDocumentType,
+      status: 'DRAFT',
+    });
+    setNewDocumentNo('');
   };
 
   return (
@@ -807,9 +1023,35 @@ function ShipmentDocumentsPanel({
       <Alert color="orange" icon={<IconHourglassHigh size={18} />}>
         Draft B/L SLA: 2-hour review window for cross-check.
       </Alert>
+      <Paper withBorder p="md">
+        <SimpleGrid cols={{ base: 1, md: 3 }} spacing="sm">
+          <Select
+            label="Document type"
+            data={documentTypeOptions}
+            value={newDocumentType}
+            onChange={(value) => setNewDocumentType((value as ShipmentDocumentPayload['document_type'] | null) ?? 'OTHER')}
+          />
+          <TextInput
+            label="Document no."
+            placeholder="BL123456"
+            value={newDocumentNo}
+            onChange={(event) => setNewDocumentNo(event.currentTarget.value)}
+          />
+          <Group align="flex-end">
+            <Button
+              fullWidth
+              leftSection={<IconPlus size={16} />}
+              loading={isSaving}
+              onClick={handleCreateDocument}
+            >
+              Add document
+            </Button>
+          </Group>
+        </SimpleGrid>
+      </Paper>
       <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
         {shipment.documents.map((doc) => {
-          const isWaitingReview = doc.status === 'WAITING_REVIEW';
+          const isWaitingReview = doc.status === 'WAITING_REVIEW' || doc.status === 'RECEIVED';
           const hasFile = !!doc.file_name;
 
           return (
@@ -856,7 +1098,7 @@ function ShipmentDocumentsPanel({
                   />
                   {isWaitingReview && (
                     <>
-                      <Button size="xs" color="green" onClick={() => handleDocumentApprove(doc.id)}>
+                      <Button size="xs" color="green" loading={isSaving} onClick={() => handleDocumentApprove(doc.id)}>
                         Approve
                       </Button>
                       <Button size="xs" color="red" variant="light" onClick={() => setRejectingDocId(doc.id)}>
@@ -880,7 +1122,13 @@ function ShipmentDocumentsPanel({
                         <Button size="xs" variant="subtle" onClick={() => setRejectingDocId(null)}>
                           {t('common.cancel')}
                         </Button>
-                        <Button size="xs" color="red" disabled={!rejectReason} onClick={() => handleDocumentReject(doc.id)}>
+                        <Button
+                          size="xs"
+                          color="red"
+                          disabled={!rejectReason}
+                          loading={isSaving}
+                          onClick={() => handleDocumentReject(doc.id)}
+                        >
                           Confirm reject
                         </Button>
                       </Group>
@@ -977,7 +1225,7 @@ function ShipmentCustomsPanel({
   );
 }
 
-function ShipmentCostsPanel({ shippingMode }: { shippingMode: 'SEA' | 'AIR' }) {
+function ShipmentCostsPanel({ shippingMode }: { shippingMode: ShipmentRecord['shipping_mode'] }) {
   const freight = shippingMode === 'SEA' ? 4200 : 8800;
   const costs = [
     { code: 'FREIGHT', label: 'Freight', amount: freight, currency: 'USD' },

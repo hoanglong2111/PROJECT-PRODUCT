@@ -48,6 +48,10 @@ export function PageLoading({
     t('pageFeedback.deadline'),
     t('pageFeedback.action'),
   ];
+  const columnItems = columns.map((label, index) => ({
+    id: `${index}-${label}`,
+    label,
+  }));
 
   return (
     <Stack gap="lg" aria-busy="true">
@@ -71,9 +75,9 @@ export function PageLoading({
       </SimpleGrid>
 
       <Paper withBorder p="md">
-        <SimpleGrid cols={{ base: 1, md: Math.min(columns.length, 4) }}>
-          {columns.slice(0, 4).map((column) => (
-            <Skeleton key={column} height={38} radius="md" />
+        <SimpleGrid cols={{ base: 1, md: Math.min(columnItems.length, 4) }}>
+          {columnItems.slice(0, 4).map((column) => (
+            <Skeleton key={column.id} height={38} radius="md" />
           ))}
         </SimpleGrid>
       </Paper>
@@ -83,16 +87,16 @@ export function PageLoading({
           <Table miw={920} verticalSpacing="sm">
             <Table.Thead>
               <Table.Tr>
-                {columns.map((column) => (
-                  <Table.Th key={column}>{column}</Table.Th>
+                {columnItems.map((column) => (
+                  <Table.Th key={column.id}>{column.label}</Table.Th>
                 ))}
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
               {Array.from({ length: 6 }).map((_, rowIndex) => (
                 <Table.Tr key={rowIndex}>
-                  {columns.map((column, columnIndex) => (
-                    <Table.Td key={column}>
+                  {columnItems.map((column, columnIndex) => (
+                    <Table.Td key={`${rowIndex}-${column.id}`}>
                       <Skeleton height={16} width={`${90 - columnIndex * 10}%`} />
                     </Table.Td>
                   ))}

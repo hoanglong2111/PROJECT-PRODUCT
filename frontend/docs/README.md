@@ -58,6 +58,7 @@ Out of scope for GD1:
 | DTO | `modules/dto/README.md` |
 | Master Data | `modules/master-data/README.md` |
 | Platform support | `modules/platform/README.md` |
+| Frontend API integration | `modules/platform/api-integration.md` |
 
 ## Cleanup Notes
 

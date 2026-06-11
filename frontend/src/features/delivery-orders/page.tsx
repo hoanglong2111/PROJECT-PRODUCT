@@ -65,6 +65,13 @@ import {
   updateQuotationAction,
   type QuotationAction,
 } from '@shared/api/logistics';
+import {
+  assignDeliveryOrderToShipment,
+  cancelDeliveryOrderV1,
+  closeDeliveryOrderV1,
+  confirmDeliveryOrderQuotation,
+  markDeliveryOrderReadyForQuotation,
+} from '@shared/api/deliveryOrders';
 import { queryKeys } from '@shared/api/queryKeys';
 import { getApiErrorMessage } from '@shared/lib/errors';
 import { useEntityParam } from '@shared/hooks/useEntityParam';
@@ -90,9 +97,9 @@ const shippingIcon = {
 type DeliveryOrderTab = 'processing' | 'handover' | 'completed' | 'issues' | 'all';
 
 const deliveryOrderStatusTabs: Record<Exclude<DeliveryOrderTab, 'all'>, DeliveryOrderStatus[]> = {
-  processing: ['DRAFT', 'CREATED', 'CONFIRMED', 'IN_PRODUCTION', 'READY_TO_SHIP'],
-  handover: ['IN_TRANSIT', 'ARRIVED_PORT', 'CUSTOMS_PROCESSING', 'WAREHOUSE_PENDING'],
-  completed: ['DELIVERED'],
+  processing: ['DRAFT', 'CREATED', 'READY_FOR_QUOTATION', 'QUOTATION_CONFIRMED'],
+  handover: ['ASSIGNED_TO_SHIPMENT', 'IN_TRANSIT', 'ARRIVED_PORT', 'CUSTOMS_PROCESSING', 'WAREHOUSE_PENDING'],
+  completed: ['CLOSED', 'DELIVERED'],
   issues: ['DELAYED', 'CANCELLED'],
 };
 
@@ -305,7 +312,12 @@ export function DeliveryOrders() {
       ) : (
         <>
           <SimpleGrid cols={{ base: 1, sm: 3 }}>
-            <Metric label={t('deliveryOrders.activeDo')} value={deliveryOrders.filter((deliveryOrder) => deliveryOrder.order_info.status !== 'DELIVERED').length} color="blue" icon={<IconTruckDelivery size={22} />} />
+            <Metric
+              label={t('deliveryOrders.activeDo')}
+              value={deliveryOrders.filter((deliveryOrder) => !['CLOSED', 'DELIVERED', 'CANCELLED'].includes(deliveryOrder.order_info.status)).length}
+              color="blue"
+              icon={<IconTruckDelivery size={22} />}
+            />
             <Metric label={t('deliveryOrders.riskQueue')} value={riskCount} color="red" icon={<IconAlertTriangle size={22} />} />
             <Metric
               label={t('deliveryOrders.completedTasks')}
@@ -570,7 +582,7 @@ function Gd1QuotationBiddingPanel({ requestCode }: { requestCode: string }) {
     () =>
       carrierSuppliers.map((supplier) => ({
         label: `${supplier.supplier_code} - ${supplier.supplier_name}`,
-        value: supplier.supplier_name,
+        value: supplier.id,
       })),
     [carrierSuppliers],
   );
@@ -843,7 +855,8 @@ function Gd1QuotationBiddingPanel({ requestCode }: { requestCode: string }) {
               onClick={() =>
                 createMutation.mutate({
                   requestCode,
-                  carrierName: carrier,
+                  carrierId: carrier,
+                  carrierName: carrierSuppliers.find((supplier) => supplier.id === carrier)?.supplier_name,
                   quoteAmount: Number(amount),
                   currency,
                   shippingMode,
@@ -920,6 +933,7 @@ function Gd1QuotationBiddingPanel({ requestCode }: { requestCode: string }) {
 }
 
 function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: DeliveryOrder; onClose: () => void }) {
+  const queryClient = useQueryClient();
   const { documentLabel, t, taskRoleLabel } = useI18n();
   const gates = getOperationalGates(deliveryOrder);
   const risks = getDeliveryOrderRisks(deliveryOrder);
@@ -927,6 +941,34 @@ function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: DeliveryOrder; 
     deliveryOrder.task_summary.total_tasks > 0
       ? Math.round((deliveryOrder.task_summary.completed_tasks / deliveryOrder.task_summary.total_tasks) * 100)
       : 0;
+  const actionMutation = useMutation({
+    mutationFn: (action: 'assign' | 'cancel' | 'close' | 'confirm-quotation' | 'ready-for-quotation') => {
+      if (action === 'ready-for-quotation') return markDeliveryOrderReadyForQuotation(deliveryOrder.id);
+      if (action === 'confirm-quotation') return confirmDeliveryOrderQuotation(deliveryOrder.id);
+      if (action === 'assign') return assignDeliveryOrderToShipment(deliveryOrder.id);
+      if (action === 'close') return closeDeliveryOrderV1(deliveryOrder.id);
+      return cancelDeliveryOrderV1(deliveryOrder.id);
+    },
+    onSuccess: () => {
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.deliveryOrders }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.deliveryOrderDetail(deliveryOrder.id) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats }),
+      ]);
+    },
+  });
+
+  const primaryAction =
+    deliveryOrder.order_info.status === 'DRAFT'
+      ? { action: 'ready-for-quotation' as const, label: 'Ready for quotation' }
+      : deliveryOrder.order_info.status === 'READY_FOR_QUOTATION'
+        ? { action: 'confirm-quotation' as const, label: 'Confirm quotation' }
+        : deliveryOrder.order_info.status === 'QUOTATION_CONFIRMED'
+          ? { action: 'assign' as const, label: 'Assign to shipment' }
+          : deliveryOrder.order_info.status === 'ASSIGNED_TO_SHIPMENT'
+            ? { action: 'close' as const, label: 'Close DO' }
+            : null;
+  const canCancel = ['DRAFT', 'READY_FOR_QUOTATION', 'QUOTATION_CONFIRMED'].includes(deliveryOrder.order_info.status);
 
   return (
     <Stack gap="lg">
@@ -943,8 +985,37 @@ function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: DeliveryOrder; 
             </Text>
             <FlowTagBadge tags={deliveryOrder.flow_tags} />
           </div>
-          <Text size="xs" c="dimmed" className="tabular-nums">{taskProgress}% {t('tasks.progress')}</Text>
+          <Stack gap="xs" align="flex-end">
+            <Text size="xs" c="dimmed" className="tabular-nums">{taskProgress}% {t('tasks.progress')}</Text>
+            <Group gap="xs" justify="flex-end">
+              {primaryAction ? (
+                <Button
+                  size="xs"
+                  loading={actionMutation.isPending}
+                  onClick={() => actionMutation.mutate(primaryAction.action)}
+                >
+                  {primaryAction.label}
+                </Button>
+              ) : null}
+              {canCancel ? (
+                <Button
+                  size="xs"
+                  color="red"
+                  variant="light"
+                  loading={actionMutation.isPending}
+                  onClick={() => actionMutation.mutate('cancel')}
+                >
+                  Cancel
+                </Button>
+              ) : null}
+            </Group>
+          </Stack>
         </Group>
+        {actionMutation.isError ? (
+          <Alert color="red" icon={<IconAlertTriangle size={18} />} mt="md">
+            {getApiErrorMessage(actionMutation.error)}
+          </Alert>
+        ) : null}
       </Paper>
 
       <Group gap="xs">

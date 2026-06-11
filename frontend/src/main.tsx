@@ -13,7 +13,7 @@ import App from '@app/App';
 import { useWorkspacePreferences, WorkspacePreferencesProvider } from '@shared/preferences/WorkspacePreferencesContext';
 
 import { queryClient } from '@shared/queryClient';
-import {AuthProvider} from "@shared/auth/AuthContext";
+import { AuthProvider } from "@shared/auth/AuthContext";
 import { buildTheme, buildCssVariablesResolver } from '@shared/theme/theme';
 
 function ThemedApp() {
@@ -37,11 +37,11 @@ function ThemedApp() {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-        <WorkspacePreferencesProvider>
-              <AuthProvider>
+      <WorkspacePreferencesProvider>
+        <AuthProvider>
           <ThemedApp />
-              </AuthProvider>
-        </WorkspacePreferencesProvider>
+        </AuthProvider>
+      </WorkspacePreferencesProvider>
     </QueryClientProvider>
   </StrictMode>,
 );

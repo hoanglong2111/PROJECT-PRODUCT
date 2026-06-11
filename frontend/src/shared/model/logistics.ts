@@ -21,6 +21,9 @@ export type DeliveryOrderStatus =
   | 'DELIVERED'
   | 'CLOSED'
   | 'DELAYED'
+  | 'READY_FOR_QUOTATION'
+  | 'QUOTATION_CONFIRMED'
+  | 'ASSIGNED_TO_SHIPMENT'
   | 'CANCELLED';
 
 export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'WAITING' | 'BLOCKED' | 'COMPLETED' | 'CANCELLED';
@@ -541,7 +544,7 @@ export type Gd1PoLineStatus = 'OPEN' | 'PARTIALLY_SHIPPED' | 'SHIPPED' | 'RECEIV
 
 export type Gd1PoType = 'SEA' | 'AIR' | 'DOMESTIC';
 export type Gd1TemplatePoType = 'SEA' | 'AIR' | 'DOMESTIC' | 'ALL';
-export type Gd1ShipmentMode = 'SEA' | 'AIR';
+export type Gd1ShipmentMode = 'SEA' | 'AIR' | 'ROAD' | 'RAIL' | 'MULTIMODAL' | 'TRUCKING' | 'OTHER';
 
 export type Gd1ShipmentStatus =
   | 'BOOKING_PENDING'
@@ -563,12 +566,17 @@ export type Gd1MilestoneCode =
   | 'BOOKING_CONFIRMED'
   | 'CARGO_READY'
   | 'PICK_UP'
+  | 'PICKED_UP'
   | 'BL_ISSUED'
   | 'GATE_IN_POL'
   | 'ATD'
   | 'CUSTOM_DRAFT_SUBMITTED'
+  | 'CUSTOMS_DRAFT'
   | 'AN_ATA'
+  | 'ARRIVAL_NOTICE'
   | 'CUSTOM_CLEARED'
+  | 'CUSTOMS_CLEARED'
+  | 'DELIVERED'
   | 'EDO_DELIVERY';
 
 export type Gd1MilestoneSource = 'MANUAL' | 'API' | 'EMAIL';
@@ -770,7 +778,15 @@ export type ShipmentMilestone = {
   note: string | null;
 };
 
-export type ShipmentDocumentStatus = 'PENDING_UPLOAD' | 'WAITING_REVIEW' | 'APPROVED' | 'REJECTED';
+export type ShipmentDocumentStatus =
+  | 'PENDING_UPLOAD'
+  | 'WAITING_REVIEW'
+  | 'APPROVED'
+  | 'DRAFT'
+  | 'RECEIVED'
+  | 'VERIFIED'
+  | 'REJECTED'
+  | 'CANCELLED';
 
 export type ShipmentDocument = {
   id: string;
@@ -789,7 +805,22 @@ export type ShipmentPoTask = {
   assignee_role: string;
 };
 
-export type ShipmentStatus = 'BOOKED' | 'IN_TRANSIT' | 'ARRIVED_PORT' | 'CUSTOMS_PROCESSING' | 'DELIVERED';
+export type ShipmentStatus =
+  | 'BOOKED'
+  | 'BOOKING_PENDING'
+  | 'BOOKING_CONFIRMED'
+  | 'CARGO_READY'
+  | 'PICKED_UP'
+  | 'BL_ISSUED'
+  | 'GATE_IN_POL'
+  | 'IN_TRANSIT'
+  | 'ARRIVED'
+  | 'ARRIVED_PORT'
+  | 'CUSTOMS_DRAFT'
+  | 'CUSTOMS_CLEARED'
+  | 'CUSTOMS_PROCESSING'
+  | 'DELIVERED'
+  | 'CANCELLED';
 
 export type ShipmentRecord = {
   id: string;
@@ -797,7 +828,7 @@ export type ShipmentRecord = {
   do_number: string;
   po_number: string;
   status: ShipmentStatus;
-  shipping_mode: 'SEA' | 'AIR';
+  shipping_mode: Gd1ShipmentMode;
   carrier_name: string;
   vessel_voyage: string;
   origin_port: string;

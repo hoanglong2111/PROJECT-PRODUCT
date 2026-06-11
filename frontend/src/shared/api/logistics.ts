@@ -45,6 +45,47 @@
   ShipmentStatus,
   ShipmentRecord,
 } from '@shared/model/logistics';
+import {
+  fetchDeliveryOrdersV1,
+  type DeliveryOrderLineV1,
+  type DeliveryOrderV1,
+} from './deliveryOrders';
+import {
+  fetchPurchaseOrders as fetchPurchaseOrdersV1,
+  type PurchaseOrderLineV1,
+  type PurchaseOrderV1,
+} from './purchaseOrders';
+import {
+  cancelQuotation,
+  confirmQuotationByKbi,
+  createDeliveryOrderQuotation,
+  fetchQuotationV1,
+  fetchQuotationsV1,
+  receiveQuotation,
+  rejectQuotation,
+  requestQuotation,
+  submitQuotationToKbi,
+  type QuotationChargeLineV1,
+  type QuotationStatusV1,
+  type QuotationTypeV1,
+  type QuotationV1,
+} from './quotations';
+import {
+  createShipmentFromDeliveryOrder,
+  fetchShipmentMilestonesV1,
+  fetchShipmentsV1,
+  fetchShipmentV1,
+  markShipmentMilestoneDone,
+  updateShipmentV1,
+  type CreateShipmentFromDeliveryOrderPayload,
+  type ShipmentDocumentStatusV1,
+  type ShipmentDocumentV1,
+  type ShipmentMilestoneCodeV1,
+  type ShipmentMilestoneV1,
+  type ShipmentModeV1,
+  type ShipmentV1,
+} from './shipments';
+import { fetchCurrencies, fetchSuppliers } from './tradeMasterData';
 
 export type {
   BusinessFlowTag,
@@ -256,6 +297,24 @@ export type CreateQuotationPayload = {
   currency?: string | null;
 };
 
+export type CreateShipmentPayload = {
+  shipmentNumber: string;
+  deliveryOrderId?: string;
+  doNumber: string;
+  poNumber?: string;
+  shippingMode: ShipmentModeV1;
+  carrierName?: string | null;
+  vesselVoyage?: string | null;
+  voyageNo?: string | null;
+  blAwbNo?: string | null;
+  containerNo?: string[] | null;
+  originPort?: string | null;
+  destPort?: string | null;
+  etd?: string | null;
+  eta?: string | null;
+  notes?: string | null;
+};
+
 export type UpdateQuotationActionPayload = {
   action: QuotationAction;
 };
@@ -384,8 +443,365 @@ const emptyDashboardStats: DashboardStats = {
 
 const uiOnlySuccess = { success: true } as const;
 
+function toNumber(value: unknown, fallback = 0) {
+  const next = Number(value);
+  return Number.isFinite(next) ? next : fallback;
+}
+
+function sumNumbers(values: unknown[]) {
+  return values.reduce<number>((total, value) => total + toNumber(value), 0);
+}
+
+function dateOnly(value: string | null | undefined) {
+  return value ? value.slice(0, 10) : '';
+}
+
 function uiId(prefix: string) {
   return `${prefix}-${Date.now()}`;
+}
+
+function addDaysIso(days: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return date.toISOString();
+}
+
+function inferPoFlowTags(purchaseOrder: PurchaseOrderV1): BusinessFlowTag[] {
+  const lots = purchaseOrder.delivery_slots?.flatMap((slot) => slot.lots ?? []) ?? [];
+  if (lots.length > 1 || (purchaseOrder.delivery_slots?.length ?? 0) > 1) {
+    return ['PARTIAL_DELIVERY'];
+  }
+  return ['LINEAR'];
+}
+
+function mapV1PurchaseOrderLine(line: PurchaseOrderLineV1): PurchaseOrderLineItem {
+  const item = line.item;
+  const customsProfile = line.item_customs_profile;
+
+  return {
+    classification_code: customsProfile?.customs_type ?? undefined,
+    co_note: customsProfile?.co_tax_note ?? undefined,
+    declaration_type: customsProfile?.customs_type ?? undefined,
+    duty_rate: toNumber(customsProfile?.import_duty_rate),
+    expected_eta: dateOnly(line.expected_eta_line) || null,
+    hs_code: customsProfile?.hs_code ?? undefined,
+    id: line.id,
+    item_code: item?.item_code ?? line.item_id,
+    item_group: item?.item_group?.group_name,
+    item_id: line.item_id,
+    item_name: item?.item_name ?? line.item_description ?? '',
+    lot_number: null,
+    quantity: toNumber(line.qty_ordered),
+    source_pr_code: '',
+    source_pr_line_id: '',
+    source_reference: line.purchase_order_id,
+    tariff_code: customsProfile?.reference_doc_no ?? undefined,
+    tax_note: customsProfile?.tax_note ?? undefined,
+    unit: line.unit ?? '',
+    unit_price: toNumber(line.unit_price),
+    vat_rate: toNumber(customsProfile?.vat_rate),
+    warehouse_code: '',
+    warehouse_deadline_date: dateOnly(line.expected_eta_line),
+  };
+}
+
+function mapV1PurchaseOrder(purchaseOrder: PurchaseOrderV1, linkedDoNumbers: string[] = []): PurchaseOrder {
+  const lineItems = (purchaseOrder.lines ?? []).map(mapV1PurchaseOrderLine);
+  const totalAmount = lineItems.reduce(
+    (total, line) => total + line.quantity * toNumber(line.unit_price),
+    0,
+  );
+
+  return {
+    currency: purchaseOrder.currency?.currency_code ?? '',
+    expected_eta: dateOnly(purchaseOrder.expected_eta) || null,
+    expected_etd: dateOnly(purchaseOrder.expected_etd) || null,
+    flow_tags: inferPoFlowTags(purchaseOrder),
+    id: purchaseOrder.id,
+    incoterm: purchaseOrder.incoterm?.incoterm_code ?? undefined,
+    line_items: lineItems,
+    linked_do_numbers: linkedDoNumbers,
+    lots: [],
+    order_date: dateOnly(purchaseOrder.create_at),
+    payment_term: purchaseOrder.payment_term ?? undefined,
+    po_number: purchaseOrder.po_no,
+    po_type: purchaseOrder.po_type as PurchaseOrder['po_type'],
+    sap_sync_status: 'SYNCED',
+    sent_at: purchaseOrder.sent_at,
+    source_pr_codes: [],
+    status: purchaseOrder.status as PurchaseOrderStatus,
+    supplier_code: purchaseOrder.supplier?.supplier_code ?? purchaseOrder.supplier_id,
+    supplier_name: purchaseOrder.supplier?.supplier_name ?? '',
+    total_amount: totalAmount,
+    version: 1,
+    warehouse_code: purchaseOrder.delivery_slots?.[0]?.warehouse_name ?? '',
+    confirmed_date: purchaseOrder.confirmed_at,
+  };
+}
+
+function quotationStatusToUi(status: QuotationStatusV1): QuotationStatus {
+  const statusMap: Record<QuotationStatusV1, QuotationStatus> = {
+    CANCELLED: 'REJECTED',
+    CONFIRMED_BY_KBI: 'APPROVED',
+    DRAFT: 'DRAFT',
+    EXPIRED: 'REJECTED',
+    RECEIVED: 'OFFICIAL_SENT',
+    REJECTED: 'REJECTED',
+    REQUESTED: 'PRELIMINARY_SENT',
+    SUBMITTED_TO_KBI: 'OFFICIAL_SENT',
+  };
+
+  return statusMap[status];
+}
+
+function inferQuotationShippingMode(quotation: QuotationV1): ShippingMode {
+  const chargeTypes = new Set((quotation.charge_lines ?? []).map((line) => line.charge_type));
+  if (chargeTypes.has('AIR_FREIGHT')) return 'AIR';
+  if (chargeTypes.has('TRUCKING')) return 'LCL';
+  return 'FCL';
+}
+
+function sumChargeLines(chargeLines: QuotationChargeLineV1[] | undefined, types: string[]) {
+  const allowedTypes = new Set(types);
+  return sumNumbers(
+    (chargeLines ?? [])
+      .filter((line) => allowedTypes.has(line.charge_type))
+      .map((line) => line.total_amount ?? line.amount),
+  );
+}
+
+function mapV1Quotation(quotation: QuotationV1, requestCode?: string): Quotation & {
+  carrierName?: string;
+  customsFee?: number;
+  freightCost?: number;
+  isAllInclusive?: boolean;
+  localCharges?: number;
+} {
+  const chargeLines = quotation.charge_lines ?? [];
+  const freightCost = sumChargeLines(chargeLines, ['OCEAN_FREIGHT', 'AIR_FREIGHT']);
+  const localCharges = sumChargeLines(chargeLines, ['LOCAL_CHARGE', 'TRUCKING', 'DO_FEE', 'DEMURRAGE', 'DETENTION', 'WAREHOUSE', 'DOCUMENT_FEE']);
+  const customsFee = sumChargeLines(chargeLines, ['CUSTOMS_FEE']);
+
+  return {
+    autoApproveAt: null,
+    bookingConfirmedAt: quotation.confirmed_at,
+    bookingNumber: quotation.is_final ? quotation.quotation_no : null,
+    carrierName: quotation.supplier?.supplier_name ?? quotation.supplier_id,
+    createdAt: quotation.create_at,
+    createdBy: null,
+    currency: quotation.currency?.currency_code ?? null,
+    customerResponseAt: quotation.confirmed_at ?? quotation.rejected_at ?? quotation.cancelled_at,
+    customsFee,
+    freightCost,
+    id: quotation.id,
+    isAllInclusive: quotation.quotation_type === 'MIXED',
+    localCharges,
+    officialDueAt: quotation.valid_until ?? addDaysIso(3),
+    officialSentAt: quotation.submitted_at,
+    preliminaryDueAt: quotation.quoted_at ?? addDaysIso(1),
+    preliminarySentAt: quotation.quoted_at,
+    quoteAmount: quotation.grand_total_amount ?? quotation.total_amount,
+    quoteNumber: quotation.version > 1 ? `${quotation.quotation_no} v${quotation.version}` : quotation.quotation_no,
+    requestCode: requestCode ?? quotation.ref_id,
+    shippingMode: inferQuotationShippingMode(quotation),
+    status: quotationStatusToUi(quotation.status),
+    updatedAt: quotation.update_at,
+  };
+}
+
+async function resolveDeliveryOrderId(value: string) {
+  const response = await fetchDeliveryOrdersV1({ page: 1, limit: 100, search: value });
+  const deliveryOrder = response.data.find((order) => order.id === value || order.do_no === value);
+  if (!deliveryOrder) {
+    throw new Error(`Delivery order ${value} not found`);
+  }
+  return deliveryOrder.id;
+}
+
+async function resolveSupplierId(value: string) {
+  const response = await fetchSuppliers({ page: 1, limit: 100, role: 'FORWARDER', is_active: true });
+  const supplier = response.data.find(
+    (item) => item.id === value || item.supplier_code === value || item.supplier_name === value,
+  );
+  if (!supplier) {
+    throw new Error(`Forwarder ${value} not found`);
+  }
+  return supplier.id;
+}
+
+async function resolveCurrencyId(value: string | null | undefined) {
+  const currencyCode = value?.trim() || 'USD';
+  const response = await fetchCurrencies({ page: 1, limit: 100, is_active: true });
+  const currency = response.data.find(
+    (item) => item.id === currencyCode || item.currency_code === currencyCode,
+  );
+  if (!currency) {
+    throw new Error(`Currency ${currencyCode} not found`);
+  }
+  return currency.id;
+}
+
+async function resolveShipmentId(value: string) {
+  const response = await fetchShipmentsV1({ page: 1, limit: 100, search: value });
+  const shipment = response.data.find((item) => item.id === value || item.shipment_no === value);
+  if (!shipment) {
+    throw new Error(`Shipment ${value} not found`);
+  }
+  return shipment.id;
+}
+
+function buildQuotationChargeLines(payload: CreateQuotationPayload) {
+  const shippingMode = payload.shippingMode.toUpperCase();
+  const chargeLines: Array<{
+    charge_type: 'AIR_FREIGHT' | 'CUSTOMS_FEE' | 'LOCAL_CHARGE' | 'OCEAN_FREIGHT';
+    description: string;
+    line_no: number;
+    quantity: number;
+    unit: string;
+    unit_price: number;
+  }> = [];
+  const addLine = (
+    chargeType: 'AIR_FREIGHT' | 'CUSTOMS_FEE' | 'LOCAL_CHARGE' | 'OCEAN_FREIGHT',
+    description: string,
+    amount: number,
+  ) => {
+    if (amount <= 0) return;
+    chargeLines.push({
+      charge_type: chargeType,
+      description,
+      line_no: chargeLines.length + 1,
+      quantity: 1,
+      unit: 'SET',
+      unit_price: amount,
+    });
+  };
+  const mainFreight = toNumber((payload as any).freightCost) || toNumber(payload.quoteAmount);
+
+  addLine(shippingMode.includes('AIR') ? 'AIR_FREIGHT' : 'OCEAN_FREIGHT', 'Main freight', mainFreight);
+  addLine('LOCAL_CHARGE', 'Local charges', toNumber((payload as any).localCharges));
+  addLine('CUSTOMS_FEE', 'Customs clearance fee', toNumber((payload as any).customsFee));
+
+  return chargeLines;
+}
+
+function inferQuotationTypeFromChargeLines(chargeLines: ReturnType<typeof buildQuotationChargeLines>): QuotationTypeV1 {
+  const types = new Set(chargeLines.map((line) => line.charge_type));
+  if (types.size > 1) return 'MIXED';
+  if (types.has('CUSTOMS_FEE')) return 'CUSTOMS';
+  if (types.has('LOCAL_CHARGE')) return 'LOCAL_CHARGE';
+  return 'FREIGHT';
+}
+
+function mapDeliveryOrderStatus(status: DeliveryOrderV1['status']): DeliveryOrderStatus {
+  return status;
+}
+
+function inferShippingMethod(deliveryOrder: DeliveryOrderV1): DeliveryOrder['logistics_shipping']['shipping_method'] {
+  const modeType = deliveryOrder.transport_mode?.mode_type?.toUpperCase();
+  if (modeType === 'AIR') return 'AIR';
+  if (modeType === 'ROAD' || modeType === 'TRUCKING') return 'ROAD';
+  return 'SEA';
+}
+
+function mapDeliverySourceLine(deliveryOrder: DeliveryOrderV1, line: DeliveryOrderLineV1): DeliverySourceLine {
+  const purchaseOrder = deliveryOrder.purchase_order;
+  const purchaseOrderLine = line.purchase_order_line;
+  const item = line.item ?? purchaseOrderLine?.item ?? null;
+
+  return {
+    id: line.id,
+    item_code: item?.item_code ?? line.item_id,
+    item_name: item?.item_name ?? line.item_description ?? '',
+    po_line_id: line.purchase_order_line_id,
+    po_number: purchaseOrder?.po_no ?? deliveryOrder.purchase_order_id,
+    pr_line_id: '',
+    quantity: toNumber(line.qty),
+    request_code: purchaseOrder?.po_no ?? deliveryOrder.do_no,
+    unit: line.unit,
+  };
+}
+
+function mapV1DeliveryOrder(deliveryOrder: DeliveryOrderV1): DeliveryOrder {
+  const sourceLines = (deliveryOrder.lines ?? []).map((line) => mapDeliverySourceLine(deliveryOrder, line));
+  const firstLine = sourceLines[0];
+  const totalQuantity = sourceLines.reduce((total, line) => total + line.quantity, 0);
+  const purchaseOrder = deliveryOrder.purchase_order;
+  const supplier = purchaseOrder?.supplier;
+  const firstLot = deliveryOrder.lots?.[0];
+  const plannedEta = dateOnly(deliveryOrder.planned_eta);
+  const plannedEtd = dateOnly(deliveryOrder.planned_etd);
+  const plannedCargoReady = dateOnly(deliveryOrder.planned_cargo_ready_date);
+  const warehouseDeadline = plannedEta || plannedCargoReady || plannedEtd || dateOnly(deliveryOrder.create_at);
+
+  return {
+    id: deliveryOrder.id,
+    flow_tags: deliveryOrder.lots && deliveryOrder.lots.length > 1 ? ['PARTIAL_DELIVERY'] : ['LINEAR'],
+    linked_shipment_number: null,
+    logistics_shipping: {
+      cut_off_date: null,
+      documents_list: [],
+      etd_planned: plannedEtd || null,
+      eta_planned: plannedEta || null,
+      incoterms: purchaseOrder?.incoterm?.incoterm_code ?? '',
+      missing_documents: [],
+      port_of_departure: deliveryOrder.origin_address ?? '',
+      port_of_destination: deliveryOrder.destination_address ?? '',
+      shipping_line: null,
+      shipping_method: inferShippingMethod(deliveryOrder),
+      vessel_code: null,
+    },
+    order_info: {
+      notes: deliveryOrder.notes ?? '',
+      order_number: deliveryOrder.do_no,
+      purchase_contract_number: purchaseOrder?.contract_no ?? '',
+      request_code: purchaseOrder?.po_no ?? deliveryOrder.do_no,
+      status: mapDeliveryOrderStatus(deliveryOrder.status),
+      tracking_number: null,
+      xnk_notes: '',
+    },
+    product_details: {
+      item_name_requested: firstLine?.item_name ?? '',
+      lot_number: firstLot?.lot_no ?? null,
+      lot_unit_quantity: firstLot ? totalQuantity : null,
+      lot_unit_type: firstLine?.unit ?? null,
+      packaging_type: null,
+      quantity: totalQuantity,
+      unit: firstLine?.unit ?? '',
+    },
+    sap_integration: {
+      actual_item_code: firstLine?.item_code ?? null,
+      po_number: purchaseOrder?.po_no ?? null,
+      raw_date: dateOnly(deliveryOrder.create_at),
+      supplier_code: supplier?.supplier_code ?? null,
+      supplier_name: supplier?.supplier_name ?? null,
+      sync_status: 'SYNCED',
+    },
+    source_lines: sourceLines,
+    source_lot_id: firstLot?.po_lot_id,
+    source_lot_no: firstLot?.lot_no,
+    source_po_number: purchaseOrder?.po_no,
+    task_summary: {
+      blocked_tasks: 0,
+      completed_tasks: deliveryOrder.status === 'CLOSED' ? 1 : 0,
+      required_tasks_remaining: deliveryOrder.status === 'CLOSED' || deliveryOrder.status === 'CANCELLED' ? 0 : 1,
+      total_tasks: 1,
+    },
+    warehouse_tracking: {
+      actual_entry_date: deliveryOrder.status === 'CLOSED' ? dateOnly(deliveryOrder.update_at) : null,
+      delay_days: 0,
+      planned_entry_date: plannedEta || null,
+      production_ready_date: plannedCargoReady || null,
+      warehouse_code: deliveryOrder.warehouse_name ?? '',
+      warehouse_deadline: warehouseDeadline,
+    },
+    finance_tax: {
+      currency: purchaseOrder?.currency?.currency_code ?? 'USD',
+      import_tax_rate: null,
+      insurance: null,
+      tax_amount: null,
+      tax_payment_deadline: null,
+    },
+  };
 }
 
 function buildUiQuotation(payload: CreateQuotationPayload): Quotation {
@@ -413,11 +829,76 @@ function buildUiQuotation(payload: CreateQuotationPayload): Quotation {
   };
 }
 
+function normalizeShipmentMode(mode: ShipmentModeV1 | string | null | undefined): ShipmentRecord['shipping_mode'] {
+  if (mode === 'AIR') return 'AIR';
+  if (mode === 'ROAD' || mode === 'RAIL' || mode === 'MULTIMODAL' || mode === 'TRUCKING' || mode === 'OTHER') {
+    return mode;
+  }
+  return 'SEA';
+}
+
+function mapV1ShipmentMilestone(milestone: ShipmentMilestoneV1): ShipmentMilestone {
+  return {
+    actual_date: milestone.actual_at ?? milestone.actual_date ?? milestone.done_at ?? null,
+    id: milestone.id,
+    milestone_code: milestone.milestone_code as ShipmentMilestone['milestone_code'],
+    note: milestone.notes ?? milestone.note ?? null,
+    planned_date: milestone.planned_at ?? milestone.planned_date ?? null,
+    source: milestone.source === 'API' || milestone.source === 'EMAIL' ? milestone.source : 'MANUAL',
+  };
+}
+
+function mapV1ShipmentDocumentStatus(status: ShipmentDocumentStatusV1): ShipmentDocument['status'] {
+  return status;
+}
+
+function mapV1ShipmentDocument(document: ShipmentDocumentV1): ShipmentDocument {
+  return {
+    file_name: document.file_name,
+    id: document.id,
+    document_type: document.document_type,
+    reject_reason: document.status === 'REJECTED' ? document.notes ?? undefined : undefined,
+    status: mapV1ShipmentDocumentStatus(document.status),
+    uploaded_at: document.received_at ?? document.update_at ?? document.create_at,
+  };
+}
+
+function mapV1Shipment(shipment: ShipmentV1): ShipmentRecord {
+  const deliveryOrder = shipment.delivery_order;
+  const purchaseOrder = deliveryOrder?.purchase_order;
+  const vesselParts = [shipment.vessel_flight, shipment.voyage_no].filter(Boolean);
+
+  return {
+    carrier_name: shipment.carrier ?? shipment.forwarder?.supplier_name ?? '',
+    customs: {
+      clearance_date: shipment.status === 'CUSTOMS_CLEARED' || shipment.status === 'DELIVERED'
+        ? dateOnly(shipment.update_at)
+        : undefined,
+      lane_status: shipment.customs_channel ?? '',
+      stream: shipment.customs_channel ?? 'GREEN',
+    },
+    dest_port: shipment.pod ?? deliveryOrder?.destination_address ?? '',
+    do_number: deliveryOrder?.do_no ?? shipment.delivery_order_id,
+    documents: (shipment.documents ?? []).map(mapV1ShipmentDocument),
+    etd: dateOnly(shipment.etd),
+    eta: dateOnly(shipment.eta),
+    id: shipment.id,
+    milestones: (shipment.milestones ?? []).map(mapV1ShipmentMilestone),
+    origin_port: shipment.pol ?? deliveryOrder?.origin_address ?? '',
+    po_number: purchaseOrder?.po_no ?? deliveryOrder?.purchase_order_id ?? '',
+    po_tasks: [],
+    shipment_number: shipment.shipment_no,
+    shipping_mode: normalizeShipmentMode(shipment.mode),
+    status: shipment.status as ShipmentStatus,
+    vessel_voyage: vesselParts.join(' / '),
+  };
+}
+
 function buildUiShipment(payload: {
   shipmentNumber: string;
   doNumber: string;
   poNumber: string;
-  shippingMode: 'SEA' | 'AIR';
+  shippingMode: ShipmentModeV1;
   carrierName?: string | null;
   vesselVoyage?: string | null;
   originPort?: string | null;
@@ -550,38 +1031,94 @@ export async function fetchQuotation(payload: CreateQuotationPayload) {
 }
 
 export async function fetchShipments() {
-  return [] as ShipmentRecord[];
+  const response = await fetchShipmentsV1({ page: 1, limit: 100 });
+  const details = await Promise.all(
+    response.data.map(async (shipment) => {
+      try {
+        return await fetchShipmentV1(shipment.id);
+      } catch {
+        return shipment;
+      }
+    }),
+  );
+  return details.map(mapV1Shipment);
 }
 
-export async function createShipment(payload: {
-  shipmentNumber: string;
-  doNumber: string;
-  poNumber: string;
-  shippingMode: 'SEA' | 'AIR';
-  carrierName?: string | null;
-  vesselVoyage?: string | null;
-  originPort?: string | null;
-  destPort?: string | null;
-  etd?: string | null;
-  eta?: string | null;
-}) {
-  return buildUiShipment(payload);
+export async function createShipment(payload: CreateShipmentPayload) {
+  const deliveryOrderId = payload.deliveryOrderId ?? await resolveDeliveryOrderId(payload.doNumber);
+  const requestPayload: CreateShipmentFromDeliveryOrderPayload = {
+    bl_awb_no: payload.blAwbNo ?? null,
+    carrier: payload.carrierName ?? null,
+    container_no: payload.containerNo ?? null,
+    delivery_order_id: deliveryOrderId,
+    eta: payload.eta ?? null,
+    etd: payload.etd ?? null,
+    mode: payload.shippingMode,
+    notes: payload.notes ?? null,
+    pod: payload.destPort ?? null,
+    pol: payload.originPort ?? null,
+    shipment_no: payload.shipmentNumber,
+    vessel_flight: payload.vesselVoyage ?? null,
+    voyage_no: payload.voyageNo ?? null,
+  };
+
+  return mapV1Shipment(await createShipmentFromDeliveryOrder(requestPayload));
 }
 
-export async function updateShipment(_shipmentNumber: string, payload: Partial<ShipmentRecord>) {
-  return { ...payload, id: payload.id ?? uiId('shp') } as ShipmentRecord;
+export async function updateShipment(shipmentNumberOrId: string, payload: Partial<ShipmentRecord>) {
+  const shipmentId = payload.id ?? shipmentNumberOrId;
+  const [vesselFlight, voyageNo] = (payload.vessel_voyage ?? '').split('/').map((value) => value.trim());
+  const updated = await updateShipmentV1(shipmentId, {
+    carrier: payload.carrier_name,
+    customs_channel: payload.customs?.stream,
+    eta: payload.eta || null,
+    etd: payload.etd || null,
+    mode: payload.shipping_mode,
+    pod: payload.dest_port,
+    pol: payload.origin_port,
+    vessel_flight: vesselFlight || undefined,
+    voyage_no: voyageNo || undefined,
+  });
+
+  return mapV1Shipment(updated);
 }
 
 export async function fetchQuotations() {
-  return [] as Quotation[];
+  const [quotationResponse, deliveryOrderResponse] = await Promise.all([
+    fetchQuotationsV1({ page: 1, limit: 100 }),
+    fetchDeliveryOrdersV1({ page: 1, limit: 100 }),
+  ]);
+  const deliveryOrderNoById = new Map(
+    deliveryOrderResponse.data.map((deliveryOrder) => [deliveryOrder.id, deliveryOrder.do_no]),
+  );
+
+  return quotationResponse.data.map((quotation) =>
+    mapV1Quotation(quotation, deliveryOrderNoById.get(quotation.ref_id)),
+  );
 }
 
 export async function fetchPurchaseOrders() {
-  return [] as PurchaseOrder[];
+  const [purchaseOrderResponse, deliveryOrderResponse] = await Promise.all([
+    fetchPurchaseOrdersV1({ page: 1, limit: 100 }),
+    fetchDeliveryOrdersV1({ page: 1, limit: 100 }),
+  ]);
+  const deliveryOrdersByPoId = new Map<string, string[]>();
+
+  deliveryOrderResponse.data.forEach((deliveryOrder) => {
+    deliveryOrdersByPoId.set(deliveryOrder.purchase_order_id, [
+      ...(deliveryOrdersByPoId.get(deliveryOrder.purchase_order_id) ?? []),
+      deliveryOrder.do_no,
+    ]);
+  });
+
+  return purchaseOrderResponse.data.map((purchaseOrder) =>
+    mapV1PurchaseOrder(purchaseOrder, deliveryOrdersByPoId.get(purchaseOrder.id) ?? []),
+  );
 }
 
 export async function fetchDeliveryOrders() {
-  return [] as DeliveryOrder[];
+  const response = await fetchDeliveryOrdersV1({ page: 1, limit: 100 });
+  return response.data.map(mapV1DeliveryOrder);
 }
 
 export async function fetchLogisticsTasks() {
@@ -589,7 +1126,63 @@ export async function fetchLogisticsTasks() {
 }
 
 export async function fetchDashboardStats() {
-  return emptyDashboardStats;
+  const [purchaseOrders, deliveryOrders, tasks] = await Promise.all([
+    fetchPurchaseOrders(),
+    fetchDeliveryOrders(),
+    fetchLogisticsTasks(),
+  ]);
+  const statusCounts = new Map<DeliveryOrderStatus, number>();
+  const taskStatusCounts = new Map<TaskStatus, number>();
+  const taskRoleCounts = new Map<TaskRole, { completed: number; total: number }>();
+  const businessFlowCounts = new Map<BusinessFlowTag, number>();
+  const monthCounts = new Map<string, { completedTasks: number; deliveryOrders: number }>();
+
+  deliveryOrders.forEach((deliveryOrder) => {
+    statusCounts.set(deliveryOrder.order_info.status, (statusCounts.get(deliveryOrder.order_info.status) ?? 0) + 1);
+    deliveryOrder.flow_tags.forEach((tag) => {
+      businessFlowCounts.set(tag, (businessFlowCounts.get(tag) ?? 0) + 1);
+    });
+
+    const month = (deliveryOrder.warehouse_tracking.planned_entry_date || deliveryOrder.warehouse_tracking.warehouse_deadline || '').slice(0, 7);
+    if (month) {
+      const current = monthCounts.get(month) ?? { completedTasks: 0, deliveryOrders: 0 };
+      monthCounts.set(month, {
+        completedTasks: current.completedTasks + deliveryOrder.task_summary.completed_tasks,
+        deliveryOrders: current.deliveryOrders + 1,
+      });
+    }
+  });
+
+  tasks.forEach((task) => {
+    taskStatusCounts.set(task.status, (taskStatusCounts.get(task.status) ?? 0) + 1);
+    const current = taskRoleCounts.get(task.role) ?? { completed: 0, total: 0 };
+    taskRoleCounts.set(task.role, {
+      completed: current.completed + (task.status === 'COMPLETED' ? 1 : 0),
+      total: current.total + 1,
+    });
+  });
+
+  return {
+    businessFlowCounts: Array.from(businessFlowCounts.entries()).map(([tag, count]) => ({ count, tag })),
+    deliveryOrderStatus: Array.from(statusCounts.entries()).map(([status, count]) => ({ count, status })),
+    monthlyThroughput: Array.from(monthCounts.entries())
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([month, counts]) => ({ month, ...counts })),
+    taskRoleProgress: Array.from(taskRoleCounts.entries()).map(([role, counts]) => ({
+      completionRate: counts.total > 0 ? Math.round((counts.completed / counts.total) * 100) : 0,
+      completed: counts.completed,
+      role,
+      total: counts.total,
+    })),
+    taskStatus: Array.from(taskStatusCounts.entries()).map(([status, count]) => ({ count, status })),
+    totals: {
+      blockedTasks: tasks.filter((task) => task.status === 'BLOCKED').length,
+      deliveryOrders: deliveryOrders.length,
+      purchaseOrders: purchaseOrders.length,
+      purchaseRequests: 0,
+      tasks: tasks.length,
+    },
+  } satisfies DashboardStats;
 }
 
 export async function fetchSlaAlerts() {
@@ -597,7 +1190,24 @@ export async function fetchSlaAlerts() {
 }
 
 export async function createQuotation(payload: CreateQuotationPayload) {
-  return buildUiQuotation(payload);
+  const [deliveryOrderId, supplierId, currencyId] = await Promise.all([
+    resolveDeliveryOrderId(payload.requestCode),
+    resolveSupplierId((payload as any).carrierId ?? (payload as any).carrierName ?? ''),
+    resolveCurrencyId(payload.currency),
+  ]);
+  const chargeLines = buildQuotationChargeLines(payload);
+  const quotation = await createDeliveryOrderQuotation(deliveryOrderId, {
+    charge_lines: chargeLines,
+    currency_id: currencyId,
+    exchange_rate: 1,
+    note: (payload as any).isAllInclusive ? 'All-inclusive quotation' : null,
+    quotation_no: `QT-${payload.requestCode}-${Date.now().toString().slice(-6)}`,
+    quotation_type: inferQuotationTypeFromChargeLines(chargeLines),
+    supplier_id: supplierId,
+    valid_until: addDaysIso(7).slice(0, 10),
+  });
+
+  return mapV1Quotation(quotation, payload.requestCode);
 }
 
 export async function createPurchaseOrder(payload: CreatePurchaseOrderPayload) {
@@ -634,7 +1244,45 @@ export async function createDeliveryOrder(payload: CreateDeliveryOrderPayload) {
 }
 
 export async function updateQuotationAction(quotationId: string, payload: UpdateQuotationActionPayload) {
-  return { ...buildUiQuotation({ requestCode: quotationId, shippingMode: 'AIR' }), status: payload.action === 'CUSTOMER_APPROVED' ? 'APPROVED' : 'DRAFT' } as Quotation;
+  const quotation = await fetchQuotationV1(quotationId);
+
+  if (payload.action === 'SEND_PRELIMINARY') {
+    if (quotation.status === 'DRAFT') {
+      return mapV1Quotation(await requestQuotation(quotationId));
+    }
+    return mapV1Quotation(quotation);
+  }
+
+  if (payload.action === 'SEND_OFFICIAL') {
+    if (quotation.status === 'DRAFT' || quotation.status === 'REQUESTED') {
+      return mapV1Quotation(await receiveQuotation(quotationId));
+    }
+    if (quotation.status === 'RECEIVED') {
+      return mapV1Quotation(await submitQuotationToKbi(quotationId));
+    }
+    return mapV1Quotation(quotation);
+  }
+
+  if (payload.action === 'CUSTOMER_APPROVED') {
+    let nextQuotation = quotation;
+    if (nextQuotation.status === 'DRAFT' || nextQuotation.status === 'REQUESTED') {
+      nextQuotation = await receiveQuotation(quotationId);
+    }
+    return mapV1Quotation(await confirmQuotationByKbi(nextQuotation.id));
+  }
+
+  if (payload.action === 'CUSTOMER_REJECTED') {
+    if (quotation.status === 'DRAFT') {
+      return mapV1Quotation(await cancelQuotation(quotationId));
+    }
+    return mapV1Quotation(await rejectQuotation(quotationId));
+  }
+
+  if (payload.action === 'REVISION_REQUESTED') {
+    return mapV1Quotation(await requestQuotation(quotationId));
+  }
+
+  return mapV1Quotation(quotation);
 }
 
 export async function confirmQuotationBooking(quotationId: string, payload: ConfirmQuotationBookingPayload) {
@@ -777,15 +1425,35 @@ export async function fetchPurchaseOrderStageTasks(_poNumber: string) {
   return [] as Gd1PoStageTask[];
 }
 
-export async function fetchShipmentMilestones(_orderNumber: string) {
-  return [] as Gd1ShipmentMilestone[];
+export async function fetchShipmentMilestones(orderNumber: string) {
+  const shipmentId = await resolveShipmentId(orderNumber);
+  const milestones = await fetchShipmentMilestonesV1(shipmentId);
+  return milestones.map((milestone) => ({
+    actual_date: milestone.actual_at ?? milestone.actual_date ?? milestone.done_at ?? null,
+    created_at: milestone.create_at ?? '',
+    id: milestone.id,
+    milestone_code: milestone.milestone_code as Gd1MilestoneCode,
+    note: milestone.notes ?? milestone.note ?? null,
+    planned_date: milestone.planned_at ?? milestone.planned_date ?? null,
+    recorded_by: null,
+    sequence_no: milestone.sequence_no,
+    shipment_id: milestone.shipment_id,
+    source: milestone.source === 'API' || milestone.source === 'EMAIL' ? milestone.source : 'MANUAL',
+    tenant_id: null,
+    updated_at: milestone.update_at ?? '',
+  })) as Gd1ShipmentMilestone[];
 }
 
 export async function updateShipmentMilestone(
-  _orderNumber: string,
-  _milestoneCode: string,
-  _payload: { actualDate: string | null; note?: string; source?: string },
+  orderNumber: string,
+  milestoneCode: string,
+  payload: { actualDate: string | null; note?: string; source?: string },
 ) {
+  const shipmentId = await resolveShipmentId(orderNumber);
+  await markShipmentMilestoneDone(shipmentId, milestoneCode as ShipmentMilestoneCodeV1, {
+    actual_at: payload.actualDate,
+    notes: payload.note ?? null,
+  });
   return uiOnlySuccess;
 }
 
