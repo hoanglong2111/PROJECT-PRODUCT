@@ -7,6 +7,7 @@ import {
   Group,
   Loader,
   Modal,
+  MultiSelect,
   Paper,
   ScrollArea,
   Select,
@@ -26,14 +27,17 @@ import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/rea
 import {
   IconAlertCircle,
   IconBuilding,
+  IconCash,
   IconEye,
   IconFileCode,
   IconMapPin,
   IconPencil,
   IconPlus,
   IconRefresh,
+  IconRoute,
   IconSearch,
   IconTrash,
+  IconTruckDelivery,
 } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
@@ -60,6 +64,33 @@ import {
   type UpdateItemPayload,
 } from '@shared/api/items';
 import { queryKeys } from '@shared/api/queryKeys';
+import {
+  createCurrency,
+  createIncoterm,
+  createSupplier,
+  createTransportMode,
+  deleteCurrency,
+  deleteIncoterm,
+  deleteSupplier,
+  deleteTransportMode,
+  fetchCurrencies,
+  fetchIncoterms,
+  fetchSuppliers,
+  fetchTransportModes,
+  updateCurrency,
+  updateIncoterm,
+  updateSupplier,
+  updateTransportMode,
+  type Currency,
+  type CurrencyPayload,
+  type Incoterm,
+  type IncotermPayload,
+  type PaginatedResponse,
+  type Supplier,
+  type SupplierPayload,
+  type TransportMode,
+  type TransportModePayload,
+} from '@shared/api/tradeMasterData';
 import { useAuth } from '@shared/auth/useAuth';
 import { EmptyState } from '@shared/components/EmptyState';
 import { LIST_PAGE_SIZE, ListPagination } from '@shared/components/ListPagination';
@@ -90,6 +121,39 @@ type SaveItemInput = {
   taxProfileId?: string | null;
   taxPayload?: CreateItemTaxProfilePayload;
   shouldSaveTaxProfile: boolean;
+};
+
+type SaveCurrencyInput = {
+  id?: string;
+  payload: CurrencyPayload & {
+    currency_code: string;
+    currency_name: string;
+  };
+};
+
+type SaveIncotermInput = {
+  id?: string;
+  payload: IncotermPayload & {
+    incoterm_code: string;
+    incoterm_name: string;
+  };
+};
+
+type SaveTransportModeInput = {
+  id?: string;
+  payload: TransportModePayload & {
+    mode_code: string;
+    mode_name: string;
+    mode_type: string;
+  };
+};
+
+type SaveSupplierInput = {
+  id?: string;
+  payload: SupplierPayload & {
+    supplier_code: string;
+    supplier_name: string;
+  };
 };
 
 function optionalString(value: string) {
@@ -206,6 +270,198 @@ function TaxProfilesCell({
   );
 }
 
+type ReferenceColumn<T> = {
+  key: string;
+  label: string;
+  width?: number | string;
+  render: (record: T) => ReactNode;
+};
+
+function ReferenceDataPanel<T extends { id: string }>({
+  addLabel,
+  canManage,
+  columns,
+  emptyDescription,
+  emptyTitle,
+  fetcher,
+  onAdd,
+  onDelete,
+  onEdit,
+  queryKey,
+  searchPlaceholder,
+  title,
+}: {
+  addLabel: string;
+  canManage: boolean;
+  columns: Array<ReferenceColumn<T>>;
+  emptyDescription: string;
+  emptyTitle: string;
+  fetcher: (params: { limit: number; page: number; search?: string }) => Promise<PaginatedResponse<T>>;
+  onAdd: () => void;
+  onDelete: (record: T) => void;
+  onEdit: (record: T) => void;
+  queryKey: (params: Record<string, unknown>) => readonly unknown[];
+  searchPlaceholder: string;
+  title: string;
+}) {
+  const { t } = useI18n();
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const params = useMemo(
+    () => ({
+      page,
+      limit: LIST_PAGE_SIZE,
+      search: optionalString(search),
+    }),
+    [page, search],
+  );
+
+  const query = useQuery({
+    queryKey: queryKey(params),
+    queryFn: () => fetcher(params),
+  });
+
+  const records = query.data?.data ?? [];
+  const total = query.data?.total ?? 0;
+  const pageCount = Math.max(1, query.data?.pagination.totalPages ?? 1);
+  const pageStart = total === 0 ? 0 : (page - 1) * LIST_PAGE_SIZE + 1;
+  const pageEnd = Math.min(total, page * LIST_PAGE_SIZE);
+
+  useEffect(() => {
+    if (page > pageCount) {
+      setPage(pageCount);
+    }
+  }, [page, pageCount]);
+
+  return (
+    <Stack gap="md">
+      <Group justify="space-between" align="end" gap="md">
+        <TextInput
+          label={title}
+          placeholder={searchPlaceholder}
+          leftSection={<IconSearch size={16} />}
+          value={search}
+          onChange={(event) => {
+            setSearch(event.currentTarget.value);
+            setPage(1);
+          }}
+          style={{ flex: 1 }}
+        />
+        <Group gap="xs">
+          {query.isFetching ? <Loader size="sm" /> : null}
+          {canManage ? (
+            <Button leftSection={<IconPlus size={16} />} onClick={onAdd}>
+              {addLabel}
+            </Button>
+          ) : null}
+          <Tooltip label={t('masterData.refresh')}>
+            <ActionIcon
+              aria-label={t('masterData.refresh')}
+              variant="light"
+              onClick={() => {
+                void query.refetch();
+              }}
+            >
+              <IconRefresh size={18} />
+            </ActionIcon>
+          </Tooltip>
+        </Group>
+      </Group>
+
+      {query.isError ? (
+        <Alert color="red" icon={<IconAlertCircle size={18} />}>
+          {getApiErrorMessage(query.error)}
+        </Alert>
+      ) : null}
+
+      <Paper withBorder p={0}>
+        {query.isLoading ? (
+          <Group justify="center" p="xl">
+            <Loader size="sm" />
+            <Text size="sm" c="dimmed">
+              {t('masterData.loadingReferenceData')}
+            </Text>
+          </Group>
+        ) : records.length === 0 ? (
+          <EmptyState title={emptyTitle} description={emptyDescription} />
+        ) : (
+          <ScrollArea className="data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
+            <Table miw={1100} verticalSpacing="sm" highlightOnHover>
+              <Table.Thead>
+                <Table.Tr>
+                  {columns.map((column) => (
+                    <Table.Th key={column.key} style={{ width: column.width }}>
+                      {column.label}
+                    </Table.Th>
+                  ))}
+                  {canManage ? (
+                    <Table.Th style={{ width: 112 }}>
+                      {t('masterData.actions')}
+                    </Table.Th>
+                  ) : null}
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {records.map((record) => (
+                  <Table.Tr key={record.id}>
+                    {columns.map((column) => (
+                      <Table.Td key={column.key}>{column.render(record)}</Table.Td>
+                    ))}
+                    {canManage ? (
+                      <Table.Td>
+                        <Group gap="xs" wrap="nowrap">
+                          <Tooltip label={t('common.edit')}>
+                            <ActionIcon
+                              aria-label={t('common.edit')}
+                              variant="subtle"
+                              onClick={() => onEdit(record)}
+                            >
+                              <IconPencil size={16} />
+                            </ActionIcon>
+                          </Tooltip>
+                          <Tooltip label={t('common.delete')}>
+                            <ActionIcon
+                              aria-label={t('common.delete')}
+                              color="red"
+                              variant="subtle"
+                              onClick={() => onDelete(record)}
+                            >
+                              <IconTrash size={16} />
+                            </ActionIcon>
+                          </Tooltip>
+                        </Group>
+                      </Table.Td>
+                    ) : null}
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </ScrollArea>
+        )}
+
+        <ListPagination
+          page={page}
+          pageCount={pageCount}
+          pageEnd={pageEnd}
+          pageStart={pageStart}
+          setPage={setPage}
+          total={total}
+        />
+      </Paper>
+    </Stack>
+  );
+}
+
+function ActiveBadge({ active }: { active: boolean }) {
+  const { t } = useI18n();
+
+  return (
+    <Badge color={active ? 'teal' : 'gray'} variant="light">
+      {active ? t('masterData.activeStatus') : t('masterData.inactiveStatus')}
+    </Badge>
+  );
+}
+
 export function MasterData() {
   const { user } = useAuth();
   const { t } = useI18n();
@@ -240,11 +496,19 @@ export function MasterData() {
   const [portModalOpened, portModalHandlers] = useDisclosure(false);
   const [itemGroupModalOpened, itemGroupModalHandlers] = useDisclosure(false);
   const [itemModalOpened, itemModalHandlers] = useDisclosure(false);
+  const [currencyModalOpened, currencyModalHandlers] = useDisclosure(false);
+  const [incotermModalOpened, incotermModalHandlers] = useDisclosure(false);
+  const [transportModeModalOpened, transportModeModalHandlers] = useDisclosure(false);
+  const [supplierModalOpened, supplierModalHandlers] = useDisclosure(false);
 
   const [editingPartner, setEditingPartner] = useState<PartnerRecord | null>(null);
   const [editingPort, setEditingPort] = useState<PortRecord | null>(null);
   const [editingItemGroup, setEditingItemGroup] = useState<ItemGroup | null>(null);
   const [editingItem, setEditingItem] = useState<Item | null>(null);
+  const [editingCurrency, setEditingCurrency] = useState<Currency | null>(null);
+  const [editingIncoterm, setEditingIncoterm] = useState<Incoterm | null>(null);
+  const [editingTransportMode, setEditingTransportMode] = useState<TransportMode | null>(null);
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
 
   const [partCode, setPartCode] = useState('');
   const [partName, setPartName] = useState('');
@@ -257,6 +521,40 @@ export function MasterData() {
   const [portName, setPortName] = useState('');
   const [portCountry, setPortCountry] = useState('');
   const [portType, setPortType] = useState<string>('SEA');
+
+  const [currencyCode, setCurrencyCode] = useState('');
+  const [currencyName, setCurrencyName] = useState('');
+  const [currencySymbol, setCurrencySymbol] = useState('');
+  const [currencyDecimalPlaces, setCurrencyDecimalPlaces] = useState('2');
+  const [currencyIsActive, setCurrencyIsActive] = useState(true);
+
+  const [incotermCode, setIncotermCode] = useState('');
+  const [incotermName, setIncotermName] = useState('');
+  const [incotermDescription, setIncotermDescription] = useState('');
+  const [incotermIsActive, setIncotermIsActive] = useState(true);
+
+  const [transportModeCode, setTransportModeCode] = useState('');
+  const [transportModeName, setTransportModeName] = useState('');
+  const [transportModeType, setTransportModeType] = useState('');
+  const [transportModeDescription, setTransportModeDescription] = useState('');
+  const [transportModeIsInternational, setTransportModeIsInternational] = useState(true);
+  const [transportModeIsActive, setTransportModeIsActive] = useState(true);
+
+  const [supplierCode, setSupplierCode] = useState('');
+  const [supplierName, setSupplierName] = useState('');
+  const [supplierRoles, setSupplierRoles] = useState<string[]>(['SUPPLIER']);
+  const [supplierCountry, setSupplierCountry] = useState('');
+  const [supplierAddress, setSupplierAddress] = useState('');
+  const [supplierContactName, setSupplierContactName] = useState('');
+  const [supplierContactEmail, setSupplierContactEmail] = useState('');
+  const [supplierContactPhone, setSupplierContactPhone] = useState('');
+  const [supplierPaymentTerm, setSupplierPaymentTerm] = useState('');
+  const [supplierCurrencyId, setSupplierCurrencyId] = useState<string | null>(null);
+  const [supplierIncotermId, setSupplierIncotermId] = useState<string | null>(null);
+  const [supplierTransportModeIds, setSupplierTransportModeIds] = useState<string[]>([]);
+  const [supplierDefaultTransportModeId, setSupplierDefaultTransportModeId] = useState<string | null>(null);
+  const [supplierLeadTimeDays, setSupplierLeadTimeDays] = useState('');
+  const [supplierIsActive, setSupplierIsActive] = useState(true);
 
   const [groupCode, setGroupCode] = useState('');
   const [groupName, setGroupName] = useState('');
@@ -313,8 +611,54 @@ export function MasterData() {
     enabled: activeTab === 'items',
   });
 
+  const currencyOptionsQuery = useQuery({
+    queryKey: queryKeys.currencies({ page: 1, limit: 100, is_active: true }),
+    queryFn: () => fetchCurrencies({ page: 1, limit: 100, is_active: true }),
+    enabled: activeTab === 'suppliers' || supplierModalOpened,
+  });
+
+  const incotermOptionsQuery = useQuery({
+    queryKey: queryKeys.incoterms({ page: 1, limit: 100, is_active: true }),
+    queryFn: () => fetchIncoterms({ page: 1, limit: 100, is_active: true }),
+    enabled: activeTab === 'suppliers' || supplierModalOpened,
+  });
+
+  const transportModeOptionsQuery = useQuery({
+    queryKey: queryKeys.transportModes({ page: 1, limit: 100, is_active: true }),
+    queryFn: () => fetchTransportModes({ page: 1, limit: 100, is_active: true }),
+    enabled: activeTab === 'suppliers' || supplierModalOpened,
+  });
+
   const itemGroups = itemGroupsQuery.data?.data ?? [];
   const items = itemsQuery.data?.data ?? [];
+  const currencyOptions = useMemo(
+    () =>
+      (currencyOptionsQuery.data?.data ?? []).map((currency) => ({
+        label: `${currency.currency_code} - ${currency.currency_name}`,
+        value: currency.id,
+      })),
+    [currencyOptionsQuery.data],
+  );
+  const incotermOptions = useMemo(
+    () =>
+      (incotermOptionsQuery.data?.data ?? []).map((incoterm) => ({
+        label: `${incoterm.incoterm_code} - ${incoterm.incoterm_name}`,
+        value: incoterm.id,
+      })),
+    [incotermOptionsQuery.data],
+  );
+  const transportModeOptions = useMemo(
+    () =>
+      (transportModeOptionsQuery.data?.data ?? []).map((mode) => ({
+        label: `${mode.mode_code} - ${mode.mode_name}`,
+        value: mode.id,
+      })),
+    [transportModeOptionsQuery.data],
+  );
+  const supplierDefaultTransportModeOptions = useMemo(
+    () => transportModeOptions.filter((option) => supplierTransportModeIds.includes(option.value)),
+    [supplierTransportModeIds, transportModeOptions],
+  );
 
   const taxProfileQueries = useQueries({
     queries: items.map((item) => ({
@@ -442,6 +786,77 @@ export function MasterData() {
     },
   });
 
+  const invalidateTradeMasterData = (queryKey: readonly unknown[]) => {
+    void Promise.all([
+      queryClient.invalidateQueries({ queryKey }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.masterDataOptionLists }),
+    ]);
+  };
+
+  const saveCurrencyMutation = useMutation({
+    mutationFn: ({ id, payload }: SaveCurrencyInput) =>
+      id ? updateCurrency(id, payload) : createCurrency(payload),
+    onSuccess: () => {
+      currencyModalHandlers.close();
+      invalidateTradeMasterData(queryKeys.currencyLists);
+    },
+  });
+
+  const deleteCurrencyMutation = useMutation({
+    mutationFn: deleteCurrency,
+    onSuccess: () => {
+      invalidateTradeMasterData(queryKeys.currencyLists);
+    },
+  });
+
+  const saveIncotermMutation = useMutation({
+    mutationFn: ({ id, payload }: SaveIncotermInput) =>
+      id ? updateIncoterm(id, payload) : createIncoterm(payload),
+    onSuccess: () => {
+      incotermModalHandlers.close();
+      invalidateTradeMasterData(queryKeys.incotermLists);
+    },
+  });
+
+  const deleteIncotermMutation = useMutation({
+    mutationFn: deleteIncoterm,
+    onSuccess: () => {
+      invalidateTradeMasterData(queryKeys.incotermLists);
+    },
+  });
+
+  const saveTransportModeMutation = useMutation({
+    mutationFn: ({ id, payload }: SaveTransportModeInput) =>
+      id ? updateTransportMode(id, payload) : createTransportMode(payload),
+    onSuccess: () => {
+      transportModeModalHandlers.close();
+      invalidateTradeMasterData(queryKeys.transportModeLists);
+    },
+  });
+
+  const deleteTransportModeMutation = useMutation({
+    mutationFn: deleteTransportMode,
+    onSuccess: () => {
+      invalidateTradeMasterData(queryKeys.transportModeLists);
+    },
+  });
+
+  const saveSupplierMutation = useMutation({
+    mutationFn: ({ id, payload }: SaveSupplierInput) =>
+      id ? updateSupplier(id, payload) : createSupplier(payload),
+    onSuccess: () => {
+      supplierModalHandlers.close();
+      invalidateTradeMasterData(queryKeys.supplierLists);
+    },
+  });
+
+  const deleteSupplierMutation = useMutation({
+    mutationFn: deleteSupplier,
+    onSuccess: () => {
+      invalidateTradeMasterData(queryKeys.supplierLists);
+    },
+  });
+
   const filteredPartners = useMemo(() => {
     const q = partnerSearch.toLowerCase().trim();
     return partners.filter(
@@ -545,6 +960,56 @@ export function MasterData() {
     portModalHandlers.open();
   };
 
+  const openAddCurrency = () => {
+    setEditingCurrency(null);
+    setCurrencyCode('');
+    setCurrencyName('');
+    setCurrencySymbol('');
+    setCurrencyDecimalPlaces('2');
+    setCurrencyIsActive(true);
+    currencyModalHandlers.open();
+  };
+
+  const openAddIncoterm = () => {
+    setEditingIncoterm(null);
+    setIncotermCode('');
+    setIncotermName('');
+    setIncotermDescription('');
+    setIncotermIsActive(true);
+    incotermModalHandlers.open();
+  };
+
+  const openAddTransportMode = () => {
+    setEditingTransportMode(null);
+    setTransportModeCode('');
+    setTransportModeName('');
+    setTransportModeType('SEA');
+    setTransportModeDescription('');
+    setTransportModeIsInternational(true);
+    setTransportModeIsActive(true);
+    transportModeModalHandlers.open();
+  };
+
+  const openAddSupplier = () => {
+    setEditingSupplier(null);
+    setSupplierCode('');
+    setSupplierName('');
+    setSupplierRoles(['SUPPLIER']);
+    setSupplierCountry('');
+    setSupplierAddress('');
+    setSupplierContactName('');
+    setSupplierContactEmail('');
+    setSupplierContactPhone('');
+    setSupplierPaymentTerm('');
+    setSupplierCurrencyId(null);
+    setSupplierIncotermId(null);
+    setSupplierTransportModeIds([]);
+    setSupplierDefaultTransportModeId(null);
+    setSupplierLeadTimeDays('');
+    setSupplierIsActive(true);
+    supplierModalHandlers.open();
+  };
+
   const openAddItemGroup = () => {
     setEditingItemGroup(null);
     setGroupCode('');
@@ -591,6 +1056,63 @@ export function MasterData() {
     setPortCountry(p.country);
     setPortType(p.type);
     portModalHandlers.open();
+  };
+
+  const openEditCurrency = (currency: Currency) => {
+    setEditingCurrency(currency);
+    setCurrencyCode(currency.currency_code);
+    setCurrencyName(currency.currency_name);
+    setCurrencySymbol(currency.symbol ?? '');
+    setCurrencyDecimalPlaces(String(currency.decimal_places));
+    setCurrencyIsActive(currency.is_active);
+    currencyModalHandlers.open();
+  };
+
+  const openEditIncoterm = (incoterm: Incoterm) => {
+    setEditingIncoterm(incoterm);
+    setIncotermCode(incoterm.incoterm_code);
+    setIncotermName(incoterm.incoterm_name);
+    setIncotermDescription(incoterm.description ?? '');
+    setIncotermIsActive(incoterm.is_active);
+    incotermModalHandlers.open();
+  };
+
+  const openEditTransportMode = (mode: TransportMode) => {
+    setEditingTransportMode(mode);
+    setTransportModeCode(mode.mode_code);
+    setTransportModeName(mode.mode_name);
+    setTransportModeType(mode.mode_type);
+    setTransportModeDescription(mode.description ?? '');
+    setTransportModeIsInternational(mode.is_international);
+    setTransportModeIsActive(mode.is_active);
+    transportModeModalHandlers.open();
+  };
+
+  const openEditSupplier = (supplier: Supplier) => {
+    setEditingSupplier(supplier);
+    setSupplierCode(supplier.supplier_code);
+    setSupplierName(supplier.supplier_name);
+    setSupplierRoles(supplier.supplier_roles.length > 0 ? supplier.supplier_roles : ['SUPPLIER']);
+    setSupplierCountry(supplier.country ?? '');
+    setSupplierAddress(supplier.address ?? '');
+    setSupplierContactName(supplier.contact_name ?? '');
+    setSupplierContactEmail(supplier.contact_email ?? '');
+    setSupplierContactPhone(supplier.contact_phone ?? '');
+    setSupplierPaymentTerm(supplier.payment_term ?? '');
+    setSupplierCurrencyId(supplier.default_currency_id ?? supplier.default_currency?.id ?? null);
+    setSupplierIncotermId(supplier.default_incoterm_id ?? supplier.default_incoterm?.id ?? null);
+    const supplierTransportModes = supplier.supplier_transport_modes ?? [];
+    setSupplierTransportModeIds(supplierTransportModes.map((mode) => mode.transport_mode_id));
+    setSupplierDefaultTransportModeId(
+      supplierTransportModes.find((mode) => mode.is_default)?.transport_mode_id ?? null,
+    );
+    setSupplierLeadTimeDays(
+      supplier.lead_time_days !== null && supplier.lead_time_days !== undefined
+        ? String(supplier.lead_time_days)
+        : '',
+    );
+    setSupplierIsActive(supplier.is_active);
+    supplierModalHandlers.open();
   };
 
   const openEditItemGroup = (group: ItemGroup) => {
@@ -755,6 +1277,76 @@ export function MasterData() {
     });
   };
 
+  const handleSaveCurrency = () => {
+    if (!currencyCode.trim() || !currencyName.trim()) return;
+
+    saveCurrencyMutation.mutate({
+      id: editingCurrency?.id,
+      payload: {
+        currency_code: currencyCode.trim().toUpperCase(),
+        currency_name: currencyName.trim(),
+        symbol: optionalString(currencySymbol),
+        decimal_places: optionalNumber(currencyDecimalPlaces) ?? 2,
+        is_active: currencyIsActive,
+      },
+    });
+  };
+
+  const handleSaveIncoterm = () => {
+    if (!incotermCode.trim() || !incotermName.trim()) return;
+
+    saveIncotermMutation.mutate({
+      id: editingIncoterm?.id,
+      payload: {
+        incoterm_code: incotermCode.trim().toUpperCase(),
+        incoterm_name: incotermName.trim(),
+        description: optionalString(incotermDescription),
+        is_active: incotermIsActive,
+      },
+    });
+  };
+
+  const handleSaveTransportMode = () => {
+    if (!transportModeCode.trim() || !transportModeName.trim() || !transportModeType.trim()) return;
+
+    saveTransportModeMutation.mutate({
+      id: editingTransportMode?.id,
+      payload: {
+        mode_code: transportModeCode.trim().toUpperCase(),
+        mode_name: transportModeName.trim(),
+        mode_type: transportModeType.trim().toUpperCase(),
+        description: optionalString(transportModeDescription),
+        is_international: transportModeIsInternational,
+        is_active: transportModeIsActive,
+      },
+    });
+  };
+
+  const handleSaveSupplier = () => {
+    if (!supplierCode.trim() || !supplierName.trim()) return;
+
+    saveSupplierMutation.mutate({
+      id: editingSupplier?.id,
+      payload: {
+        supplier_code: supplierCode.trim().toUpperCase(),
+        supplier_name: supplierName.trim(),
+        supplier_roles: supplierRoles.length > 0 ? supplierRoles : ['SUPPLIER'],
+        country: optionalString(supplierCountry),
+        address: optionalString(supplierAddress),
+        contact_name: optionalString(supplierContactName),
+        contact_email: optionalString(supplierContactEmail),
+        contact_phone: optionalString(supplierContactPhone),
+        payment_term: optionalString(supplierPaymentTerm),
+        default_currency_id: supplierCurrencyId || null,
+        default_incoterm_id: supplierIncotermId || null,
+        transport_mode_ids: supplierTransportModeIds,
+        default_transport_mode_id: supplierDefaultTransportModeId || null,
+        lead_time_days: optionalNumber(supplierLeadTimeDays),
+        is_active: supplierIsActive,
+      },
+    });
+  };
+
   const handleDeletePartner = (id: string) => {
     if (!window.confirm(t('masterData.confirmDeletePartner'))) return;
     const updated = partners.filter((p) => p.id !== id);
@@ -767,6 +1359,26 @@ export function MasterData() {
     const updated = ports.filter((p) => p.id !== id);
     setPorts(updated);
     savePorts(updated);
+  };
+
+  const handleDeleteCurrency = (currency: Currency) => {
+    if (!window.confirm(t('masterData.confirmDeleteCurrency'))) return;
+    deleteCurrencyMutation.mutate(currency.id);
+  };
+
+  const handleDeleteIncoterm = (incoterm: Incoterm) => {
+    if (!window.confirm(t('masterData.confirmDeleteIncoterm'))) return;
+    deleteIncotermMutation.mutate(incoterm.id);
+  };
+
+  const handleDeleteTransportMode = (mode: TransportMode) => {
+    if (!window.confirm(t('masterData.confirmDeleteTransportMode'))) return;
+    deleteTransportModeMutation.mutate(mode.id);
+  };
+
+  const handleDeleteSupplier = (supplier: Supplier) => {
+    if (!window.confirm(t('masterData.confirmDeleteSupplier'))) return;
+    deleteSupplierMutation.mutate(supplier.id);
   };
 
   const handleDeleteItemGroup = (id: string) => {
@@ -785,6 +1397,230 @@ export function MasterData() {
       queryClient.invalidateQueries({ queryKey: queryKeys.itemLists }),
     ]);
   };
+
+  const currencyColumns = useMemo<Array<ReferenceColumn<Currency>>>(
+    () => [
+      {
+        key: 'code',
+        label: t('masterData.currencyCode'),
+        render: (currency) => (
+          <Group gap="xs" wrap="nowrap">
+            <Badge variant="light">{currency.currency_code}</Badge>
+            <Text fw={600}>{currency.currency_name}</Text>
+          </Group>
+        ),
+      },
+      {
+        key: 'symbol',
+        label: t('masterData.currencySymbol'),
+        width: 110,
+        render: (currency) => currency.symbol || '-',
+      },
+      {
+        key: 'decimal_places',
+        label: t('masterData.decimalPlaces'),
+        width: 140,
+        render: (currency) => currency.decimal_places,
+      },
+      {
+        key: 'status',
+        label: t('common.status'),
+        width: 140,
+        render: (currency) => <ActiveBadge active={currency.is_active} />,
+      },
+      {
+        key: 'updated',
+        label: t('masterData.updatedAt'),
+        width: 170,
+        render: (currency) => formatDateTime(currency.update_at),
+      },
+    ],
+    [t],
+  );
+
+  const incotermColumns = useMemo<Array<ReferenceColumn<Incoterm>>>(
+    () => [
+      {
+        key: 'code',
+        label: t('masterData.incotermCode'),
+        width: 150,
+        render: (incoterm) => <Badge variant="light">{incoterm.incoterm_code}</Badge>,
+      },
+      {
+        key: 'name',
+        label: t('masterData.incotermName'),
+        render: (incoterm) => <Text fw={600}>{incoterm.incoterm_name}</Text>,
+      },
+      {
+        key: 'description',
+        label: t('masterData.description'),
+        render: (incoterm) => (
+          <Text size="sm" c="dimmed" lineClamp={2}>
+            {incoterm.description || '-'}
+          </Text>
+        ),
+      },
+      {
+        key: 'status',
+        label: t('common.status'),
+        width: 140,
+        render: (incoterm) => <ActiveBadge active={incoterm.is_active} />,
+      },
+      {
+        key: 'updated',
+        label: t('masterData.updatedAt'),
+        width: 170,
+        render: (incoterm) => formatDateTime(incoterm.update_at),
+      },
+    ],
+    [t],
+  );
+
+  const transportModeColumns = useMemo<Array<ReferenceColumn<TransportMode>>>(
+    () => [
+      {
+        key: 'code',
+        label: t('masterData.transportModeCode'),
+        render: (mode) => (
+          <Stack gap={2}>
+            <Badge variant="light">{mode.mode_code}</Badge>
+            <Text fw={600}>{mode.mode_name}</Text>
+          </Stack>
+        ),
+      },
+      {
+        key: 'type',
+        label: t('masterData.transportModeType'),
+        width: 150,
+        render: (mode) => <Badge color="blue" variant="outline">{mode.mode_type}</Badge>,
+      },
+      {
+        key: 'scope',
+        label: t('masterData.transportScope'),
+        width: 160,
+        render: (mode) => (
+          <Badge color={mode.is_international ? 'teal' : 'gray'} variant="light">
+            {mode.is_international ? t('masterData.international') : t('masterData.domestic')}
+          </Badge>
+        ),
+      },
+      {
+        key: 'description',
+        label: t('masterData.description'),
+        render: (mode) => (
+          <Text size="sm" c="dimmed" lineClamp={2}>
+            {mode.description || '-'}
+          </Text>
+        ),
+      },
+      {
+        key: 'status',
+        label: t('common.status'),
+        width: 140,
+        render: (mode) => <ActiveBadge active={mode.is_active} />,
+      },
+    ],
+    [t],
+  );
+
+  const supplierColumns = useMemo<Array<ReferenceColumn<Supplier>>>(
+    () => [
+      {
+        key: 'identity',
+        label: t('masterData.supplier'),
+        render: (supplier) => (
+          <Stack gap={4}>
+            <Group gap="xs" wrap="nowrap">
+              <Badge variant="light">{supplier.supplier_code}</Badge>
+              <Text fw={700} lineClamp={1} title={supplier.supplier_name}>
+                {supplier.supplier_name}
+              </Text>
+            </Group>
+            <Group gap={4}>
+              {supplier.supplier_roles.map((role) => (
+                <Badge key={role} size="xs" color="gray" variant="outline">
+                  {role}
+                </Badge>
+              ))}
+            </Group>
+          </Stack>
+        ),
+      },
+      {
+        key: 'country',
+        label: t('masterData.country'),
+        width: 130,
+        render: (supplier) => supplier.country || '-',
+      },
+      {
+        key: 'contact',
+        label: t('masterData.contact'),
+        render: (supplier) => (
+          <Stack gap={2}>
+            <Text size="sm">{supplier.contact_name || '-'}</Text>
+            <Text size="xs" c="dimmed">
+              {[supplier.contact_email, supplier.contact_phone].filter(Boolean).join(' | ') || '-'}
+            </Text>
+          </Stack>
+        ),
+      },
+      {
+        key: 'terms',
+        label: t('masterData.defaultTerms'),
+        render: (supplier) => (
+          <Stack gap={2}>
+            <Text size="sm">
+              {supplier.default_currency?.currency_code || supplier.default_currency_code || '-'} /{' '}
+              {supplier.default_incoterm?.incoterm_code || supplier.default_incoterm_code || '-'}
+            </Text>
+            <Text size="xs" c="dimmed">
+              {supplier.payment_term || '-'}
+            </Text>
+          </Stack>
+        ),
+      },
+      {
+        key: 'transport_modes',
+        label: t('masterData.supplierTransportModes'),
+        render: (supplier) => {
+          const modes = supplier.supplier_transport_modes ?? [];
+
+          if (modes.length === 0) {
+            return <Text c="dimmed">-</Text>;
+          }
+
+          return (
+            <Group gap={4}>
+              {modes.slice(0, 3).map((mode) => (
+                <Badge key={mode.id} color={mode.is_default ? 'teal' : 'gray'} variant="light">
+                  {mode.transport_mode?.mode_code ?? mode.transport_mode_id}
+                  {mode.is_default ? ` ${t('masterData.defaultShort')}` : ''}
+                </Badge>
+              ))}
+              {modes.length > 3 ? (
+                <Text size="xs" c="dimmed">
+                  +{modes.length - 3}
+                </Text>
+              ) : null}
+            </Group>
+          );
+        },
+      },
+      {
+        key: 'lead_time',
+        label: t('masterData.leadTimeDays'),
+        width: 150,
+        render: (supplier) => supplier.lead_time_days ?? '-',
+      },
+      {
+        key: 'status',
+        label: t('common.status'),
+        width: 140,
+        render: (supplier) => <ActiveBadge active={supplier.is_active} />,
+      },
+    ],
+    [t],
+  );
 
   return (
     <Stack gap="lg">
@@ -810,6 +1646,18 @@ export function MasterData() {
 
       <Tabs value={activeTab} onChange={(val) => setActiveTab((val || 'partners') as typeof activeTab)}>
         <Tabs.List>
+          <Tabs.Tab value="suppliers" leftSection={<IconTruckDelivery size={16} />}>
+            {t('masterData.tabSuppliers')}
+          </Tabs.Tab>
+          <Tabs.Tab value="currencies" leftSection={<IconCash size={16} />}>
+            {t('masterData.tabCurrencies')}
+          </Tabs.Tab>
+          <Tabs.Tab value="incoterms" leftSection={<IconRoute size={16} />}>
+            {t('masterData.tabIncoterms')}
+          </Tabs.Tab>
+          <Tabs.Tab value="transportModes" leftSection={<IconMapPin size={16} />}>
+            {t('masterData.tabTransportModes')}
+          </Tabs.Tab>
           <Tabs.Tab value="partners" leftSection={<IconBuilding size={16} />}>
             {t('masterData.tabPartners')}
           </Tabs.Tab>
@@ -820,6 +1668,74 @@ export function MasterData() {
             {t('masterData.tabHsCode')}
           </Tabs.Tab>
         </Tabs.List>
+
+        <Tabs.Panel value="suppliers" pt="md">
+          <ReferenceDataPanel
+            addLabel={t('masterData.addSupplier')}
+            canManage={canManageMasterData}
+            title={t('masterData.suppliersTitle')}
+            searchPlaceholder={t('masterData.searchSuppliers')}
+            emptyTitle={t('masterData.noSuppliers')}
+            emptyDescription={t('masterData.noSuppliersDescription')}
+            columns={supplierColumns}
+            queryKey={queryKeys.suppliers}
+            fetcher={fetchSuppliers}
+            onAdd={openAddSupplier}
+            onEdit={openEditSupplier}
+            onDelete={handleDeleteSupplier}
+          />
+        </Tabs.Panel>
+
+        <Tabs.Panel value="currencies" pt="md">
+          <ReferenceDataPanel
+            addLabel={t('masterData.addCurrency')}
+            canManage={canManageMasterData}
+            title={t('masterData.currenciesTitle')}
+            searchPlaceholder={t('masterData.searchCurrencies')}
+            emptyTitle={t('masterData.noCurrencies')}
+            emptyDescription={t('masterData.noCurrenciesDescription')}
+            columns={currencyColumns}
+            queryKey={queryKeys.currencies}
+            fetcher={fetchCurrencies}
+            onAdd={openAddCurrency}
+            onEdit={openEditCurrency}
+            onDelete={handleDeleteCurrency}
+          />
+        </Tabs.Panel>
+
+        <Tabs.Panel value="incoterms" pt="md">
+          <ReferenceDataPanel
+            addLabel={t('masterData.addIncoterm')}
+            canManage={canManageMasterData}
+            title={t('masterData.incotermsTitle')}
+            searchPlaceholder={t('masterData.searchIncoterms')}
+            emptyTitle={t('masterData.noIncoterms')}
+            emptyDescription={t('masterData.noIncotermsDescription')}
+            columns={incotermColumns}
+            queryKey={queryKeys.incoterms}
+            fetcher={fetchIncoterms}
+            onAdd={openAddIncoterm}
+            onEdit={openEditIncoterm}
+            onDelete={handleDeleteIncoterm}
+          />
+        </Tabs.Panel>
+
+        <Tabs.Panel value="transportModes" pt="md">
+          <ReferenceDataPanel
+            addLabel={t('masterData.addTransportMode')}
+            canManage={canManageMasterData}
+            title={t('masterData.transportModesTitle')}
+            searchPlaceholder={t('masterData.searchTransportModes')}
+            emptyTitle={t('masterData.noTransportModes')}
+            emptyDescription={t('masterData.noTransportModesDescription')}
+            columns={transportModeColumns}
+            queryKey={queryKeys.transportModes}
+            fetcher={fetchTransportModes}
+            onAdd={openAddTransportMode}
+            onEdit={openEditTransportMode}
+            onDelete={handleDeleteTransportMode}
+          />
+        </Tabs.Panel>
 
         <Tabs.Panel value="partners" pt="md">
           <Stack gap="md">
@@ -1218,6 +2134,326 @@ export function MasterData() {
           </Stack>
         </Tabs.Panel>
       </Tabs>
+
+      <Modal
+        opened={currencyModalOpened}
+        onClose={currencyModalHandlers.close}
+        title={editingCurrency ? t('masterData.editCurrency') : t('masterData.createCurrency')}
+      >
+        <Stack gap="md">
+          {saveCurrencyMutation.isError ? (
+            <Alert color="red" icon={<IconAlertCircle size={18} />}>
+              {getApiErrorMessage(saveCurrencyMutation.error)}
+            </Alert>
+          ) : null}
+          <SimpleGrid cols={{ base: 1, sm: 2 }}>
+            <TextInput
+              label={t('masterData.currencyCode')}
+              value={currencyCode}
+              onChange={(event) => setCurrencyCode(event.currentTarget.value)}
+              required
+            />
+            <TextInput
+              label={t('masterData.currencyName')}
+              value={currencyName}
+              onChange={(event) => setCurrencyName(event.currentTarget.value)}
+              required
+            />
+            <TextInput
+              label={t('masterData.currencySymbol')}
+              value={currencySymbol}
+              onChange={(event) => setCurrencySymbol(event.currentTarget.value)}
+            />
+            <TextInput
+              label={t('masterData.decimalPlaces')}
+              type="number"
+              value={currencyDecimalPlaces}
+              onChange={(event) => setCurrencyDecimalPlaces(event.currentTarget.value)}
+            />
+          </SimpleGrid>
+          <Switch
+            label={t('masterData.active')}
+            checked={currencyIsActive}
+            onChange={(event) => setCurrencyIsActive(event.currentTarget.checked)}
+          />
+          <Group justify="flex-end">
+            <Button variant="subtle" color="gray" onClick={currencyModalHandlers.close}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              onClick={handleSaveCurrency}
+              loading={saveCurrencyMutation.isPending}
+              disabled={!currencyCode.trim() || !currencyName.trim()}
+            >
+              {t('common.save')}
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      <Modal
+        opened={incotermModalOpened}
+        onClose={incotermModalHandlers.close}
+        title={editingIncoterm ? t('masterData.editIncoterm') : t('masterData.createIncoterm')}
+      >
+        <Stack gap="md">
+          {saveIncotermMutation.isError ? (
+            <Alert color="red" icon={<IconAlertCircle size={18} />}>
+              {getApiErrorMessage(saveIncotermMutation.error)}
+            </Alert>
+          ) : null}
+          <SimpleGrid cols={{ base: 1, sm: 2 }}>
+            <TextInput
+              label={t('masterData.incotermCode')}
+              value={incotermCode}
+              onChange={(event) => setIncotermCode(event.currentTarget.value)}
+              required
+            />
+            <TextInput
+              label={t('masterData.incotermName')}
+              value={incotermName}
+              onChange={(event) => setIncotermName(event.currentTarget.value)}
+              required
+            />
+          </SimpleGrid>
+          <Textarea
+            label={t('masterData.description')}
+            value={incotermDescription}
+            onChange={(event) => setIncotermDescription(event.currentTarget.value)}
+            autosize
+            minRows={3}
+          />
+          <Switch
+            label={t('masterData.active')}
+            checked={incotermIsActive}
+            onChange={(event) => setIncotermIsActive(event.currentTarget.checked)}
+          />
+          <Group justify="flex-end">
+            <Button variant="subtle" color="gray" onClick={incotermModalHandlers.close}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              onClick={handleSaveIncoterm}
+              loading={saveIncotermMutation.isPending}
+              disabled={!incotermCode.trim() || !incotermName.trim()}
+            >
+              {t('common.save')}
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      <Modal
+        opened={transportModeModalOpened}
+        onClose={transportModeModalHandlers.close}
+        title={
+          editingTransportMode
+            ? t('masterData.editTransportMode')
+            : t('masterData.createTransportMode')
+        }
+      >
+        <Stack gap="md">
+          {saveTransportModeMutation.isError ? (
+            <Alert color="red" icon={<IconAlertCircle size={18} />}>
+              {getApiErrorMessage(saveTransportModeMutation.error)}
+            </Alert>
+          ) : null}
+          <SimpleGrid cols={{ base: 1, sm: 2 }}>
+            <TextInput
+              label={t('masterData.transportModeCode')}
+              value={transportModeCode}
+              onChange={(event) => setTransportModeCode(event.currentTarget.value)}
+              required
+            />
+            <TextInput
+              label={t('masterData.transportModeName')}
+              value={transportModeName}
+              onChange={(event) => setTransportModeName(event.currentTarget.value)}
+              required
+            />
+            <Select
+              label={t('masterData.transportModeType')}
+              value={transportModeType}
+              onChange={(value) => setTransportModeType(value || 'SEA')}
+              data={['SEA', 'AIR', 'ROAD', 'RAIL', 'MULTIMODAL', 'FCL', 'LCL']}
+              searchable
+              required
+            />
+          </SimpleGrid>
+          <Textarea
+            label={t('masterData.description')}
+            value={transportModeDescription}
+            onChange={(event) => setTransportModeDescription(event.currentTarget.value)}
+            autosize
+            minRows={3}
+          />
+          <SimpleGrid cols={{ base: 1, sm: 2 }}>
+            <Switch
+              label={t('masterData.international')}
+              checked={transportModeIsInternational}
+              onChange={(event) => setTransportModeIsInternational(event.currentTarget.checked)}
+            />
+            <Switch
+              label={t('masterData.active')}
+              checked={transportModeIsActive}
+              onChange={(event) => setTransportModeIsActive(event.currentTarget.checked)}
+            />
+          </SimpleGrid>
+          <Group justify="flex-end">
+            <Button variant="subtle" color="gray" onClick={transportModeModalHandlers.close}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              onClick={handleSaveTransportMode}
+              loading={saveTransportModeMutation.isPending}
+              disabled={
+                !transportModeCode.trim() ||
+                !transportModeName.trim() ||
+                !transportModeType.trim()
+              }
+            >
+              {t('common.save')}
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      <Modal
+        opened={supplierModalOpened}
+        onClose={supplierModalHandlers.close}
+        size="xl"
+        title={editingSupplier ? t('masterData.editSupplier') : t('masterData.createSupplier')}
+      >
+        <Stack gap="md">
+          {saveSupplierMutation.isError ? (
+            <Alert color="red" icon={<IconAlertCircle size={18} />}>
+              {getApiErrorMessage(saveSupplierMutation.error)}
+            </Alert>
+          ) : null}
+          <SimpleGrid cols={{ base: 1, sm: 2 }}>
+            <TextInput
+              label={t('masterData.supplierCode')}
+              value={supplierCode}
+              onChange={(event) => setSupplierCode(event.currentTarget.value)}
+              required
+            />
+            <TextInput
+              label={t('masterData.supplierName')}
+              value={supplierName}
+              onChange={(event) => setSupplierName(event.currentTarget.value)}
+              required
+            />
+            <MultiSelect
+              label={t('masterData.supplierRoles')}
+              value={supplierRoles}
+              onChange={setSupplierRoles}
+              data={[
+                'SUPPLIER',
+                'SHIPPER',
+                'VENDOR',
+                'FORWARDER',
+                'TRUCKING_VENDOR',
+                'CUSTOMS_BROKER',
+              ]}
+              searchable
+              required
+            />
+            <TextInput
+              label={t('masterData.country')}
+              value={supplierCountry}
+              onChange={(event) => setSupplierCountry(event.currentTarget.value)}
+            />
+            <TextInput
+              label={t('masterData.contactName')}
+              value={supplierContactName}
+              onChange={(event) => setSupplierContactName(event.currentTarget.value)}
+            />
+            <TextInput
+              label={t('masterData.contactEmail')}
+              value={supplierContactEmail}
+              onChange={(event) => setSupplierContactEmail(event.currentTarget.value)}
+            />
+            <TextInput
+              label={t('masterData.contactPhone')}
+              value={supplierContactPhone}
+              onChange={(event) => setSupplierContactPhone(event.currentTarget.value)}
+            />
+            <TextInput
+              label={t('masterData.paymentTerm')}
+              value={supplierPaymentTerm}
+              onChange={(event) => setSupplierPaymentTerm(event.currentTarget.value)}
+            />
+            <Select
+              label={t('masterData.defaultCurrency')}
+              value={supplierCurrencyId}
+              onChange={setSupplierCurrencyId}
+              data={currencyOptions}
+              searchable
+              clearable
+            />
+            <Select
+              label={t('masterData.defaultIncoterm')}
+              value={supplierIncotermId}
+              onChange={setSupplierIncotermId}
+              data={incotermOptions}
+              searchable
+              clearable
+            />
+            <MultiSelect
+              label={t('masterData.supplierTransportModes')}
+              value={supplierTransportModeIds}
+              onChange={(values) => {
+                setSupplierTransportModeIds(values);
+                if (supplierDefaultTransportModeId && !values.includes(supplierDefaultTransportModeId)) {
+                  setSupplierDefaultTransportModeId(null);
+                }
+              }}
+              data={transportModeOptions}
+              searchable
+              clearable
+            />
+            <Select
+              label={t('masterData.defaultTransportMode')}
+              value={supplierDefaultTransportModeId}
+              onChange={setSupplierDefaultTransportModeId}
+              data={supplierDefaultTransportModeOptions}
+              searchable
+              clearable
+              disabled={supplierTransportModeIds.length === 0}
+            />
+            <TextInput
+              label={t('masterData.leadTimeDays')}
+              type="number"
+              value={supplierLeadTimeDays}
+              onChange={(event) => setSupplierLeadTimeDays(event.currentTarget.value)}
+            />
+          </SimpleGrid>
+          <Textarea
+            label={t('masterData.address')}
+            value={supplierAddress}
+            onChange={(event) => setSupplierAddress(event.currentTarget.value)}
+            autosize
+            minRows={3}
+          />
+          <Switch
+            label={t('masterData.active')}
+            checked={supplierIsActive}
+            onChange={(event) => setSupplierIsActive(event.currentTarget.checked)}
+          />
+          <Group justify="flex-end">
+            <Button variant="subtle" color="gray" onClick={supplierModalHandlers.close}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              onClick={handleSaveSupplier}
+              loading={saveSupplierMutation.isPending}
+              disabled={!supplierCode.trim() || !supplierName.trim() || supplierRoles.length === 0}
+            >
+              {t('common.save')}
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
 
       <Modal
         opened={partnerModalOpened}

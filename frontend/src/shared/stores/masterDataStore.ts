@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-type MasterDataTab = 'items' | 'partners' | 'ports';
+type MasterDataTab = 'currencies' | 'incoterms' | 'items' | 'partners' | 'ports' | 'suppliers' | 'transportModes';
 
 type MasterDataState = {
   activeTab: MasterDataTab;

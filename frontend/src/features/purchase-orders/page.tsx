@@ -61,6 +61,7 @@ import {
 import { queryKeys } from '@shared/api/queryKeys';
 import { useAuth } from '@shared/auth/useAuth';
 import { useEntityParam } from '@shared/hooks/useEntityParam';
+import { findSupplierByCode, useTradeMasterDataOptions } from '@shared/hooks/useTradeMasterDataOptions';
 import { useI18n } from '@shared/i18n';
 
 type PurchaseOrderTab = 'all' | 'single' | 'bulk' | 'awaiting' | 'partial' | 'closed';
@@ -389,11 +390,15 @@ function PurchaseOrderCreatePanel({
   const [lots, setLots] = useState<string[]>([DEFAULT_LOT]);
   const [lines, setLines] = useState<CreatePoLine[]>([newCreateLine(0)]);
   const [poNumber, setPoNumber] = useState(`PO-2026-${String(Date.now()).slice(-6)}`);
-  const [supplierCode, setSupplierCode] = useState('SUP-NEW');
-  const [supplierName, setSupplierName] = useState('New Supplier');
+  const [supplierCode, setSupplierCode] = useState('');
+  const [supplierName, setSupplierName] = useState('');
   const [currency, setCurrency] = useState('USD');
+  const [incoterm, setIncoterm] = useState('');
   const [orderDate, setOrderDate] = useState(new Date().toISOString().slice(0, 10));
   const [warehouseCode, setWarehouseCode] = useState('WH001');
+  const { currencyOptions, incotermOptions, supplierOptions, suppliers } = useTradeMasterDataOptions({
+    supplierRole: 'SUPPLIER',
+  });
 
   const totalAmount = lines.reduce((total, line) => total + Number(line.quantity || 0) * Number(line.unitPrice || 0), 0);
 
@@ -431,6 +436,7 @@ function PurchaseOrderCreatePanel({
 
     const payload: CreatePurchaseOrderPayload = {
       currency: currency.trim().toUpperCase(),
+      incoterm: incoterm.trim() || undefined,
       orderDate,
       poNumber: poNumber.trim(),
       sourceLines: validLines.map((line) => ({
@@ -478,10 +484,41 @@ function PurchaseOrderCreatePanel({
           </Group>
           <SimpleGrid cols={{ base: 1, md: 4 }}>
             <TextInput label="PO number" value={poNumber} onChange={(event) => setPoNumber(event.currentTarget.value)} required />
-            <TextInput label={t('purchaseOrders.supplierCode')} value={supplierCode} onChange={(event) => setSupplierCode(event.currentTarget.value)} required />
+            <Select
+              label={t('purchaseOrders.supplierCode')}
+              value={supplierCode}
+              onChange={(value) => {
+                const matched = findSupplierByCode(suppliers, value);
+                setSupplierCode(value || '');
+                if (matched) {
+                  setSupplierName(matched.supplier_name);
+                  setCurrency(matched.default_currency_code || currency);
+                  setIncoterm(matched.default_incoterm_code || incoterm);
+                }
+              }}
+              data={supplierOptions}
+              searchable
+              clearable
+              required
+            />
             <TextInput label={t('purchaseOrders.supplierName')} value={supplierName} onChange={(event) => setSupplierName(event.currentTarget.value)} required />
             <TextInput label={t('purchaseOrders.orderDate')} type="date" value={orderDate} onChange={(event) => setOrderDate(event.currentTarget.value)} />
-            <TextInput label={t('forms.currency')} value={currency} onChange={(event) => setCurrency(event.currentTarget.value)} />
+            <Select
+              label={t('forms.currency')}
+              value={currency}
+              onChange={(value) => setCurrency(value || 'USD')}
+              data={currencyOptions}
+              searchable
+              clearable
+            />
+            <Select
+              label={t('forms.incoterms')}
+              value={incoterm}
+              onChange={(value) => setIncoterm(value || '')}
+              data={incotermOptions}
+              searchable
+              clearable
+            />
             <TextInput label={t('forms.warehouse')} value={warehouseCode} onChange={(event) => setWarehouseCode(event.currentTarget.value)} />
             <Info label="Lots" value={String(lots.length)} />
             <Info label={t('purchaseOrders.total')} value={`${totalAmount.toLocaleString()} ${currency}`} />

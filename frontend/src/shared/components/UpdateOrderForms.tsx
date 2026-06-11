@@ -27,6 +27,7 @@ import {
 } from '@shared/api/logistics';
 import { queryKeys } from '@shared/api/queryKeys';
 import { getApiErrorMessage } from '@shared/lib/errors';
+import { findSupplierByCode, useTradeMasterDataOptions } from '@shared/hooks/useTradeMasterDataOptions';
 import { useI18n } from '@shared/i18n';
 
 const priorityValues: Priority[] = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
@@ -39,7 +40,17 @@ export function UpdateDeliveryOrderForm({ deliveryOrder }: { deliveryOrder: Deli
   const { documentLabel, shippingMethodLabel, t } = useI18n();
   const [editing, setEditing] = useState(false);
   const locked = deliveryOrder.order_info.status === 'DELIVERED';
-  const shippingMethodOptions = shippingMethodValues.map((method) => ({ label: shippingMethodLabel(method), value: method }));
+  const {
+    currencyOptions,
+    incotermOptions,
+    shippingMethodOptions: apiShippingMethodOptions,
+    supplierOptions,
+    suppliers,
+  } = useTradeMasterDataOptions();
+  const shippingMethodOptions =
+    apiShippingMethodOptions.length > 0
+      ? apiShippingMethodOptions
+      : shippingMethodValues.map((method) => ({ label: shippingMethodLabel(method), value: method }));
 
   const form = useForm({
     initialValues: {
@@ -176,7 +187,23 @@ export function UpdateDeliveryOrderForm({ deliveryOrder }: { deliveryOrder: Deli
               <TextInput label={t('forms.itemName')} {...form.getInputProps('itemName')} />
               <NumberInput label={t('forms.quantity')} min={1} thousandSeparator="," {...form.getInputProps('quantity')} />
               <TextInput label={t('forms.unit')} {...form.getInputProps('unit')} />
-              <TextInput label={t('forms.supplierCode')} {...form.getInputProps('supplierCode')} />
+              <Select
+                label={t('forms.supplierCode')}
+                data={supplierOptions}
+                searchable
+                clearable
+                value={form.values.supplierCode}
+                onChange={(value) => {
+                  const matched = findSupplierByCode(suppliers, value);
+                  form.setFieldValue('supplierCode', value || '');
+                  if (matched) {
+                    form.setFieldValue('supplierName', matched.supplier_name);
+                    if (matched.default_currency_code) {
+                      form.setFieldValue('currency', matched.default_currency_code);
+                    }
+                  }
+                }}
+              />
               <TextInput label={t('forms.supplierName')} {...form.getInputProps('supplierName')} />
               <Select label={t('forms.shippingMethod')} data={shippingMethodOptions} {...form.getInputProps('shippingMethod')} />
               <TextInput label={t('forms.shippingLine')} {...form.getInputProps('shippingLine')} />
@@ -188,11 +215,11 @@ export function UpdateDeliveryOrderForm({ deliveryOrder }: { deliveryOrder: Deli
               <TextInput label={t('forms.actualEntryDate')} type="date" {...form.getInputProps('actualEntryDate')} />
               <TextInput label={t('forms.warehouse')} {...form.getInputProps('warehouseCode')} />
               <TextInput label={t('forms.warehouseDeadline')} type="date" {...form.getInputProps('warehouseDeadline')} />
-              <TextInput label={t('forms.incoterms')} {...form.getInputProps('incoterms')} />
+              <Select label={t('forms.incoterms')} data={incotermOptions} searchable clearable {...form.getInputProps('incoterms')} />
               <TextInput label={t('forms.trackingNumber')} {...form.getInputProps('trackingNumber')} />
               <NumberInput label={t('forms.importTaxRate')} min={0} decimalScale={2} {...form.getInputProps('importTaxRate')} />
               <NumberInput label={t('forms.taxAmount')} min={0} thousandSeparator="," {...form.getInputProps('taxAmount')} />
-              <TextInput label={t('forms.currency')} {...form.getInputProps('currency')} />
+              <Select label={t('forms.currency')} data={currencyOptions} searchable clearable {...form.getInputProps('currency')} />
             </SimpleGrid>
 
             <Checkbox.Group label={t('forms.documentsReceived')} {...form.getInputProps('documentsList')}>

@@ -32,4 +32,28 @@ describe('queryKeys', () => {
     ]);
     expect(queryKeys.itemTaxProfiles('item-1')).toEqual(['items', 'item-1', 'tax-profiles']);
   });
+
+  it('builds trade master data keys with query params', () => {
+    expect(queryKeys.currencies({ page: 1, limit: 100 })).toEqual([
+      'currencies',
+      { page: 1, limit: 100 },
+    ]);
+    expect(queryKeys.suppliers({ role: 'SUPPLIER', search: 'seal' })).toEqual([
+      'suppliers',
+      { role: 'SUPPLIER', search: 'seal' },
+    ]);
+    expect(queryKeys.incotermDetail('incoterm-1')).toEqual([
+      'incoterms',
+      'detail',
+      'incoterm-1',
+    ]);
+    expect(queryKeys.transportModes({ mode_type: 'SEA' })).toEqual([
+      'transport-modes',
+      { mode_type: 'SEA' },
+    ]);
+    expect(queryKeys.masterDataOptions({ types: 'currencies,suppliers' })).toEqual([
+      'master-data-options',
+      { types: 'currencies,suppliers' },
+    ]);
+  });
 });

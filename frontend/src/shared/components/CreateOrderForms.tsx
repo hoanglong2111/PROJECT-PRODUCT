@@ -31,7 +31,8 @@ import {
 } from '@shared/api/logistics';
 import { queryKeys } from '@shared/api/queryKeys';
 import { getApiErrorMessage } from '@shared/lib/errors';
-import { getItems, getPartners } from '@shared/api/masterDataService';
+import { getItems } from '@shared/api/masterDataService';
+import { findSupplierByCode, useTradeMasterDataOptions } from '@shared/hooks/useTradeMasterDataOptions';
 import { useI18n } from '@shared/i18n';
 import { FlowTagBadge } from './FlowTagBadge';
 
@@ -149,7 +150,9 @@ export function CreatePurchaseOrderDrawer({
     value: `${item.id}:${index}`,
     label: `${item.item_code} - ${item.hs_code} - ${item.source_reference || item.declaration_type || item.id} - ${item.item_name}`,
   }));
-  const partnersList = getPartners().filter((p) => p.type === 'SUPPLIER');
+  const { currencyOptions, supplierOptions, suppliers } = useTradeMasterDataOptions({
+    supplierRole: 'SUPPLIER',
+  });
 
   // Track LOTs in state
   const [lots, setLots] = useState<string[]>(['Lô 1']);
@@ -413,25 +416,35 @@ export function CreatePurchaseOrderDrawer({
           {/* Section 3: General Information */}
           <SimpleGrid cols={{ base: 1, sm: 2 }}>
             <TextInput label="PO / Hợp đồng" placeholder="KBI-SDEC-2604" {...form.getInputProps('poNumber')} />
+              <Select
+                label={t('forms.supplierCode')}
+                placeholder="Chọn nhà cung cấp"
+                data={supplierOptions}
+                searchable
+                clearable
+                value={form.values.supplierCode}
+                onChange={(val) => {
+                  form.setFieldValue('supplierCode', val || '');
+                  const matched = findSupplierByCode(suppliers, val);
+                  if (matched) {
+                    form.setFieldValue('supplierName', matched.supplier_name);
+                    if (matched.default_currency_code) {
+                      form.setFieldValue('currency', matched.default_currency_code);
+                    }
+                  }
+                }}
+                error={form.errors.supplierCode}
+              />
+              <TextInput label={t('forms.supplierName')} placeholder={t('forms.supplierNamePlaceholder')} {...form.getInputProps('supplierName')} />
+            <TextInput label={t('forms.orderDate')} type="date" {...form.getInputProps('orderDate')} />
             <Select
-              label={t('forms.supplierCode')}
-              placeholder="Chọn nhà cung cấp"
-              data={partnersList.map((p) => ({ value: p.code, label: `${p.code} - ${p.name}` }))}
+              label={t('forms.currency')}
+              placeholder="USD"
+              data={currencyOptions}
               searchable
               clearable
-              value={form.values.supplierCode}
-              onChange={(val) => {
-                form.setFieldValue('supplierCode', val || '');
-                const matched = partnersList.find((p) => p.code === val);
-                if (matched) {
-                  form.setFieldValue('supplierName', matched.name);
-                }
-              }}
-              error={form.errors.supplierCode}
+              {...form.getInputProps('currency')}
             />
-            <TextInput label={t('forms.supplierName')} placeholder={t('forms.supplierNamePlaceholder')} {...form.getInputProps('supplierName')} />
-            <TextInput label={t('forms.orderDate')} type="date" {...form.getInputProps('orderDate')} />
-            <TextInput label={t('forms.currency')} placeholder="USD" {...form.getInputProps('currency')} />
             <NumberInput label={t('forms.totalAmount')} min={1} thousandSeparator="," {...form.getInputProps('totalAmount')} />
             <TextInput label={t('forms.warehouse')} placeholder="WH-HCM-01" {...form.getInputProps('warehouseCode')} />
           </SimpleGrid>
@@ -470,7 +483,16 @@ export function CreateDeliveryOrderDrawer({
   const selectableLines = useMemo(() => buildSelectablePoLines(purchaseOrders, deliveryOrders), [deliveryOrders, purchaseOrders]);
   const [selectedLines, setSelectedLines] = useState<Record<string, number>>({});
   const selectedLineKeys = Object.keys(selectedLines).filter((key) => selectedLines[key] > 0);
-  const shippingMethodOptions = shippingMethodValues.map((method) => ({ label: shippingMethodLabel(method), value: method }));
+  const {
+    incotermOptions,
+    shippingMethodOptions: apiShippingMethodOptions,
+    supplierOptions,
+    suppliers,
+  } = useTradeMasterDataOptions();
+  const shippingMethodOptions =
+    apiShippingMethodOptions.length > 0
+      ? apiShippingMethodOptions
+      : shippingMethodValues.map((method) => ({ label: shippingMethodLabel(method), value: method }));
   const form = useForm<DeliveryOrderFormValues>({
     initialValues: {
       documentsList: ['Invoice', 'Packing List'],
@@ -644,13 +666,32 @@ export function CreateDeliveryOrderDrawer({
             <TextInput label={t('forms.itemName')} {...form.getInputProps('itemName')} />
             <NumberInput label={t('forms.quantity')} min={1} thousandSeparator="," {...form.getInputProps('quantity')} />
             <TextInput label={t('forms.unit')} {...form.getInputProps('unit')} />
-            <TextInput label={t('forms.supplierCode')} {...form.getInputProps('supplierCode')} />
+            <Select
+              label={t('forms.supplierCode')}
+              data={supplierOptions}
+              searchable
+              clearable
+              value={form.values.supplierCode}
+              onChange={(value) => {
+                const matched = findSupplierByCode(suppliers, value);
+                form.setFieldValue('supplierCode', value || '');
+                if (matched) {
+                  form.setFieldValue('supplierName', matched.supplier_name);
+                }
+              }}
+            />
             <TextInput label={t('forms.supplierName')} {...form.getInputProps('supplierName')} />
           </SimpleGrid>
 
           <SimpleGrid cols={{ base: 1, sm: 2 }}>
             <Select label={t('forms.shippingMethod')} data={shippingMethodOptions} {...form.getInputProps('shippingMethod')} />
-            <TextInput label={t('forms.incoterms')} {...form.getInputProps('incoterms')} />
+            <Select
+              label={t('forms.incoterms')}
+              data={incotermOptions}
+              searchable
+              clearable
+              {...form.getInputProps('incoterms')}
+            />
             <TextInput label={t('forms.shippingLine')} {...form.getInputProps('shippingLine')} />
             <TextInput label={t('forms.trackingNumber')} {...form.getInputProps('trackingNumber')} />
             <TextInput label={t('forms.portOfDeparture')} {...form.getInputProps('portOfDeparture')} />

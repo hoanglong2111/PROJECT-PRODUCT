@@ -68,6 +68,7 @@ import {
 import { queryKeys } from '@shared/api/queryKeys';
 import { getApiErrorMessage } from '@shared/lib/errors';
 import { useEntityParam } from '@shared/hooks/useEntityParam';
+import { useTradeMasterDataOptions } from '@shared/hooks/useTradeMasterDataOptions';
 import { useI18n } from '@shared/i18n';
 import { useWorkspaceStore } from '@shared/stores/workspaceStore';
 import { calcDelay } from '@shared/utils/delay';
@@ -560,6 +561,22 @@ function Gd1QuotationBiddingPanel({ requestCode }: { requestCode: string }) {
   const [localCharges, setLocalCharges] = useState('');
   const [customsFee, setCustomsFee] = useState('');
   const [isAllInclusive, setIsAllInclusive] = useState(false);
+  const {
+    currencyOptions,
+    suppliers: carrierSuppliers,
+    transportModeOptions,
+  } = useTradeMasterDataOptions({ supplierRole: 'FORWARDER' });
+  const carrierOptions = useMemo(
+    () =>
+      carrierSuppliers.map((supplier) => ({
+        label: `${supplier.supplier_code} - ${supplier.supplier_name}`,
+        value: supplier.supplier_name,
+      })),
+    [carrierSuppliers],
+  );
+  const quoteTransportModeOptions = transportModeOptions.length > 0
+    ? transportModeOptions
+    : ['FCL', 'LCL', 'AIR'].map((mode) => ({ label: mode, value: mode }));
 
   const quotationsQuery = useQuery({
     queryKey: queryKeys.quotations,
@@ -745,11 +762,14 @@ function Gd1QuotationBiddingPanel({ requestCode }: { requestCode: string }) {
             {t('quotations.newQuoteTitle')}
           </Text>
           <SimpleGrid cols={{ base: 1, sm: 3 }}>
-            <TextInput
+            <Select
               label={t('quotations.carrier')}
               placeholder={t('quotations.carrierPlaceholder')}
+              data={carrierOptions}
               value={carrier}
-              onChange={(e) => setCarrier(e.currentTarget.value)}
+              onChange={(value) => setCarrier(value || '')}
+              searchable
+              clearable
               size="xs"
               required
             />
@@ -766,7 +786,9 @@ function Gd1QuotationBiddingPanel({ requestCode }: { requestCode: string }) {
               label={t('quotations.currency')}
               value={currency}
               onChange={(val) => setCurrency(val || 'USD')}
-              data={['USD', 'VND', 'EUR']}
+              data={currencyOptions}
+              searchable
+              clearable
               size="xs"
             />
           </SimpleGrid>
@@ -776,7 +798,9 @@ function Gd1QuotationBiddingPanel({ requestCode }: { requestCode: string }) {
               label={t('quotations.shippingMode')}
               value={shippingMode}
               onChange={(val) => setShippingMode(val || 'FCL')}
-              data={['FCL', 'LCL', 'AIR']}
+              data={quoteTransportModeOptions}
+              searchable
+              clearable
               size="xs"
             />
             <TextInput
