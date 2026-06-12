@@ -46,6 +46,8 @@
   ShipmentRecord,
 } from '@shared/model/logistics';
 import {
+  fetchDeliveryOrderLines,
+  fetchDeliveryOrderLots,
   fetchDeliveryOrdersV1,
   type DeliveryOrderLineV1,
   type DeliveryOrderV1,
@@ -456,6 +458,10 @@ function dateOnly(value: string | null | undefined) {
   return value ? value.slice(0, 10) : '';
 }
 
+function deliveryOrderNo(deliveryOrder: DeliveryOrderV1) {
+  return deliveryOrder.do_no ?? deliveryOrder.delivery_order_no ?? deliveryOrder.id;
+}
+
 function uiId(prefix: string) {
   return `${prefix}-${Date.now()}`;
 }
@@ -467,8 +473,7 @@ function addDaysIso(days: number) {
 }
 
 function inferPoFlowTags(purchaseOrder: PurchaseOrderV1): BusinessFlowTag[] {
-  const lots = purchaseOrder.delivery_slots?.flatMap((slot) => slot.lots ?? []) ?? [];
-  if (lots.length > 1 || (purchaseOrder.delivery_slots?.length ?? 0) > 1) {
+  if ((purchaseOrder.lines ?? []).some((line) => toNumber(line.qty_lotted) > 0 && toNumber(line.qty_lotted) < toNumber(line.qty_ordered))) {
     return ['PARTIAL_DELIVERY'];
   }
   return ['LINEAR'];
@@ -534,7 +539,7 @@ function mapV1PurchaseOrder(purchaseOrder: PurchaseOrderV1, linkedDoNumbers: str
     supplier_name: purchaseOrder.supplier?.supplier_name ?? '',
     total_amount: totalAmount,
     version: 1,
-    warehouse_code: purchaseOrder.delivery_slots?.[0]?.warehouse_name ?? '',
+    warehouse_code: '',
     confirmed_date: purchaseOrder.confirmed_at,
   };
 }
@@ -589,7 +594,7 @@ function mapV1Quotation(quotation: QuotationV1, requestCode?: string): Quotation
     carrierName: quotation.supplier?.supplier_name ?? quotation.supplier_id,
     createdAt: quotation.create_at,
     createdBy: null,
-    currency: quotation.currency?.currency_code ?? null,
+    currency: quotation.currency?.currency_code ?? quotation.currency_code ?? quotation.currency_id ?? null,
     customerResponseAt: quotation.confirmed_at ?? quotation.rejected_at ?? quotation.cancelled_at,
     customsFee,
     freightCost,
@@ -611,7 +616,7 @@ function mapV1Quotation(quotation: QuotationV1, requestCode?: string): Quotation
 
 async function resolveDeliveryOrderId(value: string) {
   const response = await fetchDeliveryOrdersV1({ page: 1, limit: 100, search: value });
-  const deliveryOrder = response.data.find((order) => order.id === value || order.do_no === value);
+  const deliveryOrder = response.data.find((order) => order.id === value || deliveryOrderNo(order) === value);
   if (!deliveryOrder) {
     throw new Error(`Delivery order ${value} not found`);
   }
@@ -620,7 +625,10 @@ async function resolveDeliveryOrderId(value: string) {
 
 async function resolveSupplierId(value: string) {
   const response = await fetchSuppliers({ page: 1, limit: 100, role: 'FORWARDER', is_active: true });
-  const supplier = response.data.find(
+  const suppliers = response.data.length > 0
+    ? response.data
+    : (await fetchSuppliers({ page: 1, limit: 100, is_active: true })).data;
+  const supplier = suppliers.find(
     (item) => item.id === value || item.supplier_code === value || item.supplier_name === value,
   );
   if (!supplier) {
@@ -638,7 +646,7 @@ async function resolveCurrencyId(value: string | null | undefined) {
   if (!currency) {
     throw new Error(`Currency ${currencyCode} not found`);
   }
-  return currency.id;
+  return currency.currency_code;
 }
 
 async function resolveShipmentId(value: string) {
@@ -693,6 +701,7 @@ function inferQuotationTypeFromChargeLines(chargeLines: ReturnType<typeof buildQ
 }
 
 function mapDeliveryOrderStatus(status: DeliveryOrderV1['status']): DeliveryOrderStatus {
+  if (status === 'SHIPPED') return 'IN_TRANSIT';
   return status;
 }
 
@@ -707,6 +716,7 @@ function mapDeliverySourceLine(deliveryOrder: DeliveryOrderV1, line: DeliveryOrd
   const purchaseOrder = deliveryOrder.purchase_order;
   const purchaseOrderLine = line.purchase_order_line;
   const item = line.item ?? purchaseOrderLine?.item ?? null;
+  const orderNo = deliveryOrderNo(deliveryOrder);
 
   return {
     id: line.id,
@@ -716,7 +726,7 @@ function mapDeliverySourceLine(deliveryOrder: DeliveryOrderV1, line: DeliveryOrd
     po_number: purchaseOrder?.po_no ?? deliveryOrder.purchase_order_id,
     pr_line_id: '',
     quantity: toNumber(line.qty),
-    request_code: purchaseOrder?.po_no ?? deliveryOrder.do_no,
+    request_code: purchaseOrder?.po_no ?? orderNo,
     unit: line.unit,
   };
 }
@@ -728,10 +738,12 @@ function mapV1DeliveryOrder(deliveryOrder: DeliveryOrderV1): DeliveryOrder {
   const purchaseOrder = deliveryOrder.purchase_order;
   const supplier = purchaseOrder?.supplier;
   const firstLot = deliveryOrder.lots?.[0];
+  const firstLotNo = firstLot?.lot_no ?? firstLot?.lot?.lot_no ?? firstLot?.po_lot?.lot_no ?? null;
   const plannedEta = dateOnly(deliveryOrder.planned_eta);
   const plannedEtd = dateOnly(deliveryOrder.planned_etd);
   const plannedCargoReady = dateOnly(deliveryOrder.planned_cargo_ready_date);
   const warehouseDeadline = plannedEta || plannedCargoReady || plannedEtd || dateOnly(deliveryOrder.create_at);
+  const orderNo = deliveryOrderNo(deliveryOrder);
 
   return {
     id: deliveryOrder.id,
@@ -752,16 +764,16 @@ function mapV1DeliveryOrder(deliveryOrder: DeliveryOrderV1): DeliveryOrder {
     },
     order_info: {
       notes: deliveryOrder.notes ?? '',
-      order_number: deliveryOrder.do_no,
+      order_number: orderNo,
       purchase_contract_number: purchaseOrder?.contract_no ?? '',
-      request_code: purchaseOrder?.po_no ?? deliveryOrder.do_no,
+      request_code: purchaseOrder?.po_no ?? orderNo,
       status: mapDeliveryOrderStatus(deliveryOrder.status),
       tracking_number: null,
       xnk_notes: '',
     },
     product_details: {
       item_name_requested: firstLine?.item_name ?? '',
-      lot_number: firstLot?.lot_no ?? null,
+      lot_number: firstLotNo,
       lot_unit_quantity: firstLot ? totalQuantity : null,
       lot_unit_type: firstLine?.unit ?? null,
       packaging_type: null,
@@ -778,7 +790,7 @@ function mapV1DeliveryOrder(deliveryOrder: DeliveryOrderV1): DeliveryOrder {
     },
     source_lines: sourceLines,
     source_lot_id: firstLot?.po_lot_id,
-    source_lot_no: firstLot?.lot_no,
+    source_lot_no: firstLotNo ?? undefined,
     source_po_number: purchaseOrder?.po_no,
     task_summary: {
       blocked_tasks: 0,
@@ -878,7 +890,7 @@ function mapV1Shipment(shipment: ShipmentV1): ShipmentRecord {
       stream: shipment.customs_channel ?? 'GREEN',
     },
     dest_port: shipment.pod ?? deliveryOrder?.destination_address ?? '',
-    do_number: deliveryOrder?.do_no ?? shipment.delivery_order_id,
+    do_number: deliveryOrder ? deliveryOrderNo(deliveryOrder) : shipment.delivery_order_id,
     documents: (shipment.documents ?? []).map(mapV1ShipmentDocument),
     etd: dateOnly(shipment.etd),
     eta: dateOnly(shipment.eta),
@@ -1088,11 +1100,20 @@ export async function fetchQuotations() {
     fetchQuotationsV1({ page: 1, limit: 100 }),
     fetchDeliveryOrdersV1({ page: 1, limit: 100 }),
   ]);
+  const detailedQuotations = await Promise.all(
+    quotationResponse.data.map(async (quotation) => {
+      try {
+        return await fetchQuotationV1(quotation.id);
+      } catch {
+        return quotation;
+      }
+    }),
+  );
   const deliveryOrderNoById = new Map(
-    deliveryOrderResponse.data.map((deliveryOrder) => [deliveryOrder.id, deliveryOrder.do_no]),
+    deliveryOrderResponse.data.map((deliveryOrder) => [deliveryOrder.id, deliveryOrderNo(deliveryOrder)]),
   );
 
-  return quotationResponse.data.map((quotation) =>
+  return detailedQuotations.map((quotation) =>
     mapV1Quotation(quotation, deliveryOrderNoById.get(quotation.ref_id)),
   );
 }
@@ -1107,7 +1128,7 @@ export async function fetchPurchaseOrders() {
   deliveryOrderResponse.data.forEach((deliveryOrder) => {
     deliveryOrdersByPoId.set(deliveryOrder.purchase_order_id, [
       ...(deliveryOrdersByPoId.get(deliveryOrder.purchase_order_id) ?? []),
-      deliveryOrder.do_no,
+      deliveryOrderNo(deliveryOrder),
     ]);
   });
 
@@ -1118,7 +1139,24 @@ export async function fetchPurchaseOrders() {
 
 export async function fetchDeliveryOrders() {
   const response = await fetchDeliveryOrdersV1({ page: 1, limit: 100 });
-  return response.data.map(mapV1DeliveryOrder);
+  const detailed = await Promise.all(
+    response.data.map(async (deliveryOrder) => {
+      try {
+        const [lots, lines] = await Promise.all([
+          fetchDeliveryOrderLots(deliveryOrder.id),
+          fetchDeliveryOrderLines(deliveryOrder.id),
+        ]);
+        return {
+          ...deliveryOrder,
+          lots,
+          lines,
+        };
+      } catch {
+        return deliveryOrder;
+      }
+    }),
+  );
+  return detailed.map(mapV1DeliveryOrder);
 }
 
 export async function fetchLogisticsTasks() {
@@ -1190,7 +1228,7 @@ export async function fetchSlaAlerts() {
 }
 
 export async function createQuotation(payload: CreateQuotationPayload) {
-  const [deliveryOrderId, supplierId, currencyId] = await Promise.all([
+  const [deliveryOrderId, supplierId, currencyCode] = await Promise.all([
     resolveDeliveryOrderId(payload.requestCode),
     resolveSupplierId((payload as any).carrierId ?? (payload as any).carrierName ?? ''),
     resolveCurrencyId(payload.currency),
@@ -1198,7 +1236,7 @@ export async function createQuotation(payload: CreateQuotationPayload) {
   const chargeLines = buildQuotationChargeLines(payload);
   const quotation = await createDeliveryOrderQuotation(deliveryOrderId, {
     charge_lines: chargeLines,
-    currency_id: currencyId,
+    currency_code: currencyCode,
     exchange_rate: 1,
     note: (payload as any).isAllInclusive ? 'All-inclusive quotation' : null,
     quotation_no: `QT-${payload.requestCode}-${Date.now().toString().slice(-6)}`,

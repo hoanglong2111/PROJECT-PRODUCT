@@ -340,7 +340,7 @@ export function Shipments() {
     const deliveryOrderId = value ?? '';
     const deliveryOrder = availableDeliveryOrders.find((item) => item.id === deliveryOrderId);
     setNewDeliveryOrderId(deliveryOrderId);
-    setNewDoNumber(deliveryOrder?.do_no ?? '');
+    setNewDoNumber(deliveryOrder?.do_no ?? deliveryOrder?.delivery_order_no ?? '');
     setNewPoNumber(deliveryOrder?.purchase_order?.po_no ?? '');
     setNewMode(deliveryOrder ? inferShipmentModeFromDeliveryOrder(deliveryOrder) : 'SEA');
     setNewOriginPort(deliveryOrder?.origin_address ?? '');

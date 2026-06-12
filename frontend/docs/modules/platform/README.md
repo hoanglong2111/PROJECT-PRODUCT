@@ -24,8 +24,9 @@ Platform docs cover modules that support GD1 but are not themselves PO/DO/shipme
 
 See `api-integration.md` for the current frontend-to-mock-API baseline.
 
-As of 2026-06-11:
+As of 2026-06-12:
 
-- Master data, item master, Purchase Orders V1, PO LOT planning, and Delivery Orders V1 are wired to real mock API endpoints.
+- Master data, item master, Purchase Orders V1, PO LOT planning, and Delivery Orders V1 are wired to the Express mock-only API.
+- PO LOT planning uses direct `lots[].items[]` responses and has no delivery slot layer.
 - Delivery Orders still use a compatibility adapter for the existing UI shape.
-- Quotation, shipment, task, and dashboard-stat screens still use UI-only compatibility data unless a matching endpoint exists in `kbi-mock-api/docs/api_doc.md`.
+- Quotation, shipment, task, and dashboard-stat screens still use UI-only compatibility data unless a matching endpoint exists in `kbi-mock-api/docs/API_CONTRACT.md`.

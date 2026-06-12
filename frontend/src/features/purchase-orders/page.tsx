@@ -8,7 +8,6 @@ import {
   Group,
   Loader,
   Modal,
-  MultiSelect,
   NumberFormatter,
   NumberInput,
   Paper,
@@ -48,35 +47,25 @@ import { useSearchParams } from 'react-router-dom';
 import { fetchItems, type Item } from '@shared/api/items';
 import {
   confirmPurchaseOrder,
-  createDeliverySlot,
-  createEmptyLot,
+  createLot,
   createPurchaseOrder,
-  deleteDeliverySlot,
   deletePoLot,
   fetchPurchaseOrder,
   fetchPurchaseOrderLotPlanning,
   fetchPurchaseOrders,
-  mergePoLot,
-  mergePoLotBackToDefault,
-  movePoLotSlot,
+  movePoLotLine,
+  reorderPoLotLines,
   reorderPoLots,
-  resetPurchaseOrderLotPlanning,
   sendPurchaseOrder,
-  splitPoLot,
-  transferPoLotLines,
-  updateDeliverySlot,
+  splitPoLotLine,
   updatePoLot,
   updatePurchaseOrder,
   type ConfirmPurchaseOrderPayload,
-  type CreateDeliverySlotPayload,
-  type CreateEmptyLotPayload,
+  type CreateLotPayload,
   type CreatePurchaseOrderV1Payload,
-  type DeliverySlotPayload,
   type ListPurchaseOrdersParams,
-  type MergeLotPayload,
-  type PoDeliverySlot,
-  type PoDeliverySlotStatus,
   type PoLot,
+  type PoLotLine,
   type PoLotStatus,
   type PurchaseOrderLinePayload,
   type PurchaseOrderLineV1,
@@ -84,8 +73,6 @@ import {
   type PurchaseOrderStatusV1,
   type PurchaseOrderTypeV1,
   type PurchaseOrderV1,
-  type SplitLotPayload,
-  type TransferLotLinesPayload,
   type UpdatePurchaseOrderV1Payload,
 } from '@shared/api/purchaseOrders';
 import { queryKeys } from '@shared/api/queryKeys';
@@ -120,7 +107,6 @@ const purchaseOrderStatusOptions: PurchaseOrderStatusV1[] = [
   'CANCELLED',
 ];
 const poTypeOptions: PurchaseOrderTypeV1[] = ['SEA', 'AIR', 'DOMESTIC'];
-const slotStatusOptions: PoDeliverySlotStatus[] = ['PLANNED', 'CONFIRMED', 'CANCELLED'];
 const lotStatusOptions: PoLotStatus[] = ['PLANNED', 'READY', 'ASSIGNED_TO_SHIPMENT', 'SHIPPED', 'CANCELLED'];
 const lockedLotStatuses = new Set<PoLotStatus>(['ASSIGNED_TO_SHIPMENT', 'SHIPPED', 'CANCELLED']);
 
@@ -160,23 +146,8 @@ type PoFormDraft = {
   lines: PoLineDraft[];
 };
 
-type SlotDraft = {
-  id?: string;
-  slot_no: string;
-  slot_name: string;
-  planned_cargo_ready_date: string;
-  planned_etd: string;
-  planned_eta: string;
-  delivery_address: string;
-  warehouse_name: string;
-  status: PoDeliverySlotStatus;
-  sort_order: number;
-  notes: string;
-};
-
 type LotDraft = {
   id?: string;
-  delivery_slot_id: string;
   lot_no: string;
   lot_name: string;
   status: PoLotStatus;
@@ -189,26 +160,9 @@ type LotDraft = {
 
 type SplitDraft = {
   sourceLot: PoLot;
-  new_lot_no: string;
-  new_lot_name: string;
-  target_slot_id: string;
-  planned_cargo_ready_date: string;
-  planned_etd: string;
-  planned_eta: string;
-  notes: string;
-  lines: Record<string, number>;
-};
-
-type MergeDraft = {
-  targetLot: PoLot;
-  source_lot_ids: string[];
-  delete_empty_source_lots: boolean;
-};
-
-type TransferDraft = {
-  sourceLot: PoLot;
+  sourceLine: PoLotLine;
   target_lot_id: string;
-  lines: Record<string, number>;
+  split_qty: number;
 };
 
 function dateOnly(value: string | null | undefined) {
@@ -430,7 +384,7 @@ export function PurchaseOrders() {
           </div>
           <Group gap="xs">
             <Badge leftSection={<IconTruckDelivery size={14} />} size="lg" variant="light">
-              PO - Slot - LOT
+              PO - LOT
             </Badge>
             {canManagePurchaseOrders ? (
               <Button
@@ -1076,59 +1030,23 @@ function PurchaseOrderForm({
 }
 
 function LotPlanningBoard({ canManage, planning }: { canManage: boolean; planning: PurchaseOrderLotPlanning }) {
-  const [slotDraft, setSlotDraft] = useState<SlotDraft | null>(null);
   const [lotDraft, setLotDraft] = useState<LotDraft | null>(null);
   const [splitDraft, setSplitDraft] = useState<SplitDraft | null>(null);
-  const [mergeDraft, setMergeDraft] = useState<MergeDraft | null>(null);
-  const [transferDraft, setTransferDraft] = useState<TransferDraft | null>(null);
   const [boardError, setBoardError] = useState<string | null>(null);
-  const invalidatePo = usePoInvalidation(planning.id);
+  const purchaseOrderId = planning.purchase_order.id;
+  const invalidatePo = usePoInvalidation(purchaseOrderId);
 
-  const sortedSlots = useMemo(
+  const sortedLots = useMemo(
     () =>
-      [...planning.delivery_slots].sort((a, b) => {
+      [...planning.lots].sort((a, b) => {
         const sortDiff = a.sort_order - b.sort_order;
-        return sortDiff || a.slot_no.localeCompare(b.slot_no);
+        return sortDiff || a.lot_no.localeCompare(b.lot_no);
       }),
-    [planning.delivery_slots],
+    [planning.lots],
   );
-
-  const allLots = useMemo(
-    () => sortedSlots.flatMap((slot) => slot.lots ?? []),
-    [sortedSlots],
-  );
-  const defaultLot = allLots.find((lot) => lot.lot_no === 'LOT-001');
-
-  const createSlotMutation = useMutation({
-    mutationFn: (payload: CreateDeliverySlotPayload) => createDeliverySlot(planning.id, payload),
-    onSuccess: () => {
-      setSlotDraft(null);
-      invalidatePo();
-    },
-  });
-
-  const updateSlotMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: DeliverySlotPayload }) => updateDeliverySlot(id, payload),
-    onSuccess: () => {
-      setSlotDraft(null);
-      invalidatePo();
-    },
-  });
-
-  const deleteSlotMutation = useMutation({
-    mutationFn: (slotId: string) => deleteDeliverySlot(slotId),
-    onSuccess: () => {
-      setSlotDraft(null);
-      setBoardError(null);
-      invalidatePo();
-    },
-    onError: () => {
-      setBoardError('Cannot delete this delivery slot. Move or remove every LOT in the slot first.');
-    },
-  });
 
   const createLotMutation = useMutation({
-    mutationFn: (payload: CreateEmptyLotPayload) => createEmptyLot(planning.id, payload),
+    mutationFn: (payload: CreateLotPayload) => createLot(purchaseOrderId, payload),
     onSuccess: () => {
       setLotDraft(null);
       invalidatePo();
@@ -1164,105 +1082,47 @@ function LotPlanningBoard({ canManage, planning }: { canManage: boolean; plannin
     },
   });
 
-  const moveLotMutation = useMutation({
-    mutationFn: ({ lotId, targetSlotId, sortOrder }: { lotId: string; targetSlotId: string; sortOrder: number }) =>
-      movePoLotSlot(lotId, { target_slot_id: targetSlotId, new_sort_order: sortOrder }),
+  const moveLineMutation = useMutation({
+    mutationFn: ({ lineId, targetLotId, sortOrder }: { lineId: string; targetLotId: string; sortOrder?: number }) =>
+      movePoLotLine(lineId, { target_lot_id: targetLotId, target_sort_order: sortOrder }),
     onSuccess: invalidatePo,
     onError: (error) => setBoardError(getApiErrorMessage(error)),
   });
 
-  const reorderMutation = useMutation({
-    mutationFn: (payload: { lot_id: string; delivery_slot_id: string; sort_order: number }[]) =>
-      reorderPoLots({ lots: payload }),
+  const reorderLotsMutation = useMutation({
+    mutationFn: (orderedLotIds: string[]) =>
+      reorderPoLots({ purchase_order_id: purchaseOrderId, ordered_lot_ids: orderedLotIds }),
+    onSuccess: invalidatePo,
+    onError: (error) => setBoardError(getApiErrorMessage(error)),
+  });
+
+  const reorderLinesMutation = useMutation({
+    mutationFn: ({ lotId, orderedLineIds }: { lotId: string; orderedLineIds: string[] }) =>
+      reorderPoLotLines({ lot_id: lotId, ordered_lot_line_ids: orderedLineIds }),
     onSuccess: invalidatePo,
     onError: (error) => setBoardError(getApiErrorMessage(error)),
   });
 
   const splitMutation = useMutation({
-    mutationFn: ({ lotId, payload }: { lotId: string; payload: SplitLotPayload }) => splitPoLot(lotId, payload),
+    mutationFn: ({ lineId, targetLotId, splitQty }: { lineId: string; targetLotId: string; splitQty: number }) =>
+      splitPoLotLine(lineId, { target_lot_id: targetLotId, split_qty: splitQty }),
     onSuccess: () => {
       setSplitDraft(null);
-      invalidatePo();
-    },
-  });
-
-  const mergeMutation = useMutation({
-    mutationFn: ({ lotId, payload }: { lotId: string; payload: MergeLotPayload }) => mergePoLot(lotId, payload),
-    onSuccess: () => {
-      setMergeDraft(null);
-      invalidatePo();
-    },
-  });
-
-  const mergeBackDefaultMutation = useMutation({
-    mutationFn: (lotId: string) => mergePoLotBackToDefault(lotId, { delete_empty_source_lots: true }),
-    onSuccess: () => {
       setBoardError(null);
       invalidatePo();
     },
     onError: (error) => setBoardError(getApiErrorMessage(error)),
   });
 
-  const transferMutation = useMutation({
-    mutationFn: ({ lotId, payload }: { lotId: string; payload: TransferLotLinesPayload }) =>
-      transferPoLotLines(lotId, payload),
-    onSuccess: () => {
-      setTransferDraft(null);
-      invalidatePo();
-    },
-  });
-
-  const resetPlanningMutation = useMutation({
-    mutationFn: () => resetPurchaseOrderLotPlanning(planning.id),
-    onSuccess: () => {
-      setBoardError(null);
-      invalidatePo();
-    },
-    onError: (error) => setBoardError(getApiErrorMessage(error)),
-  });
-
-  const openCreateSlot = () => {
-    setSlotDraft({
-      slot_no: `SLOT-${String(sortedSlots.length + 1).padStart(3, '0')}`,
-      slot_name: '',
+  const openCreateLot = () => {
+    setLotDraft({
+      lot_no: `LOT-${String(sortedLots.length + 1).padStart(3, '0')}`,
+      lot_name: '',
+      status: 'PLANNED',
       planned_cargo_ready_date: '',
       planned_etd: '',
       planned_eta: '',
-      delivery_address: '',
-      warehouse_name: '',
-      status: 'PLANNED',
-      sort_order: sortedSlots.length + 1,
-      notes: '',
-    });
-  };
-
-  const openEditSlot = (slot: PoDeliverySlot) => {
-    setSlotDraft({
-      id: slot.id,
-      slot_no: slot.slot_no,
-      slot_name: slot.slot_name ?? '',
-      planned_cargo_ready_date: dateOnly(slot.planned_cargo_ready_date),
-      planned_etd: dateOnly(slot.planned_etd),
-      planned_eta: dateOnly(slot.planned_eta),
-      delivery_address: slot.delivery_address ?? '',
-      warehouse_name: slot.warehouse_name ?? '',
-      status: slot.status,
-      sort_order: slot.sort_order,
-      notes: slot.notes ?? '',
-    });
-  };
-
-  const openCreateLot = (slot: PoDeliverySlot) => {
-    const lotCount = sortedSlots.reduce((total, candidate) => total + (candidate.lots?.length ?? 0), 0);
-    setLotDraft({
-      delivery_slot_id: slot.id,
-      lot_no: `LOT-${String(lotCount + 1).padStart(3, '0')}`,
-      lot_name: '',
-      status: 'PLANNED',
-      planned_cargo_ready_date: dateOnly(slot.planned_cargo_ready_date),
-      planned_etd: dateOnly(slot.planned_etd),
-      planned_eta: dateOnly(slot.planned_eta),
-      sort_order: (slot.lots?.length ?? 0) + 1,
+      sort_order: sortedLots.length + 1,
       notes: '',
     });
   };
@@ -1270,7 +1130,6 @@ function LotPlanningBoard({ canManage, planning }: { canManage: boolean; plannin
   const openEditLot = (lot: PoLot) => {
     setLotDraft({
       id: lot.id,
-      delivery_slot_id: lot.delivery_slot_id,
       lot_no: lot.lot_no,
       lot_name: lot.lot_name ?? '',
       status: lot.status,
@@ -1282,74 +1141,71 @@ function LotPlanningBoard({ canManage, planning }: { canManage: boolean; plannin
     });
   };
 
-  const openSplitLot = (lot: PoLot) => {
+  const openSplitLine = (lot: PoLot, line: PoLotLine) => {
+    const targetLot = sortedLots.find((candidate) => candidate.id !== lot.id && !lockedLotStatuses.has(candidate.status));
     setSplitDraft({
       sourceLot: lot,
-      new_lot_no: `${lot.lot_no}-SPLIT`,
-      new_lot_name: '',
-      target_slot_id: lot.delivery_slot_id,
-      planned_cargo_ready_date: dateOnly(lot.planned_cargo_ready_date),
-      planned_etd: dateOnly(lot.planned_etd),
-      planned_eta: dateOnly(lot.planned_eta),
-      notes: '',
-      lines: Object.fromEntries((lot.lot_lines ?? []).map((line) => [line.purchase_order_line_id, 0])),
-    });
-  };
-
-  const openMergeLot = (lot: PoLot) => {
-    setMergeDraft({
-      targetLot: lot,
-      source_lot_ids: [],
-      delete_empty_source_lots: true,
-    });
-  };
-
-  const openTransferLot = (lot: PoLot) => {
-    const targetLot = allLots.find((candidate) => candidate.id !== lot.id && !lockedLotStatuses.has(candidate.status));
-    setTransferDraft({
-      sourceLot: lot,
+      sourceLine: line,
       target_lot_id: targetLot?.id ?? '',
-      lines: Object.fromEntries((lot.lot_lines ?? []).map((line) => [line.purchase_order_line_id, 0])),
+      split_qty: 0,
     });
   };
 
-  const reorderWithinSlot = (slot: PoDeliverySlot, lotId: string, targetLotId?: string) => {
-    const lots = [...(slot.lots ?? [])];
-    const dragged = lots.find((lot) => lot.id === lotId);
+  const reorderLotCards = (lotId: string, targetLotId?: string) => {
+    const dragged = sortedLots.find((lot) => lot.id === lotId);
     if (!dragged) return;
-    const withoutDragged = lots.filter((lot) => lot.id !== lotId);
+    const withoutDragged = sortedLots.filter((lot) => lot.id !== lotId);
     const targetIndex = targetLotId ? withoutDragged.findIndex((lot) => lot.id === targetLotId) : withoutDragged.length;
     const insertIndex = targetIndex < 0 ? withoutDragged.length : targetIndex;
     const nextLots = [...withoutDragged.slice(0, insertIndex), dragged, ...withoutDragged.slice(insertIndex)];
-    reorderMutation.mutate(
-      nextLots.map((lot, index) => ({
-        lot_id: lot.id,
-        delivery_slot_id: slot.id,
-        sort_order: index + 1,
-      })),
-    );
+    reorderLotsMutation.mutate(nextLots.map((lot) => lot.id));
   };
 
-  const handleDropOnSlot = (event: DragEvent<HTMLDivElement>, slot: PoDeliverySlot, targetLot?: PoLot) => {
+  const reorderLinesInLot = (lot: PoLot, lineId: string, targetLineId?: string) => {
+    const lines = [...(lot.items ?? [])];
+    const dragged = lines.find((line) => line.id === lineId);
+    if (!dragged) return;
+    const withoutDragged = lines.filter((line) => line.id !== lineId);
+    const targetIndex = targetLineId ? withoutDragged.findIndex((line) => line.id === targetLineId) : withoutDragged.length;
+    const insertIndex = targetIndex < 0 ? withoutDragged.length : targetIndex;
+    const nextLines = [...withoutDragged.slice(0, insertIndex), dragged, ...withoutDragged.slice(insertIndex)];
+    reorderLinesMutation.mutate({ lotId: lot.id, orderedLineIds: nextLines.map((line) => line.id) });
+  };
+
+  const handleDropOnLot = (event: DragEvent<HTMLDivElement>, targetLot?: PoLot, targetLine?: PoLotLine) => {
     event.preventDefault();
     event.stopPropagation();
-    const lotId = event.dataTransfer.getData('lotId');
-    const sourceSlotId = event.dataTransfer.getData('sourceSlotId');
-    if (!lotId) return;
+    const dragType = event.dataTransfer.getData('dragType');
 
-    if (sourceSlotId === slot.id) {
-      reorderWithinSlot(slot, lotId, targetLot?.id);
+    if (dragType === 'lot') {
+      const lotId = event.dataTransfer.getData('lotId');
+      if (!lotId) return;
+      reorderLotCards(lotId, targetLot?.id);
       return;
     }
 
-    moveLotMutation.mutate({
-      lotId,
-      targetSlotId: slot.id,
-      sortOrder: targetLot?.sort_order ?? (slot.lots?.length ?? 0) + 1,
+    if (dragType !== 'lotLine' || !targetLot) return;
+    if (lockedLotStatuses.has(targetLot.status)) {
+      setBoardError('Cannot move item lines into a locked LOT.');
+      return;
+    }
+
+    const lineId = event.dataTransfer.getData('lotLineId');
+    const sourceLotId = event.dataTransfer.getData('sourceLotId');
+    if (!lineId) return;
+
+    if (sourceLotId === targetLot.id) {
+      reorderLinesInLot(targetLot, lineId, targetLine?.id);
+      return;
+    }
+
+    moveLineMutation.mutate({
+      lineId,
+      targetLotId: targetLot.id,
+      sortOrder: targetLine?.sort_order ?? (targetLot.items?.length ?? 0) + 1,
     });
   };
 
-  const slotMutationError = createSlotMutation.error ?? updateSlotMutation.error ?? deleteSlotMutation.error;
   const lotMutationError = createLotMutation.error ?? updateLotMutation.error;
 
   return (
@@ -1359,25 +1215,15 @@ function LotPlanningBoard({ canManage, planning }: { canManage: boolean; plannin
           <div>
             <Group gap="xs">
               <IconTruckDelivery size={20} />
-              <Text fw={700}>Slot / LOT planning</Text>
+              <Text fw={700}>LOT planning</Text>
             </Group>
             <Text size="sm" c="dimmed">
-              Drag LOT cards between slots or within the same slot to move and reorder.
+              Drag LOT cards to reorder. Drag item lines between LOTs, or split a line into another LOT.
             </Text>
           </div>
           <Group gap="xs">
-            <Button
-              size="xs"
-              variant="light"
-              leftSection={<IconRefresh size={14} />}
-              loading={resetPlanningMutation.isPending}
-              disabled={!canManage}
-              onClick={() => resetPlanningMutation.mutate()}
-            >
-              Reset default
-            </Button>
-            <Button size="xs" leftSection={<IconPlus size={14} />} onClick={openCreateSlot} disabled={!canManage}>
-              Add slot
+            <Button size="xs" leftSection={<IconPlus size={14} />} onClick={openCreateLot} disabled={!canManage}>
+              Add LOT
             </Button>
           </Group>
         </Group>
@@ -1389,113 +1235,40 @@ function LotPlanningBoard({ canManage, planning }: { canManage: boolean; plannin
         ) : null}
 
         <ScrollArea type="always" offsetScrollbars scrollbarSize={8}>
-          <Group align="stretch" gap="sm" wrap="nowrap" style={{ minHeight: 360 }}>
-            {sortedSlots.map((slot) => {
-              const lots = slot.lots ?? [];
-              return (
-                <Paper
-                  key={slot.id}
-                  withBorder
-                  p="sm"
-                  onDragOver={(event) => event.preventDefault()}
-                  onDrop={(event) => handleDropOnSlot(event, slot)}
-                  style={{ flex: '0 0 330px', backgroundColor: 'var(--mantine-color-gray-0)' }}
-                >
-                  <Stack gap="sm" h="100%">
-                    <Group justify="space-between" align="flex-start" wrap="nowrap">
-                      <div style={{ minWidth: 0 }}>
-                        <Group gap={6}>
-                          <Text fw={700} size="sm" truncate>
-                            {slot.slot_no}
-                          </Text>
-                          <Badge size="xs" variant="light">
-                            {slot.status}
-                          </Badge>
-                        </Group>
-                        <Text size="xs" c="dimmed" truncate>
-                          {slot.slot_name || slot.warehouse_name || 'Unnamed slot'}
-                        </Text>
-                        <Text size="xs" c="dimmed">
-                          ETA {dateOnly(slot.planned_eta) || '-'}
-                        </Text>
-                      </div>
-                      <Group gap={4} wrap="nowrap">
-                        <ActionIcon variant="subtle" aria-label="Add LOT" disabled={!canManage} onClick={() => openCreateLot(slot)}>
-                          <IconPlus size={16} />
-                        </ActionIcon>
-                        <ActionIcon variant="subtle" aria-label="Edit slot" disabled={!canManage} onClick={() => openEditSlot(slot)}>
-                          <IconPencil size={16} />
-                        </ActionIcon>
-                      </Group>
-                    </Group>
-
-                    <Stack gap="xs" style={{ flex: 1 }}>
-                      {lots.map((lot) => (
-                        <LotCard
-                          key={lot.id}
-                          lot={lot}
-                          onDrop={(event) => handleDropOnSlot(event, slot, lot)}
-                          onDelete={() => deleteLotMutation.mutate(lot.id)}
-                          onEdit={() => openEditLot(lot)}
-                          onMerge={() => openMergeLot(lot)}
-                          onMergeBackDefault={() => mergeBackDefaultMutation.mutate(lot.id)}
-                          onSplit={() => openSplitLot(lot)}
-                          onTransfer={() => openTransferLot(lot)}
-                          canManage={canManage}
-                          hasMergeTargets={allLots.some((candidate) => candidate.id !== lot.id && !lockedLotStatuses.has(candidate.status))}
-                          canMergeBackDefault={
-                            Boolean(defaultLot) &&
-                            defaultLot?.id !== lot.id &&
-                            !lockedLotStatuses.has(defaultLot?.status ?? 'CANCELLED')
-                          }
-                        />
-                      ))}
-                      {lots.length === 0 ? (
-                        <Paper withBorder p="md" style={{ borderStyle: 'dashed' }}>
-                          <Text size="xs" c="dimmed" ta="center">
-                            Drop LOT here
-                          </Text>
-                        </Paper>
-                      ) : null}
-                    </Stack>
-                  </Stack>
-                </Paper>
-              );
-            })}
+          <Group
+            align="stretch"
+            gap="sm"
+            wrap="nowrap"
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={(event) => handleDropOnLot(event)}
+            style={{ minHeight: 360 }}
+          >
+            {sortedLots.map((lot) => (
+              <LotCard
+                key={lot.id}
+                lot={lot}
+                onDrop={(event) => handleDropOnLot(event, lot)}
+                onDropLine={(event, line) => handleDropOnLot(event, lot, line)}
+                onDelete={() => deleteLotMutation.mutate(lot.id)}
+                onEdit={() => openEditLot(lot)}
+                onSplitLine={(line) => openSplitLine(lot, line)}
+                canManage={canManage}
+                hasMoveTargets={sortedLots.some((candidate) => candidate.id !== lot.id && !lockedLotStatuses.has(candidate.status))}
+              />
+            ))}
+            {sortedLots.length === 0 ? (
+              <Paper withBorder p="md" style={{ flex: '0 0 330px', borderStyle: 'dashed' }}>
+                <Text size="xs" c="dimmed" ta="center">
+                  Add a LOT to start planning.
+                </Text>
+              </Paper>
+            ) : null}
           </Group>
         </ScrollArea>
       </Stack>
 
-      <SlotModal
-        draft={slotDraft}
-        error={slotMutationError}
-        loading={createSlotMutation.isPending || updateSlotMutation.isPending || deleteSlotMutation.isPending}
-        onClose={() => setSlotDraft(null)}
-        onDelete={(slotId) => deleteSlotMutation.mutate(slotId)}
-        onSubmit={(nextDraft) => {
-          const payload: DeliverySlotPayload = {
-            slot_no: nextDraft.slot_no.trim(),
-            slot_name: nullIfEmpty(nextDraft.slot_name),
-            planned_cargo_ready_date: nullIfEmpty(nextDraft.planned_cargo_ready_date),
-            planned_etd: nullIfEmpty(nextDraft.planned_etd),
-            planned_eta: nullIfEmpty(nextDraft.planned_eta),
-            delivery_address: nullIfEmpty(nextDraft.delivery_address),
-            warehouse_name: nullIfEmpty(nextDraft.warehouse_name),
-            status: nextDraft.status,
-            sort_order: nextDraft.sort_order,
-            notes: nullIfEmpty(nextDraft.notes),
-          };
-          if (nextDraft.id) {
-            updateSlotMutation.mutate({ id: nextDraft.id, payload });
-          } else {
-            createSlotMutation.mutate(payload as CreateDeliverySlotPayload);
-          }
-        }}
-      />
-
       <LotModal
         draft={lotDraft}
-        slots={sortedSlots}
         error={lotMutationError}
         loading={createLotMutation.isPending || updateLotMutation.isPending}
         onClose={() => setLotDraft(null)}
@@ -1504,7 +1277,6 @@ function LotPlanningBoard({ canManage, planning }: { canManage: boolean; plannin
             updateLotMutation.mutate({ id: nextDraft.id, payload: nextDraft });
           } else {
             createLotMutation.mutate({
-              delivery_slot_id: nextDraft.delivery_slot_id,
               lot_no: nextDraft.lot_no.trim(),
               lot_name: nullIfEmpty(nextDraft.lot_name),
               status: nextDraft.status,
@@ -1520,67 +1292,15 @@ function LotPlanningBoard({ canManage, planning }: { canManage: boolean; plannin
 
       <SplitLotModal
         draft={splitDraft}
-        slots={sortedSlots}
+        lots={sortedLots}
         error={splitMutation.error}
         loading={splitMutation.isPending}
         onClose={() => setSplitDraft(null)}
         onSubmit={(nextDraft) => {
           splitMutation.mutate({
-            lotId: nextDraft.sourceLot.id,
-            payload: {
-              new_lot_no: nextDraft.new_lot_no.trim(),
-              new_lot_name: nullIfEmpty(nextDraft.new_lot_name),
-              target_slot_id: nextDraft.target_slot_id,
-              planned_cargo_ready_date: nullIfEmpty(nextDraft.planned_cargo_ready_date),
-              planned_etd: nullIfEmpty(nextDraft.planned_etd),
-              planned_eta: nullIfEmpty(nextDraft.planned_eta),
-              notes: nullIfEmpty(nextDraft.notes),
-              lines: Object.entries(nextDraft.lines)
-                .filter(([, qty]) => Number(qty) > 0)
-                .map(([purchaseOrderLineId, qty]) => ({
-                  purchase_order_line_id: purchaseOrderLineId,
-                  split_qty: Number(qty),
-                })),
-            },
-          });
-        }}
-      />
-
-      <MergeLotModal
-        draft={mergeDraft}
-        lots={allLots}
-        error={mergeMutation.error}
-        loading={mergeMutation.isPending}
-        onClose={() => setMergeDraft(null)}
-        onSubmit={(nextDraft) => {
-          mergeMutation.mutate({
-            lotId: nextDraft.targetLot.id,
-            payload: {
-              source_lot_ids: nextDraft.source_lot_ids,
-              delete_empty_source_lots: nextDraft.delete_empty_source_lots,
-            },
-          });
-        }}
-      />
-
-      <TransferLotLinesModal
-        draft={transferDraft}
-        lots={allLots}
-        error={transferMutation.error}
-        loading={transferMutation.isPending}
-        onClose={() => setTransferDraft(null)}
-        onSubmit={(nextDraft) => {
-          transferMutation.mutate({
-            lotId: nextDraft.sourceLot.id,
-            payload: {
-              target_lot_id: nextDraft.target_lot_id,
-              lines: Object.entries(nextDraft.lines)
-                .filter(([, qty]) => Number(qty) > 0)
-                .map(([purchaseOrderLineId, qty]) => ({
-                  purchase_order_line_id: purchaseOrderLineId,
-                  transfer_qty: Number(qty),
-                })),
-            },
+            lineId: nextDraft.sourceLine.id,
+            targetLotId: nextDraft.target_lot_id,
+            splitQty: Number(nextDraft.split_qty),
           });
         }}
       />
@@ -1590,30 +1310,24 @@ function LotPlanningBoard({ canManage, planning }: { canManage: boolean; plannin
 
 function LotCard({
   canManage,
-  hasMergeTargets,
-  canMergeBackDefault,
+  hasMoveTargets,
   lot,
   onDelete,
   onDrop,
+  onDropLine,
   onEdit,
-  onMerge,
-  onMergeBackDefault,
-  onSplit,
-  onTransfer,
+  onSplitLine,
 }: {
   canManage: boolean;
-  canMergeBackDefault: boolean;
-  hasMergeTargets: boolean;
+  hasMoveTargets: boolean;
   lot: PoLot;
   onDelete: () => void;
   onDrop: (event: DragEvent<HTMLDivElement>) => void;
+  onDropLine: (event: DragEvent<HTMLDivElement>, line: PoLotLine) => void;
   onEdit: () => void;
-  onMerge: () => void;
-  onMergeBackDefault: () => void;
-  onSplit: () => void;
-  onTransfer: () => void;
+  onSplitLine: (line: PoLotLine) => void;
 }) {
-  const lines = lot.lot_lines ?? [];
+  const lines = lot.items ?? [];
   const isLocked = lockedLotStatuses.has(lot.status);
   const canDelete = canManage && !isLocked && lines.length === 0;
 
@@ -1621,14 +1335,14 @@ function LotCard({
     <Paper
       withBorder
       p="sm"
+      onDrop={onDrop}
+      onDragOver={(event) => event.preventDefault()}
       draggable={canManage && !isLocked}
       onDragStart={(event: DragEvent<HTMLDivElement>) => {
+        event.dataTransfer.setData('dragType', 'lot');
         event.dataTransfer.setData('lotId', lot.id);
-        event.dataTransfer.setData('sourceSlotId', lot.delivery_slot_id);
       }}
-      onDragOver={(event) => event.preventDefault()}
-      onDrop={onDrop}
-      style={{ cursor: canManage && !isLocked ? 'grab' : 'default', backgroundColor: 'white' }}
+      style={{ flex: '0 0 330px', cursor: canManage && !isLocked ? 'grab' : 'default', backgroundColor: 'white' }}
     >
       <Stack gap="xs">
         <Group justify="space-between" align="flex-start" wrap="nowrap">
@@ -1653,38 +1367,14 @@ function LotCard({
             <ActionIcon
               variant="subtle"
               size="sm"
-              aria-label="Split LOT"
+              aria-label="Split an item line"
               disabled={!canManage || isLocked || lines.length === 0}
-              onClick={onSplit}
+              onClick={() => {
+                const firstLine = lines[0];
+                if (firstLine) onSplitLine(firstLine);
+              }}
             >
               <IconGitBranch size={15} />
-            </ActionIcon>
-            <ActionIcon
-              variant="subtle"
-              size="sm"
-              aria-label="Merge LOTs into this LOT"
-              disabled={!canManage || isLocked || !hasMergeTargets}
-              onClick={onMerge}
-            >
-              <IconTruckDelivery size={15} />
-            </ActionIcon>
-            <ActionIcon
-              variant="subtle"
-              size="sm"
-              aria-label="Merge back to LOT-001"
-              disabled={!canManage || isLocked || !canMergeBackDefault || lot.lot_no === 'LOT-001'}
-              onClick={onMergeBackDefault}
-            >
-              <IconArrowBackUp size={15} />
-            </ActionIcon>
-            <ActionIcon
-              variant="subtle"
-              size="sm"
-              aria-label="Transfer LOT lines"
-              disabled={!canManage || isLocked || lines.length === 0 || !hasMergeTargets}
-              onClick={onTransfer}
-            >
-              <IconRefresh size={15} />
             </ActionIcon>
             <ActionIcon
               variant="subtle"
@@ -1709,19 +1399,47 @@ function LotCard({
         <Stack gap={4}>
           {lines.length > 0 ? (
             lines.map((line) => (
-              <Paper key={line.id} withBorder p={6}>
+              <Paper
+                key={line.id}
+                withBorder
+                p={6}
+                draggable={canManage && !isLocked}
+                onDragStart={(event: DragEvent<HTMLDivElement>) => {
+                  event.stopPropagation();
+                  event.dataTransfer.setData('dragType', 'lotLine');
+                  event.dataTransfer.setData('lotLineId', line.id);
+                  event.dataTransfer.setData('sourceLotId', lot.id);
+                }}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={(event) => onDropLine(event, line)}
+                style={{ cursor: canManage && !isLocked ? 'grab' : 'default' }}
+              >
                 <Group justify="space-between" gap="xs" wrap="nowrap">
                   <div style={{ minWidth: 0 }}>
                     <Text size="xs" fw={700} truncate>
-                      {line.item?.item_code ?? line.purchase_order_line?.item?.item_code ?? line.item_id}
+                      {line.item_code ?? line.item?.item_code ?? line.purchase_order_line?.item?.item_code ?? line.item_id}
                     </Text>
                     <Text size="xs" c="dimmed" truncate>
-                      {line.item?.item_name ?? line.purchase_order_line?.item?.item_name ?? '-'}
+                      {line.item_name ?? line.item?.item_name ?? line.purchase_order_line?.item?.item_name ?? '-'}
                     </Text>
                   </div>
-                  <Text size="xs" fw={700} style={{ whiteSpace: 'nowrap' }}>
-                    <NumberFormatter value={line.qty_lotted} thousandSeparator /> {line.unit ?? ''}
-                  </Text>
+                  <Group gap={4} wrap="nowrap">
+                    <Text size="xs" fw={700} style={{ whiteSpace: 'nowrap' }}>
+                      <NumberFormatter value={line.qty_lotted} thousandSeparator /> {line.unit ?? ''}
+                    </Text>
+                    <ActionIcon
+                      variant="subtle"
+                      size="xs"
+                      aria-label="Split line"
+                      disabled={!canManage || isLocked || !hasMoveTargets || toNumber(line.qty_lotted) <= 1}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onSplitLine(line);
+                      }}
+                    >
+                      <IconGitBranch size={13} />
+                    </ActionIcon>
+                  </Group>
                 </Group>
               </Paper>
             ))
@@ -1900,142 +1618,18 @@ function SupplierConfirmationModal({
   );
 }
 
-function SlotModal({
-  draft,
-  error,
-  loading,
-  onClose,
-  onDelete,
-  onSubmit,
-}: {
-  draft: SlotDraft | null;
-  error: unknown;
-  loading: boolean;
-  onClose: () => void;
-  onDelete: (slotId: string) => void;
-  onSubmit: (draft: SlotDraft) => void;
-}) {
-  const [localDraft, setLocalDraft] = useState<SlotDraft | null>(draft);
-
-  useEffect(() => {
-    setLocalDraft(draft);
-  }, [draft]);
-
-  return (
-    <Modal opened={!!draft} onClose={onClose} title={draft?.id ? 'Edit delivery slot' : 'Create delivery slot'} size="lg">
-      {localDraft ? (
-        <Stack
-          component="form"
-          gap="md"
-          onSubmit={(event) => {
-            event.preventDefault();
-            onSubmit(localDraft);
-          }}
-        >
-          {error ? (
-            <Alert color="red" icon={<IconAlertTriangle size={18} />}>
-              {getApiErrorMessage(error)}
-            </Alert>
-          ) : null}
-          <SimpleGrid cols={{ base: 1, md: 2 }}>
-            <TextInput
-              label="Slot no"
-              value={localDraft.slot_no}
-              onChange={(event) => setLocalDraft({ ...localDraft, slot_no: event.currentTarget.value })}
-              required
-            />
-            <TextInput
-              label="Slot name"
-              value={localDraft.slot_name}
-              onChange={(event) => setLocalDraft({ ...localDraft, slot_name: event.currentTarget.value })}
-            />
-            <Select
-              label="Status"
-              value={localDraft.status}
-              data={slotStatusOptions}
-              onChange={(value) => setLocalDraft({ ...localDraft, status: (value || 'PLANNED') as PoDeliverySlotStatus })}
-            />
-            <NumberInput
-              label="Sort order"
-              min={1}
-              value={localDraft.sort_order}
-              onChange={(value) => setLocalDraft({ ...localDraft, sort_order: toNumber(value, 1) })}
-            />
-            <TextInput
-              label="Cargo ready"
-              type="date"
-              value={localDraft.planned_cargo_ready_date}
-              onChange={(event) => setLocalDraft({ ...localDraft, planned_cargo_ready_date: event.currentTarget.value })}
-            />
-            <TextInput
-              label="ETD"
-              type="date"
-              value={localDraft.planned_etd}
-              onChange={(event) => setLocalDraft({ ...localDraft, planned_etd: event.currentTarget.value })}
-            />
-            <TextInput
-              label="ETA"
-              type="date"
-              value={localDraft.planned_eta}
-              onChange={(event) => setLocalDraft({ ...localDraft, planned_eta: event.currentTarget.value })}
-            />
-            <TextInput
-              label="Warehouse"
-              value={localDraft.warehouse_name}
-              onChange={(event) => setLocalDraft({ ...localDraft, warehouse_name: event.currentTarget.value })}
-            />
-          </SimpleGrid>
-          <Textarea
-            label="Delivery address"
-            value={localDraft.delivery_address}
-            onChange={(event) => setLocalDraft({ ...localDraft, delivery_address: event.currentTarget.value })}
-            autosize
-            minRows={2}
-          />
-          <Textarea
-            label="Notes"
-            value={localDraft.notes}
-            onChange={(event) => setLocalDraft({ ...localDraft, notes: event.currentTarget.value })}
-            autosize
-            minRows={2}
-          />
-          <Group justify="space-between">
-            {localDraft.id ? (
-              <Button color="red" variant="light" leftSection={<IconTrash size={16} />} loading={loading} onClick={() => onDelete(localDraft.id ?? '')}>
-                Delete
-              </Button>
-            ) : (
-              <span />
-            )}
-            <Group>
-              <Button variant="subtle" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button type="submit" loading={loading}>
-                Save
-              </Button>
-            </Group>
-          </Group>
-        </Stack>
-      ) : null}
-    </Modal>
-  );
-}
-
 function LotModal({
   draft,
   error,
   loading,
   onClose,
   onSubmit,
-  slots,
 }: {
   draft: LotDraft | null;
   error: unknown;
   loading: boolean;
   onClose: () => void;
   onSubmit: (draft: LotDraft) => void;
-  slots: PoDeliverySlot[];
 }) {
   const [localDraft, setLocalDraft] = useState<LotDraft | null>(draft);
 
@@ -2060,14 +1654,6 @@ function LotModal({
             </Alert>
           ) : null}
           <SimpleGrid cols={{ base: 1, md: 2 }}>
-            <Select
-              label="Delivery slot"
-              data={slots.map((slot) => ({ label: `${slot.slot_no} - ${slot.slot_name ?? slot.status}`, value: slot.id }))}
-              value={localDraft.delivery_slot_id}
-              disabled={!!localDraft.id}
-              onChange={(value) => setLocalDraft({ ...localDraft, delivery_slot_id: value ?? '' })}
-              required
-            />
             <TextInput
               label="LOT no"
               value={localDraft.lot_no}
@@ -2135,245 +1721,18 @@ function SplitLotModal({
   draft,
   error,
   loading,
+  lots,
   onClose,
   onSubmit,
-  slots,
 }: {
   draft: SplitDraft | null;
   error: unknown;
   loading: boolean;
+  lots: PoLot[];
   onClose: () => void;
   onSubmit: (draft: SplitDraft) => void;
-  slots: PoDeliverySlot[];
 }) {
   const [localDraft, setLocalDraft] = useState<SplitDraft | null>(draft);
-
-  useEffect(() => {
-    setLocalDraft(draft);
-  }, [draft]);
-
-  return (
-    <Modal opened={!!draft} onClose={onClose} title="Split LOT" size="xl">
-      {localDraft ? (
-        <Stack
-          component="form"
-          gap="md"
-          onSubmit={(event) => {
-            event.preventDefault();
-            onSubmit(localDraft);
-          }}
-        >
-          {error ? (
-            <Alert color="red" icon={<IconAlertTriangle size={18} />}>
-              {getApiErrorMessage(error)}
-            </Alert>
-          ) : null}
-          <SimpleGrid cols={{ base: 1, md: 2 }}>
-            <TextInput
-              label="New LOT no"
-              value={localDraft.new_lot_no}
-              onChange={(event) => setLocalDraft({ ...localDraft, new_lot_no: event.currentTarget.value })}
-              required
-            />
-            <TextInput
-              label="New LOT name"
-              value={localDraft.new_lot_name}
-              onChange={(event) => setLocalDraft({ ...localDraft, new_lot_name: event.currentTarget.value })}
-            />
-            <Select
-              label="Target slot"
-              data={slots.map((slot) => ({ label: `${slot.slot_no} - ${slot.slot_name ?? slot.status}`, value: slot.id }))}
-              value={localDraft.target_slot_id}
-              onChange={(value) => setLocalDraft({ ...localDraft, target_slot_id: value ?? '' })}
-              required
-            />
-            <TextInput
-              label="Cargo ready"
-              type="date"
-              value={localDraft.planned_cargo_ready_date}
-              onChange={(event) => setLocalDraft({ ...localDraft, planned_cargo_ready_date: event.currentTarget.value })}
-            />
-            <TextInput
-              label="ETD"
-              type="date"
-              value={localDraft.planned_etd}
-              onChange={(event) => setLocalDraft({ ...localDraft, planned_etd: event.currentTarget.value })}
-            />
-            <TextInput
-              label="ETA"
-              type="date"
-              value={localDraft.planned_eta}
-              onChange={(event) => setLocalDraft({ ...localDraft, planned_eta: event.currentTarget.value })}
-            />
-          </SimpleGrid>
-          <Textarea
-            label="Notes"
-            value={localDraft.notes}
-            onChange={(event) => setLocalDraft({ ...localDraft, notes: event.currentTarget.value })}
-            autosize
-            minRows={2}
-          />
-          <ScrollArea type="always" offsetScrollbars scrollbarSize={8}>
-            <Table miw={760} verticalSpacing="xs">
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>Item</Table.Th>
-                  <Table.Th style={{ width: 150 }}>Available</Table.Th>
-                  <Table.Th style={{ width: 180 }}>Split qty</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {(localDraft.sourceLot.lot_lines ?? []).map((line) => (
-                  <Table.Tr key={line.id}>
-                    <Table.Td>
-                      <Text size="sm" fw={700}>
-                        {line.item?.item_code ?? line.purchase_order_line?.item?.item_code ?? line.item_id}
-                      </Text>
-                      <Text size="xs" c="dimmed">
-                        {line.item?.item_name ?? line.purchase_order_line?.item?.item_name ?? '-'}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <NumberFormatter value={line.qty_lotted} thousandSeparator /> {line.unit ?? ''}
-                    </Table.Td>
-                    <Table.Td>
-                      <NumberInput
-                        min={0}
-                        max={toNumber(line.qty_lotted)}
-                        value={localDraft.lines[line.purchase_order_line_id] ?? 0}
-                        onChange={(value) =>
-                          setLocalDraft({
-                            ...localDraft,
-                            lines: {
-                              ...localDraft.lines,
-                              [line.purchase_order_line_id]: toNumber(value),
-                            },
-                          })
-                        }
-                      />
-                    </Table.Td>
-                  </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
-          </ScrollArea>
-          <Group justify="flex-end">
-            <Button variant="subtle" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" loading={loading} leftSection={<IconGitBranch size={16} />}>
-              Split LOT
-            </Button>
-          </Group>
-        </Stack>
-      ) : null}
-    </Modal>
-  );
-}
-
-function MergeLotModal({
-  draft,
-  error,
-  loading,
-  lots,
-  onClose,
-  onSubmit,
-}: {
-  draft: MergeDraft | null;
-  error: unknown;
-  loading: boolean;
-  lots: PoLot[];
-  onClose: () => void;
-  onSubmit: (draft: MergeDraft) => void;
-}) {
-  const [localDraft, setLocalDraft] = useState<MergeDraft | null>(draft);
-
-  useEffect(() => {
-    setLocalDraft(draft);
-  }, [draft]);
-
-  const sourceOptions = useMemo(
-    () =>
-      lots
-        .filter((lot) => lot.id !== localDraft?.targetLot.id && !lockedLotStatuses.has(lot.status))
-        .map((lot) => ({
-          label: `${lot.lot_no} - ${lot.lot_name || 'Unnamed'} (${lot.lot_lines?.length ?? 0} lines)`,
-          value: lot.id,
-        })),
-    [localDraft?.targetLot.id, lots],
-  );
-
-  return (
-    <Modal opened={!!draft} onClose={onClose} title="Merge LOTs" size="lg">
-      {localDraft ? (
-        <Stack
-          component="form"
-          gap="md"
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (localDraft.source_lot_ids.length === 0) return;
-            onSubmit(localDraft);
-          }}
-        >
-          {error ? (
-            <Alert color="red" icon={<IconAlertTriangle size={18} />}>
-              {getApiErrorMessage(error)}
-            </Alert>
-          ) : null}
-          <Paper withBorder p="sm">
-            <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-              Target LOT
-            </Text>
-            <Text fw={700}>{localDraft.targetLot.lot_no}</Text>
-            <Text size="sm" c="dimmed">
-              Source LOT lines will be added into this LOT. Total PO quantity is unchanged.
-            </Text>
-          </Paper>
-          <MultiSelect
-            label="Source LOTs"
-            data={sourceOptions}
-            value={localDraft.source_lot_ids}
-            onChange={(value) => setLocalDraft({ ...localDraft, source_lot_ids: value })}
-            searchable
-            required
-          />
-          <Switch
-            label="Delete empty source LOTs after merge"
-            checked={localDraft.delete_empty_source_lots}
-            onChange={(event) =>
-              setLocalDraft({ ...localDraft, delete_empty_source_lots: event.currentTarget.checked })
-            }
-          />
-          <Group justify="flex-end">
-            <Button variant="subtle" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" loading={loading} disabled={localDraft.source_lot_ids.length === 0}>
-              Merge LOTs
-            </Button>
-          </Group>
-        </Stack>
-      ) : null}
-    </Modal>
-  );
-}
-
-function TransferLotLinesModal({
-  draft,
-  error,
-  loading,
-  lots,
-  onClose,
-  onSubmit,
-}: {
-  draft: TransferDraft | null;
-  error: unknown;
-  loading: boolean;
-  lots: PoLot[];
-  onClose: () => void;
-  onSubmit: (draft: TransferDraft) => void;
-}) {
-  const [localDraft, setLocalDraft] = useState<TransferDraft | null>(draft);
 
   useEffect(() => {
     setLocalDraft(draft);
@@ -2389,20 +1748,21 @@ function TransferLotLinesModal({
         })),
     [localDraft?.sourceLot.id, lots],
   );
-
-  const hasTransferQty = localDraft
-    ? Object.values(localDraft.lines).some((qty) => Number(qty) > 0)
-    : false;
+  const availableQty = toNumber(localDraft?.sourceLine.qty_lotted);
+  const canSubmit =
+    Boolean(localDraft?.target_lot_id) &&
+    Number(localDraft?.split_qty) > 0 &&
+    Number(localDraft?.split_qty) < availableQty;
 
   return (
-    <Modal opened={!!draft} onClose={onClose} title="Transfer LOT lines" size="xl">
+    <Modal opened={!!draft} onClose={onClose} title="Split item line" size="lg">
       {localDraft ? (
         <Stack
           component="form"
           gap="md"
           onSubmit={(event) => {
             event.preventDefault();
-            if (!localDraft.target_lot_id || !hasTransferQty) return;
+            if (!canSubmit) return;
             onSubmit(localDraft);
           }}
         >
@@ -2411,16 +1771,21 @@ function TransferLotLinesModal({
               {getApiErrorMessage(error)}
             </Alert>
           ) : null}
+          <Paper withBorder p="sm">
+            <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+              Source
+            </Text>
+            <Text fw={700}>{localDraft.sourceLot.lot_no}</Text>
+            <Text size="sm" c="dimmed">
+              {localDraft.sourceLine.item_code ??
+                localDraft.sourceLine.item?.item_code ??
+                localDraft.sourceLine.purchase_order_line?.item?.item_code ??
+                localDraft.sourceLine.item_id}{' '}
+              · <NumberFormatter value={localDraft.sourceLine.qty_lotted} thousandSeparator />{' '}
+              {localDraft.sourceLine.unit ?? ''}
+            </Text>
+          </Paper>
           <SimpleGrid cols={{ base: 1, md: 2 }}>
-            <Paper withBorder p="sm">
-              <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                Source LOT
-              </Text>
-              <Text fw={700}>{localDraft.sourceLot.lot_no}</Text>
-              <Text size="sm" c="dimmed">
-                Transfer selected item quantities out of this LOT.
-              </Text>
-            </Paper>
             <Select
               label="Target LOT"
               data={targetOptions}
@@ -2429,57 +1794,21 @@ function TransferLotLinesModal({
               searchable
               required
             />
+            <NumberInput
+              label="Split qty"
+              min={0}
+              max={Math.max(availableQty - 0.0001, 0)}
+              value={localDraft.split_qty}
+              onChange={(value) => setLocalDraft({ ...localDraft, split_qty: toNumber(value) })}
+              required
+            />
           </SimpleGrid>
-          <ScrollArea type="always" offsetScrollbars scrollbarSize={8}>
-            <Table miw={760} verticalSpacing="xs">
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>Item</Table.Th>
-                  <Table.Th style={{ width: 150 }}>Available</Table.Th>
-                  <Table.Th style={{ width: 180 }}>Transfer qty</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {(localDraft.sourceLot.lot_lines ?? []).map((line) => (
-                  <Table.Tr key={line.id}>
-                    <Table.Td>
-                      <Text size="sm" fw={700}>
-                        {line.item?.item_code ?? line.purchase_order_line?.item?.item_code ?? line.item_id}
-                      </Text>
-                      <Text size="xs" c="dimmed">
-                        {line.item?.item_name ?? line.purchase_order_line?.item?.item_name ?? '-'}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <NumberFormatter value={line.qty_lotted} thousandSeparator /> {line.unit ?? ''}
-                    </Table.Td>
-                    <Table.Td>
-                      <NumberInput
-                        min={0}
-                        max={toNumber(line.qty_lotted)}
-                        value={localDraft.lines[line.purchase_order_line_id] ?? 0}
-                        onChange={(value) =>
-                          setLocalDraft({
-                            ...localDraft,
-                            lines: {
-                              ...localDraft.lines,
-                              [line.purchase_order_line_id]: toNumber(value),
-                            },
-                          })
-                        }
-                      />
-                    </Table.Td>
-                  </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
-          </ScrollArea>
           <Group justify="flex-end">
             <Button variant="subtle" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" loading={loading} disabled={!localDraft.target_lot_id || !hasTransferQty}>
-              Transfer lines
+            <Button type="submit" loading={loading} disabled={!canSubmit} leftSection={<IconGitBranch size={16} />}>
+              Split line
             </Button>
           </Group>
         </Stack>

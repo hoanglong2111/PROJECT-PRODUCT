@@ -279,7 +279,7 @@ export async function createShipmentFromDeliveryOrder(payload: CreateShipmentFro
 }
 
 export async function updateShipmentV1(id: string, payload: UpdateShipmentPayload) {
-  const response = await apiClient.patch<V1Response<ShipmentV1>>(`/v1/shipments/${id}`, payload);
+  const response = await apiClient.patch<V1Response<ShipmentV1>>(`/v1/mock/shipments/${id}`, payload);
   return unwrapV1Data(response);
 }
 

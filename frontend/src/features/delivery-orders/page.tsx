@@ -66,7 +66,6 @@ import {
   type QuotationAction,
 } from '@shared/api/logistics';
 import {
-  assignDeliveryOrderToShipment,
   cancelDeliveryOrderV1,
   closeDeliveryOrderV1,
   confirmDeliveryOrderQuotation,
@@ -937,10 +936,9 @@ function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: DeliveryOrder; 
       ? Math.round((deliveryOrder.task_summary.completed_tasks / deliveryOrder.task_summary.total_tasks) * 100)
       : 0;
   const actionMutation = useMutation({
-    mutationFn: (action: 'assign' | 'cancel' | 'close' | 'confirm-quotation' | 'ready-for-quotation') => {
+    mutationFn: (action: 'cancel' | 'close' | 'confirm-quotation' | 'ready-for-quotation') => {
       if (action === 'ready-for-quotation') return markDeliveryOrderReadyForQuotation(deliveryOrder.id);
       if (action === 'confirm-quotation') return confirmDeliveryOrderQuotation(deliveryOrder.id);
-      if (action === 'assign') return assignDeliveryOrderToShipment(deliveryOrder.id);
       if (action === 'close') return closeDeliveryOrderV1(deliveryOrder.id);
       return cancelDeliveryOrderV1(deliveryOrder.id);
     },
@@ -958,11 +956,9 @@ function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: DeliveryOrder; 
       ? { action: 'ready-for-quotation' as const, label: 'Ready for quotation' }
       : deliveryOrder.order_info.status === 'READY_FOR_QUOTATION'
         ? { action: 'confirm-quotation' as const, label: 'Confirm quotation' }
-        : deliveryOrder.order_info.status === 'QUOTATION_CONFIRMED'
-          ? { action: 'assign' as const, label: 'Assign to shipment' }
-          : deliveryOrder.order_info.status === 'ASSIGNED_TO_SHIPMENT'
-            ? { action: 'close' as const, label: 'Close DO' }
-            : null;
+        : deliveryOrder.order_info.status === 'ASSIGNED_TO_SHIPMENT'
+          ? { action: 'close' as const, label: 'Close DO' }
+          : null;
   const canCancel = ['DRAFT', 'READY_FOR_QUOTATION', 'QUOTATION_CONFIRMED'].includes(deliveryOrder.order_info.status);
 
   return (

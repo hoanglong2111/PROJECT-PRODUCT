@@ -37,7 +37,6 @@ export type PurchaseOrderStatusV1 =
   | 'READY_TO_SHIP'
   | 'CANCELLED';
 export type PurchaseOrderTypeV1 = 'SEA' | 'AIR' | 'DOMESTIC';
-export type PoDeliverySlotStatus = 'PLANNED' | 'CONFIRMED' | 'CANCELLED';
 export type PoLotStatus = 'PLANNED' | 'READY' | 'ASSIGNED_TO_SHIPMENT' | 'SHIPPED' | 'CANCELLED';
 
 export type PurchaseOrderV1 = {
@@ -69,7 +68,6 @@ export type PurchaseOrderV1 = {
   transport_mode?: TransportMode | null;
   lines?: PurchaseOrderLineV1[];
   confirmations?: PurchaseOrderConfirmation[];
-  delivery_slots?: PoDeliverySlot[];
 };
 
 export type PurchaseOrderLineV1 = {
@@ -120,30 +118,9 @@ export type PurchaseOrderConfirmationLine = {
   purchase_order_line?: PurchaseOrderLineV1;
 };
 
-export type PoDeliverySlot = {
-  id: string;
-  purchase_order_id: string;
-  slot_no: string;
-  slot_name: string | null;
-  planned_cargo_ready_date: string | null;
-  planned_etd: string | null;
-  planned_eta: string | null;
-  delivery_address: string | null;
-  warehouse_name: string | null;
-  status: PoDeliverySlotStatus;
-  sort_order: number;
-  notes: string | null;
-  create_at?: string;
-  update_at?: string;
-  delete_at?: string | null;
-  is_delete?: boolean;
-  lots?: PoLot[];
-};
-
 export type PoLot = {
   id: string;
   purchase_order_id: string;
-  delivery_slot_id: string;
   lot_no: string;
   lot_name: string | null;
   status: PoLotStatus;
@@ -156,8 +133,7 @@ export type PoLot = {
   update_at?: string;
   delete_at?: string | null;
   is_delete?: boolean;
-  delivery_slot?: PoDeliverySlot | null;
-  lot_lines?: PoLotLine[];
+  items?: PoLotLine[];
 };
 
 export type PoLotLine = {
@@ -165,18 +141,22 @@ export type PoLotLine = {
   po_lot_id: string;
   purchase_order_line_id: string;
   item_id: string;
+  item_code?: string;
+  item_name?: string;
   qty_lotted: ApiDecimal;
   unit: string | null;
   notes: string | null;
+  sort_order: number;
   create_at?: string;
   update_at?: string;
   purchase_order_line?: PurchaseOrderLineV1 | null;
   item?: Item | null;
 };
 
-export type PurchaseOrderLotPlanning = PurchaseOrderV1 & {
-  lines: PurchaseOrderLineV1[];
-  delivery_slots: PoDeliverySlot[];
+export type PurchaseOrderLotPlanning = {
+  purchase_order: PurchaseOrderV1;
+  po_lines: PurchaseOrderLineV1[];
+  lots: PoLot[];
 };
 
 export type ListPurchaseOrdersParams = {
@@ -207,6 +187,7 @@ export type CreatePurchaseOrderV1Payload = {
   supplier_id: string;
   contract_no?: string | null;
   currency_id?: string | null;
+  currency_code?: string | null;
   incoterm_id?: string | null;
   transport_mode_id?: string | null;
   po_type?: PurchaseOrderTypeV1 | null;
@@ -244,66 +225,29 @@ export type ConfirmPurchaseOrderPayload = {
   }>;
 };
 
-export type DeliverySlotPayload = Partial<Omit<PoDeliverySlot, 'create_at' | 'delete_at' | 'id' | 'is_delete' | 'lots' | 'purchase_order_id' | 'update_at'>> & {
-  slot_no?: string;
-};
+export type LotPayload = Partial<Omit<PoLot, 'create_at' | 'delete_at' | 'id' | 'is_delete' | 'items' | 'purchase_order_id' | 'update_at'>>;
 
-export type CreateDeliverySlotPayload = DeliverySlotPayload & {
-  slot_no: string;
-};
-
-export type LotPayload = Partial<Omit<PoLot, 'create_at' | 'delete_at' | 'delivery_slot' | 'id' | 'is_delete' | 'lot_lines' | 'purchase_order_id' | 'update_at'>>;
-
-export type CreateEmptyLotPayload = LotPayload & {
-  delivery_slot_id: string;
+export type CreateLotPayload = LotPayload & {
   lot_no: string;
 };
 
-export type SplitLotPayload = {
-  new_lot_no: string;
-  new_lot_name?: string | null;
-  target_slot_id: string;
-  status?: PoLotStatus;
-  planned_cargo_ready_date?: string | null;
-  planned_etd?: string | null;
-  planned_eta?: string | null;
-  sort_order?: number;
-  notes?: string | null;
-  lines: Array<{
-    purchase_order_line_id: string;
-    split_qty: number;
-    notes?: string | null;
-  }>;
-};
-
-export type MergeLotPayload = {
-  source_lot_ids: string[];
-  delete_empty_source_lots?: boolean;
-};
-
-export type MergeLotBackDefaultPayload = {
-  delete_empty_source_lots?: boolean;
-};
-
-export type TransferLotLinesPayload = {
+export type MovePoLotLinePayload = {
   target_lot_id: string;
-  lines: Array<{
-    purchase_order_line_id: string;
-    transfer_qty: number;
-  }>;
+  target_sort_order?: number;
 };
 
-export type MoveLotPayload = {
-  target_slot_id: string;
-  new_sort_order?: number;
+export type SplitPoLotLinePayload = MovePoLotLinePayload & {
+  split_qty: number;
 };
 
 export type ReorderLotsPayload = {
-  lots: Array<{
-    lot_id: string;
-    delivery_slot_id: string;
-    sort_order: number;
-  }>;
+  purchase_order_id: string;
+  ordered_lot_ids: string[];
+};
+
+export type ReorderLotLinesPayload = {
+  lot_id: string;
+  ordered_lot_line_ids: string[];
 };
 
 function unwrapV1Data<T, TMeta>(response: { data: V1Response<T, TMeta> }) {
@@ -324,6 +268,19 @@ function unwrapV1List<T>(response: { data: V1Response<T[], PurchaseOrderListMeta
   };
 }
 
+function currencyCodeFromPayload(payload: CreatePurchaseOrderV1Payload | UpdatePurchaseOrderV1Payload) {
+  const value = payload.currency_code || payload.currency_id;
+  if (!value) return undefined;
+  return value.startsWith('cur_') ? value.replace(/^cur_/, '').toUpperCase() : value;
+}
+
+function toMockPurchaseOrderPayload<T extends CreatePurchaseOrderV1Payload | UpdatePurchaseOrderV1Payload>(payload: T) {
+  return {
+    ...payload,
+    currency_code: currencyCodeFromPayload(payload),
+  };
+}
+
 export async function fetchPurchaseOrders(params: ListPurchaseOrdersParams = {}) {
   const response = await apiClient.get<V1Response<PurchaseOrderV1[], PurchaseOrderListMeta>>(
     '/v1/purchase-orders',
@@ -338,17 +295,24 @@ export async function fetchPurchaseOrder(id: string) {
 }
 
 export async function createPurchaseOrder(payload: CreatePurchaseOrderV1Payload) {
-  const response = await apiClient.post<V1Response<PurchaseOrderV1>>('/v1/purchase-orders', payload);
-  return unwrapV1Data(response);
+  const response = await apiClient.post<V1Response<PurchaseOrderV1 | PurchaseOrderLotPlanning>>(
+    '/v1/purchase-orders',
+    toMockPurchaseOrderPayload(payload),
+  );
+  const data = unwrapV1Data(response);
+  return 'purchase_order' in data ? data.purchase_order : data;
 }
 
 export async function updatePurchaseOrder(id: string, payload: UpdatePurchaseOrderV1Payload) {
-  const response = await apiClient.patch<V1Response<PurchaseOrderV1>>(`/v1/purchase-orders/${id}`, payload);
+  const response = await apiClient.patch<V1Response<PurchaseOrderV1>>(
+    `/v1/mock/purchase_orders/${id}`,
+    toMockPurchaseOrderPayload(payload),
+  );
   return unwrapV1Data(response);
 }
 
 export async function deletePurchaseOrder(id: string) {
-  const response = await apiClient.delete<V1Response<PurchaseOrderV1>>(`/v1/purchase-orders/${id}`);
+  const response = await apiClient.delete<V1Response<PurchaseOrderV1>>(`/v1/mock/purchase_orders/${id}`);
   return unwrapV1Data(response);
 }
 
@@ -363,22 +327,22 @@ export async function cancelPurchaseOrder(id: string, payload: CancelPurchaseOrd
 }
 
 export async function markPurchaseOrderInProduction(id: string) {
-  const response = await apiClient.post<V1Response<PurchaseOrderV1>>(
-    `/v1/purchase-orders/${id}/mark-in-production`,
-  );
+  const response = await apiClient.patch<V1Response<PurchaseOrderV1>>(`/v1/mock/purchase_orders/${id}`, {
+    status: 'IN_PRODUCTION',
+  });
   return unwrapV1Data(response);
 }
 
 export async function markPurchaseOrderReadyToShip(id: string) {
-  const response = await apiClient.post<V1Response<PurchaseOrderV1>>(
-    `/v1/purchase-orders/${id}/mark-ready-to-ship`,
-  );
+  const response = await apiClient.patch<V1Response<PurchaseOrderV1>>(`/v1/mock/purchase_orders/${id}`, {
+    status: 'READY_TO_SHIP',
+  });
   return unwrapV1Data(response);
 }
 
 export async function confirmPurchaseOrder(id: string, payload: ConfirmPurchaseOrderPayload) {
   const response = await apiClient.post<V1Response<PurchaseOrderConfirmation>>(
-    `/v1/purchase-orders/${id}/confirm`,
+    `/v1/purchase-orders/${id}/confirmations`,
     payload,
   );
   return unwrapV1Data(response);
@@ -390,16 +354,16 @@ export async function fetchPurchaseOrderLines(id: string) {
 }
 
 export async function createPurchaseOrderLine(id: string, payload: PurchaseOrderLinePayload) {
-  const response = await apiClient.post<V1Response<PurchaseOrderLineV1>>(
-    `/v1/purchase-orders/${id}/lines`,
-    payload,
-  );
+  const response = await apiClient.post<V1Response<PurchaseOrderLineV1>>('/v1/mock/purchase_order_lines', {
+    ...payload,
+    purchase_order_id: id,
+  });
   return unwrapV1Data(response);
 }
 
 export async function updatePurchaseOrderLine(lineId: string, payload: Partial<PurchaseOrderLinePayload>) {
   const response = await apiClient.patch<V1Response<PurchaseOrderLineV1>>(
-    `/v1/purchase-order-lines/${lineId}`,
+    `/v1/mock/purchase_order_lines/${lineId}`,
     payload,
   );
   return unwrapV1Data(response);
@@ -407,7 +371,7 @@ export async function updatePurchaseOrderLine(lineId: string, payload: Partial<P
 
 export async function deletePurchaseOrderLine(lineId: string) {
   const response = await apiClient.delete<V1Response<PurchaseOrderLineV1>>(
-    `/v1/purchase-order-lines/${lineId}`,
+    `/v1/mock/purchase_order_lines/${lineId}`,
   );
   return unwrapV1Data(response);
 }
@@ -419,32 +383,7 @@ export async function fetchPurchaseOrderLotPlanning(id: string) {
   return unwrapV1Data(response);
 }
 
-export async function resetPurchaseOrderLotPlanning(id: string) {
-  const response = await apiClient.post<V1Response<PurchaseOrderLotPlanning>>(
-    `/v1/purchase-orders/${id}/lot-planning/reset-default`,
-  );
-  return unwrapV1Data(response);
-}
-
-export async function createDeliverySlot(purchaseOrderId: string, payload: CreateDeliverySlotPayload) {
-  const response = await apiClient.post<V1Response<PoDeliverySlot>>(
-    `/v1/purchase-orders/${purchaseOrderId}/delivery-slots`,
-    payload,
-  );
-  return unwrapV1Data(response);
-}
-
-export async function updateDeliverySlot(slotId: string, payload: DeliverySlotPayload) {
-  const response = await apiClient.patch<V1Response<PoDeliverySlot>>(`/v1/po-delivery-slots/${slotId}`, payload);
-  return unwrapV1Data(response);
-}
-
-export async function deleteDeliverySlot(slotId: string) {
-  const response = await apiClient.delete<V1Response<PoDeliverySlot>>(`/v1/po-delivery-slots/${slotId}`);
-  return unwrapV1Data(response);
-}
-
-export async function createEmptyLot(purchaseOrderId: string, payload: CreateEmptyLotPayload) {
+export async function createLot(purchaseOrderId: string, payload: CreateLotPayload) {
   const response = await apiClient.post<V1Response<PoLot>>(`/v1/purchase-orders/${purchaseOrderId}/lots`, payload);
   return unwrapV1Data(response);
 }
@@ -459,38 +398,34 @@ export async function deletePoLot(lotId: string) {
   return unwrapV1Data(response);
 }
 
-export async function splitPoLot(lotId: string, payload: SplitLotPayload) {
-  const response = await apiClient.post<V1Response<PurchaseOrderLotPlanning>>(`/v1/po-lots/${lotId}/split`, payload);
-  return unwrapV1Data(response);
-}
-
-export async function mergePoLot(lotId: string, payload: MergeLotPayload) {
-  const response = await apiClient.post<V1Response<PurchaseOrderLotPlanning>>(`/v1/po-lots/${lotId}/merge`, payload);
-  return unwrapV1Data(response);
-}
-
-export async function mergePoLotBackToDefault(lotId: string, payload: MergeLotBackDefaultPayload = {}) {
+export async function movePoLotLine(lineId: string, payload: MovePoLotLinePayload) {
   const response = await apiClient.post<V1Response<PurchaseOrderLotPlanning>>(
-    `/v1/po-lots/${lotId}/merge-back-default`,
+    `/v1/po-lot-lines/${lineId}/move`,
     payload,
   );
   return unwrapV1Data(response);
 }
 
-export async function transferPoLotLines(lotId: string, payload: TransferLotLinesPayload) {
+export async function splitPoLotLine(lineId: string, payload: SplitPoLotLinePayload) {
   const response = await apiClient.post<V1Response<PurchaseOrderLotPlanning>>(
-    `/v1/po-lots/${lotId}/transfer-lines`,
+    `/v1/po-lot-lines/${lineId}/split`,
     payload,
   );
-  return unwrapV1Data(response);
-}
-
-export async function movePoLotSlot(lotId: string, payload: MoveLotPayload) {
-  const response = await apiClient.patch<V1Response<PoLot>>(`/v1/po-lots/${lotId}/move-slot`, payload);
   return unwrapV1Data(response);
 }
 
 export async function reorderPoLots(payload: ReorderLotsPayload) {
-  const response = await apiClient.patch<V1Response<PoLot[]>>('/v1/po-lots/reorder', payload);
+  const response = await apiClient.patch<V1Response<PurchaseOrderLotPlanning>>(
+    '/v1/po-lots/reorder',
+    payload,
+  );
+  return unwrapV1Data(response);
+}
+
+export async function reorderPoLotLines(payload: ReorderLotLinesPayload) {
+  const response = await apiClient.patch<V1Response<PurchaseOrderLotPlanning>>(
+    '/v1/po-lot-lines/reorder',
+    payload,
+  );
   return unwrapV1Data(response);
 }

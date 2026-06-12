@@ -73,7 +73,8 @@ export type QuotationV1 = {
   ref_id: string;
   supplier_id: string;
   quotation_type: QuotationTypeV1;
-  currency_id: string;
+  currency_id?: string;
+  currency_code?: string;
   exchange_rate: ApiDecimal;
   status: QuotationStatusV1;
   is_final: boolean;
@@ -129,7 +130,8 @@ export type CreateDeliveryOrderQuotationPayload = {
   quotation_no: string;
   supplier_id: string;
   quotation_type: QuotationTypeV1;
-  currency_id: string;
+  currency_id?: string;
+  currency_code?: string;
   exchange_rate?: number;
   quoted_at?: string | null;
   valid_until?: string | null;
@@ -206,27 +208,33 @@ export async function createDeliveryOrderQuotation(
 }
 
 export async function updateQuotationV1(id: string, payload: UpdateQuotationPayload) {
-  const response = await apiClient.patch<V1Response<QuotationV1>>(`/v1/quotations/${id}`, payload);
+  const response = await apiClient.patch<V1Response<QuotationV1>>(`/v1/mock/quotations/${id}`, payload);
   return unwrapV1Data(response);
 }
 
 export async function deleteQuotationV1(id: string) {
-  const response = await apiClient.delete<V1Response<QuotationV1>>(`/v1/quotations/${id}`);
+  const response = await apiClient.delete<V1Response<QuotationV1>>(`/v1/mock/quotations/${id}`);
   return unwrapV1Data(response);
 }
 
 export async function requestQuotation(id: string) {
-  const response = await apiClient.post<V1Response<QuotationV1>>(`/v1/quotations/${id}/request`);
+  const response = await apiClient.patch<V1Response<QuotationV1>>(`/v1/mock/quotations/${id}`, {
+    status: 'REQUESTED',
+  });
   return unwrapV1Data(response);
 }
 
 export async function receiveQuotation(id: string) {
-  const response = await apiClient.post<V1Response<QuotationV1>>(`/v1/quotations/${id}/receive`);
+  const response = await apiClient.patch<V1Response<QuotationV1>>(`/v1/mock/quotations/${id}`, {
+    status: 'RECEIVED',
+  });
   return unwrapV1Data(response);
 }
 
 export async function submitQuotationToKbi(id: string) {
-  const response = await apiClient.post<V1Response<QuotationV1>>(`/v1/quotations/${id}/submit-to-kbi`);
+  const response = await apiClient.patch<V1Response<QuotationV1>>(`/v1/mock/quotations/${id}`, {
+    status: 'SUBMITTED_TO_KBI',
+  });
   return unwrapV1Data(response);
 }
 
@@ -249,7 +257,10 @@ export async function cancelQuotation(id: string, payload: QuotationActionPayloa
 }
 
 export async function expireQuotation(id: string, payload: QuotationActionPayload = {}) {
-  const response = await apiClient.post<V1Response<QuotationV1>>(`/v1/quotations/${id}/expire`, payload);
+  const response = await apiClient.patch<V1Response<QuotationV1>>(`/v1/mock/quotations/${id}`, {
+    ...payload,
+    status: 'EXPIRED',
+  });
   return unwrapV1Data(response);
 }
 
@@ -262,10 +273,9 @@ export async function createQuotationVersion(id: string, payload: CreateQuotatio
 }
 
 export async function fetchQuotationVersions(id: string) {
-  const response = await apiClient.get<V1Response<QuotationV1[], { total: number }>>(
-    `/v1/quotations/${id}/versions`,
-  );
-  return unwrapV1Data(response);
+  const quotation = await fetchQuotationV1(id);
+  const response = await fetchQuotationsV1({ page: 1, limit: 100 });
+  return response.data.filter((item) => item.quotation_group_id === quotation.quotation_group_id);
 }
 
 export async function fetchQuotationChargeLines(id: string) {
