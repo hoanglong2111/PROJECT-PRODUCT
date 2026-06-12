@@ -74,7 +74,7 @@ export function Dashboard() {
     <Stack gap="lg" className="dashboard-page">
       <Group justify="space-between" align="flex-start" gap="md">
         <div>
-          <Title order={1}>Tháp điều phối logistics Dashboard</Title>
+          <Title order={1}>Dashboard</Title>
           <Text c="dimmed" mt={6} maw={900}>
             Theo dõi Yêu cầu mua hàng, Lô hàng, chứng từ logistics, dòng Công việc và rủi ro trễ nhập kho.
           </Text>

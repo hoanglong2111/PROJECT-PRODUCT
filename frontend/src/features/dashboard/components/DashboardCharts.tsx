@@ -60,7 +60,7 @@ export function DashboardCharts({
     <Stack gap="lg">
       <SimpleGrid cols={{ base: 1, xl: 2 }}>
         <Paper withBorder p="lg" className="metric-card dashboard-card">
-          <Title order={3}>Mối quan hệ PR & PO</Title>
+          <Title order={3}>PO Chart</Title>
           <Text size="sm" c="dimmed" mt={4} mb="lg">
             So sánh tổng PO, PO đã giao hàng và PO đang xử lý trong kỳ 6 tháng.
           </Text>
@@ -118,7 +118,7 @@ export function DashboardCharts({
                     <Text size="sm" className="hover-underline" style={{ color: 'var(--mantine-color-grape-filled)', fontWeight: 600 }}>
                       {flowTagLabel(item.tag)}
                     </Text>
-                  <Text size="sm" fw={700}>
+                    <Text size="sm" fw={700}>
                       {item.count}
                     </Text>
                   </Group>
@@ -181,7 +181,7 @@ function PoBarChart({ data }: { data: Array<{ color: MetricColor; label: string;
 
   return (
     <Stack gap="md">
-      <div className="dashboard-bar-chart" aria-label="Mối quan hệ PR & PO">
+      <div className="dashboard-bar-chart" aria-label="PO Chart">
         {data.map((item) => {
           const height = Math.max((item.value / maxValue) * 100, item.value > 0 ? 12 : 4);
           return (
