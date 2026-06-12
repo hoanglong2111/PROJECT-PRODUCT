@@ -1,6 +1,5 @@
-import { Alert, Button, Group, SimpleGrid, Stack, Text, Title } from '@mantine/core';
-import { IconAlertTriangle, IconArrowRight, IconShip, IconShoppingCart } from '@tabler/icons-react';
-import { Link } from 'react-router-dom';
+import { Alert, Group, SimpleGrid, Stack, Text, Title } from '@mantine/core';
+import { IconAlertTriangle, IconShoppingCart, IconTruckDelivery } from '@tabler/icons-react';
 
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
 import { useI18n } from '@shared/i18n';
@@ -66,14 +65,11 @@ export function Dashboard() {
             {t('dashboard.subtitle')}
           </Text>
         </div>
-        <Button component={Link} to="/workflow" rightSection={<IconArrowRight size={16} />}>
-          {t('dashboard.openWorkflow')}
-        </Button>
       </Group>
 
       <SimpleGrid cols={{ base: 1, sm: 3 }}>
         <MetricCard label={t('dashboard.purchaseOrders')} value={purchaseOrders.length} color="yellow" icon={<IconShoppingCart size={22} />} />
-        <MetricCard label={t('shell.shipments')} value={activeDeliveryOrders.length} color="teal" icon={<IconShip size={22} />} />
+        <MetricCard label={t('dashboard.activeDo')} value={activeDeliveryOrders.length} color="teal" icon={<IconTruckDelivery size={22} />} />
         <MetricCard label={t('dashboard.blockedTasks')} value={blockedTasks.length} color="red" icon={<IconAlertTriangle size={22} />} />
       </SimpleGrid>
 

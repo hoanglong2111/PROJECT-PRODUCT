@@ -32,6 +32,7 @@ import {
   IconSearch,
   IconSettings,
   IconShield,
+  IconTrash,
   IconX,
   IconChecklist,
 } from '@tabler/icons-react';
@@ -47,7 +48,6 @@ import { EmptyState } from '@shared/components/EmptyState';
 import {
   fetchShipments,
   createShipment,
-  updateShipment,
   type ShipmentRecord,
   type ShipmentMilestone,
   type ShipmentDocument,
@@ -56,13 +56,33 @@ import {
 import { fetchDeliveryOrdersV1, type DeliveryOrderV1 } from '@shared/api/deliveryOrders';
 import {
   createShipmentDocument,
+  fetchShipmentLines,
   markShipmentMilestoneDone,
   updateShipmentDocument,
   type ShipmentDocumentPayload,
   type ShipmentMilestoneCodeV1,
   type ShipmentModeV1,
 } from '@shared/api/shipments';
+import {
+  cancelCustomsDeclaration,
+  clearCustomsDeclaration,
+  createCustomsDeclarationFromShipment,
+  createCustomsDeclarationLine,
+  deleteCustomsDeclarationLine,
+  fetchCustomsDeclaration,
+  fetchCustomsDeclarationLines,
+  fetchCustomsDeclarationsByShipment,
+  openCustomsDraft,
+  openCustomsOfficial,
+  updateCustomsDeclaration,
+  updateCustomsDeclarationLine,
+  type CustomsDeclarationChannelV1,
+  type CustomsDeclarationLineV1,
+  type CustomsDeclarationTypeV1,
+  type CreateCustomsDeclarationLinePayload,
+} from '@shared/api/customsDeclarations';
 import { queryKeys } from '@shared/api/queryKeys';
+import { fetchSuppliers } from '@shared/api/tradeMasterData';
 import { useEntityParam } from '@shared/hooks/useEntityParam';
 import { useI18n } from '@shared/i18n';
 
@@ -283,13 +303,6 @@ export function Shipments() {
     },
   });
 
-  const updateMutation = useMutation({
-    mutationFn: (updated: ShipmentRecord) => updateShipment(updated.id, updated),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
-    },
-  });
-
   const milestoneMutation = useMutation({
     mutationFn: ({
       actualAt,
@@ -353,10 +366,6 @@ export function Shipments() {
       vesselVoyage: newVoyage || undefined,
       voyageNo: newVoyageNo || undefined,
     });
-  };
-
-  const handleUpdateShipment = (updated: ShipmentRecord) => {
-    updateMutation.mutate(updated);
   };
 
   const closeWorkbench = () => {
@@ -646,7 +655,7 @@ export function Shipments() {
             </Tabs.Panel>
 
             <Tabs.Panel value="customs" pt="md">
-              <ShipmentCustomsPanel shipment={selectedShipment} onUpdate={handleUpdateShipment} />
+              <ShipmentCustomsPanel shipment={selectedShipment} />
             </Tabs.Panel>
 
             <Tabs.Panel value="costs" pt="md">
@@ -1144,85 +1153,668 @@ function ShipmentDocumentsPanel({
   );
 }
 
-function ShipmentCustomsPanel({
-  onUpdate,
-  shipment,
-}: {
-  onUpdate: (updated: ShipmentRecord) => void;
-  shipment: ShipmentRecord;
-}) {
-  const [customsStream, setCustomsStream] = useState(shipment.customs.stream);
-  const [declarationNo, setDeclarationNo] = useState(shipment.customs.declaration_no || '');
-  const [laneStatus, setLaneStatus] = useState(shipment.customs.lane_status);
+function ShipmentCustomsPanel({ shipment }: { shipment: ShipmentRecord }) {
+  const queryClient = useQueryClient();
+  const [selectedDeclarationId, setSelectedDeclarationId] = useState<string | null>(null);
+  const [newCustomsType, setNewCustomsType] = useState<CustomsDeclarationTypeV1>('IMPORT');
+  const [newCustomsChannel, setNewCustomsChannel] = useState<CustomsDeclarationChannelV1 | null>(null);
+  const [newBrokerId, setNewBrokerId] = useState<string | null>(null);
+  const [newNote, setNewNote] = useState('');
+  const [declarationNo, setDeclarationNo] = useState('');
+  const [customsType, setCustomsType] = useState<CustomsDeclarationTypeV1>('IMPORT');
+  const [customsChannel, setCustomsChannel] = useState<CustomsDeclarationChannelV1 | null>(null);
+  const [brokerId, setBrokerId] = useState<string | null>(null);
+  const [submittedAt, setSubmittedAt] = useState('');
+  const [headerNote, setHeaderNote] = useState('');
+  const [officialNo, setOfficialNo] = useState('');
+  const [officialChannel, setOfficialChannel] = useState<CustomsDeclarationChannelV1>('YELLOW');
+  const [clearNote, setClearNote] = useState('');
+  const [cancelReason, setCancelReason] = useState('');
+  const [newShipmentLineId, setNewShipmentLineId] = useState<string | null>(null);
+  const [newLineNo, setNewLineNo] = useState('');
+  const [newLineQuantity, setNewLineQuantity] = useState('');
+  const [newLineCustomsValue, setNewLineCustomsValue] = useState('');
+  const [newLineNote, setNewLineNote] = useState('');
+  const [editingLineId, setEditingLineId] = useState<string | null>(null);
+  const [lineQuantity, setLineQuantity] = useState('');
+  const [lineCustomsValue, setLineCustomsValue] = useState('');
+  const [lineDutyRate, setLineDutyRate] = useState('');
+  const [lineVatRate, setLineVatRate] = useState('');
+  const [lineNote, setLineNote] = useState('');
 
-  const handleSave = () => {
-    onUpdate({
-      ...shipment,
-      customs: {
-        ...shipment.customs,
-        stream: customsStream,
-        declaration_no: declarationNo || undefined,
-        lane_status: laneStatus,
-      },
-    });
+  const declarationListQuery = useQuery({
+    queryKey: queryKeys.customsDeclarationsByShipment(shipment.id),
+    queryFn: () => fetchCustomsDeclarationsByShipment(shipment.id),
+  });
+  const declarations = declarationListQuery.data ?? [];
+
+  useEffect(() => {
+    if (selectedDeclarationId && declarations.some((item) => item.id === selectedDeclarationId)) return;
+    setSelectedDeclarationId(declarations[0]?.id ?? null);
+  }, [declarations, selectedDeclarationId]);
+
+  const declarationSummary = declarations.find((item) => item.id === selectedDeclarationId) ?? null;
+  const declarationDetailQuery = useQuery({
+    enabled: Boolean(selectedDeclarationId),
+    queryKey: selectedDeclarationId
+      ? queryKeys.customsDeclarationDetail(selectedDeclarationId)
+      : queryKeys.customsDeclarationDetail('idle'),
+    queryFn: () => fetchCustomsDeclaration(selectedDeclarationId ?? ''),
+  });
+  const declaration = declarationDetailQuery.data ?? declarationSummary;
+  const declarationId = declaration?.id ?? null;
+  const declarationLinesQuery = useQuery({
+    enabled: Boolean(declarationId),
+    queryKey: declarationId ? queryKeys.customsDeclarationLines(declarationId) : queryKeys.customsDeclarationLines('idle'),
+    queryFn: () => fetchCustomsDeclarationLines(declarationId ?? ''),
+  });
+  const lines = declarationLinesQuery.data ?? declaration?.lines ?? [];
+  const shipmentLinesQuery = useQuery({
+    queryKey: queryKeys.shipmentLines(shipment.id),
+    queryFn: () => fetchShipmentLines(shipment.id),
+  });
+  const brokersQuery = useQuery({
+    queryKey: queryKeys.suppliers({ page: 1, limit: 100 }),
+    queryFn: () => fetchSuppliers({ page: 1, limit: 100 }),
+  });
+
+  useEffect(() => {
+    if (!declaration) return;
+    setDeclarationNo(declaration.declaration_no ?? '');
+    setCustomsType(declaration.customs_type);
+    setCustomsChannel(declaration.customs_channel);
+    setBrokerId(declaration.broker_id);
+    setSubmittedAt(declaration.submitted_at?.slice(0, 16) ?? '');
+    setHeaderNote(declaration.note ?? '');
+    setOfficialNo(declaration.declaration_no ?? '');
+    setOfficialChannel(declaration.customs_channel ?? 'YELLOW');
+  }, [declaration]);
+
+  useEffect(() => {
+    if (lines.length === 0 && !newLineNo) {
+      setNewLineNo('1');
+      return;
+    }
+    if (!newLineNo) {
+      setNewLineNo(String(Math.max(...lines.map((line) => line.line_no), 0) + 1));
+    }
+  }, [lines, newLineNo]);
+
+  const refreshCustoms = (id = declarationId) => {
+    void queryClient.invalidateQueries({ queryKey: queryKeys.customsDeclarationsByShipment(shipment.id) });
+    if (id) {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.customsDeclarationDetail(id) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.customsDeclarationLines(id) });
+    }
+    void queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
+  };
+
+  const createDeclarationMutation = useMutation({
+    mutationFn: () =>
+      createCustomsDeclarationFromShipment(shipment.id, {
+        broker_id: newBrokerId,
+        customs_channel: newCustomsChannel,
+        customs_type: newCustomsType,
+        note: newNote || null,
+      }),
+    onSuccess: (created) => {
+      setSelectedDeclarationId(created.id);
+      setNewBrokerId(null);
+      setNewCustomsChannel(null);
+      setNewCustomsType('IMPORT');
+      setNewNote('');
+      refreshCustoms(created.id);
+    },
+  });
+
+  const updateDeclarationMutation = useMutation({
+    mutationFn: () =>
+      updateCustomsDeclaration(declarationId ?? '', {
+        broker_id: brokerId,
+        customs_channel: customsChannel,
+        customs_type: customsType,
+        declaration_no: declarationNo || null,
+        note: headerNote || null,
+        submitted_at: submittedAt ? new Date(submittedAt).toISOString() : null,
+      }),
+    onSuccess: (updated) => refreshCustoms(updated.id),
+  });
+
+  const actionMutation = useMutation({
+    mutationFn: async (action: 'open-draft' | 'open-official' | 'clear' | 'cancel') => {
+      if (!declarationId) throw new Error('Select a declaration first');
+      if (action === 'open-draft') {
+        return openCustomsDraft(declarationId, { opened_at: new Date().toISOString() });
+      }
+      if (action === 'open-official') {
+        return openCustomsOfficial(declarationId, {
+          customs_channel: officialChannel,
+          declaration_no: officialNo,
+          opened_at: new Date().toISOString(),
+        });
+      }
+      if (action === 'clear') {
+        return clearCustomsDeclaration(declarationId, {
+          cleared_at: new Date().toISOString(),
+          note: clearNote || null,
+        });
+      }
+      return cancelCustomsDeclaration(declarationId, {
+        cancel_reason: cancelReason,
+        note: cancelReason,
+      });
+    },
+    onSuccess: (updated) => {
+      setCancelReason('');
+      setClearNote('');
+      refreshCustoms(updated.id);
+    },
+  });
+
+  const createLineMutation = useMutation({
+    mutationFn: () => {
+      if (!declarationId) throw new Error('Select a declaration first');
+      const payload: CreateCustomsDeclarationLinePayload = {
+        customs_value: newLineCustomsValue ? Number(newLineCustomsValue) : null,
+        line_no: Number(newLineNo),
+        note: newLineNote || null,
+        quantity: newLineQuantity ? Number(newLineQuantity) : undefined,
+        shipment_line_id: newShipmentLineId,
+      };
+      return createCustomsDeclarationLine(declarationId, payload);
+    },
+    onSuccess: () => {
+      setNewShipmentLineId(null);
+      setNewLineCustomsValue('');
+      setNewLineQuantity('');
+      setNewLineNote('');
+      setNewLineNo(String(Math.max(...lines.map((line) => line.line_no), 0) + 2));
+      refreshCustoms();
+    },
+  });
+
+  const updateLineMutation = useMutation({
+    mutationFn: () =>
+      updateCustomsDeclarationLine(editingLineId ?? '', {
+        customs_value: lineCustomsValue ? Number(lineCustomsValue) : null,
+        import_duty_rate: lineDutyRate ? Number(lineDutyRate) : null,
+        note: lineNote || null,
+        quantity: lineQuantity ? Number(lineQuantity) : undefined,
+        vat_rate: lineVatRate ? Number(lineVatRate) : null,
+      }),
+    onSuccess: () => {
+      setEditingLineId(null);
+      refreshCustoms();
+    },
+  });
+
+  const deleteLineMutation = useMutation({
+    mutationFn: (lineId: string) => deleteCustomsDeclarationLine(lineId),
+    onSuccess: () => refreshCustoms(),
+  });
+
+  const typeOptions: Array<{ label: string; value: CustomsDeclarationTypeV1 }> = [
+    { label: 'Import', value: 'IMPORT' },
+    { label: 'Temporary import', value: 'TEMP_IMPORT' },
+    { label: 'Re-import', value: 'RE_IMPORT' },
+    { label: 'Other', value: 'OTHER' },
+  ];
+  const channelOptions: Array<{ label: string; value: CustomsDeclarationChannelV1 }> = [
+    { label: 'Green', value: 'GREEN' },
+    { label: 'Yellow', value: 'YELLOW' },
+    { label: 'Red', value: 'RED' },
+  ];
+  const brokerOptions = (brokersQuery.data?.data ?? []).map((broker) => ({
+    label: `${broker.supplier_code} - ${broker.supplier_name}`,
+    value: broker.id,
+  }));
+  const shipmentLineOptions = (shipmentLinesQuery.data ?? []).map((line) => ({
+    label: [
+      line.item_description ?? line.item_id ?? line.id,
+      `${Number(line.qty).toLocaleString()} ${line.unit ?? ''}`.trim(),
+    ].join(' - '),
+    value: line.id,
+  }));
+  const isLocked = declaration?.status === 'CLEARED' || declaration?.status === 'CANCELLED';
+  const startEditingLine = (line: CustomsDeclarationLineV1) => {
+    setEditingLineId(line.id);
+    setLineQuantity(String(line.quantity ?? ''));
+    setLineCustomsValue(String(line.customs_value ?? ''));
+    setLineDutyRate(String(line.import_duty_rate ?? ''));
+    setLineVatRate(String(line.vat_rate ?? ''));
+    setLineNote(line.note ?? '');
   };
 
   return (
-    <Paper withBorder p="md">
-      <Stack gap="md">
-        <Text fw={700} size="sm">
-          Customs Classification (GD1 Flow)
-        </Text>
-        <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm">
-          {(['GREEN', 'YELLOW', 'RED'] as const).map((stream) => (
-            <Paper
-              key={stream}
-              withBorder
-              p="md"
-              onClick={() => setCustomsStream(stream)}
-              style={{
-                cursor: 'pointer',
-                borderColor: customsStream === stream ? `var(--mantine-color-${stream === 'GREEN' ? 'teal' : stream === 'YELLOW' ? 'yellow' : 'red'}-filled)` : 'transparent',
-                backgroundColor: customsStream === stream ? `var(--mantine-color-${stream === 'GREEN' ? 'teal' : stream === 'YELLOW' ? 'yellow' : 'red'}-light)` : 'transparent',
-              }}
-            >
-              <Stack align="center" gap={4}>
-                <Badge color={stream === 'GREEN' ? 'teal' : stream === 'YELLOW' ? 'yellow' : 'red'} size="lg">
-                  {stream} stream
-                </Badge>
-                <Text size="xs" c="dimmed" style={{ textAlign: 'center' }}>
-                  {stream === 'GREEN' && 'Green lane - automated customs clearance'}
-                  {stream === 'YELLOW' && 'Yellow lane - document supplement required'}
-                  {stream === 'RED' && 'Red lane - field inspection required'}
-                </Text>
-              </Stack>
-            </Paper>
-          ))}
-        </SimpleGrid>
+    <Stack gap="md">
+      <Alert color="blue" icon={<IconShield size={18} />}>
+        Customs declaration is created from active shipment lines and drives shipment status to CUSTOMS_DRAFT.
+      </Alert>
 
-        <SimpleGrid cols={{ base: 1, sm: 2 }} mt="md">
-          <TextInput
-            label="Declaration number"
-            placeholder="Customs declaration number"
-            value={declarationNo}
-            onChange={(e) => setDeclarationNo(e.currentTarget.value)}
-          />
-          <TextInput
-            label="Lane status"
-            placeholder="Detailed status"
-            value={laneStatus}
-            onChange={(e) => setLaneStatus(e.currentTarget.value)}
-          />
-        </SimpleGrid>
+      <Paper withBorder p="md">
+        <Stack gap="md">
+          <Group justify="space-between" align="flex-start">
+            <div>
+              <Text fw={700}>Customs declarations</Text>
+              <Text size="sm" c="dimmed">
+                Create one declaration per shipment, then open draft/official and clear customs.
+              </Text>
+            </div>
+            {declarations.length > 0 ? (
+              <Select
+                label="Active declaration"
+                data={declarations.map((item) => ({
+                  label: item.declaration_no ?? `${item.customs_type} - ${item.status}`,
+                  value: item.id,
+                }))}
+                value={selectedDeclarationId}
+                onChange={setSelectedDeclarationId}
+                w={{ base: '100%', sm: 280 }}
+              />
+            ) : null}
+          </Group>
 
-        <Group justify="flex-end">
-          <Button color="blue" onClick={handleSave}>
-            Save customs
-          </Button>
-        </Group>
-      </Stack>
-    </Paper>
+          {declarationListQuery.isLoading ? (
+            <Group gap="xs">
+              <Loader size="sm" />
+              <Text size="sm" c="dimmed">Loading customs declarations...</Text>
+            </Group>
+          ) : declarations.length === 0 ? (
+            <SimpleGrid cols={{ base: 1, md: 4 }} spacing="sm">
+              <Select
+                label="Customs type"
+                data={typeOptions}
+                value={newCustomsType}
+                onChange={(value) => setNewCustomsType((value as CustomsDeclarationTypeV1 | null) ?? 'IMPORT')}
+              />
+              <Select
+                label="Channel"
+                clearable
+                data={channelOptions}
+                value={newCustomsChannel}
+                onChange={(value) => setNewCustomsChannel(value as CustomsDeclarationChannelV1 | null)}
+              />
+              <Select
+                label="Broker"
+                clearable
+                searchable
+                data={brokerOptions}
+                value={newBrokerId}
+                onChange={setNewBrokerId}
+                nothingFoundMessage={brokersQuery.isLoading ? 'Loading brokers...' : 'No supplier found'}
+              />
+              <TextInput
+                label="Note"
+                placeholder="Create draft customs declaration"
+                value={newNote}
+                onChange={(event) => setNewNote(event.currentTarget.value)}
+              />
+              <Group align="flex-end">
+                <Button
+                  leftSection={<IconPlus size={16} />}
+                  loading={createDeclarationMutation.isPending}
+                  onClick={() => createDeclarationMutation.mutate()}
+                >
+                  Create declaration
+                </Button>
+              </Group>
+            </SimpleGrid>
+          ) : null}
+        </Stack>
+      </Paper>
+
+      {declaration ? (
+        <>
+          <Paper withBorder p="md">
+            <Stack gap="md">
+              <Group justify="space-between" align="flex-start">
+                <div>
+                  <Group gap="xs">
+                    <Text fw={700}>{declaration.declaration_no ?? 'Draft declaration'}</Text>
+                    <StatusBadge status={declaration.status} />
+                    {declaration.customs_channel ? (
+                      <Badge color={channelColor(declaration.customs_channel)}>{declaration.customs_channel}</Badge>
+                    ) : null}
+                  </Group>
+                  <Text size="sm" c="dimmed">
+                    {declaration.broker?.supplier_name ?? 'No broker'} · {declaration.note ?? 'No note'}
+                  </Text>
+                </div>
+                <Group gap="xs">
+                  <Button
+                    size="xs"
+                    variant="light"
+                    disabled={isLocked || declaration.status !== 'DRAFT'}
+                    loading={actionMutation.isPending}
+                    onClick={() => actionMutation.mutate('open-draft')}
+                  >
+                    Open draft
+                  </Button>
+                  <Button
+                    size="xs"
+                    variant="light"
+                    disabled={isLocked || !officialNo || !['DRAFT', 'DRAFT_OPENED'].includes(declaration.status)}
+                    loading={actionMutation.isPending}
+                    onClick={() => actionMutation.mutate('open-official')}
+                  >
+                    Open official
+                  </Button>
+                  <Button
+                    size="xs"
+                    color="teal"
+                    disabled={!['OFFICIAL_OPENED', 'SUBMITTED', 'INSPECTION'].includes(declaration.status)}
+                    loading={actionMutation.isPending}
+                    onClick={() => actionMutation.mutate('clear')}
+                  >
+                    Clear
+                  </Button>
+                </Group>
+              </Group>
+
+              <SimpleGrid cols={{ base: 1, md: 4 }} spacing="sm">
+                <TextInput
+                  label="Declaration no."
+                  value={declarationNo}
+                  disabled={isLocked}
+                  onChange={(event) => {
+                    setDeclarationNo(event.currentTarget.value);
+                    setOfficialNo(event.currentTarget.value);
+                  }}
+                />
+                <Select
+                  label="Customs type"
+                  data={typeOptions}
+                  value={customsType}
+                  disabled={isLocked}
+                  onChange={(value) => setCustomsType((value as CustomsDeclarationTypeV1 | null) ?? 'IMPORT')}
+                />
+                <Select
+                  label="Channel"
+                  clearable
+                  data={channelOptions}
+                  value={customsChannel}
+                  disabled={isLocked}
+                  onChange={(value) => {
+                    setCustomsChannel(value as CustomsDeclarationChannelV1 | null);
+                    if (value) setOfficialChannel(value as CustomsDeclarationChannelV1);
+                  }}
+                />
+                <Select
+                  label="Broker"
+                  clearable
+                  searchable
+                  data={brokerOptions}
+                  value={brokerId}
+                  disabled={isLocked}
+                  onChange={setBrokerId}
+                />
+                <TextInput
+                  label="Submitted at"
+                  type="datetime-local"
+                  value={submittedAt}
+                  disabled={isLocked}
+                  onChange={(event) => setSubmittedAt(event.currentTarget.value)}
+                />
+                <TextInput
+                  label="Official no."
+                  value={officialNo}
+                  disabled={isLocked}
+                  onChange={(event) => setOfficialNo(event.currentTarget.value)}
+                />
+                <Select
+                  label="Official channel"
+                  data={channelOptions}
+                  value={officialChannel}
+                  disabled={isLocked}
+                  onChange={(value) => setOfficialChannel((value as CustomsDeclarationChannelV1 | null) ?? 'YELLOW')}
+                />
+                <TextInput
+                  label="Clear note"
+                  value={clearNote}
+                  disabled={declaration.status === 'CLEARED' || declaration.status === 'CANCELLED'}
+                  onChange={(event) => setClearNote(event.currentTarget.value)}
+                />
+                <TextInput
+                  label="Header note"
+                  value={headerNote}
+                  disabled={isLocked}
+                  onChange={(event) => setHeaderNote(event.currentTarget.value)}
+                />
+                <TextInput
+                  label="Cancel reason"
+                  value={cancelReason}
+                  disabled={isLocked}
+                  onChange={(event) => setCancelReason(event.currentTarget.value)}
+                />
+              </SimpleGrid>
+
+              <Group justify="flex-end" gap="xs">
+                <Button
+                  variant="light"
+                  disabled={isLocked}
+                  loading={updateDeclarationMutation.isPending}
+                  onClick={() => updateDeclarationMutation.mutate()}
+                >
+                  Save declaration
+                </Button>
+                <Button
+                  color="red"
+                  variant="light"
+                  disabled={isLocked || !cancelReason}
+                  loading={actionMutation.isPending}
+                  onClick={() => actionMutation.mutate('cancel')}
+                >
+                  Cancel declaration
+                </Button>
+              </Group>
+            </Stack>
+          </Paper>
+
+          <Paper withBorder p="md">
+            <Stack gap="md">
+              <Group justify="space-between">
+                <div>
+                  <Text fw={700}>Declaration lines</Text>
+                  <Text size="sm" c="dimmed">
+                    Lines are copied from shipment lines when a declaration is created.
+                  </Text>
+                </div>
+                {declarationLinesQuery.isFetching ? <Loader size="sm" /> : null}
+              </Group>
+
+              {!isLocked ? (
+                <SimpleGrid cols={{ base: 1, md: 5 }} spacing="sm">
+                  <Select
+                    label="Shipment line"
+                    searchable
+                    clearable
+                    data={shipmentLineOptions}
+                    value={newShipmentLineId}
+                    onChange={setNewShipmentLineId}
+                    nothingFoundMessage={shipmentLinesQuery.isLoading ? 'Loading shipment lines...' : 'No shipment line'}
+                  />
+                  <TextInput
+                    label="Line no."
+                    type="number"
+                    value={newLineNo}
+                    onChange={(event) => setNewLineNo(event.currentTarget.value)}
+                  />
+                  <TextInput
+                    label="Quantity"
+                    type="number"
+                    value={newLineQuantity}
+                    onChange={(event) => setNewLineQuantity(event.currentTarget.value)}
+                  />
+                  <TextInput
+                    label="Customs value"
+                    type="number"
+                    value={newLineCustomsValue}
+                    onChange={(event) => setNewLineCustomsValue(event.currentTarget.value)}
+                  />
+                  <TextInput
+                    label="Line note"
+                    value={newLineNote}
+                    onChange={(event) => setNewLineNote(event.currentTarget.value)}
+                  />
+                  <Group align="flex-end">
+                    <Button
+                      size="sm"
+                      leftSection={<IconPlus size={16} />}
+                      disabled={!newLineNo}
+                      loading={createLineMutation.isPending}
+                      onClick={() => createLineMutation.mutate()}
+                    >
+                      Add line
+                    </Button>
+                  </Group>
+                </SimpleGrid>
+              ) : null}
+
+              <ScrollArea type="always" offsetScrollbars scrollbarSize={8}>
+                <Table miw={980} verticalSpacing="sm">
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th>No.</Table.Th>
+                      <Table.Th>Item</Table.Th>
+                      <Table.Th>HS</Table.Th>
+                      <Table.Th style={{ textAlign: 'right' }}>Qty</Table.Th>
+                      <Table.Th style={{ textAlign: 'right' }}>Value</Table.Th>
+                      <Table.Th style={{ textAlign: 'right' }}>Duty %</Table.Th>
+                      <Table.Th style={{ textAlign: 'right' }}>VAT %</Table.Th>
+                      <Table.Th>Note</Table.Th>
+                      <Table.Th style={{ textAlign: 'right' }}>Actions</Table.Th>
+                    </Table.Tr>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {lines.map((line) => {
+                      const isEditing = editingLineId === line.id;
+                      return (
+                        <Table.Tr key={line.id}>
+                          <Table.Td>{line.line_no}</Table.Td>
+                          <Table.Td>
+                            <Text size="sm" fw={600}>{line.item_description ?? line.item_id ?? '-'}</Text>
+                            <Text size="xs" c="dimmed">{line.unit ?? '-'}</Text>
+                          </Table.Td>
+                          <Table.Td>{line.hs_code ?? '-'}</Table.Td>
+                          <Table.Td style={{ textAlign: 'right' }}>
+                            {isEditing ? (
+                              <TextInput
+                                type="number"
+                                size="xs"
+                                value={lineQuantity}
+                                onChange={(event) => setLineQuantity(event.currentTarget.value)}
+                              />
+                            ) : (
+                              Number(line.quantity).toLocaleString()
+                            )}
+                          </Table.Td>
+                          <Table.Td style={{ textAlign: 'right' }}>
+                            {isEditing ? (
+                              <TextInput
+                                type="number"
+                                size="xs"
+                                value={lineCustomsValue}
+                                onChange={(event) => setLineCustomsValue(event.currentTarget.value)}
+                              />
+                            ) : (
+                              line.customs_value ? Number(line.customs_value).toLocaleString() : '-'
+                            )}
+                          </Table.Td>
+                          <Table.Td style={{ textAlign: 'right' }}>
+                            {isEditing ? (
+                              <TextInput
+                                type="number"
+                                size="xs"
+                                value={lineDutyRate}
+                                onChange={(event) => setLineDutyRate(event.currentTarget.value)}
+                              />
+                            ) : (
+                              line.import_duty_rate ?? '-'
+                            )}
+                          </Table.Td>
+                          <Table.Td style={{ textAlign: 'right' }}>
+                            {isEditing ? (
+                              <TextInput
+                                type="number"
+                                size="xs"
+                                value={lineVatRate}
+                                onChange={(event) => setLineVatRate(event.currentTarget.value)}
+                              />
+                            ) : (
+                              line.vat_rate ?? '-'
+                            )}
+                          </Table.Td>
+                          <Table.Td>
+                            {isEditing ? (
+                              <TextInput
+                                size="xs"
+                                value={lineNote}
+                                onChange={(event) => setLineNote(event.currentTarget.value)}
+                              />
+                            ) : (
+                              line.note ?? '-'
+                            )}
+                          </Table.Td>
+                          <Table.Td>
+                            <Group justify="flex-end" gap="xs" wrap="nowrap">
+                              {isEditing ? (
+                                <>
+                                  <Button size="xs" variant="subtle" onClick={() => setEditingLineId(null)}>
+                                    Cancel
+                                  </Button>
+                                  <Button size="xs" loading={updateLineMutation.isPending} onClick={() => updateLineMutation.mutate()}>
+                                    Save
+                                  </Button>
+                                </>
+                              ) : (
+                                <>
+                                  <Button size="xs" variant="light" disabled={isLocked} onClick={() => startEditingLine(line)}>
+                                    Edit
+                                  </Button>
+                                  <Tooltip label="Delete line">
+                                    <ActionIcon
+                                      aria-label="Delete line"
+                                      color="red"
+                                      variant="subtle"
+                                      disabled={isLocked}
+                                      loading={deleteLineMutation.isPending}
+                                      onClick={() => deleteLineMutation.mutate(line.id)}
+                                    >
+                                      <IconTrash size={16} />
+                                    </ActionIcon>
+                                  </Tooltip>
+                                </>
+                              )}
+                            </Group>
+                          </Table.Td>
+                        </Table.Tr>
+                      );
+                    })}
+                  </Table.Tbody>
+                </Table>
+              </ScrollArea>
+
+              {lines.length === 0 ? (
+                <EmptyState title="No customs lines" description="Create a declaration from shipment lines or add a line manually." />
+              ) : null}
+            </Stack>
+          </Paper>
+        </>
+      ) : null}
+
+      {declarationListQuery.isError ? (
+        <Alert color="red" icon={<IconX size={18} />}>
+          {(declarationListQuery.error as Error).message}
+        </Alert>
+      ) : null}
+    </Stack>
   );
+}
+
+function channelColor(channel: CustomsDeclarationChannelV1) {
+  if (channel === 'GREEN') return 'teal';
+  if (channel === 'YELLOW') return 'yellow';
+  return 'red';
 }
 
 function ShipmentCostsPanel({ shippingMode }: { shippingMode: ShipmentRecord['shipping_mode'] }) {

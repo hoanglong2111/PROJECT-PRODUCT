@@ -98,4 +98,14 @@ describe('queryKeys', () => {
     expect(queryKeys.shipmentMilestones('shp-1')).toEqual(['shipments', 'shp-1', 'milestones']);
     expect(queryKeys.shipmentDocuments('shp-1')).toEqual(['shipments', 'shp-1', 'documents']);
   });
+
+  it('builds customs declaration V1 keys with shipment and declaration identifiers', () => {
+    expect(queryKeys.customsDeclarationsByShipment('shp-1')).toEqual([
+      'shipments',
+      'shp-1',
+      'customs-declarations',
+    ]);
+    expect(queryKeys.customsDeclarationDetail('cd-1')).toEqual(['customs-declarations', 'detail', 'cd-1']);
+    expect(queryKeys.customsDeclarationLines('cd-1')).toEqual(['customs-declarations', 'cd-1', 'lines']);
+  });
 });

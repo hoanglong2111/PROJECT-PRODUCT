@@ -1,5 +1,5 @@
 import { Button, Tooltip } from '@mantine/core';
-import { IconAnchor, IconChecklist, IconFileInvoice, IconGitBranch, IconShoppingCart, IconTruckDelivery } from '@tabler/icons-react';
+import { IconAnchor, IconChecklist, IconShoppingCart, IconTruckDelivery } from '@tabler/icons-react';
 import { Link } from 'react-router-dom';
 
 import { useI18n } from '@shared/i18n';
@@ -50,11 +50,9 @@ export function EntityLink({
     );
   }
 
-  const queryKey = type;
-
   return (
-    <Button component={Link} to={`${ROUTE[type]}?${queryKey}=${id}`} size="xs" variant="light" leftSection={<Icon size={14} />}>
-      {compact ? id : `${label[type]} · ${id}`}
+    <Button component={Link} to={`${ROUTE[type]}?${type}=${id}`} size="xs" variant="light" leftSection={<Icon size={14} />}>
+      {compact ? id : `${label[type]} - ${id}`}
     </Button>
   );
 }

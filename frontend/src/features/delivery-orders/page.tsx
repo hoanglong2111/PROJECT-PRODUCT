@@ -116,7 +116,7 @@ export function DeliveryOrders() {
   const [searchParams] = useSearchParams();
   const statusParam = searchParams.get('status');
   const { close: closeDoParam, open: openDoParam, value: focusedDo } = useEntityParam('do');
-  const { value: focusedPr } = useEntityParam('pr');
+  const { value: focusedPo } = useEntityParam('po');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<DeliveryOrderTab>('processing');
   const [flowFilter, setFlowFilter] = useState<BusinessFlowTag | 'all'>('all');
@@ -144,7 +144,7 @@ export function DeliveryOrders() {
   }, [statusParam]);
 
   useEffect(() => {
-    if (!focusedDo && !focusedPr) {
+    if (!focusedDo && !focusedPo) {
       setSelectedId(null);
       return;
     }
@@ -158,8 +158,11 @@ export function DeliveryOrders() {
         return deliveryOrder.order_info.order_number === focusedDo;
       }
 
-      if (focusedPr) {
-        return deliveryOrder.order_info.request_code === focusedPr;
+      if (focusedPo) {
+        return (
+          deliveryOrder.source_po_number === focusedPo ||
+          deliveryOrder.sap_integration.po_number === focusedPo
+        );
       }
 
       return false;
@@ -168,7 +171,7 @@ export function DeliveryOrders() {
     if (matchedOrder) {
       setSelectedId(matchedOrder.id);
     }
-  }, [deliveryOrders, focusedDo, focusedPr]);
+  }, [deliveryOrders, focusedDo, focusedPo]);
 
   const filteredDeliveryOrders = useMemo(() => {
     const normalizedSearch = search.toLowerCase().trim();
@@ -223,7 +226,7 @@ export function DeliveryOrders() {
   const riskCount = deliveryOrders.filter(hasOperationalRisk).length;
   const closeDetail = () => {
     setSelectedId(null);
-    closeDoParam({ clear: ['pr', 'po', 'task'] });
+    closeDoParam({ clear: ['po', 'task'] });
   };
 
   if (deliveryOrdersQuery.isError) {
@@ -274,9 +277,6 @@ export function DeliveryOrders() {
             <Badge leftSection={<IconGitBranch size={14} />} size="lg" variant="light">
               {t('deliveryOrders.generatedFromLots')}
             </Badge>
-            <Button component={Link} to="/workflow" leftSection={<IconGitBranch size={16} />} variant="light">
-              {t('purchaseRequests.inspectWorkflow')}
-            </Button>
           </Group>
         </Group>
       ) : (
@@ -294,16 +294,11 @@ export function DeliveryOrders() {
         </Group>
       )}
 
-      {focusedDo || focusedPr ? (
+      {focusedDo || focusedPo ? (
         <Paper withBorder p="md" className="flow-context">
-          <Group justify="space-between">
-            <Text size="sm">
-              {t('deliveryOrders.context', { kind: focusedDo ? 'DO' : 'PR', id: focusedDo ?? focusedPr })}
-            </Text>
-            <Button component={Link} to={`/workflow?${focusedDo ? `do=${focusedDo}` : `pr=${focusedPr}`}`} size="xs" variant="light">
-              {t('purchaseRequests.openFlow')}
-            </Button>
-          </Group>
+          <Text size="sm">
+            {t('deliveryOrders.context', { kind: focusedDo ? 'DO' : 'PO', id: focusedDo ?? focusedPo })}
+          </Text>
         </Paper>
       ) : null}
 
@@ -1171,7 +1166,7 @@ function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: DeliveryOrder; 
             <Progress value={taskProgress} color={taskProgress === 100 ? 'teal' : 'orange'} />
             <SimpleGrid cols={{ base: 1, sm: 3 }}>
               <Info label={t('tasks.totalTasks')} value={String(deliveryOrder.task_summary.total_tasks)} />
-              <Info label={t('workflow.blockedTasks')} value={String(deliveryOrder.task_summary.blocked_tasks)} />
+              <Info label={t('tasks.blocked')} value={String(deliveryOrder.task_summary.blocked_tasks)} />
               <Info label={t('deliveryOrders.requiredRemaining')} value={String(deliveryOrder.task_summary.required_tasks_remaining)} />
             </SimpleGrid>
           </Stack>

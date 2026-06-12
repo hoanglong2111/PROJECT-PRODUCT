@@ -368,14 +368,8 @@ export function Tasks() {
                   <Text size="sm">
                     {t('tasks.context', { kind: 'DO', id: focusedDo })}
                   </Text>
-                  <Button
-                    component={Link}
-                    to={`/workflow?do=${focusedDo}`}
-                    size="xs"
-                    variant="light"
-                    leftSection={<IconGitBranch size={14} />}
-                  >
-                    {t('purchaseRequests.openFlow')}
+                  <Button component={Link} to={`/delivery-orders?do=${focusedDo}`} size="xs" variant="light">
+                    {t('entityLink.openDo')}
                   </Button>
                 </Group>
               </Paper>

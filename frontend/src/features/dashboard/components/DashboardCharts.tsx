@@ -2,7 +2,6 @@ import { Group, Paper, Progress, SimpleGrid, Stack, Text, Title } from '@mantine
 import {
   IconArrowRight,
   IconChecklist,
-  IconGitBranch,
   IconShoppingCart,
   IconTruckDelivery,
 } from '@tabler/icons-react';
@@ -185,7 +184,7 @@ export function DashboardCharts({
         </Text>
         <Stack gap="sm">
           {(stats.businessFlowCounts ?? []).map((item) => (
-            <Link key={item.tag} to={`/workflow?tag=${item.tag}`} style={{ display: 'block', color: 'inherit', textDecoration: 'none' }}>
+            <Link key={item.tag} to="/delivery-orders" style={{ display: 'block', color: 'inherit', textDecoration: 'none' }}>
               <div style={{ padding: '2px 0' }}>
                 <Group justify="space-between" mb={6}>
                   <Text size="sm" className="hover-underline" style={{ color: 'var(--mantine-color-grape-filled)', fontWeight: 600 }}>
@@ -237,7 +236,6 @@ export function DashboardCharts({
           {t('dashboard.modulesDescription')}
         </Text>
         <Stack gap="md" mt="lg">
-          <ModuleLink to="/workflow" icon={<IconGitBranch size={20} />} title={t('dashboard.moduleWorkflowTitle')} description={t('dashboard.moduleWorkflowDescription')} />
           <ModuleLink to="/purchase-orders" icon={<IconShoppingCart size={20} />} title={t('dashboard.modulePurchaseOrdersTitle')} description={t('dashboard.modulePurchaseOrdersDescription')} />
           <ModuleLink to="/delivery-orders" icon={<IconTruckDelivery size={20} />} title={t('dashboard.moduleDeliveryOrdersTitle')} description={t('dashboard.moduleDeliveryOrdersDescription')} />
           <ModuleLink to="/tasks" icon={<IconChecklist size={20} />} title={t('dashboard.moduleTasksTitle')} description={t('dashboard.moduleTasksDescription')} />

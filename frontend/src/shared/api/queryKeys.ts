@@ -13,6 +13,11 @@ export const queryKeys = {
   currencies: (params: Record<string, unknown>) => ['currencies', params] as const,
   currencyDetail: (id: string) => ['currencies', 'detail', id] as const,
   currencyLists: ['currencies'] as const,
+  customsDeclarationDetail: (id: string) => ['customs-declarations', 'detail', id] as const,
+  customsDeclarationLines: (id: string) => ['customs-declarations', id, 'lines'] as const,
+  customsDeclarationLists: ['customs-declarations', 'list'] as const,
+  customsDeclarationsByShipment: (shipmentId: string) =>
+    ['shipments', shipmentId, 'customs-declarations'] as const,
   incotermDetail: (id: string) => ['incoterms', 'detail', id] as const,
   incotermLists: ['incoterms'] as const,
   incoterms: (params: Record<string, unknown>) => ['incoterms', params] as const,
