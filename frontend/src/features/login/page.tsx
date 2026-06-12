@@ -22,8 +22,8 @@ export function Login() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const form = useForm<LoginForm>({
     initialValues: {
-      email: 'manager@kbfe.local',
-      password: 'manager123',
+      email: 'admin@kbfe.local',
+      password: 'admin123',
     },
     validate: {
       email: (value) => (value.trim().length === 0 ? t('login.emailRequired') : null),
