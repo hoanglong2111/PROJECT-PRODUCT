@@ -93,14 +93,39 @@ const shippingIcon = {
   ROAD: IconTruckDelivery,
 };
 
-type DeliveryOrderTab = 'processing' | 'handover' | 'completed' | 'issues' | 'all';
+type DeliveryOrderTab =
+  | 'processing'
+  | 'handover'
+  | 'internationalTransit'
+  | 'customsWaiting'
+  | 'customsCleared'
+  | 'delivering'
+  | 'completed'
+  | 'issues'
+  | 'all';
 
 const deliveryOrderStatusTabs: Record<Exclude<DeliveryOrderTab, 'all'>, DeliveryOrderStatus[]> = {
   processing: ['DRAFT', 'CREATED', 'READY_FOR_QUOTATION', 'QUOTATION_CONFIRMED'],
   handover: ['ASSIGNED_TO_SHIPMENT', 'IN_TRANSIT', 'ARRIVED_PORT', 'CUSTOMS_PROCESSING', 'WAREHOUSE_PENDING'],
+  internationalTransit: ['IN_TRANSIT'],
+  customsWaiting: ['ARRIVED_PORT'],
+  customsCleared: ['CUSTOMS_CLEARED'],
+  delivering: ['WAREHOUSE_PENDING'],
   completed: ['CLOSED', 'DELIVERED'],
   issues: ['DELAYED', 'CANCELLED'],
 };
+
+const deliveryOrderTabItems: Array<{ label: string; value: DeliveryOrderTab }> = [
+  { label: 'Chờ xử lý', value: 'processing' },
+  { label: 'Chờ bàn giao', value: 'handover' },
+  { label: 'Đang vận chuyển quốc tế', value: 'internationalTransit' },
+  { label: 'Đang chờ thông quan', value: 'customsWaiting' },
+  { label: 'Đã thông quan', value: 'customsCleared' },
+  { label: 'Đang giao hàng', value: 'delivering' },
+  { label: 'Hoàn tất', value: 'completed' },
+  { label: 'Sự cố', value: 'issues' },
+  { label: 'Tất cả', value: 'all' },
+];
 
 function hasOperationalRisk(deliveryOrder: DeliveryOrder) {
   return (
@@ -108,6 +133,15 @@ function hasOperationalRisk(deliveryOrder: DeliveryOrder) {
     deliveryOrder.task_summary.blocked_tasks > 0 ||
     deliveryOrder.logistics_shipping.missing_documents.length > 0
   );
+}
+
+function getAllocationWeightKg(deliveryOrder: DeliveryOrder) {
+  const weight = deliveryOrder.source_lines.reduce((total, line) => total + (line.weight_kg ?? 0), 0);
+  return Math.round(weight * 10) / 10;
+}
+
+function getContainerCount(deliveryOrder: DeliveryOrder) {
+  return Math.max(0, ...deliveryOrder.source_lines.map((line) => line.container_count ?? 0));
 }
 
 export function DeliveryOrders() {
@@ -206,13 +240,32 @@ export function DeliveryOrders() {
   } = useListPagination(filteredDeliveryOrders, [activeTab, flowFilter, riskOnly, search, statusParam]);
 
   const tabCounts = useMemo(
-    () => ({
-      all: deliveryOrders.length,
-      completed: deliveryOrders.filter((deliveryOrder) => deliveryOrderStatusTabs.completed.includes(deliveryOrder.order_info.status)).length,
-      handover: deliveryOrders.filter((deliveryOrder) => deliveryOrderStatusTabs.handover.includes(deliveryOrder.order_info.status)).length,
-      issues: deliveryOrders.filter((deliveryOrder) => deliveryOrderStatusTabs.issues.includes(deliveryOrder.order_info.status)).length,
-      processing: deliveryOrders.filter((deliveryOrder) => deliveryOrderStatusTabs.processing.includes(deliveryOrder.order_info.status)).length,
-    }),
+    () =>
+      deliveryOrderTabItems.reduce<Record<DeliveryOrderTab, number>>(
+        (counts, tab) => {
+          if (tab.value === 'all') {
+            counts[tab.value] = deliveryOrders.length;
+            return counts;
+          }
+
+          const statusTab = tab.value as Exclude<DeliveryOrderTab, 'all'>;
+          counts[tab.value] = deliveryOrders.filter((deliveryOrder) =>
+            deliveryOrderStatusTabs[statusTab].includes(deliveryOrder.order_info.status),
+          ).length;
+          return counts;
+        },
+        {
+          all: 0,
+          completed: 0,
+          customsCleared: 0,
+          customsWaiting: 0,
+          delivering: 0,
+          handover: 0,
+          internationalTransit: 0,
+          issues: 0,
+          processing: 0,
+        },
+      ),
     [deliveryOrders],
   );
 
@@ -220,9 +273,8 @@ export function DeliveryOrders() {
     selectedId === null
       ? null
       : filteredDeliveryOrders.find((deliveryOrder) => deliveryOrder.id === selectedId) ??
-        deliveryOrders.find((deliveryOrder) => deliveryOrder.id === selectedId) ??
-        null;
-  const riskCount = deliveryOrders.filter(hasOperationalRisk).length;
+      deliveryOrders.find((deliveryOrder) => deliveryOrder.id === selectedId) ??
+      null;
   const closeDetail = () => {
     setSelectedId(null);
     closeDoParam({ clear: ['po', 'task'] });
@@ -272,11 +324,6 @@ export function DeliveryOrders() {
               {t('deliveryOrders.subtitle')}
             </Text>
           </div>
-          <Group gap="xs">
-            <Badge leftSection={<IconGitBranch size={14} />} size="lg" variant="light">
-              {t('deliveryOrders.generatedFromLots')}
-            </Badge>
-          </Group>
         </Group>
       ) : (
         <Group justify="space-between" align="center" gap="md">
@@ -287,9 +334,6 @@ export function DeliveryOrders() {
             <Text c="dimmed" size="sm">·</Text>
             <Text fw={600} size="sm">{selectedDeliveryOrder.order_info.order_number}</Text>
           </Group>
-          <Badge leftSection={<IconGitBranch size={14} />} size="md" variant="light">
-            {t('deliveryOrders.generatedFromLots')}
-          </Badge>
         </Group>
       )}
 
@@ -307,16 +351,25 @@ export function DeliveryOrders() {
         <>
           <SimpleGrid cols={{ base: 1, sm: 3 }}>
             <Metric
-              label={t('deliveryOrders.activeDo')}
-              value={deliveryOrders.filter((deliveryOrder) => !['CLOSED', 'DELIVERED', 'CANCELLED'].includes(deliveryOrder.order_info.status)).length}
+              label="Trễ hạn"
+              value={deliveryOrders.filter((deliveryOrder) => deliveryOrder.order_info.status === 'DELAYED' || calcDelay({
+                actualEntryDate: deliveryOrder.warehouse_tracking.actual_entry_date,
+                plannedEntryDate: deliveryOrder.warehouse_tracking.planned_entry_date,
+                warehouseDeadline: deliveryOrder.warehouse_tracking.warehouse_deadline,
+              }).isLate).length}
+              color="red"
+              icon={<IconAlertTriangle size={22} />}
+            />
+            <Metric
+              label="Chờ xử lý"
+              value={tabCounts.processing}
               color="blue"
               icon={<IconTruckDelivery size={22} />}
             />
-            <Metric label={t('deliveryOrders.riskQueue')} value={riskCount} color="red" icon={<IconAlertTriangle size={22} />} />
             <Metric
-              label={t('deliveryOrders.completedTasks')}
-              value={deliveryOrders.reduce((total, deliveryOrder) => total + deliveryOrder.task_summary.completed_tasks, 0)}
-              color="teal"
+              label="Công việc đang chờ xử lý"
+              value={deliveryOrders.reduce((total, deliveryOrder) => total + deliveryOrder.task_summary.required_tasks_remaining, 0)}
+              color="orange"
               icon={<IconChecklist size={22} />}
             />
           </SimpleGrid>
@@ -324,22 +377,12 @@ export function DeliveryOrders() {
           <Paper withBorder p="md">
             <Stack gap="sm">
               <Tabs value={activeTab} onChange={(value) => setActiveTab((value as DeliveryOrderTab) ?? 'processing')} variant="pills" radius="xl">
-                <Tabs.List grow>
-                  <Tabs.Tab value="processing">
-                    {t('deliveryOrders.tabProcessing')} ({tabCounts.processing})
-                  </Tabs.Tab>
-                  <Tabs.Tab value="handover">
-                    {t('deliveryOrders.tabHandover')} ({tabCounts.handover})
-                  </Tabs.Tab>
-                  <Tabs.Tab value="completed">
-                    {t('deliveryOrders.tabCompleted')} ({tabCounts.completed})
-                  </Tabs.Tab>
-                  <Tabs.Tab value="issues">
-                    {t('deliveryOrders.tabIssues')} ({tabCounts.issues})
-                  </Tabs.Tab>
-                  <Tabs.Tab value="all">
-                    {t('deliveryOrders.tabAll')} ({tabCounts.all})
-                  </Tabs.Tab>
+                <Tabs.List className="delivery-order-tabs-list">
+                  {deliveryOrderTabItems.map((tab) => (
+                    <Tabs.Tab key={tab.value} value={tab.value}>
+                      {tab.label} ({tabCounts[tab.value]})
+                    </Tabs.Tab>
+                  ))}
                 </Tabs.List>
               </Tabs>
 
@@ -396,6 +439,8 @@ export function DeliveryOrders() {
                 <Table.Tbody>
                   {visibleDeliveryOrders.map((deliveryOrder) => {
                     const ShippingIcon = shippingIcon[deliveryOrder.logistics_shipping.shipping_method];
+                    const allocationWeightKg = getAllocationWeightKg(deliveryOrder);
+                    const containerCount = getContainerCount(deliveryOrder);
                     const delay = calcDelay({
                       actualEntryDate: deliveryOrder.warehouse_tracking.actual_entry_date,
                       plannedEntryDate: deliveryOrder.warehouse_tracking.planned_entry_date,
@@ -404,8 +449,8 @@ export function DeliveryOrders() {
                     const taskProgress =
                       deliveryOrder.task_summary.total_tasks > 0
                         ? Math.round(
-                            (deliveryOrder.task_summary.completed_tasks / deliveryOrder.task_summary.total_tasks) * 100,
-                          )
+                          (deliveryOrder.task_summary.completed_tasks / deliveryOrder.task_summary.total_tasks) * 100,
+                        )
                         : 0;
 
                     return (
@@ -417,7 +462,6 @@ export function DeliveryOrders() {
                           <Text size="xs" c="dimmed" lineClamp={1}>
                             {deliveryOrder.source_lot_no ?? deliveryOrder.product_details.lot_number ?? t('deliveryOrders.lotPending')}
                           </Text>
-                          <FlowTagBadge compact tags={deliveryOrder.flow_tags} />
                         </Table.Td>
                         <Table.Td>
                           <EntityLink type="po" id={deliveryOrder.source_po_number ?? deliveryOrder.sap_integration.po_number} compact />
@@ -428,7 +472,11 @@ export function DeliveryOrders() {
                             {deliveryOrder.sap_integration.supplier_name ?? t('deliveryOrders.supplierPending')}
                           </Text>
                           <Text size="sm" c="dimmed" lineClamp={1}>
-                            {deliveryOrder.source_lines.length} items · {deliveryOrder.product_details.quantity.toLocaleString()} {deliveryOrder.product_details.unit}
+                            <NumberFormatter value={deliveryOrder.source_lines.length} thousandSeparator /> items -{' '}
+                            <NumberFormatter value={deliveryOrder.product_details.quantity} thousandSeparator />{' '}
+                            {deliveryOrder.product_details.unit || 'PCS'} |{' '}
+                            <NumberFormatter value={allocationWeightKg} thousandSeparator />kg -{' '}
+                            <NumberFormatter value={containerCount} thousandSeparator /> Conts
                           </Text>
                         </Table.Td>
                         <Table.Td className="table-cell-truncate" style={{ maxWidth: '17rem' }}>
@@ -1025,10 +1073,10 @@ function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: DeliveryOrder; 
       {(deliveryOrder.logistics_shipping.missing_documents.length > 0 ||
         deliveryOrder.task_summary.blocked_tasks > 0 ||
         deliveryOrder.warehouse_tracking.delay_days > 0) && (
-        <Alert color="red" icon={<IconAlertTriangle size={18} />}>
-          {t('deliveryOrders.alertRisk')}
-        </Alert>
-      )}
+          <Alert color="red" icon={<IconAlertTriangle size={18} />}>
+            {t('deliveryOrders.alertRisk')}
+          </Alert>
+        )}
 
       <OperationalGateSummary deliveryOrder={deliveryOrder} gates={gates} risks={risks} />
 

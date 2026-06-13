@@ -154,6 +154,8 @@ export type PoLot = {
   lot_no: string;
   lot_name: string | null;
   status: PoLotStatus;
+  origin_port?: string | null;
+  destination_port?: string | null;
   planned_cargo_ready_date: string | null;
   planned_etd: string | null;
   planned_eta: string | null;

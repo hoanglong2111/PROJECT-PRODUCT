@@ -1,5 +1,6 @@
 import { apiClient } from './axiosConfig';
 import type { Item } from './items';
+import type { ShipmentLineV1, ShipmentV1 } from './shipments';
 import type {
   ApiDecimal,
   PaginationMeta,
@@ -16,6 +17,12 @@ export type DeliveryOrderStatusV1 =
   | 'QUOTATION_CONFIRMED'
   | 'ASSIGNED_TO_SHIPMENT'
   | 'SHIPPED'
+  | 'IN_TRANSIT'
+  | 'ARRIVED_PORT'
+  | 'CUSTOMS_PROCESSING'
+  | 'CUSTOMS_CLEARED'
+  | 'WAREHOUSE_PENDING'
+  | 'DELIVERED'
   | 'CANCELLED'
   | 'CLOSED';
 
@@ -47,6 +54,8 @@ export type DeliveryOrderV1 = {
   is_delete?: boolean;
   purchase_order?: PurchaseOrderV1 | null;
   transport_mode?: TransportMode | null;
+  linked_shipment_number?: string | null;
+  shipments?: ShipmentV1[];
   lots?: DeliveryOrderLotV1[];
   lines?: DeliveryOrderLineV1[];
 };
@@ -77,8 +86,13 @@ export type DeliveryOrderLineV1 = {
   po_lot_id?: string;
   purchase_order_line_id: string;
   item_id: string;
+  item_code?: string | null;
+  item_name?: string | null;
+  hs_code?: string | null;
   item_description: string | null;
   qty: ApiDecimal;
+  qty_ordered?: ApiDecimal | null;
+  gross_weight_kg?: ApiDecimal | null;
   unit: string;
   notes: string | null;
   create_at: string;
@@ -88,6 +102,16 @@ export type DeliveryOrderLineV1 = {
   delivery_order_lot?: DeliveryOrderLotV1 | null;
   purchase_order_line?: PurchaseOrderLineV1 | null;
   item?: Item | null;
+  lot?: PoLot | null;
+  lot_no?: string | null;
+  shipment?: ShipmentV1 | null;
+  shipment_line?: ShipmentLineV1 | null;
+  shipment_number?: string | null;
+  container_no?: string | null;
+  route_origin?: string | null;
+  route_destination?: string | null;
+  etd?: string | null;
+  eta?: string | null;
 };
 
 export type ListDeliveryOrdersParams = {

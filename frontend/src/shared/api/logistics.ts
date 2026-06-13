@@ -49,6 +49,7 @@ import {
   fetchDeliveryOrderLines,
   fetchDeliveryOrderLots,
   fetchDeliveryOrdersV1,
+  type DeliveryOrderLotV1,
   type DeliveryOrderLineV1,
   type DeliveryOrderV1,
 } from './deliveryOrders';
@@ -707,10 +708,26 @@ function mapDeliveryOrderStatus(status: DeliveryOrderV1['status']): DeliveryOrde
 }
 
 function inferShippingMethod(deliveryOrder: DeliveryOrderV1): DeliveryOrder['logistics_shipping']['shipping_method'] {
-  const modeType = deliveryOrder.transport_mode?.mode_type?.toUpperCase();
+  const modeType = (
+    deliveryOrder.transport_mode?.mode_type ??
+    deliveryOrder.transport_mode?.mode_code ??
+    ''
+  ).toUpperCase();
   if (modeType === 'AIR') return 'AIR';
-  if (modeType === 'ROAD' || modeType === 'TRUCKING') return 'ROAD';
+  if (modeType === 'ROAD' || modeType === 'TRUCKING' || modeType.includes('TRUCK')) return 'ROAD';
   return 'SEA';
+}
+
+function resolveDestinationPort(deliveryOrder: DeliveryOrderV1, firstLot?: DeliveryOrderLotV1 | null) {
+  const explicitPort = firstLot?.po_lot?.destination_port ?? firstLot?.lot?.destination_port;
+  if (explicitPort) return explicitPort;
+
+  const destination = deliveryOrder.destination_address ?? '';
+  if (/port|cang|cảng|cat\s?lai|cát\s?lái/i.test(destination)) {
+    return destination;
+  }
+
+  return inferShippingMethod(deliveryOrder) === 'AIR' ? 'Tan Son Nhat Airport' : 'CatLai Port';
 }
 
 function mapDeliverySourceLine(deliveryOrder: DeliveryOrderV1, line: DeliveryOrderLineV1): DeliverySourceLine {
@@ -718,17 +735,39 @@ function mapDeliverySourceLine(deliveryOrder: DeliveryOrderV1, line: DeliveryOrd
   const purchaseOrderLine = line.purchase_order_line;
   const item = line.item ?? purchaseOrderLine?.item ?? null;
   const orderNo = deliveryOrderNo(deliveryOrder);
+  const shipmentContainer = Array.isArray(line.shipment?.container_no)
+    ? line.shipment.container_no.filter(Boolean).join(', ')
+    : line.shipment?.container_no;
+  const lineQuantity = toNumber(line.qty);
+  const orderedQuantity = toNumber(purchaseOrderLine?.qty_ordered);
+  const lineGrossWeight = toNumber(purchaseOrderLine?.gross_weight_kg);
+  const allocatedWeight =
+    lineGrossWeight > 0 && orderedQuantity > 0
+      ? (lineGrossWeight * lineQuantity) / orderedQuantity
+      : lineGrossWeight || null;
 
   return {
     id: line.id,
+    do_number: orderNo,
+    lot_number: line.lot_no ?? line.lot?.lot_no ?? null,
+    shipment_number: line.shipment_number ?? line.shipment?.shipment_no ?? deliveryOrder.linked_shipment_number ?? null,
     item_code: item?.item_code ?? line.item_id,
     item_name: item?.item_name ?? line.item_description ?? '',
+    hs_code: line.hs_code ?? purchaseOrderLine?.item_customs_profile?.hs_code ?? null,
     po_line_id: line.purchase_order_line_id,
     po_number: purchaseOrder?.po_no ?? deliveryOrder.purchase_order_id,
     pr_line_id: '',
-    quantity: toNumber(line.qty),
+    quantity: lineQuantity,
+    ordered_quantity: orderedQuantity || null,
     request_code: purchaseOrder?.po_no ?? orderNo,
     unit: line.unit,
+    weight_kg: allocatedWeight,
+    container_count: purchaseOrder?.total_containers ?? purchaseOrder?.lot_summary?.total_containers ?? null,
+    container_no: line.container_no ?? shipmentContainer ?? null,
+    route_origin: line.route_origin ?? line.shipment?.pol ?? deliveryOrder.origin_address ?? null,
+    route_destination: line.route_destination ?? line.shipment?.pod ?? deliveryOrder.destination_address ?? null,
+    etd: dateOnly(line.etd ?? line.shipment?.etd ?? deliveryOrder.planned_etd),
+    eta: dateOnly(line.eta ?? line.shipment?.eta ?? deliveryOrder.planned_eta),
   };
 }
 
@@ -749,7 +788,7 @@ function mapV1DeliveryOrder(deliveryOrder: DeliveryOrderV1): DeliveryOrder {
   return {
     id: deliveryOrder.id,
     flow_tags: deliveryOrder.lots && deliveryOrder.lots.length > 1 ? ['PARTIAL_DELIVERY'] : ['LINEAR'],
-    linked_shipment_number: null,
+    linked_shipment_number: deliveryOrder.linked_shipment_number ?? deliveryOrder.shipments?.[0]?.shipment_no ?? null,
     logistics_shipping: {
       cut_off_date: null,
       documents_list: [],
@@ -758,7 +797,7 @@ function mapV1DeliveryOrder(deliveryOrder: DeliveryOrderV1): DeliveryOrder {
       incoterms: purchaseOrder?.incoterm?.incoterm_code ?? '',
       missing_documents: [],
       port_of_departure: deliveryOrder.origin_address ?? '',
-      port_of_destination: deliveryOrder.destination_address ?? '',
+      port_of_destination: resolveDestinationPort(deliveryOrder, firstLot),
       shipping_line: null,
       shipping_method: inferShippingMethod(deliveryOrder),
       vessel_code: null,

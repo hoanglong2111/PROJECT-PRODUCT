@@ -17,6 +17,7 @@ export type DeliveryOrderStatus =
   | 'IN_TRANSIT'
   | 'ARRIVED_PORT'
   | 'CUSTOMS_PROCESSING'
+  | 'CUSTOMS_CLEARED'
   | 'WAREHOUSE_PENDING'
   | 'DELIVERED'
   | 'CLOSED'
@@ -159,14 +160,26 @@ export type PurchaseOrderLot = {
 
 export type DeliverySourceLine = {
   id: string;
+  do_number?: string;
+  lot_number?: string | null;
+  shipment_number?: string | null;
   po_number: string;
   po_line_id: string;
   request_code: string;
   pr_line_id: string;
   item_code: string;
   item_name: string;
+  hs_code?: string | null;
   quantity: number;
+  ordered_quantity?: number | null;
   unit: string;
+  weight_kg?: number | null;
+  container_count?: number | null;
+  container_no?: string | null;
+  route_origin?: string | null;
+  route_destination?: string | null;
+  etd?: string | null;
+  eta?: string | null;
 };
 
 export type PurchaseOrder = {
