@@ -1,10 +1,5 @@
 import { Group, NumberFormatter, Paper, Progress, SimpleGrid, Stack, Text, Title } from '@mantine/core';
-import {
-  IconArrowRight,
-  IconChecklist,
-  IconShoppingCart,
-  IconTruckDelivery,
-} from '@tabler/icons-react';
+import { IconArrowRight, IconChecklist, IconShoppingCart, IconTruckDelivery } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -37,13 +32,8 @@ export function DashboardCharts({
   purchaseOrders: PurchaseOrder[];
   tasks: LogisticsTask[];
 }) {
-  const { flowTagLabel, t, taskRoleLabel } = useI18n();
-  const maxRoleTasks = Math.max(...stats.taskRoleProgress.map((item) => item.total), 1);
-  const maxMonthly = Math.max(
-    ...stats.monthlyThroughput.flatMap((item) => [item.deliveryOrders, item.completedTasks]),
-    1,
-  );
-  const maxBusinessFlow = Math.max(...(stats.businessFlowCounts ?? []).map((item) => item.count), 1);
+  const { t } = useI18n();
+  const maxMonthly = Math.max(...stats.monthlyThroughput.flatMap((item) => [item.deliveryOrders, item.completedTasks]), 1);
   const poDelivered = purchaseOrders.filter((purchaseOrder) =>
     deliveredPurchaseOrderStatuses.includes(purchaseOrder.status),
   ).length;
@@ -58,101 +48,46 @@ export function DashboardCharts({
 
   return (
     <Stack gap="lg">
-      <SimpleGrid cols={{ base: 1, xl: 2 }}>
-        <Paper withBorder p="lg" className="metric-card dashboard-card">
-          <Title order={3}>PO Chart</Title>
-          <Text size="sm" c="dimmed" mt={4} mb="lg">
-            So sánh tổng PO, PO đã giao hàng và PO đang xử lý trong kỳ 6 tháng.
-          </Text>
+      <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="md">
+        <Paper withBorder p="lg" className="metric-card dashboard-card dashboard-chart-card">
+          <CardHeader
+            title="Purchase order"
+            description="So sánh tổng PO, PO đã giao hàng và PO đang xử lý trong kỳ 6 tháng."
+          />
           <PoBarChart data={poBars} />
         </Paper>
 
-        <MetricListCard
-          title="Biểu đồ trạng thái Delivery"
-          subtitle="DO Trễ hạn"
-          metrics={getDeliveryDelayMetrics(deliveryOrders)}
-        />
+        <MetricListCard title="DO trễ hạn" metrics={getDeliveryDelayMetrics(deliveryOrders)} />
       </SimpleGrid>
 
-      <SimpleGrid cols={{ base: 1, xl: 2 }}>
+      <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="md">
         <MetricListCard title="Công việc trễ hạn" metrics={getOverdueTaskMetrics(tasks, deliveryOrders)} />
         <MetricListCard title="Số lượng DO trễ theo thời gian" metrics={getDelayAgeMetrics(deliveryOrders)} />
       </SimpleGrid>
 
-      <SimpleGrid cols={{ base: 1, xl: 2 }}>
-        <Paper withBorder p="lg" className="metric-card dashboard-card">
-          <Title order={3}>{t('dashboard.taskRoleChart')}</Title>
-          <Text size="sm" c="dimmed" mb="md">
-            {t('dashboard.taskRoleDescription')}
-          </Text>
-          <Stack gap="sm">
-            {stats.taskRoleProgress.map((item) => (
-              <Link key={item.role} to={`/tasks?role=${item.role}`} style={{ display: 'block', color: 'inherit', textDecoration: 'none' }}>
-                <div style={{ padding: '2px 0' }}>
-                  <Group justify="space-between" mb={6}>
-                    <Text size="sm" className="hover-underline">
-                      {taskRoleLabel(item.role)}
-                    </Text>
-                    <Text size="sm" fw={700}>
-                      {item.completed}/{item.total}
-                    </Text>
-                  </Group>
-                  <Progress value={Math.round((item.total / maxRoleTasks) * 100)} color="gray" style={{ cursor: 'pointer' }} />
-                  <Progress value={item.completionRate} color={item.completionRate >= 80 ? 'teal' : 'orange'} mt={6} style={{ cursor: 'pointer' }} />
-                </div>
-              </Link>
-            ))}
-          </Stack>
-        </Paper>
-
-        <Paper withBorder p="lg" className="metric-card dashboard-card">
-          <Title order={3}>{t('dashboard.businessFlows')}</Title>
-          <Text size="sm" c="dimmed" mb="md">
-            {t('dashboard.businessFlowsDescription')}
-          </Text>
-          <Stack gap="sm">
-            {(stats.businessFlowCounts ?? []).map((item) => (
-              <Link key={item.tag} to="/delivery-orders" style={{ display: 'block', color: 'inherit', textDecoration: 'none' }}>
-                <div style={{ padding: '2px 0' }}>
-                  <Group justify="space-between" mb={6}>
-                    <Text size="sm" className="hover-underline" style={{ color: 'var(--mantine-color-grape-filled)', fontWeight: 600 }}>
-                      {flowTagLabel(item.tag)}
-                    </Text>
-                    <Text size="sm" fw={700}>
-                      {item.count}
-                    </Text>
-                  </Group>
-                  <Progress value={Math.round((item.count / maxBusinessFlow) * 100)} color="grape" style={{ cursor: 'pointer' }} />
-                </div>
-              </Link>
-            ))}
-          </Stack>
-        </Paper>
-      </SimpleGrid>
-
-      <SimpleGrid cols={{ base: 1, xl: 2 }}>
-        <Paper withBorder p="lg" className="metric-card dashboard-card">
-          <Title order={3}>{t('dashboard.monthlyThroughputChart')}</Title>
-          <Text size="sm" c="dimmed" mb="md">
-            {t('dashboard.monthlyThroughputDescription')}
-          </Text>
+      <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="md">
+        <Paper withBorder p="lg" className="metric-card dashboard-card dashboard-chart-card">
+          <CardHeader title={t('dashboard.monthlyThroughputChart')} description={t('dashboard.monthlyThroughputDescription')} />
           <Stack gap="sm">
             {stats.monthlyThroughput.map((item) => (
-              <div key={item.month}>
+              <div key={item.month} className="dashboard-progress-row">
                 <Group justify="space-between" mb={6}>
-                  <Text size="sm" fw={600}>
+                  <Text size="sm" fw={700}>
                     {item.month}
                   </Text>
-                  <Text size="sm" fw={700}>
-                    {t('dashboard.throughputLegend', { deliveryOrders: item.deliveryOrders, completedTasks: item.completedTasks })}
+                  <Text size="sm" fw={800} className="tabular-nums">
+                    {t('dashboard.throughputLegend', {
+                      completedTasks: item.completedTasks,
+                      deliveryOrders: item.deliveryOrders,
+                    })}
                   </Text>
                 </Group>
                 <Stack gap={4}>
-                  <Link to="/delivery-orders" style={{ display: 'block' }} title={t('dashboard.viewDeliveryOrders')}>
-                    <Progress value={Math.round((item.deliveryOrders / maxMonthly) * 100)} color="blue" style={{ cursor: 'pointer' }} />
+                  <Link to="/delivery-orders" title={t('dashboard.viewDeliveryOrders')}>
+                    <Progress value={Math.round((item.deliveryOrders / maxMonthly) * 100)} color="blue" />
                   </Link>
-                  <Link to="/tasks" style={{ display: 'block' }} title={t('dashboard.viewTasks')}>
-                    <Progress value={Math.round((item.completedTasks / maxMonthly) * 100)} color="teal" style={{ cursor: 'pointer' }} />
+                  <Link to="/tasks" title={t('dashboard.viewTasks')}>
+                    <Progress value={Math.round((item.completedTasks / maxMonthly) * 100)} color="teal" />
                   </Link>
                 </Stack>
               </div>
@@ -160,18 +95,43 @@ export function DashboardCharts({
           </Stack>
         </Paper>
 
-        <Paper withBorder p="lg" className="metric-card dashboard-card">
-          <Title order={3}>{t('dashboard.modulesTitle')}</Title>
-          <Text size="sm" c="dimmed" mt={4}>
-            {t('dashboard.modulesDescription')}
-          </Text>
-          <Stack gap="md" mt="lg">
-            <ModuleLink to="/purchase-orders" icon={<IconShoppingCart size={20} />} title={t('dashboard.modulePurchaseOrdersTitle')} description={t('dashboard.modulePurchaseOrdersDescription')} />
-            <ModuleLink to="/delivery-orders" icon={<IconTruckDelivery size={20} />} title={t('dashboard.moduleDeliveryOrdersTitle')} description={t('dashboard.moduleDeliveryOrdersDescription')} />
-            <ModuleLink to="/tasks" icon={<IconChecklist size={20} />} title={t('dashboard.moduleTasksTitle')} description={t('dashboard.moduleTasksDescription')} />
+        <Paper withBorder p="lg" className="metric-card dashboard-card dashboard-chart-card">
+          <CardHeader title={t('dashboard.modulesTitle')} description={t('dashboard.modulesDescription')} />
+          <Stack gap="sm" mt="md">
+            <ModuleLink
+              to="/purchase-orders"
+              icon={<IconShoppingCart size={20} />}
+              title={t('dashboard.modulePurchaseOrdersTitle')}
+              description={t('dashboard.modulePurchaseOrdersDescription')}
+            />
+            <ModuleLink
+              to="/delivery-orders"
+              icon={<IconTruckDelivery size={20} />}
+              title={t('dashboard.moduleDeliveryOrdersTitle')}
+              description={t('dashboard.moduleDeliveryOrdersDescription')}
+            />
+            <ModuleLink
+              to="/tasks"
+              icon={<IconChecklist size={20} />}
+              title={t('dashboard.moduleTasksTitle')}
+              description={t('dashboard.moduleTasksDescription')}
+            />
           </Stack>
         </Paper>
       </SimpleGrid>
+    </Stack>
+  );
+}
+
+function CardHeader({ description, title }: { description?: string; title: string }) {
+  return (
+    <Stack gap={4} mb="md">
+      <Title order={3}>{title}</Title>
+      {description ? (
+        <Text size="sm" c="dimmed">
+          {description}
+        </Text>
+      ) : null}
     </Stack>
   );
 }
@@ -181,12 +141,12 @@ function PoBarChart({ data }: { data: Array<{ color: MetricColor; label: string;
 
   return (
     <Stack gap="md">
-      <div className="dashboard-bar-chart" aria-label="PO Chart">
+      <div className="dashboard-bar-chart" aria-label="Purchase order chart">
         {data.map((item) => {
           const height = Math.max((item.value / maxValue) * 100, item.value > 0 ? 12 : 4);
           return (
             <div key={item.label} className="dashboard-bar-column">
-              <Text size="sm" fw={800} className="tabular-nums">
+              <Text size="sm" fw={900} className="tabular-nums">
                 <NumberFormatter value={item.value} thousandSeparator />
               </Text>
               <div
@@ -194,7 +154,7 @@ function PoBarChart({ data }: { data: Array<{ color: MetricColor; label: string;
                 style={{ height: `${height}%` }}
                 title={`${item.label}: ${item.value}`}
               />
-              <Text size="xs" c="dimmed" ta="center" fw={700}>
+              <Text size="xs" c="dimmed" ta="center" fw={800}>
                 {item.label}
               </Text>
             </div>
@@ -206,7 +166,7 @@ function PoBarChart({ data }: { data: Array<{ color: MetricColor; label: string;
         {data.map((item) => (
           <Group key={item.label} gap={6} wrap="nowrap">
             <span className={`dashboard-legend-dot dashboard-legend-dot-${item.color}`} />
-            <Text size="xs" fw={700}>
+            <Text size="xs" fw={800}>
               {item.label}
             </Text>
           </Group>
@@ -216,34 +176,19 @@ function PoBarChart({ data }: { data: Array<{ color: MetricColor; label: string;
   );
 }
 
-function MetricListCard({
-  metrics,
-  subtitle,
-  title,
-}: {
-  metrics: ListMetric[];
-  subtitle?: string;
-  title: string;
-}) {
+function MetricListCard({ metrics, title }: { metrics: ListMetric[]; title: string }) {
   return (
-    <Paper withBorder p="lg" className="metric-card dashboard-card">
-      <Title order={3}>{title}</Title>
-      {subtitle ? (
-        <Text size="sm" c="dimmed" mt={4}>
-          {subtitle}
-        </Text>
-      ) : null}
-      <Stack gap="sm" mt="lg">
+    <Paper withBorder p="lg" className="metric-card dashboard-card dashboard-list-card">
+      <CardHeader title={title} />
+      <Stack gap="xs">
         {metrics.map((metric) => (
           <Group key={metric.label} justify="space-between" gap="md" wrap="nowrap" className="dashboard-list-row">
-            <Group gap="sm" wrap="nowrap" miw={0}>
-              <span className={`dashboard-number-badge dashboard-number-badge-${metric.color}`}>
-                <NumberFormatter value={metric.value} thousandSeparator />
-              </span>
-              <Text size="sm" fw={700}>
-                {metric.label}:
-              </Text>
-            </Group>
+            <Text size="sm" fw={750} truncate>
+              {metric.label}
+            </Text>
+            <span className={`dashboard-number-badge dashboard-number-badge-${metric.color}`}>
+              <NumberFormatter value={metric.value} thousandSeparator />
+            </span>
           </Group>
         ))}
       </Stack>
@@ -251,24 +196,14 @@ function MetricListCard({
   );
 }
 
-function ModuleLink({
-  description,
-  icon,
-  title,
-  to,
-}: {
-  description: string;
-  icon: ReactNode;
-  title: string;
-  to: string;
-}) {
+function ModuleLink({ description, icon, title, to }: { description: string; icon: ReactNode; title: string; to: string }) {
   return (
     <Paper component={Link} to={to} withBorder p="md" className="module-link">
       <Group justify="space-between" wrap="nowrap">
         <Group gap="sm" wrap="nowrap">
           <span className="module-link-icon">{icon}</span>
           <div>
-            <Text fw={700}>{title}</Text>
+            <Text fw={800}>{title}</Text>
             <Text size="sm" c="dimmed">
               {description}
             </Text>
@@ -306,26 +241,10 @@ const finalDeliveryStatuses: DeliveryOrderStatus[] = ['WAREHOUSE_PENDING', 'DELA
 
 function getDeliveryDelayMetrics(deliveryOrders: DeliveryOrder[]): ListMetric[] {
   return [
-    {
-      color: 'orange',
-      label: 'DO trễ hạn giao hàng từ nhà CC',
-      value: countDelayedOrders(deliveryOrders, supplierPendingStatuses),
-    },
-    {
-      color: 'blue',
-      label: 'DO trễ hạn vận chuyển',
-      value: countDelayedOrders(deliveryOrders, transportStatuses, 'eta'),
-    },
-    {
-      color: 'yellow',
-      label: 'DO trễ hạn thông quan',
-      value: countDelayedOrders(deliveryOrders, portStatuses),
-    },
-    {
-      color: 'red',
-      label: 'DO Trễ hạn giao hàng',
-      value: countDelayedOrders(deliveryOrders, finalDeliveryStatuses),
-    },
+    { color: 'orange', label: 'DO trễ hạn giao hàng từ nhà CC', value: countDelayedOrders(deliveryOrders, supplierPendingStatuses) },
+    { color: 'blue', label: 'DO trễ hạn vận chuyển', value: countDelayedOrders(deliveryOrders, transportStatuses, 'eta') },
+    { color: 'yellow', label: 'DO trễ hạn thông quan', value: countDelayedOrders(deliveryOrders, portStatuses) },
+    { color: 'red', label: 'DO Trễ hạn giao hàng', value: countDelayedOrders(deliveryOrders, finalDeliveryStatuses) },
   ];
 }
 
@@ -363,29 +282,13 @@ function getDelayAgeMetrics(deliveryOrders: DeliveryOrder[]): ListMetric[] {
   const delayDays = deliveryOrders.map(getDelayDays).filter((days) => days > 0);
 
   return [
-    {
-      color: 'yellow',
-      label: 'Trễ dưới 3 ngày',
-      value: delayDays.filter((days) => days < 3).length,
-    },
-    {
-      color: 'orange',
-      label: 'Trễ từ 3-7 ngày',
-      value: delayDays.filter((days) => days >= 3 && days <= 7).length,
-    },
-    {
-      color: 'red',
-      label: 'Trễ hơn 7 ngày',
-      value: delayDays.filter((days) => days > 7).length,
-    },
+    { color: 'yellow', label: 'Trễ dưới 3 ngày', value: delayDays.filter((days) => days < 3).length },
+    { color: 'orange', label: 'Trễ từ 3-7 ngày', value: delayDays.filter((days) => days >= 3 && days <= 7).length },
+    { color: 'red', label: 'Trễ hơn 7 ngày', value: delayDays.filter((days) => days > 7).length },
   ];
 }
 
-function countDelayedOrders(
-  deliveryOrders: DeliveryOrder[],
-  statuses: DeliveryOrderStatus[],
-  dateKind: 'warehouse' | 'eta' = 'warehouse',
-) {
+function countDelayedOrders(deliveryOrders: DeliveryOrder[], statuses: DeliveryOrderStatus[], dateKind: 'warehouse' | 'eta' = 'warehouse') {
   return deliveryOrders.filter((deliveryOrder) => {
     if (!statuses.includes(deliveryOrder.order_info.status)) return false;
     return dateKind === 'eta' ? isPastDue(deliveryOrder.logistics_shipping.eta_planned) : getDelayDays(deliveryOrder) > 0;
@@ -414,8 +317,7 @@ function getDelayDays(deliveryOrder: DeliveryOrder) {
     return Math.max(deliveryOrder.warehouse_tracking.delay_days, 0);
   }
 
-  const deadline =
-    deliveryOrder.warehouse_tracking.planned_entry_date || deliveryOrder.warehouse_tracking.warehouse_deadline;
+  const deadline = deliveryOrder.warehouse_tracking.planned_entry_date || deliveryOrder.warehouse_tracking.warehouse_deadline;
   if (!deadline) return Math.max(deliveryOrder.warehouse_tracking.delay_days, 0);
 
   const due = new Date(`${deadline.slice(0, 10)}T00:00:00`);

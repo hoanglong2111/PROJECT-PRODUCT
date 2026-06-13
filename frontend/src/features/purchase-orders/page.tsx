@@ -27,21 +27,27 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   IconAlertTriangle,
   IconArrowBackUp,
+  IconCalendarStats,
+  IconChevronDown,
   IconCircleCheck,
+  IconCoins,
   IconDeviceFloppy,
   IconEye,
+  IconFileInvoice,
   IconGitBranch,
   IconGripVertical,
   IconPencil,
+  IconPlaneDeparture,
   IconPlus,
   IconRefresh,
   IconSearch,
   IconSend,
+  IconShip,
   IconTrash,
   IconTruckDelivery,
   IconX,
 } from '@tabler/icons-react';
-import { useEffect, useMemo, useState, type DragEvent, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type DragEvent, type FormEvent, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { fetchItems, type Item } from '@shared/api/items';
@@ -212,19 +218,19 @@ function createInitialPoDraft(order?: PurchaseOrderV1): PoFormDraft {
     notes: order?.notes ?? '',
     lines: order?.lines?.length
       ? order.lines.map((line, index) => ({
-          clientId: line.id,
-          line_no: line.line_no,
-          item_id: line.item_id,
-          item_customs_profile_id: line.item_customs_profile_id ?? '',
-          item_description: line.item_description ?? '',
-          qty_ordered: toNumber(line.qty_ordered, 1),
-          unit: line.unit ?? 'PCS',
-          unit_price: toNumber(line.unit_price),
-          tax_rate: toNumber(line.tax_rate),
-          discount_pct: toNumber(line.discount_pct),
-          expected_eta_line: dateOnly(line.expected_eta_line),
-          notes: line.notes ?? '',
-        }))
+        clientId: line.id,
+        line_no: line.line_no,
+        item_id: line.item_id,
+        item_customs_profile_id: line.item_customs_profile_id ?? '',
+        item_description: line.item_description ?? '',
+        qty_ordered: toNumber(line.qty_ordered, 1),
+        unit: line.unit ?? 'PCS',
+        unit_price: toNumber(line.unit_price),
+        tax_rate: toNumber(line.tax_rate),
+        discount_pct: toNumber(line.discount_pct),
+        expected_eta_line: dateOnly(line.expected_eta_line),
+        notes: line.notes ?? '',
+      }))
       : [newLineDraft(0)],
   };
 }
@@ -327,6 +333,8 @@ export function PurchaseOrders() {
   const purchaseOrders = purchaseOrdersQuery.data?.data ?? [];
   const pagination = purchaseOrdersQuery.data?.meta.pagination;
   const total = purchaseOrdersQuery.data?.meta.total ?? purchaseOrders.length;
+  const purchaseOrderSummary = useMemo(() => getPurchaseOrderSummary(purchaseOrders), [purchaseOrders]);
+  const delayedPurchaseOrders = purchaseOrders.filter((order) => getDelayedDays(order) > 0).length;
 
   useEffect(() => {
     if (!focusedPo || purchaseOrders.length === 0) return;
@@ -383,9 +391,6 @@ export function PurchaseOrders() {
             </Text>
           </div>
           <Group gap="xs">
-            <Badge leftSection={<IconTruckDelivery size={14} />} size="lg" variant="light">
-              PO - LOT
-            </Badge>
             {canManagePurchaseOrders ? (
               <Button
                 leftSection={<IconPlus size={16} />}
@@ -429,9 +434,10 @@ export function PurchaseOrders() {
 
       {workbench === 'list' ? (
         <>
-          <SimpleGrid cols={{ base: 1, sm: 4 }}>
+          <SimpleGrid cols={{ base: 1, sm: 5 }}>
             <Metric label="Total rows" value={total} color="blue" />
             <Metric label="Draft" value={purchaseOrders.filter((order) => order.status === 'DRAFT').length} color="gray" />
+            <Metric label="Delayed" value={delayedPurchaseOrders} color="red" />
             <Metric label="Sent" value={purchaseOrders.filter((order) => order.status === 'SENT').length} color="orange" />
             <Metric label="Active" value={purchaseOrders.filter((order) => order.status !== 'CANCELLED').length} color="teal" />
           </SimpleGrid>
@@ -469,20 +475,32 @@ export function PurchaseOrders() {
             </Group>
           </Paper>
 
+          <Paper withBorder p="sm" className="purchase-order-summary-strip">
+            <SimpleGrid cols={{ base: 1, xs: 2, md: 4 }}>
+              <SummaryItem label="Total Weight" value={formatWeightKg(purchaseOrderSummary.totalWeightKg)} />
+              <SummaryItem label="Total Cont." value={String(purchaseOrderSummary.totalContainers)} />
+              <SummaryItem label="Total LOT" value={String(purchaseOrderSummary.totalLots)} />
+              <SummaryItem label="LOT IDs" value={purchaseOrderSummary.lotIds.join(', ')} />
+            </SimpleGrid>
+          </Paper>
+
           <Paper withBorder p={0}>
             {purchaseOrders.length === 0 ? (
               <EmptyState title="No purchase orders" description="Create a PO or adjust the filters." />
             ) : (
               <ScrollArea className="data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
-                <Table miw={1160} verticalSpacing="sm" highlightOnHover>
+                <Table miw={1520} verticalSpacing="sm" highlightOnHover>
                   <Table.Thead>
                     <Table.Tr>
                       <Table.Th>PO</Table.Th>
                       <Table.Th>Supplier</Table.Th>
                       <Table.Th>Terms</Table.Th>
-                      <Table.Th>ETD / ETA</Table.Th>
+                      <Table.Th>Loading Port</Table.Th>
+                      <Table.Th>Unloading Port</Table.Th>
+                      <Table.Th>In Warehouse</Table.Th>
                       <Table.Th>Lines</Table.Th>
                       <Table.Th>Amount</Table.Th>
+                      <Table.Th>Delayed</Table.Th>
                       <Table.Th>Status</Table.Th>
                       <Table.Th />
                     </Table.Tr>
@@ -495,7 +513,10 @@ export function PurchaseOrders() {
                             {order.po_no}
                           </Text>
                           <Text size="xs" c="dimmed">
-                            {dateOnly(order.create_at)}
+                            Contract {order.contract_no}
+                          </Text>
+                          <Text size="xs" c="dimmed">
+                            Created {dateOnly(order.create_at)}
                           </Text>
                         </Table.Td>
                         <Table.Td className="table-cell-truncate" style={{ maxWidth: '20rem' }}>
@@ -513,10 +534,28 @@ export function PurchaseOrders() {
                           </Text>
                         </Table.Td>
                         <Table.Td>
-                          <Text size="sm">{dateOnly(order.expected_etd) || '-'}</Text>
-                          <Text size="xs" c="dimmed">
-                            {dateOnly(order.expected_eta) || '-'}
-                          </Text>
+                          <DateStack
+                            primaryLabel="ETD"
+                            primaryValue={dateOnly(order.logistics_timeline?.loading_port?.etd ?? order.expected_etd)}
+                            secondaryLabel="ATD"
+                            secondaryValue={dateOnly(order.logistics_timeline?.loading_port?.atd)}
+                          />
+                        </Table.Td>
+                        <Table.Td>
+                          <DateStack
+                            primaryLabel="ETA"
+                            primaryValue={dateOnly(order.logistics_timeline?.unloading_port?.eta ?? order.expected_eta)}
+                            secondaryLabel="ATA"
+                            secondaryValue={dateOnly(order.logistics_timeline?.unloading_port?.ata)}
+                          />
+                        </Table.Td>
+                        <Table.Td>
+                          <DateStack
+                            primaryLabel="ETA"
+                            primaryValue={dateOnly(order.logistics_timeline?.warehouse?.eta)}
+                            secondaryLabel="ATA"
+                            secondaryValue={dateOnly(order.logistics_timeline?.warehouse?.ata)}
+                          />
                         </Table.Td>
                         <Table.Td>
                           <Badge variant="light">{order.lines?.length ?? 0} lines</Badge>
@@ -526,6 +565,17 @@ export function PurchaseOrders() {
                             <NumberFormatter value={totalPoAmount(order.lines)} thousandSeparator />{' '}
                             {order.currency?.currency_code ?? ''}
                           </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          {getDelayedDays(order) > 0 ? (
+                            <Badge color="red" variant="light">
+                              {getDelayedDays(order)} days
+                            </Badge>
+                          ) : (
+                            <Text size="sm" c="dimmed">
+                              -
+                            </Text>
+                          )}
                         </Table.Td>
                         <Table.Td>
                           <StatusBadge status={order.status} />
@@ -619,9 +669,12 @@ function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage: boole
               <Badge size="sm" variant="light">
                 {order.po_type || 'STANDARD'}
               </Badge>
+              <Badge size="sm" variant="light" color="blue">
+                Contract {order.contract_no}
+              </Badge>
             </Group>
             <Text c="dimmed" size="sm" mt={4}>
-              {order.supplier?.supplier_name ?? order.supplier_id} - {order.contract_no || 'No contract'}
+              {order.supplier?.supplier_name ?? order.supplier_id}
             </Text>
           </div>
           <Group gap="xs">
@@ -666,16 +719,7 @@ function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage: boole
         ) : null}
       </Paper>
 
-      <SimpleGrid cols={{ base: 1, md: 4 }}>
-        <Info label="Currency" value={order.currency?.currency_code ?? '-'} />
-        <Info label="Incoterm" value={order.incoterm?.incoterm_code ?? '-'} />
-        <Info label="Transport" value={order.transport_mode?.mode_code ?? '-'} />
-        <Info label="Amount" value={`${totalPoAmount(lines).toLocaleString()} ${order.currency?.currency_code ?? ''}`} />
-        <Info label="ETD" value={dateOnly(order.expected_etd) || '-'} />
-        <Info label="ETA" value={dateOnly(order.expected_eta) || '-'} />
-        <Info label="Payment" value={order.payment_term || '-'} />
-        <Info label="Exchange rate" value={String(order.exchange_rate ?? '-')} />
-      </SimpleGrid>
+      <PurchaseOrderDetailInfo order={order} lines={lines} />
 
       <PoLinesTable lines={lines} currencyCode={order.currency?.currency_code ?? ''} />
 
@@ -917,16 +961,15 @@ function PurchaseOrderForm({
           <>
             <Divider label="PO lines" labelPosition="left" />
             <ScrollArea type="always" offsetScrollbars scrollbarSize={8}>
-              <Table miw={1180} verticalSpacing="xs">
+              <Table miw={1040} verticalSpacing="xs">
                 <Table.Thead>
                   <Table.Tr>
                     <Table.Th style={{ width: 72 }}>Line</Table.Th>
                     <Table.Th>Item</Table.Th>
-                    <Table.Th>Customs profile</Table.Th>
+                    <Table.Th>HSCODE</Table.Th>
                     <Table.Th style={{ width: 130 }}>Qty</Table.Th>
                     <Table.Th style={{ width: 110 }}>Unit</Table.Th>
                     <Table.Th style={{ width: 135 }}>Unit price</Table.Th>
-                    <Table.Th style={{ width: 140 }}>Line ETA</Table.Th>
                     <Table.Th style={{ width: 44 }} />
                   </Table.Tr>
                 </Table.Thead>
@@ -988,13 +1031,6 @@ function PurchaseOrderForm({
                             min={0}
                             value={line.unit_price}
                             onChange={(value) => updateLine(line.clientId, { unit_price: toNumber(value) })}
-                          />
-                        </Table.Td>
-                        <Table.Td>
-                          <TextInput
-                            type="date"
-                            value={line.expected_eta_line}
-                            onChange={(event) => updateLine(line.clientId, { expected_eta_line: event.currentTarget.value })}
                           />
                         </Table.Td>
                         <Table.Td>
@@ -1218,7 +1254,7 @@ function LotPlanningBoard({ canManage, planning }: { canManage: boolean; plannin
               <Text fw={700}>LOT planning</Text>
             </Group>
             <Text size="sm" c="dimmed">
-              Drag LOT cards to reorder. Drag item lines between LOTs, or split a line into another LOT.
+              Drag LOT rows to reorder. Drag item lines between LOTs, or split a line into another LOT.
             </Text>
           </div>
           <Group gap="xs">
@@ -1234,37 +1270,33 @@ function LotPlanningBoard({ canManage, planning }: { canManage: boolean; plannin
           </Alert>
         ) : null}
 
-        <ScrollArea type="always" offsetScrollbars scrollbarSize={8}>
-          <Group
-            align="stretch"
-            gap="sm"
-            wrap="nowrap"
-            onDragOver={(event) => event.preventDefault()}
-            onDrop={(event) => handleDropOnLot(event)}
-            style={{ minHeight: 360 }}
-          >
-            {sortedLots.map((lot) => (
-              <LotCard
-                key={lot.id}
-                lot={lot}
-                onDrop={(event) => handleDropOnLot(event, lot)}
-                onDropLine={(event, line) => handleDropOnLot(event, lot, line)}
-                onDelete={() => deleteLotMutation.mutate(lot.id)}
-                onEdit={() => openEditLot(lot)}
-                onSplitLine={(line) => openSplitLine(lot, line)}
-                canManage={canManage}
-                hasMoveTargets={sortedLots.some((candidate) => candidate.id !== lot.id && !lockedLotStatuses.has(candidate.status))}
-              />
-            ))}
-            {sortedLots.length === 0 ? (
-              <Paper withBorder p="md" style={{ flex: '0 0 330px', borderStyle: 'dashed' }}>
-                <Text size="xs" c="dimmed" ta="center">
-                  Add a LOT to start planning.
-                </Text>
-              </Paper>
-            ) : null}
-          </Group>
-        </ScrollArea>
+        <Stack
+          gap="sm"
+          className="lot-planning-list"
+          onDragOver={(event) => event.preventDefault()}
+          onDrop={(event) => handleDropOnLot(event)}
+        >
+          {sortedLots.map((lot) => (
+            <LotCard
+              key={lot.id}
+              lot={lot}
+              onDrop={(event) => handleDropOnLot(event, lot)}
+              onDropLine={(event, line) => handleDropOnLot(event, lot, line)}
+              onDelete={() => deleteLotMutation.mutate(lot.id)}
+              onEdit={() => openEditLot(lot)}
+              onSplitLine={(line) => openSplitLine(lot, line)}
+              canManage={canManage}
+              hasMoveTargets={sortedLots.some((candidate) => candidate.id !== lot.id && !lockedLotStatuses.has(candidate.status))}
+            />
+          ))}
+          {sortedLots.length === 0 ? (
+            <Paper withBorder p="lg" className="lot-planning-empty">
+              <Text size="sm" c="dimmed" ta="center">
+                Add a LOT to start planning.
+              </Text>
+            </Paper>
+          ) : null}
+        </Stack>
       </Stack>
 
       <LotModal
@@ -1327,14 +1359,19 @@ function LotCard({
   onEdit: () => void;
   onSplitLine: (line: PoLotLine) => void;
 }) {
+  const [isExpanded, setIsExpanded] = useState(true);
   const lines = lot.items ?? [];
   const isLocked = lockedLotStatuses.has(lot.status);
   const canDelete = canManage && !isLocked && lines.length === 0;
+  const totalQty = lines.reduce((total, line) => total + toNumber(line.qty_lotted), 0);
+  const units = Array.from(new Set(lines.map((line) => line.unit).filter(Boolean)));
+  const totalQtyLabel = lines.length ? `${totalQty.toLocaleString()} ${units.length === 1 ? units[0] : 'units'}` : '-';
 
   return (
     <Paper
       withBorder
-      p="sm"
+      p={0}
+      className="lot-list-item"
       onDrop={onDrop}
       onDragOver={(event) => event.preventDefault()}
       draggable={canManage && !isLocked}
@@ -1342,39 +1379,40 @@ function LotCard({
         event.dataTransfer.setData('dragType', 'lot');
         event.dataTransfer.setData('lotId', lot.id);
       }}
-      style={{ flex: '0 0 330px', cursor: canManage && !isLocked ? 'grab' : 'default', backgroundColor: 'white' }}
+      style={{ cursor: canManage && !isLocked ? 'grab' : 'default' }}
     >
-      <Stack gap="xs">
-        <Group justify="space-between" align="flex-start" wrap="nowrap">
-          <Group gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
+      <Stack gap={0}>
+        <div className="lot-list-header">
+          <Group gap="sm" wrap="nowrap" className="lot-list-title">
             <IconGripVertical size={16} color="var(--mantine-color-gray-5)" />
-            <div style={{ minWidth: 0 }}>
-              <Text fw={700} size="sm" truncate>
-                {lot.lot_no}
-              </Text>
+            <div className="lot-list-title-text">
+              <Group gap="xs" wrap="nowrap">
+                <Text fw={800} size="sm" truncate>
+                  {lot.lot_no}
+                </Text>
+                <Badge size="xs" color={lot.status === 'READY' ? 'teal' : undefined} variant="light">
+                  {lot.status}
+                </Badge>
+              </Group>
               <Text size="xs" c="dimmed" truncate>
                 {lot.lot_name || 'Empty LOT'}
               </Text>
             </div>
           </Group>
-          <Group gap={4} wrap="nowrap">
+
+          <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="xs" className="lot-list-meta">
+            <LotMeta label="CRD" value={dateOnly(lot.planned_cargo_ready_date) || '-'} />
+            <LotMeta label="ETD" value={dateOnly(lot.planned_etd) || '-'} />
+            <LotMeta label="ETA" value={dateOnly(lot.planned_eta) || '-'} />
+            <LotMeta label="Lines / Qty" value={`${lines.length} / ${totalQtyLabel}`} />
+          </SimpleGrid>
+
+          <Group gap={4} wrap="nowrap" className="lot-list-actions">
             <Badge size="xs" color={lot.status === 'READY' ? 'teal' : undefined} variant="light">
-              {lot.status}
+              {isLocked ? 'Locked' : 'Open'}
             </Badge>
             <ActionIcon variant="subtle" size="sm" aria-label="Edit LOT" disabled={!canManage} onClick={onEdit}>
               <IconPencil size={15} />
-            </ActionIcon>
-            <ActionIcon
-              variant="subtle"
-              size="sm"
-              aria-label="Split an item line"
-              disabled={!canManage || isLocked || lines.length === 0}
-              onClick={() => {
-                const firstLine = lines[0];
-                if (firstLine) onSplitLine(firstLine);
-              }}
-            >
-              <IconGitBranch size={15} />
             </ActionIcon>
             <ActionIcon
               variant="subtle"
@@ -1386,71 +1424,124 @@ function LotCard({
             >
               <IconTrash size={15} />
             </ActionIcon>
+            <ActionIcon
+              variant="subtle"
+              size="sm"
+              className={isExpanded ? 'lot-toggle-button is-open' : 'lot-toggle-button'}
+              aria-label={isExpanded ? 'Collapse LOT items' : 'Expand LOT items'}
+              aria-expanded={isExpanded}
+              onClick={(event) => {
+                event.stopPropagation();
+                setIsExpanded((current) => !current);
+              }}
+            >
+              <IconChevronDown size={16} />
+            </ActionIcon>
           </Group>
-        </Group>
-        <Group gap={8}>
-          <Text size="xs" c="dimmed">
-            CRD {dateOnly(lot.planned_cargo_ready_date) || '-'}
-          </Text>
-          <Text size="xs" c="dimmed">
-            ETA {dateOnly(lot.planned_eta) || '-'}
-          </Text>
-        </Group>
-        <Stack gap={4}>
-          {lines.length > 0 ? (
-            lines.map((line) => (
-              <Paper
-                key={line.id}
-                withBorder
-                p={6}
-                draggable={canManage && !isLocked}
-                onDragStart={(event: DragEvent<HTMLDivElement>) => {
-                  event.stopPropagation();
-                  event.dataTransfer.setData('dragType', 'lotLine');
-                  event.dataTransfer.setData('lotLineId', line.id);
-                  event.dataTransfer.setData('sourceLotId', lot.id);
-                }}
-                onDragOver={(event) => event.preventDefault()}
-                onDrop={(event) => onDropLine(event, line)}
-                style={{ cursor: canManage && !isLocked ? 'grab' : 'default' }}
-              >
-                <Group justify="space-between" gap="xs" wrap="nowrap">
-                  <div style={{ minWidth: 0 }}>
-                    <Text size="xs" fw={700} truncate>
-                      {line.item_code ?? line.item?.item_code ?? line.purchase_order_line?.item?.item_code ?? line.item_id}
-                    </Text>
-                    <Text size="xs" c="dimmed" truncate>
-                      {line.item_name ?? line.item?.item_name ?? line.purchase_order_line?.item?.item_name ?? '-'}
-                    </Text>
-                  </div>
-                  <Group gap={4} wrap="nowrap">
-                    <Text size="xs" fw={700} style={{ whiteSpace: 'nowrap' }}>
-                      <NumberFormatter value={line.qty_lotted} thousandSeparator /> {line.unit ?? ''}
-                    </Text>
-                    <ActionIcon
-                      variant="subtle"
-                      size="xs"
-                      aria-label="Split line"
-                      disabled={!canManage || isLocked || !hasMoveTargets || toNumber(line.qty_lotted) <= 1}
-                      onClick={(event) => {
+        </div>
+
+        {isExpanded ? (
+          <Stack gap={0} className="lot-line-list">
+            {lines.length > 0 ? (
+              <>
+                {lines.map((line) => {
+                  const itemCode =
+                    line.item_code ?? line.item?.item_code ?? line.purchase_order_line?.item?.item_code ?? line.item_id;
+                  const itemName = line.item_name ?? line.item?.item_name ?? line.purchase_order_line?.item?.item_name ?? '-';
+                  const hsCode =
+                    line.hs_code ?? line.item_customs_profile?.hs_code ?? line.purchase_order_line?.item_customs_profile?.hs_code;
+                  const grossWeightKg = toNumber(line.gross_weight_kg ?? line.purchase_order_line?.gross_weight_kg);
+                  const orderedQty = line.qty_ordered ?? line.purchase_order_line?.qty_ordered;
+                  const unit = line.unit ?? '';
+
+                  return (
+                    <div
+                      key={line.id}
+                      className="lot-line-row"
+                      draggable={canManage && !isLocked}
+                      onDragStart={(event: DragEvent<HTMLDivElement>) => {
                         event.stopPropagation();
-                        onSplitLine(line);
+                        event.dataTransfer.setData('dragType', 'lotLine');
+                        event.dataTransfer.setData('lotLineId', line.id);
+                        event.dataTransfer.setData('sourceLotId', lot.id);
                       }}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={(event) => onDropLine(event, line)}
+                      style={{ cursor: canManage && !isLocked ? 'grab' : 'default' }}
                     >
-                      <IconGitBranch size={13} />
-                    </ActionIcon>
-                  </Group>
-                </Group>
-              </Paper>
-            ))
-          ) : (
-            <Text size="xs" c="dimmed" fs="italic">
-              No item lines
-            </Text>
-          )}
-        </Stack>
+                      <Group gap="sm" wrap="nowrap" className="lot-line-main">
+                        <IconGripVertical size={14} color="var(--mantine-color-gray-4)" />
+                        <div className="lot-line-item-text">
+                          <Text size="sm" truncate title={`${itemCode} - ${itemName}`}>
+                            <Text span fw={800} c="var(--mantine-color-gray-9)">
+                              {itemCode}
+                            </Text>{' '}
+                            <Text span fw={400} size="sm" c="dimmed">
+                              {itemName}
+                            </Text>
+                          </Text>
+                          <Text size="xs" c="dimmed" mt={4} className="lot-line-static-meta" truncate>
+                            HSCODE: {hsCode || '-'} <span aria-hidden="true">|</span> Weight:{' '}
+                            {formatWeightKg(grossWeightKg) || '-'}
+                          </Text>
+                        </div>
+                      </Group>
+
+                      <Group gap={6} wrap="nowrap" className="lot-line-right">
+                        <Badge size="sm" variant="light" color="orange" radius="sm" className="lot-line-quantity-badge">
+                          Ordered:{' '}
+                          {orderedQty == null ? (
+                            '-'
+                          ) : (
+                            <>
+                              <NumberFormatter value={orderedQty} thousandSeparator /> {unit}
+                            </>
+                          )}
+                        </Badge>
+                        <Badge size="sm" variant="light" color="teal" radius="sm" className="lot-line-quantity-badge">
+                          Lotted: <NumberFormatter value={line.qty_lotted} thousandSeparator /> {unit}
+                        </Badge>
+                        <ActionIcon
+                          variant="subtle"
+                          size="sm"
+                          aria-label="Split this item line"
+                          disabled={!canManage || isLocked || !hasMoveTargets || toNumber(line.qty_lotted) <= 1}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onSplitLine(line);
+                          }}
+                        >
+                          <IconGitBranch size={14} />
+                        </ActionIcon>
+                      </Group>
+                    </div>
+                  );
+                })}
+              </>
+            ) : (
+              <div className="lot-line-empty">
+                <Text size="xs" c="dimmed" fs="italic">
+                  No item lines
+                </Text>
+              </div>
+            )}
+          </Stack>
+        ) : null}
       </Stack>
     </Paper>
+  );
+}
+
+function LotMeta({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="lot-meta-item">
+      <Text size="xs" c="dimmed" fw={700}>
+        {label}
+      </Text>
+      <Text size="xs" fw={700} className="tabular-nums" truncate title={value}>
+        {value}
+      </Text>
+    </div>
   );
 }
 
@@ -1825,17 +1916,19 @@ function PoLinesTable({ currencyCode, lines }: { currencyCode: string; lines: Pu
         <Badge variant="light">{lines.length} rows</Badge>
       </Group>
       <ScrollArea type="always" offsetScrollbars scrollbarSize={8}>
-        <Table miw={1060} verticalSpacing="xs">
+        <Table miw={1260} verticalSpacing="xs">
           <Table.Thead>
             <Table.Tr>
               <Table.Th style={{ width: 80 }}>Line</Table.Th>
               <Table.Th>Item</Table.Th>
-              <Table.Th>Customs</Table.Th>
+              <Table.Th>HSCODE</Table.Th>
               <Table.Th style={{ width: 130 }}>Ordered</Table.Th>
               <Table.Th style={{ width: 130 }}>Confirmed</Table.Th>
               <Table.Th style={{ width: 130 }}>Lotted</Table.Th>
+              <Table.Th style={{ width: 130 }}>Shipped</Table.Th>
+              <Table.Th style={{ width: 130 }}>Received</Table.Th>
+              <Table.Th style={{ width: 130 }}>Weight</Table.Th>
               <Table.Th style={{ width: 135 }}>Unit price</Table.Th>
-              <Table.Th style={{ width: 135 }}>ETA</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
@@ -1866,9 +1959,23 @@ function PoLinesTable({ currencyCode, lines }: { currencyCode: string; lines: Pu
                   <NumberFormatter value={line.qty_lotted} thousandSeparator /> {line.unit ?? ''}
                 </Table.Td>
                 <Table.Td>
+                  <NumberFormatter value={line.qty_shipped} thousandSeparator /> {line.unit ?? ''}
+                </Table.Td>
+                <Table.Td>
+                  <NumberFormatter value={line.qty_received} thousandSeparator /> {line.unit ?? ''}
+                </Table.Td>
+                <Table.Td>
+                  {toNumber(line.gross_weight_kg) ? (
+                    <>
+                      <NumberFormatter value={line.gross_weight_kg ?? 0} thousandSeparator /> kg
+                    </>
+                  ) : (
+                    '-'
+                  )}
+                </Table.Td>
+                <Table.Td>
                   <NumberFormatter value={line.unit_price ?? 0} thousandSeparator /> {currencyCode}
                 </Table.Td>
-                <Table.Td>{dateOnly(line.expected_eta_line) || '-'}</Table.Td>
               </Table.Tr>
             ))}
           </Table.Tbody>
@@ -1946,9 +2053,87 @@ function buildCustomsOptions(item: Item | undefined): SelectOption[] {
   }));
 }
 
+function getPurchaseOrderSummary(purchaseOrders: PurchaseOrderV1[]) {
+  return purchaseOrders.reduce(
+    (summary, order) => {
+      const lotIds = order.lot_summary?.lot_ids ?? order.lot_ids ?? [];
+      summary.totalWeightKg += toNumber(order.lot_summary?.total_weight_kg ?? order.total_weight_kg);
+      summary.totalContainers += toNumber(order.lot_summary?.total_containers ?? order.total_containers);
+      summary.totalLots += toNumber(order.lot_summary?.total_lots ?? order.total_lots);
+      summary.lotIds.push(...lotIds);
+      return summary;
+    },
+    { totalWeightKg: 0, totalContainers: 0, totalLots: 0, lotIds: [] as string[] },
+  );
+}
+
+function getDelayedDays(order: PurchaseOrderV1) {
+  return toNumber(order.delayed_days);
+}
+
+function getDateDelayDays(planned: string | null | undefined, actual: string | null | undefined) {
+  if (!planned || !actual) return null;
+  const plannedDate = new Date(planned);
+  const actualDate = new Date(actual);
+  if (Number.isNaN(plannedDate.getTime()) || Number.isNaN(actualDate.getTime())) return null;
+  const diffDays = Math.ceil((actualDate.getTime() - plannedDate.getTime()) / 86_400_000);
+  return Math.max(diffDays, 0);
+}
+
+function formatWeightKg(value: number) {
+  if (!value) return '';
+  return `${value.toLocaleString(undefined, { maximumFractionDigits: 2 })} kg`;
+}
+
+function SummaryItem({ label, value }: { label: string; value: string }) {
+  return (
+    <Paper withBorder p="sm" className="purchase-order-summary-item">
+      <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
+        {label}
+      </Text>
+      <Text fw={700} size="sm" lineClamp={1} title={value || undefined}>
+        {value || '-'}
+      </Text>
+    </Paper>
+  );
+}
+
+function DateStack({
+  primaryLabel,
+  primaryValue,
+  secondaryLabel,
+  secondaryValue,
+}: {
+  primaryLabel: string;
+  primaryValue: string;
+  secondaryLabel: string;
+  secondaryValue: string;
+}) {
+  return (
+    <Stack gap={2}>
+      <Group gap={6} wrap="nowrap">
+        <Text size="xs" c="dimmed" fw={700} w={28}>
+          {primaryLabel}
+        </Text>
+        <Text size="sm" fw={600} className="tabular-nums">
+          {primaryValue || '-'}
+        </Text>
+      </Group>
+      <Group gap={6} wrap="nowrap">
+        <Text size="xs" c="dimmed" fw={700} w={28}>
+          {secondaryLabel}
+        </Text>
+        <Text size="xs" c="dimmed" className="tabular-nums">
+          {secondaryValue || '-'}
+        </Text>
+      </Group>
+    </Stack>
+  );
+}
+
 function Metric({ color, label, value }: { color: string; label: string; value: number }) {
   return (
-    <Paper withBorder p="md">
+    <Paper withBorder p="md" className="metric-card">
       <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
         {label}
       </Text>
@@ -1959,15 +2144,202 @@ function Metric({ color, label, value }: { color: string; label: string; value: 
   );
 }
 
-function Info({ label, value }: { label: string; value: string }) {
+function PurchaseOrderDetailInfo({ lines, order }: { lines: PurchaseOrderLineV1[]; order: PurchaseOrderV1 }) {
+  const loadingPort = order.logistics_timeline?.loading_port;
+  const unloadingPort = order.logistics_timeline?.unloading_port;
+  const plannedEtd = loadingPort?.etd ?? order.expected_etd;
+  const actualAtd = loadingPort?.atd;
+  const plannedEta = unloadingPort?.eta ?? order.expected_eta;
+  const actualAta = unloadingPort?.ata;
+  const etdDelayDays = getDateDelayDays(plannedEtd, actualAtd);
+  const etaDelayDays = getDateDelayDays(plannedEta, actualAta);
+  const currencyCode = order.currency?.currency_code ?? '-';
+  const amount = `${totalPoAmount(lines).toLocaleString()} ${order.currency?.currency_code ?? ''}`.trim();
+  const maxDelayDays = Math.max(etdDelayDays ?? 0, etaDelayDays ?? 0);
+  const hasAnyActualDate = Boolean(actualAtd || actualAta);
+  const routeStatus = !hasAnyActualDate
+    ? { color: 'gray', label: 'No actual' }
+    : maxDelayDays > 0
+      ? { color: 'red', label: `${maxDelayDays} days late` }
+      : { color: 'teal', label: 'On time' };
+  const transportMode = order.transport_mode?.mode_code ?? '-';
+
   return (
-    <Paper withBorder p="sm">
+    <Paper withBorder p={0} className="purchase-order-detail-card">
+      <Group justify="space-between" align="flex-start" className="purchase-order-detail-header w-full">
+        <div>
+          <Text fw={800}>Commercial overview</Text>
+          <Text size="xs" c="dimmed">
+            Terms, value, and logistics timing for this purchase order.
+          </Text>
+        </div>
+        <div className="purchase-order-amount-block">
+          <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
+            Amount
+          </Text>
+          <Text fw={900} size="lg" className="tabular-nums" title={amount}>
+            {amount || '-'}
+          </Text>
+        </div>
+      </Group>
+
+      <div className="purchase-order-detail-layout">
+        <div className="purchase-order-commercial-panel">
+          <InfoCard
+            icon={<IconCoins size={18} />}
+            label="Financial"
+            value={currencyCode}
+            meta={`Exchange rate: ${order.exchange_rate ?? '-'}`}
+          />
+          <InfoCard
+            icon={<IconFileInvoice size={18} />}
+            label="Trade terms"
+            value={order.incoterm?.incoterm_code ?? '-'}
+            meta={`Payment: ${order.payment_term || '-'}`}
+          />
+          <InfoCard
+            icon={<IconTruckDelivery size={18} />}
+            label="Transport"
+            value={transportMode}
+            meta={order.po_type || '-'}
+          />
+        </div>
+
+        <LogisticsRouteTimeline
+          actualAtd={dateOnly(actualAtd)}
+          actualAta={dateOnly(actualAta)}
+          plannedEtd={dateOnly(plannedEtd)}
+          plannedEta={dateOnly(plannedEta)}
+          statusColor={routeStatus.color}
+          statusLabel={routeStatus.label}
+          transportMode={transportMode}
+        />
+      </div>
+    </Paper>
+  );
+}
+
+function InfoCard({ icon, label, meta, value }: { icon: ReactNode; label: string; meta: string; value: string }) {
+  return (
+    <div className="purchase-order-info-item">
+      <Group gap="sm" wrap="nowrap" align="flex-start">
+        <div className="purchase-order-info-icon">{icon}</div>
+        <div className="purchase-order-info-content">
+          <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
+            {label}
+          </Text>
+          <Text fw={800} lineClamp={1} title={value}>
+            {value || '-'}
+          </Text>
+          <Text size="xs" c="dimmed" lineClamp={1} title={meta}>
+            {meta || '-'}
+          </Text>
+        </div>
+      </Group>
+    </div>
+  );
+}
+
+function LogisticsRouteTimeline({
+  actualAta,
+  actualAtd,
+  plannedEta,
+  plannedEtd,
+  statusColor,
+  statusLabel,
+  transportMode,
+}: {
+  actualAta: string;
+  actualAtd: string;
+  plannedEta: string;
+  plannedEtd: string;
+  statusColor: string;
+  statusLabel: string;
+  transportMode: string;
+}) {
+  const isAir = transportMode.toLowerCase().includes('air');
+  const TransportIcon = isAir ? IconPlaneDeparture : IconShip;
+
+  return (
+    <div className="purchase-order-logistics-panel">
+      <Group gap="xs" wrap="nowrap" className="purchase-order-logistics-title">
+        <div className="purchase-order-info-icon">
+          <IconCalendarStats size={18} />
+        </div>
+        <div>
+          <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
+            Logistics timeline
+          </Text>
+          <Text fw={800} size="sm">
+            Loading port to unloading port
+          </Text>
+        </div>
+      </Group>
+
+      <div className="purchase-order-route">
+        <PortTimelineNode label="Loading port" primaryLabel="ETD" primaryValue={plannedEtd} secondaryLabel="ATD" secondaryValue={actualAtd} />
+
+        <div className="purchase-order-route-line" aria-hidden="true">
+          <span className="purchase-order-route-dot" />
+          <div className="purchase-order-route-middle">
+            <div className="purchase-order-route-icon">
+              <TransportIcon size={18} />
+            </div>
+            <Badge size="xs" color={statusColor} variant="light">
+              {statusLabel}
+            </Badge>
+          </div>
+          <span className="purchase-order-route-dot" />
+        </div>
+
+        <PortTimelineNode
+          align="right"
+          label="Unloading port"
+          primaryLabel="ETA"
+          primaryValue={plannedEta}
+          secondaryLabel="ATA"
+          secondaryValue={actualAta}
+        />
+      </div>
+    </div>
+  );
+}
+
+function PortTimelineNode({
+  align = 'left',
+  label,
+  primaryLabel,
+  primaryValue,
+  secondaryLabel,
+  secondaryValue,
+}: {
+  align?: 'left' | 'right';
+  label: string;
+  primaryLabel: string;
+  primaryValue: string;
+  secondaryLabel: string;
+  secondaryValue: string;
+}) {
+  return (
+    <div className={`purchase-order-route-node ${align === 'right' ? 'is-right' : ''}`}>
       <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
         {label}
       </Text>
-      <Text fw={600} lineClamp={1} title={value}>
-        {value}
+      <DateValue label={primaryLabel} value={primaryValue} />
+      <DateValue label={secondaryLabel} value={secondaryValue} muted />
+    </div>
+  );
+}
+
+function DateValue({ label, muted, value }: { label: string; muted?: boolean; value: string }) {
+  return (
+    <div className="purchase-order-date-value">
+      <Text size="xs" c="dimmed" fw={700} className="purchase-order-date-label">
+        {label}
       </Text>
-    </Paper>
+      <Text size="sm" fw={muted ? 600 : 800} c={muted ? 'dimmed' : undefined} className="tabular-nums">
+        {value || '-'}
+      </Text>
+    </div>
   );
 }

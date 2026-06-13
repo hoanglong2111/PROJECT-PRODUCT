@@ -52,6 +52,10 @@ export type PurchaseOrderV1 = {
   exchange_rate: ApiDecimal | null;
   expected_etd: string | null;
   expected_eta: string | null;
+  actual_etd?: string | null;
+  actual_eta?: string | null;
+  expected_warehouse_eta?: string | null;
+  actual_warehouse_ata?: string | null;
   status: PurchaseOrderStatusV1;
   sent_at: string | null;
   confirmed_at: string | null;
@@ -62,6 +66,31 @@ export type PurchaseOrderV1 = {
   update_at: string;
   delete_at?: string | null;
   is_delete?: boolean;
+  total_weight_kg?: ApiDecimal | null;
+  total_containers?: number;
+  total_lots?: number;
+  lot_ids?: string[];
+  delayed_days?: number | null;
+  lot_summary?: {
+    total_weight_kg: ApiDecimal | null;
+    total_containers: number;
+    total_lots: number;
+    lot_ids: string[];
+  };
+  logistics_timeline?: {
+    loading_port: {
+      etd: string | null;
+      atd: string | null;
+    };
+    unloading_port: {
+      eta: string | null;
+      ata: string | null;
+    };
+    warehouse: {
+      eta: string | null;
+      ata: string | null;
+    };
+  };
   supplier?: Supplier | null;
   currency?: Currency | null;
   incoterm?: Incoterm | null;
@@ -82,6 +111,7 @@ export type PurchaseOrderLineV1 = {
   unit_price: ApiDecimal | null;
   tax_rate: ApiDecimal | null;
   discount_pct: ApiDecimal | null;
+  gross_weight_kg?: ApiDecimal | null;
   qty_confirmed: ApiDecimal;
   qty_lotted: ApiDecimal;
   qty_shipped: ApiDecimal;
@@ -143,7 +173,10 @@ export type PoLotLine = {
   item_id: string;
   item_code?: string;
   item_name?: string;
+  hs_code?: string | null;
   qty_lotted: ApiDecimal;
+  qty_ordered?: ApiDecimal | null;
+  gross_weight_kg?: ApiDecimal | null;
   unit: string | null;
   notes: string | null;
   sort_order: number;
@@ -151,6 +184,7 @@ export type PoLotLine = {
   update_at?: string;
   purchase_order_line?: PurchaseOrderLineV1 | null;
   item?: Item | null;
+  item_customs_profile?: ItemTaxProfile | null;
 };
 
 export type PurchaseOrderLotPlanning = {
@@ -178,6 +212,7 @@ export type PurchaseOrderLinePayload = {
   unit_price?: number | null;
   tax_rate?: number | null;
   discount_pct?: number | null;
+  gross_weight_kg?: number | null;
   expected_eta_line?: string | null;
   notes?: string | null;
 };

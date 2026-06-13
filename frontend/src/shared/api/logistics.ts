@@ -88,6 +88,7 @@ import {
   type ShipmentV1,
 } from './shipments';
 import { fetchCurrencies, fetchSuppliers } from './tradeMasterData';
+import { apiClient } from './axiosConfig';
 
 export type {
   BusinessFlowTag,
@@ -1160,7 +1161,8 @@ export async function fetchDeliveryOrders() {
 }
 
 export async function fetchLogisticsTasks() {
-  return [] as LogisticsTask[];
+  const response = await apiClient.get<ApiResponse<LogisticsTask[]>>('/v1/logistics-tasks');
+  return response.data.data;
 }
 
 export async function fetchDashboardStats() {
