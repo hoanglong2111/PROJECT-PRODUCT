@@ -342,7 +342,7 @@ export async function createPurchaseOrder(payload: CreatePurchaseOrderV1Payload)
 
 export async function updatePurchaseOrder(id: string, payload: UpdatePurchaseOrderV1Payload) {
   const response = await apiClient.patch<V1Response<PurchaseOrderV1>>(
-    `/v1/mock/purchase_orders/${id}`,
+    `/v1/purchase-orders/${id}`,
     toMockPurchaseOrderPayload(payload),
   );
   return unwrapV1Data(response);

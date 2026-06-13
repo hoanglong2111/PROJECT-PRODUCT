@@ -35,9 +35,7 @@ import { PageError, PageLoading } from '@shared/components/PageFeedback';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { UpdateTaskProgressForm } from '@shared/components/UpdateOrderForms';
 import {
-  fetchDeliveryOrders,
   fetchLogisticsTasks,
-  type BusinessFlowTag,
   type LogisticsTask,
   type TaskRole,
   type TaskStatus,
@@ -206,38 +204,29 @@ function Gd1PoTasksBoard() {
 }
 
 export function Tasks() {
-  const { flowTagLabel, priorityLabel, statusLabel, t, taskRoleLabel } = useI18n();
+  const { priorityLabel, statusLabel, t, taskRoleLabel } = useI18n();
   const [searchParams] = useSearchParams();
   const roleParam = searchParams.get('role');
+  const focusedPo = searchParams.get('po');
   const { value: focusedDo } = useEntityParam('do');
+  const focusedContext = focusedPo || focusedDo;
   const { close: closeTaskParam, open: openTaskParam, value: focusedTask } = useEntityParam('task');
   const [selectedTask, setSelectedTask] = useState<LogisticsTask | null>(null);
   const search = useWorkspaceStore((state) => state.taskSearch);
   const statusFilter = useWorkspaceStore((state) => state.taskStatusFilter);
   const roleFilter = useWorkspaceStore((state) => state.taskRoleFilter);
   const requiredOnly = useWorkspaceStore((state) => state.taskRequiredOnly);
-  const flowFilter = useWorkspaceStore((state) => state.taskFlowFilter);
   const setSearch = useWorkspaceStore((state) => state.setTaskSearch);
   const setStatusFilter = useWorkspaceStore((state) => state.setTaskStatusFilter);
   const setRoleFilter = useWorkspaceStore((state) => state.setTaskRoleFilter);
   const setRequiredOnly = useWorkspaceStore((state) => state.setTaskRequiredOnly);
-  const setFlowFilter = useWorkspaceStore((state) => state.setTaskFlowFilter);
 
   const tasksQuery = useQuery({
     queryKey: queryKeys.tasks,
     queryFn: fetchLogisticsTasks,
   });
-  const deliveryOrdersQuery = useQuery({
-    queryKey: queryKeys.deliveryOrders,
-    queryFn: fetchDeliveryOrders,
-  });
   const tasks = tasksQuery.data ?? [];
-  const deliveryOrders = deliveryOrdersQuery.data ?? [];
   const isFetching = tasksQuery.isFetching;
-  const deliveryOrderFlowTagsByNumber = useMemo(
-    () => new Map(deliveryOrders.map((order) => [order.order_info.order_number, order.flow_tags])),
-    [deliveryOrders],
-  );
 
   useEffect(() => {
     if (roleParam) {
@@ -266,12 +255,14 @@ export function Tasks() {
     const normalizedSearch = search.toLowerCase().trim();
 
     return tasks.filter((task) => {
-      const matchesFlowContext = !focusedDo || task.do_number === focusedDo;
+      const matchesFlowContext =
+        !focusedContext ||
+        task.do_number === focusedContext ||
+        task.po_number === focusedContext ||
+        task.production_contract_number === focusedContext;
       const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
       const matchesRole = roleFilter === 'all' || task.role === roleFilter;
       const matchesRequired = !requiredOnly || task.is_required_for_do_closure;
-      const parentFlowTags = deliveryOrderFlowTagsByNumber.get(task.do_number) ?? [];
-      const matchesFlow = flowFilter === 'all' || parentFlowTags.includes(flowFilter);
       const matchesSearch = [
         task.task_id,
         task.task_name,
@@ -284,9 +275,9 @@ export function Tasks() {
         .toLowerCase()
         .includes(normalizedSearch);
 
-      return matchesFlowContext && matchesStatus && matchesRole && matchesRequired && matchesFlow && matchesSearch;
+      return matchesFlowContext && matchesStatus && matchesRole && matchesRequired && matchesSearch;
     });
-  }, [deliveryOrderFlowTagsByNumber, flowFilter, focusedDo, requiredOnly, roleFilter, search, statusFilter, tasks]);
+  }, [focusedContext, requiredOnly, roleFilter, search, statusFilter, tasks]);
 
   const {
     page,
@@ -295,7 +286,7 @@ export function Tasks() {
     pageStart,
     setPage,
     visibleItems: visibleTasks,
-  } = useListPagination(filteredTasks, [flowFilter, focusedDo, requiredOnly, roleFilter, search, statusFilter]);
+  } = useListPagination(filteredTasks, [focusedContext, requiredOnly, roleFilter, search, statusFilter]);
 
   const today = dayjs().startOf('day');
   const isOverdue = (task: LogisticsTask) => task.status !== 'COMPLETED' && dayjs(task.due_date).isBefore(today, 'day');
@@ -362,14 +353,14 @@ export function Tasks() {
 
         <Tabs.Panel value="closure">
           <Stack gap="lg">
-            {focusedDo ? (
+            {focusedContext ? (
               <Paper withBorder p="md" className="flow-context">
                 <Group justify="space-between">
                   <Text size="sm">
-                    {t('tasks.context', { kind: 'DO', id: focusedDo })}
+                    {t('tasks.context', { kind: 'PO', id: focusedContext })}
                   </Text>
-                  <Button component={Link} to={`/delivery-orders?do=${focusedDo}`} size="xs" variant="light">
-                    {t('entityLink.openDo')}
+                  <Button component={Link} to={`/purchase-orders?po=${focusedContext}`} size="xs" variant="light">
+                    {t('entityLink.openPo')}
                   </Button>
                 </Group>
               </Paper>
@@ -396,6 +387,7 @@ export function Tasks() {
                   onChange={(value) => setStatusFilter((value ?? 'all') as TaskStatus | 'all')}
                   data={[
                     { label: t('common.allStatuses'), value: 'all' },
+                    { label: statusLabel('PENDING'), value: 'PENDING' },
                     { label: statusLabel('TODO'), value: 'TODO' },
                     { label: statusLabel('IN_PROGRESS'), value: 'IN_PROGRESS' },
                     { label: statusLabel('WAITING'), value: 'WAITING' },
@@ -410,25 +402,18 @@ export function Tasks() {
                   onChange={(value) => setRoleFilter((value ?? 'all') as TaskRole | 'all')}
                   data={[
                     { label: t('common.allRoles'), value: 'all' },
+                    { label: taskRoleLabel('BUYER'), value: 'BUYER' },
+                    { label: taskRoleLabel('LOGISTICS_PLANNER'), value: 'LOGISTICS_PLANNER' },
+                    { label: taskRoleLabel('PIC_MANAGER'), value: 'PIC_MANAGER' },
+                    { label: taskRoleLabel('PORT_OFFICER'), value: 'PORT_OFFICER' },
+                    { label: taskRoleLabel('CUSTOMS_OFFICER'), value: 'CUSTOMS_OFFICER' },
+                    { label: taskRoleLabel('WAREHOUSE_STAFF'), value: 'WAREHOUSE_STAFF' },
                     { label: taskRoleLabel('PIC Manager'), value: 'PIC Manager' },
                     { label: taskRoleLabel('Sale Staff'), value: 'Sale Staff' },
                     { label: taskRoleLabel('Port Officer'), value: 'Port Officer' },
                     { label: taskRoleLabel('Customs Officer'), value: 'Customs Officer' },
                     { label: taskRoleLabel('Finance Officer'), value: 'Finance Officer' },
                     { label: taskRoleLabel('Warehouse Staff'), value: 'Warehouse Staff' },
-                  ]}
-                />
-                <Select
-                  label={t('common.flow')}
-                  value={flowFilter}
-                  onChange={(value) => setFlowFilter((value ?? 'all') as BusinessFlowTag | 'all')}
-                  data={[
-                    { label: t('common.all'), value: 'all' },
-                    { label: flowTagLabel('LINEAR'), value: 'LINEAR' },
-                    { label: flowTagLabel('BULK_PURCHASE'), value: 'BULK_PURCHASE' },
-                    { label: flowTagLabel('SPLIT_PURCHASE'), value: 'SPLIT_PURCHASE' },
-                    { label: flowTagLabel('PARTIAL_DELIVERY'), value: 'PARTIAL_DELIVERY' },
-                    { label: flowTagLabel('CONTAINER_CONSOLIDATION'), value: 'CONTAINER_CONSOLIDATION' },
                   ]}
                 />
                 <Switch

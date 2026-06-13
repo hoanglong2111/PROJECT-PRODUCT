@@ -35,6 +35,7 @@
   UserRef,
   Gd1ApprovalStep,
   Gd1PoStageTask,
+  Gd1TaskStatus,
   Gd1ShipmentMilestone,
   Gd1ShipmentCost,
   Gd1PoStatus,
@@ -49,6 +50,7 @@ import {
   fetchDeliveryOrderLines,
   fetchDeliveryOrderLots,
   fetchDeliveryOrdersV1,
+  updateDeliveryOrderV1,
   type DeliveryOrderLotV1,
   type DeliveryOrderLineV1,
   type DeliveryOrderV1,
@@ -256,6 +258,68 @@ export type UpdateTaskPayload = {
   notes?: string;
   progress?: number;
   status?: TaskStatus;
+};
+
+export type TaskScreenStage =
+  | 'SUPPLIER_CONFIRMATION'
+  | 'LOT_PLANNING'
+  | 'INTERNAL_DO'
+  | 'QUOTATION'
+  | 'SHIPMENT'
+  | 'CUSTOMS'
+  | 'CARRIER_DO'
+  | 'DTO';
+
+export type TaskScreenItem = {
+  id: string;
+  task_no: string;
+  task_name: string;
+  ref_type: 'PURCHASE_ORDER' | string;
+  ref_id: string;
+  ref_no: string;
+  stage: TaskScreenStage;
+  role: TaskRole;
+  assignee: {
+    id?: string;
+    user_id?: string;
+    name: string;
+    department: string | null;
+  };
+  status: TaskStatus;
+  priority: Priority;
+  due_at: string | null;
+  completed_at: string | null;
+  progress: number;
+  blocked_reason: string | null;
+  note?: string | null;
+  description?: string | null;
+  create_at?: string;
+  update_at?: string;
+};
+
+export type TaskListScreenDto = {
+  items: TaskScreenItem[];
+  summary?: {
+    total: number;
+    pending: number;
+    in_progress: number;
+    blocked: number;
+    completed: number;
+    overdue?: number;
+  };
+  filters?: Record<string, string[]>;
+};
+
+export type PurchaseOrderTasksScreenDto = {
+  purchase_order: {
+    id: string;
+    po_no: string;
+    status: string;
+  };
+  task_groups: Array<{
+    stage: TaskScreenStage;
+    tasks: TaskScreenItem[];
+  }>;
 };
 
 export type DashboardStats = {
@@ -546,6 +610,73 @@ function mapV1PurchaseOrder(purchaseOrder: PurchaseOrderV1, linkedDoNumbers: str
   };
 }
 
+function mapTaskScreenToLogisticsTask(task: TaskScreenItem): LogisticsTask {
+  const assigneeId = task.assignee.id ?? task.assignee.user_id ?? '';
+
+  return {
+    assigned_at: task.create_at ?? null,
+    assignee: {
+      department: task.assignee.department ?? '',
+      name: task.assignee.name,
+      user_id: assigneeId,
+    },
+    blocked_reason: task.blocked_reason ?? null,
+    completed_at: task.completed_at,
+    created_at: task.create_at ?? '',
+    do_number: task.ref_no,
+    due_date: dateOnly(task.due_at) || '',
+    hbl_number: null,
+    is_required_for_do_closure: true,
+    notes: task.note ?? task.description ?? '',
+    po_number: task.ref_type === 'PURCHASE_ORDER' ? task.ref_no : null,
+    priority: task.priority,
+    production_contract_number: task.ref_id,
+    progress: toNumber(task.progress),
+    request_code: task.ref_no,
+    role: task.role,
+    status: task.status,
+    task_id: task.id,
+    task_name: task.task_name,
+  };
+}
+
+function taskScreenStatusToGd1(status: TaskStatus): Gd1TaskStatus {
+  if (status === 'COMPLETED') return 'DONE';
+  if (status === 'TODO') return 'PENDING';
+  if (status === 'WAITING') return 'PENDING';
+  return status as Gd1TaskStatus;
+}
+
+function gd1StatusToTaskScreen(status: string): TaskStatus {
+  if (status === 'DONE') return 'COMPLETED';
+  if (status === 'PENDING') return 'PENDING';
+  return status as TaskStatus;
+}
+
+function mapTaskScreenToPoStageTask(task: TaskScreenItem): Gd1PoStageTask {
+  const assigneeId = task.assignee.id ?? task.assignee.user_id ?? '';
+
+  return {
+    assigned_by: 'mock-api',
+    assignee_id: assigneeId,
+    completed_at: task.completed_at,
+    completed_by: task.completed_at ? assigneeId : null,
+    created_at: task.create_at ?? '',
+    due_date: dateOnly(task.due_at) || null,
+    id: task.id,
+    linked_shipment_milestone: null,
+    note: task.note ?? null,
+    po_stage: task.stage as Gd1PoStageTask['po_stage'],
+    purchase_order_id: task.ref_id,
+    started_at: task.status === 'IN_PROGRESS' ? task.update_at ?? task.create_at ?? null : null,
+    status: taskScreenStatusToGd1(task.status),
+    task_name: task.task_name,
+    task_template_id: null,
+    tenant_id: null,
+    updated_at: task.update_at ?? '',
+  };
+}
+
 function quotationStatusToUi(status: QuotationStatusV1): QuotationStatus {
   const statusMap: Record<QuotationStatusV1, QuotationStatus> = {
     CANCELLED: 'REJECTED',
@@ -588,6 +719,8 @@ function mapV1Quotation(quotation: QuotationV1, requestCode?: string): Quotation
   const freightCost = sumChargeLines(chargeLines, ['OCEAN_FREIGHT', 'AIR_FREIGHT']);
   const localCharges = sumChargeLines(chargeLines, ['LOCAL_CHARGE', 'TRUCKING', 'DO_FEE', 'DEMURRAGE', 'DETENTION', 'WAREHOUSE', 'DOCUMENT_FEE']);
   const customsFee = sumChargeLines(chargeLines, ['CUSTOMS_FEE']);
+  const quotationTotal = Number(quotation.grand_total_amount ?? quotation.total_amount);
+  const chargeLineTotal = sumNumbers(chargeLines.map((line) => line.total_amount ?? line.amount));
 
   return {
     autoApproveAt: null,
@@ -607,7 +740,7 @@ function mapV1Quotation(quotation: QuotationV1, requestCode?: string): Quotation
     officialSentAt: quotation.submitted_at,
     preliminaryDueAt: quotation.quoted_at ?? addDaysIso(1),
     preliminarySentAt: quotation.quoted_at,
-    quoteAmount: quotation.grand_total_amount ?? quotation.total_amount,
+    quoteAmount: Number.isFinite(quotationTotal) ? quotationTotal : chargeLineTotal,
     quoteNumber: quotation.version > 1 ? `${quotation.quotation_no} v${quotation.version}` : quotation.quotation_no,
     requestCode: requestCode ?? quotation.ref_id,
     shippingMode: inferQuotationShippingMode(quotation),
@@ -716,6 +849,15 @@ function inferShippingMethod(deliveryOrder: DeliveryOrderV1): DeliveryOrder['log
   if (modeType === 'AIR') return 'AIR';
   if (modeType === 'ROAD' || modeType === 'TRUCKING' || modeType.includes('TRUCK')) return 'ROAD';
   return 'SEA';
+}
+
+function transportModeIdFromShippingMethod(
+  shippingMethod: DeliveryOrder['logistics_shipping']['shipping_method'] | undefined,
+) {
+  if (shippingMethod === 'AIR') return 'tm_air';
+  if (shippingMethod === 'ROAD') return 'tm_trucking';
+  if (shippingMethod === 'SEA') return 'tm_sea_fcl';
+  return undefined;
 }
 
 function resolveDestinationPort(deliveryOrder: DeliveryOrderV1, firstLot?: DeliveryOrderLotV1 | null) {
@@ -1200,8 +1342,8 @@ export async function fetchDeliveryOrders() {
 }
 
 export async function fetchLogisticsTasks() {
-  const response = await apiClient.get<ApiResponse<LogisticsTask[]>>('/v1/logistics-tasks');
-  return response.data.data;
+  const response = await apiClient.get<ApiResponse<TaskListScreenDto>>('/v1/tasks');
+  return response.data.data.items.map(mapTaskScreenToLogisticsTask);
 }
 
 export async function fetchDashboardStats() {
@@ -1369,7 +1511,19 @@ export async function confirmQuotationBooking(quotationId: string, payload: Conf
 }
 
 export async function updateDeliveryOrder(orderNumber: string, payload: UpdateDeliveryOrderPayload) {
-  return buildUiDeliveryOrder({ ...payload, requestCode: orderNumber });
+  const deliveryOrderId = await resolveDeliveryOrderId(orderNumber);
+  const updated = await updateDeliveryOrderV1(deliveryOrderId, {
+    destination_address: payload.portOfDestination,
+    notes: payload.notes,
+    origin_address: payload.portOfDeparture,
+    planned_cargo_ready_date: payload.plannedEntryDate,
+    planned_eta: payload.etaPlanned,
+    planned_etd: payload.etdPlanned,
+    transport_mode_id: transportModeIdFromShippingMethod(payload.shippingMethod),
+    warehouse_name: payload.warehouseCode,
+  });
+
+  return mapV1DeliveryOrder(updated);
 }
 
 export async function fetchEfmsControl(_orderNumber: string) {
@@ -1493,15 +1647,24 @@ export async function uploadDeliveryOrderAttachment({
 }
 
 export async function updateLogisticsTask(taskId: string, payload: UpdateTaskPayload) {
-  return { task_id: taskId, ...payload } as LogisticsTask;
+  const response = await apiClient.patch<ApiResponse<TaskScreenItem>>(`/v1/tasks/${taskId}`, {
+    blocked_reason: payload.blockedReason,
+    completed_at: payload.completedAt,
+    due_at: payload.dueDate,
+    note: payload.notes,
+    progress: payload.progress,
+    status: payload.status,
+  });
+  return mapTaskScreenToLogisticsTask(response.data.data);
 }
 
 export async function advancePurchaseOrderStage(_poNumber: string, _stage: Gd1PoStatus) {
   return uiOnlySuccess;
 }
 
-export async function fetchPurchaseOrderStageTasks(_poNumber: string) {
-  return [] as Gd1PoStageTask[];
+export async function fetchPurchaseOrderStageTasks(poNumber: string) {
+  const response = await apiClient.get<ApiResponse<PurchaseOrderTasksScreenDto>>(`/v1/purchase-orders/${poNumber}/tasks`);
+  return response.data.data.task_groups.flatMap((group) => group.tasks.map(mapTaskScreenToPoStageTask));
 }
 
 export async function fetchShipmentMilestones(orderNumber: string) {
@@ -1558,10 +1721,15 @@ export async function deleteShipmentCost(_costId: string) {
   return uiOnlySuccess;
 }
 
-export async function updatePoStageTask(_taskId: string, _payload: { status: string; note?: string }) {
-  return uiOnlySuccess;
+export async function updatePoStageTask(taskId: string, payload: { status: string; note?: string }) {
+  const response = await apiClient.patch<ApiResponse<TaskScreenItem>>(`/v1/tasks/${taskId}`, {
+    note: payload.note,
+    status: gd1StatusToTaskScreen(payload.status),
+  });
+  return mapTaskScreenToPoStageTask(response.data.data);
 }
 
 export async function fetchGlobalPoStageTasks() {
-  return [] as Gd1PoStageTask[];
+  const response = await apiClient.get<ApiResponse<TaskListScreenDto>>('/v1/tasks');
+  return response.data.data.items.map(mapTaskScreenToPoStageTask);
 }

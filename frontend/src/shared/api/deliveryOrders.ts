@@ -13,6 +13,7 @@ import type { TransportMode } from './tradeMasterData';
 
 export type DeliveryOrderStatusV1 =
   | 'DRAFT'
+  | 'CREATED'
   | 'READY_FOR_QUOTATION'
   | 'QUOTATION_CONFIRMED'
   | 'ASSIGNED_TO_SHIPMENT'
@@ -202,10 +203,17 @@ export async function createDeliveryOrderFromLots(payload: CreateDeliveryOrderFr
 }
 
 export async function updateDeliveryOrderV1(id: string, payload: DeliveryOrderPayload) {
-  const response = await apiClient.patch<V1Response<DeliveryOrderV1>>(`/v1/mock/delivery_orders/${id}`, {
+  const response = await apiClient.patch<V1Response<DeliveryOrderV1>>(`/v1/delivery-orders/${id}`, {
     delivery_order_no: payload.do_no,
     purchase_order_id: payload.purchase_order_id,
+    transport_mode_id: payload.transport_mode_id,
     requested_pickup_date: payload.planned_cargo_ready_date,
+    planned_cargo_ready_date: payload.planned_cargo_ready_date,
+    planned_etd: payload.planned_etd,
+    planned_eta: payload.planned_eta,
+    origin_address: payload.origin_address,
+    destination_address: payload.destination_address,
+    warehouse_name: payload.warehouse_name,
     notes: payload.notes,
   });
   return unwrapV1Data(response);
@@ -224,14 +232,14 @@ export async function markDeliveryOrderReadyForQuotation(id: string) {
 }
 
 export async function confirmDeliveryOrderQuotation(id: string) {
-  const response = await apiClient.patch<V1Response<DeliveryOrderV1>>(`/v1/mock/delivery_orders/${id}`, {
+  const response = await apiClient.patch<V1Response<DeliveryOrderV1>>(`/v1/delivery-orders/${id}`, {
     status: 'QUOTATION_CONFIRMED',
   });
   return unwrapV1Data(response);
 }
 
 export async function assignDeliveryOrderToShipment(id: string) {
-  const response = await apiClient.patch<V1Response<DeliveryOrderV1>>(`/v1/mock/delivery_orders/${id}`, {
+  const response = await apiClient.patch<V1Response<DeliveryOrderV1>>(`/v1/delivery-orders/${id}`, {
     status: 'ASSIGNED_TO_SHIPMENT',
   });
   return unwrapV1Data(response);
@@ -243,7 +251,7 @@ export async function cancelDeliveryOrderV1(id: string) {
 }
 
 export async function closeDeliveryOrderV1(id: string) {
-  const response = await apiClient.patch<V1Response<DeliveryOrderV1>>(`/v1/mock/delivery_orders/${id}`, {
+  const response = await apiClient.patch<V1Response<DeliveryOrderV1>>(`/v1/delivery-orders/${id}`, {
     status: 'CLOSED',
   });
   return unwrapV1Data(response);

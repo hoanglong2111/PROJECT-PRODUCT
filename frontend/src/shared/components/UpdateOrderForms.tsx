@@ -33,7 +33,7 @@ import { useI18n } from '@shared/i18n';
 const priorityValues: Priority[] = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
 const shippingMethodValues: Array<DeliveryOrder['logistics_shipping']['shipping_method']> = ['SEA', 'AIR', 'ROAD'];
 const documentOptions = ['Invoice', 'Packing List', 'B/L', 'CO'];
-const taskStatusValues: TaskStatus[] = ['TODO', 'IN_PROGRESS', 'WAITING', 'BLOCKED', 'COMPLETED', 'CANCELLED'];
+const taskStatusValues: TaskStatus[] = ['PENDING', 'TODO', 'IN_PROGRESS', 'WAITING', 'BLOCKED', 'COMPLETED', 'CANCELLED'];
 
 export function UpdateDeliveryOrderForm({ deliveryOrder }: { deliveryOrder: DeliveryOrder }) {
   const queryClient = useQueryClient();
@@ -302,6 +302,7 @@ export function UpdateTaskProgressForm({
     onSuccess: async (updatedTask) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.tasks }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.globalPoStageTasks }),
         queryClient.invalidateQueries({ queryKey: queryKeys.deliveryOrders }),
         queryClient.invalidateQueries({ queryKey: queryKeys.purchaseOrders }),
         queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats }),

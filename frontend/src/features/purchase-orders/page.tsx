@@ -866,13 +866,19 @@ function PurchaseOrderForm({
           <TextInput
             label="PO no"
             value={draft.po_no}
-            onChange={(event) => setDraft((current) => ({ ...current, po_no: event.currentTarget.value }))}
+            onChange={(event) => {
+              const { value } = event.currentTarget;
+              setDraft((current) => ({ ...current, po_no: value }));
+            }}
             required
           />
           <TextInput
             label="Contract no"
             value={draft.contract_no}
-            onChange={(event) => setDraft((current) => ({ ...current, contract_no: event.currentTarget.value }))}
+            onChange={(event) => {
+              const { value } = event.currentTarget;
+              setDraft((current) => ({ ...current, contract_no: value }));
+            }}
           />
           <Select
             label="Supplier"
@@ -928,7 +934,10 @@ function PurchaseOrderForm({
           <TextInput
             label="Payment term"
             value={draft.payment_term}
-            onChange={(event) => setDraft((current) => ({ ...current, payment_term: event.currentTarget.value }))}
+            onChange={(event) => {
+              const { value } = event.currentTarget;
+              setDraft((current) => ({ ...current, payment_term: value }));
+            }}
           />
           <NumberInput
             label="Exchange rate"
@@ -940,19 +949,28 @@ function PurchaseOrderForm({
             label="Expected ETD"
             type="date"
             value={draft.expected_etd}
-            onChange={(event) => setDraft((current) => ({ ...current, expected_etd: event.currentTarget.value }))}
+            onChange={(event) => {
+              const { value } = event.currentTarget;
+              setDraft((current) => ({ ...current, expected_etd: value }));
+            }}
           />
           <TextInput
             label="Expected ETA"
             type="date"
             value={draft.expected_eta}
-            onChange={(event) => setDraft((current) => ({ ...current, expected_eta: event.currentTarget.value }))}
+            onChange={(event) => {
+              const { value } = event.currentTarget;
+              setDraft((current) => ({ ...current, expected_eta: value }));
+            }}
           />
         </SimpleGrid>
         <Textarea
           label="Notes"
           value={draft.notes}
-          onChange={(event) => setDraft((current) => ({ ...current, notes: event.currentTarget.value }))}
+          onChange={(event) => {
+            const { value } = event.currentTarget;
+            setDraft((current) => ({ ...current, notes: value }));
+          }}
           autosize
           minRows={2}
         />
@@ -1671,23 +1689,25 @@ function SupplierConfirmationModal({
                       <TextInput
                         type="date"
                         value={lineDraft?.cargo_ready_date ?? ''}
-                        onChange={(event) =>
+                        onChange={(event) => {
+                          const { value } = event.currentTarget;
                           setLineDrafts((current) => ({
                             ...current,
-                            [line.id]: { ...current[line.id], cargo_ready_date: event.currentTarget.value },
-                          }))
-                        }
+                            [line.id]: { ...current[line.id], cargo_ready_date: value },
+                          }));
+                        }}
                       />
                     </Table.Td>
                     <Table.Td>
                       <Checkbox
                         checked={lineDraft?.can_fulfill ?? true}
-                        onChange={(event) =>
+                        onChange={(event) => {
+                          const { checked } = event.currentTarget;
                           setLineDrafts((current) => ({
                             ...current,
-                            [line.id]: { ...current[line.id], can_fulfill: event.currentTarget.checked },
-                          }))
-                        }
+                            [line.id]: { ...current[line.id], can_fulfill: checked },
+                          }));
+                        }}
                       />
                     </Table.Td>
                   </Table.Tr>

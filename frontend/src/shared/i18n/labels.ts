@@ -26,7 +26,7 @@ export const roleLabels: Record<WorkspaceLanguage, Record<AppRole, string>> = {
   },
 };
 
-export const taskRoleLabels: Record<WorkspaceLanguage, Record<TaskRole, string>> = {
+export const taskRoleLabels: Record<WorkspaceLanguage, Partial<Record<TaskRole, string>>> = {
   en: {
     'Customs Officer': 'Customs Officer',
     'Finance Officer': 'Finance Officer',

@@ -27,9 +27,15 @@ export type DeliveryOrderStatus =
   | 'ASSIGNED_TO_SHIPMENT'
   | 'CANCELLED';
 
-export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'WAITING' | 'BLOCKED' | 'COMPLETED' | 'CANCELLED';
+export type TaskStatus = 'TODO' | 'PENDING' | 'IN_PROGRESS' | 'WAITING' | 'BLOCKED' | 'COMPLETED' | 'CANCELLED';
 
 export type TaskRole =
+  | 'BUYER'
+  | 'LOGISTICS_PLANNER'
+  | 'PIC_MANAGER'
+  | 'PORT_OFFICER'
+  | 'CUSTOMS_OFFICER'
+  | 'WAREHOUSE_STAFF'
   | 'PIC Manager'
   | 'Sale Staff'
   | 'Port Officer'
