@@ -317,6 +317,7 @@ export function Shipments() {
     }) => markShipmentMilestoneDone(shipmentId, milestoneCode, { actual_at: actualAt, notes }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.shipmentLists });
     },
   });
 
@@ -1247,6 +1248,7 @@ function ShipmentCustomsPanel({ shipment }: { shipment: ShipmentRecord }) {
       void queryClient.invalidateQueries({ queryKey: queryKeys.customsDeclarationLines(id) });
     }
     void queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.shipmentLists });
   };
 
   const createDeclarationMutation = useMutation({

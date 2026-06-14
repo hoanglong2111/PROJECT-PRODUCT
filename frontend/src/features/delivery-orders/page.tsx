@@ -8,6 +8,7 @@
   Group,
   Loader,
   NumberFormatter,
+  NumberInput,
   Paper,
   Progress,
   ScrollArea,
@@ -68,7 +69,6 @@ import {
 import {
   cancelDeliveryOrderV1,
   closeDeliveryOrderV1,
-  confirmDeliveryOrderQuotation,
   markDeliveryOrderReadyForQuotation,
 } from '@shared/api/deliveryOrders';
 import { queryKeys } from '@shared/api/queryKeys';
@@ -658,7 +658,11 @@ function Gd1QuotationBiddingPanel({ requestCode }: { requestCode: string }) {
   const actionMutation = useMutation({
     mutationFn: ({ id, action }: { id: string; action: QuotationAction }) => updateQuotationAction(id, { action }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.quotations });
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.quotations }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.deliveryOrders }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.deliveryOrderLists }),
+      ]);
     },
   });
 
@@ -708,6 +712,7 @@ function Gd1QuotationBiddingPanel({ requestCode }: { requestCode: string }) {
               <Table.Th>{t('quotations.title')}</Table.Th>
               <Table.Th>{t('quotations.carrier')}</Table.Th>
               <Table.Th>{t('quotations.proposedPrice')}</Table.Th>
+              <Table.Th>Charge breakdown</Table.Th>
               <Table.Th>{t('quotations.status')}</Table.Th>
               <Table.Th>{t('quotations.sla')}</Table.Th>
               <Table.Th style={{ textAlign: 'right' }}>{t('quotations.actions')}</Table.Th>
@@ -731,8 +736,13 @@ function Gd1QuotationBiddingPanel({ requestCode }: { requestCode: string }) {
                       {quote.quoteNumber}
                     </Text>
                     <Text size="xs" c="dimmed">
-                      {quote.shippingMode}
+                      {quote.shippingMode} {quote.version ? `| v${quote.version}` : ''}
                     </Text>
+                    {quote.isFinal ? (
+                      <Badge size="xs" color="teal" variant="filled" mt={4}>
+                        Final
+                      </Badge>
+                    ) : null}
                   </Table.Td>
                   <Table.Td>{quote.carrierName || 'N/A'}</Table.Td>
                   <Table.Td>
@@ -743,6 +753,17 @@ function Gd1QuotationBiddingPanel({ requestCode }: { requestCode: string }) {
                     ) : (
                       <Text c="dimmed">-</Text>
                     )}
+                  </Table.Td>
+                  <Table.Td>
+                    <Stack gap={2}>
+                      <Text size="xs">
+                        Freight: {Number(quote.freightCost || 0).toLocaleString()} {quote.currency ?? ''}
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        Local: {Number(quote.localCharges || 0).toLocaleString()} | Customs:{' '}
+                        {Number(quote.customsFee || 0).toLocaleString()}
+                      </Text>
+                    </Stack>
                   </Table.Td>
                   <Table.Td>
                     <Badge
@@ -787,7 +808,7 @@ function Gd1QuotationBiddingPanel({ requestCode }: { requestCode: string }) {
                             onClick={() => actionMutation.mutate({ id: quote.id, action: 'CUSTOMER_APPROVED' })}
                             loading={actionMutation.isPending}
                           >
-                            {t('deliveryOrders.approveKbi')}
+                            Mark final
                           </Button>
                           <Button
                             size="compact-xs"
@@ -827,12 +848,14 @@ function Gd1QuotationBiddingPanel({ requestCode }: { requestCode: string }) {
               size="xs"
               required
             />
-            <TextInput
+            <NumberInput
               label={t('quotations.totalAmount')}
-              type="number"
               placeholder="0.00"
               value={amount}
-              onChange={(e) => setAmount(e.currentTarget.value)}
+              onChange={(value) => setAmount(String(value ?? ''))}
+              min={0}
+              thousandSeparator=","
+              decimalScale={2}
               size="xs"
               required
             />
@@ -857,28 +880,34 @@ function Gd1QuotationBiddingPanel({ requestCode }: { requestCode: string }) {
               clearable
               size="xs"
             />
-            <TextInput
+            <NumberInput
               label={t('quotations.oceanAirFreight')}
-              type="number"
               placeholder="Freight cost"
               value={freightCost}
-              onChange={(e) => setFreightCost(e.currentTarget.value)}
+              onChange={(value) => setFreightCost(String(value ?? ''))}
+              min={0}
+              thousandSeparator=","
+              decimalScale={2}
               size="xs"
             />
-            <TextInput
+            <NumberInput
               label={t('quotations.localCharges')}
-              type="number"
               placeholder="Local charges"
               value={localCharges}
-              onChange={(e) => setLocalCharges(e.currentTarget.value)}
+              onChange={(value) => setLocalCharges(String(value ?? ''))}
+              min={0}
+              thousandSeparator=","
+              decimalScale={2}
               size="xs"
             />
-            <TextInput
+            <NumberInput
               label={t('quotations.customsFee')}
-              type="number"
               placeholder="Customs clearance fee"
               value={customsFee}
-              onChange={(e) => setCustomsFee(e.currentTarget.value)}
+              onChange={(value) => setCustomsFee(String(value ?? ''))}
+              min={0}
+              thousandSeparator=","
+              decimalScale={2}
               size="xs"
             />
           </SimpleGrid>
@@ -984,9 +1013,8 @@ function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: DeliveryOrder; 
       ? Math.round((deliveryOrder.task_summary.completed_tasks / deliveryOrder.task_summary.total_tasks) * 100)
       : 0;
   const actionMutation = useMutation({
-    mutationFn: (action: 'cancel' | 'close' | 'confirm-quotation' | 'ready-for-quotation') => {
+    mutationFn: (action: 'cancel' | 'close' | 'ready-for-quotation') => {
       if (action === 'ready-for-quotation') return markDeliveryOrderReadyForQuotation(deliveryOrder.id);
-      if (action === 'confirm-quotation') return confirmDeliveryOrderQuotation(deliveryOrder.id);
       if (action === 'close') return closeDeliveryOrderV1(deliveryOrder.id);
       return cancelDeliveryOrderV1(deliveryOrder.id);
     },
@@ -1002,11 +1030,9 @@ function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: DeliveryOrder; 
   const primaryAction =
     deliveryOrder.order_info.status === 'DRAFT'
       ? { action: 'ready-for-quotation' as const, label: 'Ready for quotation' }
-      : deliveryOrder.order_info.status === 'READY_FOR_QUOTATION'
-        ? { action: 'confirm-quotation' as const, label: 'Confirm quotation' }
-        : deliveryOrder.order_info.status === 'ASSIGNED_TO_SHIPMENT'
-          ? { action: 'close' as const, label: 'Close DO' }
-          : null;
+      : deliveryOrder.order_info.status === 'ASSIGNED_TO_SHIPMENT'
+        ? { action: 'close' as const, label: 'Close DO' }
+        : null;
   const canCancel = ['DRAFT', 'READY_FOR_QUOTATION', 'QUOTATION_CONFIRMED'].includes(deliveryOrder.order_info.status);
 
   return (

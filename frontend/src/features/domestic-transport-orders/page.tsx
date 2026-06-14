@@ -207,6 +207,11 @@ export function DomesticTransportOrders() {
   });
   const availableShipments = availableShipmentsQuery.data?.data ?? [];
 
+  useEffect(() => {
+    if (availableShipmentsQuery.isLoading || selectedShipmentId) return;
+    setSelectedShipmentId(availableShipments[0]?.id ?? null);
+  }, [availableShipments, availableShipmentsQuery.isLoading, selectedShipmentId]);
+
   const truckVendorsQuery = useQuery({
     queryKey: queryKeys.suppliers({ page: 1, limit: 100, role: 'TRUCKING_VENDOR', is_active: true }),
     queryFn: () => fetchSuppliers({ page: 1, limit: 100, role: 'TRUCKING_VENDOR', is_active: true }),
@@ -348,7 +353,6 @@ export function DomesticTransportOrders() {
           <Select
             label="Create from shipment"
             searchable
-            clearable
             data={availableShipments.map((shipment) => ({
               label: `${shipment.shipment_no} - ${shipment.pol ?? '-'} to ${shipment.pod ?? '-'}`,
               value: shipment.id,
@@ -366,7 +370,7 @@ export function DomesticTransportOrders() {
           <Group align="flex-end">
             <Button
               leftSection={<IconTruck size={16} />}
-              disabled={!selectedShipmentId}
+              disabled={!selectedShipmentId || availableShipmentsQuery.isLoading}
               loading={createMutation.isPending}
               onClick={() => createMutation.mutate()}
             >

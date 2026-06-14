@@ -246,6 +246,14 @@ export async function confirmQuotationByKbi(id: string, payload: QuotationAction
   return unwrapV1Data(response);
 }
 
+export async function markQuotationFinal(id: string, payload: QuotationActionPayload = {}) {
+  const response = await apiClient.post<V1Response<QuotationV1>>(
+    `/v1/quotations/${id}/mark-final`,
+    payload,
+  );
+  return unwrapV1Data(response);
+}
+
 export async function rejectQuotation(id: string, payload: QuotationActionPayload = {}) {
   const response = await apiClient.post<V1Response<QuotationV1>>(`/v1/quotations/${id}/reject`, payload);
   return unwrapV1Data(response);

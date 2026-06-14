@@ -217,7 +217,7 @@ export function UpdateDeliveryOrderForm({ deliveryOrder }: { deliveryOrder: Deli
               <TextInput label={t('forms.warehouseDeadline')} type="date" {...form.getInputProps('warehouseDeadline')} />
               <Select label={t('forms.incoterms')} data={incotermOptions} searchable clearable {...form.getInputProps('incoterms')} />
               <TextInput label={t('forms.trackingNumber')} {...form.getInputProps('trackingNumber')} />
-              <NumberInput label={t('forms.importTaxRate')} min={0} decimalScale={2} {...form.getInputProps('importTaxRate')} />
+              <NumberInput label={t('forms.importTaxRate')} min={0} decimalScale={2} suffix="%" {...form.getInputProps('importTaxRate')} />
               <NumberInput label={t('forms.taxAmount')} min={0} thousandSeparator="," {...form.getInputProps('taxAmount')} />
               <Select label={t('forms.currency')} data={currencyOptions} searchable clearable {...form.getInputProps('currency')} />
             </SimpleGrid>
@@ -338,7 +338,7 @@ export function UpdateTaskProgressForm({
             ) : null}
 
             <SimpleGrid cols={{ base: 1, sm: 2 }}>
-              <NumberInput label={t('tasks.progress')} min={0} max={100} {...form.getInputProps('progress')} />
+              <NumberInput label={t('tasks.progress')} min={0} max={100} suffix="%" {...form.getInputProps('progress')} />
               <Select label={t('common.status')} data={statusOptions} {...form.getInputProps('status')} />
               <TextInput label={t('tasks.dueDate')} type="date" {...form.getInputProps('dueDate')} />
               <TextInput label={t('tasks.blockedReason')} {...form.getInputProps('blockedReason')} />

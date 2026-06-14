@@ -62,10 +62,10 @@ import {
 } from './purchaseOrders';
 import {
   cancelQuotation,
-  confirmQuotationByKbi,
   createDeliveryOrderQuotation,
   fetchQuotationV1,
   fetchQuotationsV1,
+  markQuotationFinal,
   receiveQuotation,
   rejectQuotation,
   requestQuotation,
@@ -712,8 +712,11 @@ function mapV1Quotation(quotation: QuotationV1, requestCode?: string): Quotation
   carrierName?: string;
   customsFee?: number;
   freightCost?: number;
+  isFinal?: boolean;
   isAllInclusive?: boolean;
   localCharges?: number;
+  quotationGroupId?: string;
+  version?: number;
 } {
   const chargeLines = quotation.charge_lines ?? [];
   const freightCost = sumChargeLines(chargeLines, ['OCEAN_FREIGHT', 'AIR_FREIGHT']);
@@ -734,6 +737,7 @@ function mapV1Quotation(quotation: QuotationV1, requestCode?: string): Quotation
     customsFee,
     freightCost,
     id: quotation.id,
+    isFinal: quotation.is_final,
     isAllInclusive: quotation.quotation_type === 'MIXED',
     localCharges,
     officialDueAt: quotation.valid_until ?? addDaysIso(3),
@@ -742,10 +746,12 @@ function mapV1Quotation(quotation: QuotationV1, requestCode?: string): Quotation
     preliminarySentAt: quotation.quoted_at,
     quoteAmount: Number.isFinite(quotationTotal) ? quotationTotal : chargeLineTotal,
     quoteNumber: quotation.version > 1 ? `${quotation.quotation_no} v${quotation.version}` : quotation.quotation_no,
+    quotationGroupId: quotation.quotation_group_id,
     requestCode: requestCode ?? quotation.ref_id,
     shippingMode: inferQuotationShippingMode(quotation),
     status: quotationStatusToUi(quotation.status),
     updatedAt: quotation.update_at,
+    version: quotation.version,
   };
 }
 
@@ -1489,7 +1495,7 @@ export async function updateQuotationAction(quotationId: string, payload: Update
     if (nextQuotation.status === 'DRAFT' || nextQuotation.status === 'REQUESTED') {
       nextQuotation = await receiveQuotation(quotationId);
     }
-    return mapV1Quotation(await confirmQuotationByKbi(nextQuotation.id));
+    return mapV1Quotation(await markQuotationFinal(nextQuotation.id));
   }
 
   if (payload.action === 'CUSTOMER_REJECTED') {

@@ -48,8 +48,9 @@ import {
   IconX,
 } from '@tabler/icons-react';
 import { useEffect, useMemo, useState, type DragEvent, type FormEvent, type ReactNode } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
+import { createDeliveryOrderFromLots, type DeliveryOrderV1 } from '@shared/api/deliveryOrders';
 import { fetchItems, type Item } from '@shared/api/items';
 import {
   confirmPurchaseOrder,
@@ -132,6 +133,7 @@ type PoLineDraft = {
   unit_price: number;
   tax_rate: number;
   discount_pct: number;
+  gross_weight_kg: number;
   expected_eta_line: string;
   notes: string;
 };
@@ -197,6 +199,7 @@ function newLineDraft(index: number): PoLineDraft {
     unit_price: 0,
     tax_rate: 0,
     discount_pct: 0,
+    gross_weight_kg: 0,
     expected_eta_line: '',
     notes: '',
   };
@@ -228,6 +231,7 @@ function createInitialPoDraft(order?: PurchaseOrderV1): PoFormDraft {
         unit_price: toNumber(line.unit_price),
         tax_rate: toNumber(line.tax_rate),
         discount_pct: toNumber(line.discount_pct),
+        gross_weight_kg: toNumber(line.gross_weight_kg),
         expected_eta_line: dateOnly(line.expected_eta_line),
         notes: line.notes ?? '',
       }))
@@ -261,6 +265,7 @@ function buildPoPayload(draft: PoFormDraft): CreatePurchaseOrderV1Payload {
         unit_price: Number(line.unit_price) || 0,
         tax_rate: Number(line.tax_rate) || 0,
         discount_pct: Number(line.discount_pct) || 0,
+        gross_weight_kg: Number(line.gross_weight_kg) || 0,
         expected_eta_line: nullIfEmpty(line.expected_eta_line),
         notes: nullIfEmpty(line.notes),
       })),
@@ -944,6 +949,8 @@ function PurchaseOrderForm({
             label="Exchange rate"
             min={0}
             value={draft.exchange_rate}
+            thousandSeparator=","
+            decimalScale={4}
             onChange={(value) => setDraft((current) => ({ ...current, exchange_rate: toNumber(value, 1) }))}
           />
           <TextInput
@@ -980,7 +987,7 @@ function PurchaseOrderForm({
           <>
             <Divider label="PO lines" labelPosition="left" />
             <ScrollArea type="always" offsetScrollbars scrollbarSize={8}>
-              <Table miw={1040} verticalSpacing="xs">
+              <Table miw={1440} verticalSpacing="xs">
                 <Table.Thead>
                   <Table.Tr>
                     <Table.Th style={{ width: 72 }}>Line</Table.Th>
@@ -989,6 +996,9 @@ function PurchaseOrderForm({
                     <Table.Th style={{ width: 130 }}>Qty</Table.Th>
                     <Table.Th style={{ width: 110 }}>Unit</Table.Th>
                     <Table.Th style={{ width: 135 }}>Unit price</Table.Th>
+                    <Table.Th style={{ width: 135 }}>Gross kg</Table.Th>
+                    <Table.Th style={{ width: 155 }}>Line ETA</Table.Th>
+                    <Table.Th style={{ width: 220 }}>Line note</Table.Th>
                     <Table.Th style={{ width: 44 }} />
                   </Table.Tr>
                 </Table.Thead>
@@ -1036,6 +1046,8 @@ function PurchaseOrderForm({
                           <NumberInput
                             min={0.0001}
                             value={line.qty_ordered}
+                            thousandSeparator=","
+                            decimalScale={4}
                             onChange={(value) => updateLine(line.clientId, { qty_ordered: toNumber(value, 1) })}
                           />
                         </Table.Td>
@@ -1049,7 +1061,32 @@ function PurchaseOrderForm({
                           <NumberInput
                             min={0}
                             value={line.unit_price}
+                            thousandSeparator=","
+                            decimalScale={2}
                             onChange={(value) => updateLine(line.clientId, { unit_price: toNumber(value) })}
+                          />
+                        </Table.Td>
+                        <Table.Td>
+                          <NumberInput
+                            min={0}
+                            value={line.gross_weight_kg}
+                            thousandSeparator=","
+                            decimalScale={3}
+                            onChange={(value) => updateLine(line.clientId, { gross_weight_kg: toNumber(value) })}
+                          />
+                        </Table.Td>
+                        <Table.Td>
+                          <TextInput
+                            type="date"
+                            value={line.expected_eta_line}
+                            onChange={(event) => updateLine(line.clientId, { expected_eta_line: event.currentTarget.value })}
+                          />
+                        </Table.Td>
+                        <Table.Td>
+                          <TextInput
+                            value={line.notes}
+                            placeholder="Packing, QC, or supplier note"
+                            onChange={(event) => updateLine(line.clientId, { notes: event.currentTarget.value })}
                           />
                         </Table.Td>
                         <Table.Td>
@@ -1087,7 +1124,10 @@ function PurchaseOrderForm({
 function LotPlanningBoard({ canManage, planning }: { canManage: boolean; planning: PurchaseOrderLotPlanning }) {
   const [lotDraft, setLotDraft] = useState<LotDraft | null>(null);
   const [splitDraft, setSplitDraft] = useState<SplitDraft | null>(null);
+  const [selectedLotIds, setSelectedLotIds] = useState<string[]>([]);
   const [boardError, setBoardError] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const purchaseOrderId = planning.purchase_order.id;
   const invalidatePo = usePoInvalidation(purchaseOrderId);
 
@@ -1099,6 +1139,16 @@ function LotPlanningBoard({ canManage, planning }: { canManage: boolean; plannin
       }),
     [planning.lots],
   );
+  const selectableLotIds = useMemo(
+    () =>
+      sortedLots
+        .filter((lot) => !lockedLotStatuses.has(lot.status) && (lot.items?.length ?? 0) > 0)
+        .map((lot) => lot.id),
+    [sortedLots],
+  );
+  useEffect(() => {
+    setSelectedLotIds((current) => current.filter((id) => selectableLotIds.includes(id)));
+  }, [selectableLotIds]);
 
   const createLotMutation = useMutation({
     mutationFn: (payload: CreateLotPayload) => createLot(purchaseOrderId, payload),
@@ -1165,6 +1215,24 @@ function LotPlanningBoard({ canManage, planning }: { canManage: boolean; plannin
       setSplitDraft(null);
       setBoardError(null);
       invalidatePo();
+    },
+    onError: (error) => setBoardError(getApiErrorMessage(error)),
+  });
+
+  const createDoMutation = useMutation({
+    mutationFn: () =>
+      createDeliveryOrderFromLots({
+        lot_ids: selectedLotIds,
+        notes: `Created from PO ${planning.purchase_order.po_no} LOT Planning`,
+      }),
+    onSuccess: (deliveryOrder: DeliveryOrderV1) => {
+      setBoardError(null);
+      setSelectedLotIds([]);
+      invalidatePo();
+      void queryClient.invalidateQueries({ queryKey: queryKeys.deliveryOrders });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.deliveryOrderLists });
+      const deliveryOrderNumber = deliveryOrder.delivery_order_no ?? deliveryOrder.do_no ?? deliveryOrder.id;
+      navigate(`/delivery-orders?do=${encodeURIComponent(deliveryOrderNumber)}`);
     },
     onError: (error) => setBoardError(getApiErrorMessage(error)),
   });
@@ -1261,6 +1329,18 @@ function LotPlanningBoard({ canManage, planning }: { canManage: boolean; plannin
     });
   };
 
+  const toggleLotSelection = (lot: PoLot, checked: boolean) => {
+    if (!selectableLotIds.includes(lot.id)) return;
+    setSelectedLotIds((current) => {
+      if (checked) return Array.from(new Set([...current, lot.id]));
+      return current.filter((id) => id !== lot.id);
+    });
+  };
+
+  const toggleAllSelectableLots = (checked: boolean) => {
+    setSelectedLotIds(checked ? selectableLotIds : []);
+  };
+
   const lotMutationError = createLotMutation.error ?? updateLotMutation.error;
 
   return (
@@ -1277,6 +1357,23 @@ function LotPlanningBoard({ canManage, planning }: { canManage: boolean; plannin
             </Text>
           </div>
           <Group gap="xs">
+            <Checkbox
+              label="Select all open LOTs"
+              checked={selectableLotIds.length > 0 && selectedLotIds.length === selectableLotIds.length}
+              indeterminate={selectedLotIds.length > 0 && selectedLotIds.length < selectableLotIds.length}
+              disabled={!canManage || selectableLotIds.length === 0 || createDoMutation.isPending}
+              onChange={(event) => toggleAllSelectableLots(event.currentTarget.checked)}
+            />
+            <Button
+              size="xs"
+              color="teal"
+              leftSection={<IconTruckDelivery size={14} />}
+              loading={createDoMutation.isPending}
+              disabled={!canManage || selectedLotIds.length === 0}
+              onClick={() => createDoMutation.mutate()}
+            >
+              Create Internal DO ({selectedLotIds.length})
+            </Button>
             <Button size="xs" leftSection={<IconPlus size={14} />} onClick={openCreateLot} disabled={!canManage}>
               Add LOT
             </Button>
@@ -1304,8 +1401,11 @@ function LotPlanningBoard({ canManage, planning }: { canManage: boolean; plannin
               onDelete={() => deleteLotMutation.mutate(lot.id)}
               onEdit={() => openEditLot(lot)}
               onSplitLine={(line) => openSplitLine(lot, line)}
+              onSelect={(checked) => toggleLotSelection(lot, checked)}
               canManage={canManage}
               hasMoveTargets={sortedLots.some((candidate) => candidate.id !== lot.id && !lockedLotStatuses.has(candidate.status))}
+              isSelected={selectedLotIds.includes(lot.id)}
+              isSelectable={selectableLotIds.includes(lot.id)}
             />
           ))}
           {sortedLots.length === 0 ? (
@@ -1362,20 +1462,26 @@ function LotPlanningBoard({ canManage, planning }: { canManage: boolean; plannin
 function LotCard({
   canManage,
   hasMoveTargets,
+  isSelectable,
+  isSelected,
   lot,
   onDelete,
   onDrop,
   onDropLine,
   onEdit,
+  onSelect,
   onSplitLine,
 }: {
   canManage: boolean;
   hasMoveTargets: boolean;
+  isSelectable: boolean;
+  isSelected: boolean;
   lot: PoLot;
   onDelete: () => void;
   onDrop: (event: DragEvent<HTMLDivElement>) => void;
   onDropLine: (event: DragEvent<HTMLDivElement>, line: PoLotLine) => void;
   onEdit: () => void;
+  onSelect: (checked: boolean) => void;
   onSplitLine: (line: PoLotLine) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -1403,6 +1509,13 @@ function LotCard({
       <Stack gap={0}>
         <div className="lot-list-header">
           <Group gap="sm" wrap="nowrap" className="lot-list-title">
+            <Checkbox
+              aria-label={`Select ${lot.lot_no} for Internal DO`}
+              checked={isSelected}
+              disabled={!canManage || !isSelectable}
+              onChange={(event) => onSelect(event.currentTarget.checked)}
+              onClick={(event) => event.stopPropagation()}
+            />
             <IconGripVertical size={16} color="var(--mantine-color-gray-5)" />
             <div className="lot-list-title-text">
               <Group gap="xs" wrap="nowrap">
@@ -1678,6 +1791,8 @@ function SupplierConfirmationModal({
                         min={0}
                         max={toNumber(line.qty_ordered)}
                         value={lineDraft?.confirmed_qty ?? 0}
+                        thousandSeparator=","
+                        decimalScale={4}
                         onChange={(value) =>
                           setLineDrafts((current) => ({
                             ...current,
@@ -1805,6 +1920,7 @@ function LotModal({
               label="Sort order"
               min={1}
               value={localDraft.sort_order}
+              thousandSeparator=","
               onChange={(value) => setLocalDraft({ ...localDraft, sort_order: toNumber(value, 1) })}
             />
           </SimpleGrid>
@@ -1911,6 +2027,8 @@ function SplitLotModal({
               min={0}
               max={Math.max(availableQty - 0.0001, 0)}
               value={localDraft.split_qty}
+              thousandSeparator=","
+              decimalScale={4}
               onChange={(value) => setLocalDraft({ ...localDraft, split_qty: toNumber(value) })}
               required
             />
