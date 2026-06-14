@@ -23,7 +23,7 @@ import {
   Title,
   Tooltip,
 } from '@mantine/core';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   IconAlertTriangle,
   IconArrowBackUp,
@@ -328,6 +328,7 @@ export function PurchaseOrders() {
   const purchaseOrdersQuery = useQuery({
     queryKey: queryKeys.purchaseOrdersList(listParams),
     queryFn: () => fetchPurchaseOrders(listParams),
+    placeholderData: keepPreviousData,
   });
 
   const purchaseOrders = purchaseOrdersQuery.data?.data ?? [];

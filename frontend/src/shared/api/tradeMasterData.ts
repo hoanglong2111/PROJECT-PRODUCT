@@ -182,29 +182,136 @@ function unwrapData<T>(response: { data: { data: T } }) {
   return response.data.data;
 }
 
+function normalizePaginatedResponse<T>(
+  response: PaginatedResponse<T>,
+  mapper: (record: T) => T,
+): PaginatedResponse<T> {
+  return {
+    ...response,
+    data: response.data.map(mapper),
+  };
+}
+
+function normalizeCurrency(currency: Currency): Currency {
+  return {
+    ...currency,
+    decimal_places:
+      currency.decimal_places ?? (currency.currency_code === 'VND' ? 0 : 2),
+    is_active: currency.is_active !== false,
+  };
+}
+
+function normalizeTransportMode(mode: TransportMode): TransportMode {
+  const modeType = mode.mode_type ?? inferTransportModeType(mode.mode_code);
+
+  return {
+    ...mode,
+    mode_type: modeType,
+    description: mode.description ?? null,
+    is_international: mode.is_international ?? modeType !== 'ROAD',
+    is_active: mode.is_active !== false,
+  };
+}
+
+function normalizeSupplier(supplier: Supplier): Supplier {
+  const legacySupplier = supplier as Supplier & {
+    email?: string | null;
+    phone?: string | null;
+    supplier_type?: string | null;
+    transport_mode_ids?: string[];
+    default_transport_mode_id?: string | null;
+  };
+  const transportModes = supplier.supplier_transport_modes ?? legacySupplier.transport_mode_ids?.map((transportModeId) => ({
+    id: `${supplier.id}_${transportModeId}`,
+    supplier_id: supplier.id,
+    transport_mode_id: transportModeId,
+    is_default: transportModeId === legacySupplier.default_transport_mode_id,
+    transport_mode: null,
+  })) ?? [];
+
+  return {
+    ...supplier,
+    supplier_roles: normalizeSupplierRoles(supplier.supplier_roles, legacySupplier.supplier_type),
+    country: supplier.country ?? null,
+    address: supplier.address ?? null,
+    contact_name: supplier.contact_name ?? null,
+    contact_email: supplier.contact_email ?? legacySupplier.email ?? null,
+    contact_phone: supplier.contact_phone ?? legacySupplier.phone ?? null,
+    payment_term: supplier.payment_term ?? null,
+    default_currency_code: supplier.default_currency_code ?? supplier.default_currency?.currency_code ?? null,
+    default_incoterm_code: supplier.default_incoterm_code ?? supplier.default_incoterm?.incoterm_code ?? null,
+    default_currency_id: supplier.default_currency_id ?? supplier.default_currency?.id ?? null,
+    default_incoterm_id: supplier.default_incoterm_id ?? supplier.default_incoterm?.id ?? null,
+    default_currency: supplier.default_currency ? normalizeCurrency(supplier.default_currency) : null,
+    default_incoterm: supplier.default_incoterm ?? null,
+    supplier_transport_modes: transportModes.map((mode) => ({
+      ...mode,
+      is_default: mode.is_default === true,
+      transport_mode: mode.transport_mode ? normalizeTransportMode(mode.transport_mode) : null,
+    })),
+    lead_time_days: supplier.lead_time_days ?? null,
+    is_active: supplier.is_active !== false,
+  };
+}
+
+function normalizeSupplierRoles(roles: string[] | undefined, supplierType: string | null | undefined) {
+  const legacyRole = mapLegacySupplierRole(supplierType);
+  return Array.from(
+    new Set([...(roles ?? []), legacyRole].filter(Boolean).map((role) => String(role).toUpperCase())),
+  );
+}
+
+function mapLegacySupplierRole(role: string | null | undefined) {
+  const normalized = String(role ?? '').toUpperCase();
+
+  if (normalized === 'MANUFACTURER') {
+    return 'SUPPLIER';
+  }
+
+  if (normalized === 'TRUCKING') {
+    return 'TRUCKING_VENDOR';
+  }
+
+  return normalized || null;
+}
+
+function inferTransportModeType(modeCode: string) {
+  const normalized = String(modeCode ?? '').toUpperCase();
+
+  if (normalized.includes('AIR')) {
+    return 'AIR';
+  }
+
+  if (normalized.includes('TRUCK') || normalized.includes('ROAD')) {
+    return 'ROAD';
+  }
+
+  return 'SEA';
+}
+
 export async function fetchCurrencies(params: ListParams = {}) {
   const response = await apiClient.get<PaginatedResponse<Currency>>('/currencies', { params });
-  return response.data;
+  return normalizePaginatedResponse(response.data, normalizeCurrency);
 }
 
 export async function fetchCurrency(id: string) {
   const response = await apiClient.get<{ data: Currency }>(`/currencies/${id}`);
-  return unwrapData(response);
+  return normalizeCurrency(unwrapData(response));
 }
 
 export async function createCurrency(payload: Required<Pick<CurrencyPayload, 'currency_code' | 'currency_name'>> & CurrencyPayload) {
   const response = await apiClient.post<ApiMessageResponse<Currency>>('/currencies', payload);
-  return unwrapData(response);
+  return normalizeCurrency(unwrapData(response));
 }
 
 export async function updateCurrency(id: string, payload: CurrencyPayload) {
   const response = await apiClient.patch<ApiMessageResponse<Currency>>(`/currencies/${id}`, payload);
-  return unwrapData(response);
+  return normalizeCurrency(unwrapData(response));
 }
 
 export async function deleteCurrency(id: string) {
   const response = await apiClient.delete<ApiMessageResponse<Currency>>(`/currencies/${id}`);
-  return unwrapData(response);
+  return normalizeCurrency(unwrapData(response));
 }
 
 export async function fetchIncoterms(params: ListParams = {}) {
@@ -234,54 +341,54 @@ export async function deleteIncoterm(id: string) {
 
 export async function fetchTransportModes(params: TransportModeListParams = {}) {
   const response = await apiClient.get<PaginatedResponse<TransportMode>>('/transport-modes', { params });
-  return response.data;
+  return normalizePaginatedResponse(response.data, normalizeTransportMode);
 }
 
 export async function fetchTransportMode(id: string) {
   const response = await apiClient.get<{ data: TransportMode }>(`/transport-modes/${id}`);
-  return unwrapData(response);
+  return normalizeTransportMode(unwrapData(response));
 }
 
 export async function createTransportMode(
   payload: Required<Pick<TransportModePayload, 'mode_code' | 'mode_name' | 'mode_type'>> & TransportModePayload,
 ) {
   const response = await apiClient.post<ApiMessageResponse<TransportMode>>('/transport-modes', payload);
-  return unwrapData(response);
+  return normalizeTransportMode(unwrapData(response));
 }
 
 export async function updateTransportMode(id: string, payload: TransportModePayload) {
   const response = await apiClient.patch<ApiMessageResponse<TransportMode>>(`/transport-modes/${id}`, payload);
-  return unwrapData(response);
+  return normalizeTransportMode(unwrapData(response));
 }
 
 export async function deleteTransportMode(id: string) {
   const response = await apiClient.delete<ApiMessageResponse<TransportMode>>(`/transport-modes/${id}`);
-  return unwrapData(response);
+  return normalizeTransportMode(unwrapData(response));
 }
 
 export async function fetchSuppliers(params: SupplierListParams = {}) {
   const response = await apiClient.get<PaginatedResponse<Supplier>>('/suppliers', { params });
-  return response.data;
+  return normalizePaginatedResponse(response.data, normalizeSupplier);
 }
 
 export async function fetchSupplier(id: string) {
   const response = await apiClient.get<{ data: Supplier }>(`/suppliers/${id}`);
-  return unwrapData(response);
+  return normalizeSupplier(unwrapData(response));
 }
 
 export async function createSupplier(payload: Required<Pick<SupplierPayload, 'supplier_code' | 'supplier_name'>> & SupplierPayload) {
   const response = await apiClient.post<ApiMessageResponse<Supplier>>('/suppliers', payload);
-  return unwrapData(response);
+  return normalizeSupplier(unwrapData(response));
 }
 
 export async function updateSupplier(id: string, payload: SupplierPayload) {
   const response = await apiClient.patch<ApiMessageResponse<Supplier>>(`/suppliers/${id}`, payload);
-  return unwrapData(response);
+  return normalizeSupplier(unwrapData(response));
 }
 
 export async function deleteSupplier(id: string) {
   const response = await apiClient.delete<ApiMessageResponse<Supplier>>(`/suppliers/${id}`);
-  return unwrapData(response);
+  return normalizeSupplier(unwrapData(response));
 }
 
 export async function fetchMasterDataOptions(params: MasterDataOptionsParams = {}) {

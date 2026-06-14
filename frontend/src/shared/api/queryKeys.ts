@@ -7,6 +7,11 @@ export const queryKeys = {
   deliveryOrderLots: (id: string) => ['delivery-orders', id, 'lots'] as const,
   deliveryOrders: ['delivery-orders'] as const,
   deliveryOrdersList: (params: Record<string, unknown>) => ['delivery-orders', 'list', params] as const,
+  domesticTransportOrderDetail: (id: string) => ['domestic-transport-orders', 'detail', id] as const,
+  domesticTransportOrderLists: ['domestic-transport-orders', 'list'] as const,
+  domesticTransportOrders: ['domestic-transport-orders'] as const,
+  domesticTransportOrdersList: (params: Record<string, unknown>) =>
+    ['domestic-transport-orders', 'list', params] as const,
   globalPoStageTasks: ['global-po-stage-tasks'] as const,
   globalSearch: ['global-search'] as const,
   globalSearchResults: (query: string) => ['global-search', query] as const,

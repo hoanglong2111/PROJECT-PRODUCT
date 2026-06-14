@@ -1,14 +1,15 @@
 import { Button, Tooltip } from '@mantine/core';
-import { IconAnchor, IconChecklist, IconShoppingCart, IconTruckDelivery } from '@tabler/icons-react';
+import { IconAnchor, IconChecklist, IconShoppingCart, IconTruck, IconTruckDelivery } from '@tabler/icons-react';
 import { Link } from 'react-router-dom';
 
 import { useI18n } from '@shared/i18n';
 
-type EntityType = 'po' | 'do' | 'task' | 'shp';
+type EntityType = 'po' | 'do' | 'dto' | 'task' | 'shp';
 
 const ROUTE: Record<EntityType, string> = {
   po: '/purchase-orders',
   do: '/delivery-orders',
+  dto: '/domestic-transport-orders',
   task: '/tasks',
   shp: '/shipments',
 };
@@ -16,6 +17,7 @@ const ROUTE: Record<EntityType, string> = {
 const ICON = {
   po: IconShoppingCart,
   do: IconTruckDelivery,
+  dto: IconTruck,
   task: IconChecklist,
   shp: IconAnchor,
 };
@@ -35,6 +37,7 @@ export function EntityLink({
   const Icon = ICON[type];
   const label: Record<EntityType, string> = {
     do: t('entityLink.openDo'),
+    dto: 'Open DTO',
     po: t('entityLink.openPo'),
     shp: t('entityLink.openShipment'),
     task: t('entityLink.openTask'),

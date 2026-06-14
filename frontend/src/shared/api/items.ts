@@ -146,6 +146,41 @@ export type CreateItemTaxProfilePayload = {
 
 export type UpdateItemTaxProfilePayload = Partial<CreateItemTaxProfilePayload>;
 
+function normalizePaginatedResponse<T>(
+  response: PaginatedResponse<T>,
+  mapper: (record: T) => T,
+): PaginatedResponse<T> {
+  return {
+    ...response,
+    data: response.data.map(mapper),
+  };
+}
+
+function normalizeItem(item: Item): Item {
+  return {
+    ...item,
+    item_description: item.item_description ?? null,
+    is_new: item.is_new ?? true,
+    lead_time_days: item.lead_time_days ?? null,
+    moq: item.moq ?? null,
+    is_active: item.is_active !== false,
+    customs_profiles: item.customs_profiles?.map(normalizeItemTaxProfile) ?? [],
+  };
+}
+
+function normalizeItemTaxProfile(profile: ItemTaxProfile): ItemTaxProfile {
+  const legacyProfile = profile as ItemTaxProfile & {
+    preferential_tax_rate?: ApiDecimal | null;
+  };
+
+  return {
+    ...profile,
+    preferential_import_duty_rate:
+      profile.preferential_import_duty_rate ?? legacyProfile.preferential_tax_rate ?? null,
+    is_default: profile.is_default ?? false,
+  };
+}
+
 export async function fetchItemGroups(params: ListParams = {}) {
   const response = await apiClient.get<PaginatedResponse<ItemGroup>>('/item-groups', { params });
   return response.data;
@@ -160,7 +195,7 @@ export async function fetchItemsByGroup(id: string, params: ListParams = {}) {
   const response = await apiClient.get<PaginatedResponse<Item>>(`/item-groups/${id}/items`, {
     params,
   });
-  return response.data;
+  return normalizePaginatedResponse(response.data, normalizeItem);
 }
 
 export async function createItemGroup(payload: CreateItemGroupPayload) {
@@ -180,22 +215,22 @@ export async function deleteItemGroup(id: string) {
 
 export async function fetchItems(params: ListItemsParams = {}) {
   const response = await apiClient.get<PaginatedResponse<Item>>('/items', { params });
-  return response.data;
+  return normalizePaginatedResponse(response.data, normalizeItem);
 }
 
 export async function fetchItem(id: string) {
   const response = await apiClient.get<{ data: Item }>(`/items/${id}`);
-  return response.data.data;
+  return normalizeItem(response.data.data);
 }
 
 export async function createItem(payload: CreateItemPayload) {
   const response = await apiClient.post<ApiMessageResponse<Item>>('/items', payload);
-  return response.data.data;
+  return normalizeItem(response.data.data);
 }
 
 export async function updateItem(id: string, payload: UpdateItemPayload) {
   const response = await apiClient.put<ApiMessageResponse<Item>>(`/items/${id}`, payload);
-  return response.data.data;
+  return normalizeItem(response.data.data);
 }
 
 export async function deleteItem(id: string) {
@@ -205,7 +240,7 @@ export async function deleteItem(id: string) {
 
 export async function fetchItemTaxProfiles(itemId: string) {
   const response = await apiClient.get<ItemTaxProfilesResponse>(`/items/${itemId}/tax-profile`);
-  return response.data.data;
+  return response.data.data.map(normalizeItemTaxProfile);
 }
 
 export async function createItemTaxProfile(itemId: string, payload: CreateItemTaxProfilePayload) {
@@ -213,7 +248,7 @@ export async function createItemTaxProfile(itemId: string, payload: CreateItemTa
     `/items/${itemId}/tax-profile`,
     payload,
   );
-  return response.data.data;
+  return normalizeItemTaxProfile(response.data.data);
 }
 
 export async function updateItemTaxProfile(id: string, payload: UpdateItemTaxProfilePayload) {
@@ -221,12 +256,12 @@ export async function updateItemTaxProfile(id: string, payload: UpdateItemTaxPro
     `/item-tax-profiles/${id}`,
     payload,
   );
-  return response.data.data;
+  return normalizeItemTaxProfile(response.data.data);
 }
 
 export async function deleteItemTaxProfile(id: string) {
   const response = await apiClient.delete<ApiMessageResponse<ItemTaxProfile>>(
     `/item-tax-profiles/${id}`,
   );
-  return response.data.data;
+  return normalizeItemTaxProfile(response.data.data);
 }

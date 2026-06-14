@@ -995,6 +995,7 @@ export const en = {
   'shell.account': 'Account',
   'shell.dashboard': 'Dashboard',
   'shell.deliveryOrders': 'Delivery Orders',
+  'shell.domesticTransportOrders': 'Domestic Transport',
   'shell.efms': 'eFMS',
   'shell.exchangeRates': 'Exchange Rates',
   'shell.logout': 'Log out',
@@ -1055,6 +1056,7 @@ export const en = {
 export type MessageKey = keyof typeof en;
 
 export const vi: Record<MessageKey, string> = {
+  'shell.domesticTransportOrders': 'Van tai noi dia',
   'auth.checkingDescription': 'KBFE đang xác thực tài khoản và quyền truy cập module.',
   'auth.checkingTitle': 'Đang kiểm tra phiên đăng nhập',
 

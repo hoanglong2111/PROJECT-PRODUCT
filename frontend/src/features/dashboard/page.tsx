@@ -74,7 +74,7 @@ export function Dashboard() {
             <span className="dashboard-header-icon">
               <IconPackageExport size={20} />
             </span>
-            <Title order={1}>Tháp điều phối logistics Dashboard</Title>
+            <Title order={1}>Dashboard</Title>
           </Group>
           <Text c="dimmed" maw={920}>
             Theo dõi Yêu cầu mua hàng, Lô hàng, chứng từ logistics, dòng Công việc và rủi ro trễ nhập kho.

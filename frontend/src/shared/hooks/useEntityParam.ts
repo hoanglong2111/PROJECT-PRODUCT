@@ -1,6 +1,6 @@
 import { useSearchParams } from 'react-router-dom';
 
-export type EntityParamKey = 'pr' | 'po' | 'do' | 'task' | 'shp';
+export type EntityParamKey = 'pr' | 'po' | 'do' | 'task' | 'shp' | 'dto';
 
 type EntityParamOptions = {
   clear?: EntityParamKey[];

@@ -24,6 +24,7 @@ import {
   IconSettings,
   IconShip,
   IconShoppingCart,
+  IconTruck,
   IconTruckDelivery,
   IconUserCircle,
 } from '@tabler/icons-react';
@@ -43,6 +44,7 @@ const navigation: Array<{
   labelKey:
     | 'shell.dashboard'
     | 'shell.deliveryOrders'
+    | 'shell.domesticTransportOrders'
     | 'shell.purchaseOrders'
     | 'shell.shipments'
     | 'shell.masterData'
@@ -67,6 +69,12 @@ const navigation: Array<{
     labelKey: 'shell.shipments',
     path: '/shipments',
     icon: IconShip,
+    roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'FINANCE_OFFICER', 'WAREHOUSE_STAFF'],
+  },
+  {
+    labelKey: 'shell.domesticTransportOrders',
+    path: '/domestic-transport-orders',
+    icon: IconTruck,
     roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'FINANCE_OFFICER', 'WAREHOUSE_STAFF'],
   },
   {
@@ -148,6 +156,7 @@ export function AppShellLayout() {
                     queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats }),
                     queryClient.invalidateQueries({ queryKey: queryKeys.purchaseOrders }),
                     queryClient.invalidateQueries({ queryKey: queryKeys.deliveryOrders }),
+                    queryClient.invalidateQueries({ queryKey: queryKeys.domesticTransportOrders }),
                     queryClient.invalidateQueries({ queryKey: queryKeys.shipments }),
                     queryClient.invalidateQueries({ queryKey: queryKeys.masterData }),
                     queryClient.invalidateQueries({ queryKey: queryKeys.tasks }),

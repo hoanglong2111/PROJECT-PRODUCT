@@ -77,6 +77,20 @@ describe('queryKeys', () => {
     expect(queryKeys.deliveryOrderLines('do-1')).toEqual(['delivery-orders', 'do-1', 'lines']);
   });
 
+  it('builds domestic transport order V1 keys with query params and identifiers', () => {
+    expect(queryKeys.domesticTransportOrders).toEqual(['domestic-transport-orders']);
+    expect(queryKeys.domesticTransportOrdersList({ status: 'QUOTE_CONFIRMED' })).toEqual([
+      'domestic-transport-orders',
+      'list',
+      { status: 'QUOTE_CONFIRMED' },
+    ]);
+    expect(queryKeys.domesticTransportOrderDetail('dto-1')).toEqual([
+      'domestic-transport-orders',
+      'detail',
+      'dto-1',
+    ]);
+  });
+
   it('builds quotation V1 keys with query params and identifiers', () => {
     expect(queryKeys.quotationsList({ ref_type: 'DELIVERY_ORDER', ref_id: 'do-1' })).toEqual([
       'quotations',
