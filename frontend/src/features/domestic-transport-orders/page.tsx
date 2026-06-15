@@ -411,7 +411,11 @@ export function DomesticTransportOrders() {
                       <Text size="xs" c="dimmed">{order.vehicle_plate ?? order.vehicle_type ?? '-'}</Text>
                     </Table.Td>
                     <Table.Td>
-                      <Text size="sm">{order.shipment?.shipment_no ?? order.shipment_id}</Text>
+                      <Text size="sm">
+                        {order.shipments && order.shipments.length > 1
+                          ? `${order.shipments.length} shipments`
+                          : order.shipment?.shipment_no ?? order.shipments?.[0]?.shipment_no ?? order.shipment_id}
+                      </Text>
                       <Text size="xs" c="dimmed">{formatContainers(order.shipment?.container_no)}</Text>
                     </Table.Td>
                     <Table.Td>{order.truck_vendor?.supplier_name ?? order.truck_vendor_id ?? '-'}</Table.Td>
@@ -542,7 +546,18 @@ function DomesticTransportOrderDetail({
           </Group>
 
           <SimpleGrid cols={{ base: 1, md: 3 }} spacing="sm">
-            <Info label="Shipment" value={order.shipment?.shipment_no ?? order.shipment_id} />
+            {order.shipments && order.shipments.length > 1 ? (
+              <Paper withBorder p="sm">
+                <Text className="metric-label" size="xs" fw={700} tt="uppercase">Shipments</Text>
+                <Group gap="xs" mt={4} wrap="wrap">
+                  {order.shipments.map((s) => (
+                    <EntityLink key={s.id} compact id={s.shipment_no ?? s.id} type="shp" />
+                  ))}
+                </Group>
+              </Paper>
+            ) : (
+              <Info label="Shipment" value={order.shipment?.shipment_no ?? order.shipments?.[0]?.shipment_no ?? order.shipment_id} />
+            )}
             <Info label="Truck vendor" value={order.truck_vendor?.supplier_name ?? order.truck_vendor_id ?? '-'} />
             <Info label="Carrier DO" value={order.carrier_delivery_order?.carrier_do_no ?? order.carrier_delivery_order_id ?? '-'} />
             <Info label="Total qty" value={formatNumber(order.total_qty)} />

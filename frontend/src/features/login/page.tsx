@@ -42,7 +42,7 @@ export function Login() {
       <Paper className="login-card" p="xl" w="100%" maw={440}>
         <Stack>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-            <img src="/brand/kbi-logo.png" alt="KBI" style={{ height: '3.5rem', width: 'auto', objectFit: 'contain', marginBottom: '0.5rem' }} />
+            <img src="/brand/fds_logo.png" alt="FDS" style={{ height: '3.5rem', width: 'auto', objectFit: 'contain', marginBottom: '0.5rem' }} />
             <Title order={2} ta="center" style={{ width: '100%' }}>{t('login.title')}</Title>
             <Text c="dimmed" size="sm" ta="center">
               {t('login.description')}

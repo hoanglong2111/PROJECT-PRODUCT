@@ -133,11 +133,11 @@ export function AppShellLayout() {
             <Burger opened={desktopOpened} onClick={desktopHandlers.toggle} visibleFrom="sm" size="sm" />
             <UnstyledButton component={Link} to="/" className="brand-mark">
               <span className="brand-logo-frame">
-                <img src="/brand/kbi-logo.png" alt="KBI" className="brand-logo" />
+                <img src="/brand/fds_logo.png" alt="FDS" className="brand-logo" />
               </span>
               <span>
                 <Text size="sm" fw={700} className="brand-title">
-                  KBI
+                  FDS
                 </Text>
               </span>
             </UnstyledButton>

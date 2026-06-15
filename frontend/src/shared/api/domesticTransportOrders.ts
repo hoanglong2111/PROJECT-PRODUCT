@@ -85,6 +85,7 @@ export type DomesticTransportOrderV1 = {
   delete_at?: string | null;
   is_delete?: boolean;
   shipment?: ShipmentV1 | null;
+  shipments?: ShipmentV1[];
   carrier_delivery_order?: CarrierDeliveryOrderV1 | null;
   truck_vendor?: Supplier | null;
   lines?: DomesticTransportOrderLineV1[];
@@ -216,6 +217,32 @@ export async function runDomesticTransportOrderAction(
 ) {
   const response = await apiClient.post<V1Response<DomesticTransportOrderV1>>(
     `/v1/domestic-transport-orders/${id}/${action}`,
+  );
+  return unwrapV1Data(response);
+}
+
+export async function fetchShipmentDomesticTransportOrders(
+  shipmentId: string,
+  params: ListDomesticTransportOrdersParams = {},
+) {
+  const response = await apiClient.get<V1Response<DomesticTransportOrderV1[], DomesticTransportOrderListMeta>>(
+    `/v1/shipments/${shipmentId}/domestic-transport-orders`,
+    { params },
+  );
+  return unwrapV1List(response);
+}
+
+export async function linkDtoToShipment(shipmentId: string, dtoId: string) {
+  const response = await apiClient.post<V1Response<DomesticTransportOrderV1>>(
+    `/v1/shipments/${shipmentId}/domestic-transport-orders/link`,
+    { dto_id: dtoId },
+  );
+  return unwrapV1Data(response);
+}
+
+export async function unlinkDtoFromShipment(shipmentId: string, dtoId: string) {
+  const response = await apiClient.delete<V1Response<DomesticTransportOrderV1>>(
+    `/v1/shipments/${shipmentId}/domestic-transport-orders/${dtoId}/unlink`,
   );
   return unwrapV1Data(response);
 }

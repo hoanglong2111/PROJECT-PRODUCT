@@ -24,6 +24,7 @@ import {
   IconAnchor,
   IconCalendar,
   IconCheck,
+  IconChecklist,
   IconClock,
   IconExternalLink,
   IconFileCheck,
@@ -33,14 +34,13 @@ import {
   IconSettings,
   IconShield,
   IconTrash,
+  IconTruck,
   IconX,
-  IconChecklist,
 } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import { EntityLink } from '@shared/components/EntityLink';
 import { FilterToolbar } from '@shared/components/FilterToolbar';
-import { FlowTagBadge } from '@shared/components/FlowTagBadge';
 import { ListPagination, useListPagination } from '@shared/components/ListPagination';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
 import { StatusBadge } from '@shared/components/StatusBadge';
@@ -63,6 +63,13 @@ import {
   type ShipmentMilestoneCodeV1,
   type ShipmentModeV1,
 } from '@shared/api/shipments';
+import {
+  fetchDomesticTransportOrders,
+  fetchShipmentDomesticTransportOrders,
+  linkDtoToShipment,
+  unlinkDtoFromShipment,
+  type DomesticTransportOrderV1,
+} from '@shared/api/domesticTransportOrders';
 import {
   cancelCustomsDeclaration,
   clearCustomsDeclaration,
@@ -277,8 +284,8 @@ export function Shipments() {
     selectedShpId === null
       ? null
       : filteredShipments.find((s) => s.id === selectedShpId) ??
-        shipments.find((s) => s.id === selectedShpId) ??
-        null;
+      shipments.find((s) => s.id === selectedShpId) ??
+      null;
 
   const createMutation = useMutation({
     mutationFn: createShipment,
@@ -547,8 +554,8 @@ export function Shipments() {
                 onChange={(e) => setNewOriginPort(e.currentTarget.value)}
               />
               <TextInput
-                label="POD"
-                placeholder="Cat Lai"
+                label={t('shipments.port')}
+                placeholder="Cát Lái, Tân Sơn Nhất..."
                 value={newDestPort}
                 onChange={(e) => setNewDestPort(e.currentTarget.value)}
               />
@@ -610,12 +617,16 @@ export function Shipments() {
               <Tabs.Tab value="tasks" leftSection={<IconChecklist size={14} />}>
                 {t('shipments.tasks')}
               </Tabs.Tab>
+              <Tabs.Tab value="dtos" leftSection={<IconTruck size={14} />}>
+                DTOs
+              </Tabs.Tab>
             </Tabs.List>
 
             <Tabs.Panel value="overview" pt="md">
               <SimpleGrid cols={{ base: 1, sm: 4 }}>
                 <Info label={t('shipments.carrier')} value={selectedShipment.carrier_name} />
                 <Info label={t('shipments.vessel')} value={selectedShipment.vessel_voyage} />
+                <Info label={t('shipments.port')} value={selectedShipment.dest_port} />
                 <Info label="POL" value={selectedShipment.origin_port} />
                 <Info label="POD" value={selectedShipment.dest_port} />
                 <Info label={t('shipments.etd')} value={selectedShipment.etd} />
@@ -666,6 +677,10 @@ export function Shipments() {
             <Tabs.Panel value="tasks" pt="md">
               <ShipmentTasksPanel tasks={selectedShipment.po_tasks} />
             </Tabs.Panel>
+
+            <Tabs.Panel value="dtos" pt="md">
+              <ShipmentDtosPanel shipment={selectedShipment} />
+            </Tabs.Panel>
           </Tabs>
         </Stack>
       ) : null}
@@ -704,8 +719,9 @@ export function Shipments() {
                     <Table.Tr>
                       <Table.Th>{t('shipments.shipmentNumber')}</Table.Th>
                       <Table.Th>{t('shipments.linkedDo')}</Table.Th>
-                      <Table.Th>{t('common.carrier')}</Table.Th>
+                      <Table.Th>{t('shipments.carrier')}</Table.Th>
                       <Table.Th>{t('shipments.vessel')}</Table.Th>
+                      <Table.Th>{t('shipments.port')}</Table.Th>
                       <Table.Th>{t('common.route')}</Table.Th>
                       <Table.Th>{t('shipments.etd')}</Table.Th>
                       <Table.Th>{t('shipments.eta')}</Table.Th>
@@ -726,7 +742,6 @@ export function Shipments() {
                       >
                         <Table.Td>
                           <Text fw={700}>{shp.shipment_number}</Text>
-                          <FlowTagBadge tags={[]} />
                         </Table.Td>
                         <Table.Td>
                           <Group gap="xs">
@@ -736,6 +751,9 @@ export function Shipments() {
                         </Table.Td>
                         <Table.Td>{shp.carrier_name}</Table.Td>
                         <Table.Td>{shp.vessel_voyage}</Table.Td>
+                        <Table.Td>
+                          <Text size="sm" fw={600}>{shp.dest_port || '-'}</Text>
+                        </Table.Td>
                         <Table.Td>
                           <Text size="sm" fw={600}>{shp.origin_port}</Text>
                           <Text size="xs" c="dimmed">{shp.dest_port}</Text>
@@ -930,7 +948,7 @@ function ShipmentMilestonesPanel({
                         label="Note"
                         value={milestoneNote}
                         onChange={(e) => setMilestoneNote(e.currentTarget.value)}
-size="xs"
+                        size="xs"
                       />
                       <Group justify="flex-end" gap="xs">
                         <Button size="xs" variant="subtle" onClick={() => setEditingMilestoneId(null)}>
@@ -1893,5 +1911,135 @@ function ShipmentTasksPanel({ tasks }: { tasks: ShipmentPoTask[] }) {
         </Stack>
       </Stack>
     </Paper>
+  );
+}
+
+function ShipmentDtosPanel({ shipment }: { shipment: ShipmentRecord }) {
+  const queryClient = useQueryClient();
+  const [linkDtoId, setLinkDtoId] = useState<string | null>(null);
+
+  const dtosQuery = useQuery({
+    queryKey: queryKeys.shipmentDtos(shipment.id),
+    queryFn: () => fetchShipmentDomesticTransportOrders(shipment.id),
+  });
+  const dtos: DomesticTransportOrderV1[] = dtosQuery.data?.data ?? [];
+
+  const allDtosQuery = useQuery({
+    queryKey: queryKeys.domesticTransportOrders,
+    queryFn: () => fetchDomesticTransportOrders({ limit: 100 }),
+  });
+  const allDtos = allDtosQuery.data?.data ?? [];
+  const linkedIds = new Set(dtos.map((dto) => dto.id));
+  const unlinkdDtoOptions = allDtos
+    .filter((dto) => !linkedIds.has(dto.id))
+    .map((dto) => ({ label: `${dto.dto_no} (${dto.status})`, value: dto.id }));
+
+  const linkMutation = useMutation({
+    mutationFn: () => {
+      if (!linkDtoId) throw new Error('Select a DTO to link');
+      return linkDtoToShipment(shipment.id, linkDtoId);
+    },
+    onSuccess: () => {
+      setLinkDtoId(null);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.shipmentDtos(shipment.id) });
+    },
+  });
+
+  const unlinkMutation = useMutation({
+    mutationFn: (dtoId: string) => unlinkDtoFromShipment(shipment.id, dtoId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.shipmentDtos(shipment.id) });
+    },
+  });
+
+  return (
+    <Stack gap="md">
+      <Alert color="teal" icon={<IconTruck size={18} />}>
+        A single Shipment may have multiple Domestic Transport Orders (n:n). Each DTO handles one truck run for last-mile delivery.
+      </Alert>
+
+      <Paper withBorder p="md">
+        <Group gap="sm" align="flex-end">
+          <Select
+            label="Link existing DTO"
+            placeholder="Select DTO..."
+            searchable
+            data={unlinkdDtoOptions}
+            value={linkDtoId}
+            onChange={setLinkDtoId}
+            nothingFoundMessage={allDtosQuery.isLoading ? 'Loading DTOs...' : 'No available DTO'}
+            style={{ flex: 1 }}
+          />
+          <Button
+            leftSection={<IconPlus size={16} />}
+            disabled={!linkDtoId}
+            loading={linkMutation.isPending}
+            onClick={() => linkMutation.mutate()}
+          >
+            Link DTO
+          </Button>
+        </Group>
+      </Paper>
+
+      {dtosQuery.isLoading ? (
+        <Group gap="xs"><Loader size="sm" /><Text size="sm" c="dimmed">Loading DTOs...</Text></Group>
+      ) : dtos.length === 0 ? (
+        <EmptyState title="No DTOs linked" description="Create a DTO from this shipment or link an existing one above." />
+      ) : (
+        <Paper withBorder p={0}>
+          <ScrollArea type="always" offsetScrollbars scrollbarSize={8}>
+            <Table miw={700} verticalSpacing="sm" highlightOnHover>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>DTO No.</Table.Th>
+                  <Table.Th>Vendor</Table.Th>
+                  <Table.Th>Route</Table.Th>
+                  <Table.Th>Pickup</Table.Th>
+                  <Table.Th>Status</Table.Th>
+                  <Table.Th />
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {dtos.map((dto) => (
+                  <Table.Tr key={dto.id}>
+                    <Table.Td><Text fw={700}>{dto.dto_no}</Text></Table.Td>
+                    <Table.Td>{dto.truck_vendor?.supplier_name ?? dto.truck_vendor_id ?? '-'}</Table.Td>
+                    <Table.Td>
+                      <Text size="sm">{dto.origin ?? '-'}</Text>
+                      <Text size="xs" c="dimmed">{dto.destination ?? '-'}</Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="xs">{dto.scheduled_pickup_at ? new Date(dto.scheduled_pickup_at).toLocaleDateString() : '-'}</Text>
+                    </Table.Td>
+                    <Table.Td><StatusBadge status={dto.status} /></Table.Td>
+                    <Table.Td>
+                      <Tooltip label="Unlink DTO from this shipment">
+                        <ActionIcon
+                          aria-label="Unlink DTO"
+                          color="red"
+                          variant="subtle"
+                          loading={unlinkMutation.isPending}
+                          onClick={() => unlinkMutation.mutate(dto.id)}
+                        >
+                          <IconX size={16} />
+                        </ActionIcon>
+                      </Tooltip>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </ScrollArea>
+        </Paper>
+      )}
+
+      {(linkMutation.isError || unlinkMutation.isError) && (
+        <Alert color="red" icon={<IconX size={16} />}>
+          {(linkMutation.error ?? unlinkMutation.error) instanceof Error
+            ? (linkMutation.error ?? unlinkMutation.error)?.message
+            : 'Operation failed'}
+        </Alert>
+      )}
+    </Stack>
   );
 }

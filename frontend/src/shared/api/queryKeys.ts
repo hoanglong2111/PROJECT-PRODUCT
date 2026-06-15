@@ -54,6 +54,7 @@ export const queryKeys = {
   quotationVersions: (id: string) => ['quotations', id, 'versions'] as const,
   quotations: ['quotations'] as const,
   shipmentDetail: (id: string) => ['shipments', 'detail', id] as const,
+  shipmentDtos: (shipmentId: string) => ['shipments', shipmentId, 'domestic-transport-orders'] as const,
   shipmentDocuments: (id: string) => ['shipments', id, 'documents'] as const,
   shipmentLines: (id: string) => ['shipments', id, 'lines'] as const,
   shipmentLists: ['shipments', 'list'] as const,

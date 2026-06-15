@@ -484,13 +484,46 @@ DTO means Domestic Transport Order.
 
 DTO is for inland trucking from port/airport to KBI warehouse.
 
+## 13.1 Shipment ↔ DTO Relationship (n:n)
+
+The relationship is **many-to-many**:
+
+- One Shipment can have **multiple DTOs** (multiple truck runs, partial delivery, delivery to multiple warehouses).
+- One DTO can serve **multiple Shipments** (LCL consolidation: one truck consolidates cargo from multiple shipments).
+
+Frontend must reflect this n:n relationship in both Shipment detail and DTO detail screens.
+
+## 13.2 Shipment detail — DTOs tab
+
+Shipment detail must include a **"DTOs" tab** that:
+
+- Lists all DTOs currently linked to the shipment (fetched via `GET /api/v1/shipments/:id/domestic-transport-orders`).
+- Allows linking an existing DTO to the shipment (via `POST /api/v1/shipments/:id/domestic-transport-orders/link` with `{ dto_id }`).
+- Allows unlinking a DTO from the shipment (via `DELETE /api/v1/shipments/:id/domestic-transport-orders/:dtoId/unlink`).
+- Shows a notice explaining the n:n model so users understand one DTO can serve multiple shipments.
+
+## 13.3 DTO list / detail — multi-shipment display
+
+When a DTO is linked to more than one shipment:
+
+- **In the DTO list table**: display "N shipments" instead of a single shipment number.
+- **In DTO detail panel**: display all linked shipments as separate entity badges/links (not just the primary `shipment_id`).
+
+When a DTO is linked to only one shipment, display the single shipment number as before.
+
+## 13.4 Create DTO
+
 Frontend should allow creating DTO only when:
 
 ```txt
 shipment.status = CUSTOMS_CLEARED
 ```
 
-DTO status flow:
+API: `POST /api/v1/shipments/:shipmentId/domestic-transport-orders`
+
+The backend automatically creates the junction record linking the new DTO to the creating shipment.
+
+## 13.5 DTO status flow
 
 ```txt
 DRAFT
