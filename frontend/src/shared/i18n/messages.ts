@@ -1056,7 +1056,7 @@ export const en = {
 export type MessageKey = keyof typeof en;
 
 export const vi: Record<MessageKey, string> = {
-  'shell.domesticTransportOrders': 'Van tai noi dia',
+  'shell.domesticTransportOrders': 'Vận chuyển nội địa',
   'auth.checkingDescription': 'KBFE đang xác thực tài khoản và quyền truy cập module.',
   'auth.checkingTitle': 'Đang kiểm tra phiên đăng nhập',
 
