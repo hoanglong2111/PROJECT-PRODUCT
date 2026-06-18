@@ -20,6 +20,7 @@
   CustomsLaneStatus,
   CustomsStatus,
   LogisticsTask,
+  LogisticsTaskTemplateRef,
   MblType,
   Priority,
   PurchaseOrder,
@@ -116,6 +117,7 @@ export type {
   CustomsLaneStatus,
   CustomsStatus,
   LogisticsTask,
+  LogisticsTaskTemplateRef,
   MblType,
   Priority,
   PurchaseOrder,
@@ -294,6 +296,14 @@ export type TaskScreenItem = {
   blocked_reason: string | null;
   note?: string | null;
   description?: string | null;
+  task_template_id?: string | null;
+  milestone_code?: string | null;
+  department?: string | null;
+  sla_hours?: number | null;
+  sla_text?: string | null;
+  related_documents?: string | null;
+  template_group_code?: string | null;
+  template_group_name?: string | null;
   create_at?: string;
   update_at?: string;
 };
@@ -624,6 +634,21 @@ function mapV1PurchaseOrder(purchaseOrder: PurchaseOrderV1, linkedDoNumbers: str
   };
 }
 
+function mapTaskScreenToTemplateRef(task: TaskScreenItem): LogisticsTaskTemplateRef | null {
+  if (!task.task_template_id) return null;
+
+  return {
+    task_template_id: task.task_template_id,
+    group_code: task.template_group_code ?? null,
+    group_name: task.template_group_name ?? null,
+    milestone_code: task.milestone_code ?? null,
+    department: task.department ?? null,
+    sla_hours: task.sla_hours ?? null,
+    sla_text: task.sla_text ?? null,
+    related_documents: task.related_documents ?? null,
+  };
+}
+
 function mapTaskScreenToLogisticsTask(task: TaskScreenItem): LogisticsTask {
   const assigneeId = task.assignee.id ?? task.assignee.user_id ?? '';
 
@@ -651,6 +676,8 @@ function mapTaskScreenToLogisticsTask(task: TaskScreenItem): LogisticsTask {
     status: task.status,
     task_id: task.id,
     task_name: task.task_name,
+    task_template_id: task.task_template_id ?? null,
+    template: mapTaskScreenToTemplateRef(task),
   };
 }
 
@@ -685,7 +712,7 @@ function mapTaskScreenToPoStageTask(task: TaskScreenItem): Gd1PoStageTask {
     started_at: task.status === 'IN_PROGRESS' ? task.update_at ?? task.create_at ?? null : null,
     status: taskScreenStatusToGd1(task.status),
     task_name: task.task_name,
-    task_template_id: null,
+    task_template_id: task.task_template_id ?? null,
     tenant_id: null,
     updated_at: task.update_at ?? '',
   };

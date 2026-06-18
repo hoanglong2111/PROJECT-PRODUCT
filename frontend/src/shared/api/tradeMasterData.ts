@@ -93,13 +93,20 @@ export type TransportModePayload = {
   is_active?: boolean;
 };
 
+export type SupplierType = 'OVERSEAS_SEA' | 'OVERSEAS_AIR' | 'DOMESTIC';
+
 export type Supplier = {
   id: string;
   supplier_code: string;
   supplier_name: string;
+  supplier_name_en?: string | null;
+  supplier_type?: SupplierType | string | null;
   supplier_roles: string[];
   country: string | null;
+  city?: string | null;
   address: string | null;
+  contact_person?: string | null;
+  /** @deprecated use contact_person */
   contact_name: string | null;
   contact_email: string | null;
   contact_phone: string | null;
@@ -108,7 +115,11 @@ export type Supplier = {
   default_incoterm_code: string | null;
   default_currency_id: string | null;
   default_incoterm_id: string | null;
+  lead_time_production_days?: number | null;
+  /** @deprecated use lead_time_production_days */
   lead_time_days: number | null;
+  bank_info?: string | null;
+  note?: string | null;
   is_active: boolean;
   default_currency?: Currency | null;
   default_incoterm?: Incoterm | null;
@@ -134,9 +145,14 @@ export type SupplierTransportMode = {
 export type SupplierPayload = {
   supplier_code?: string;
   supplier_name?: string;
+  supplier_name_en?: string | null;
+  supplier_type?: SupplierType | string | null;
   supplier_roles?: string[];
   country?: string | null;
+  city?: string | null;
   address?: string | null;
+  contact_person?: string | null;
+  /** @deprecated use contact_person */
   contact_name?: string | null;
   contact_email?: string | null;
   contact_phone?: string | null;
@@ -147,7 +163,11 @@ export type SupplierPayload = {
   default_incoterm_id?: string | null;
   transport_mode_ids?: string[];
   default_transport_mode_id?: string | null;
+  lead_time_production_days?: number;
+  /** @deprecated use lead_time_production_days */
   lead_time_days?: number;
+  bank_info?: string | null;
+  note?: string | null;
   is_active?: boolean;
 };
 
@@ -213,10 +233,12 @@ function normalizeTransportMode(mode: TransportMode): TransportMode {
   };
 }
 
-function normalizeSupplier(supplier: Supplier): Supplier {
+export function normalizeSupplier(supplier: Supplier): Supplier {
   const legacySupplier = supplier as Supplier & {
     email?: string | null;
     phone?: string | null;
+    contact_name?: string | null;
+    lead_time_days?: number | null;
     supplier_type?: string | null;
     transport_mode_ids?: string[];
     default_transport_mode_id?: string | null;
@@ -228,13 +250,19 @@ function normalizeSupplier(supplier: Supplier): Supplier {
     is_default: transportModeId === legacySupplier.default_transport_mode_id,
     transport_mode: null,
   })) ?? [];
+  const contactPerson = supplier.contact_person ?? legacySupplier.contact_name ?? null;
+  const leadTimeProductionDays = supplier.lead_time_production_days ?? legacySupplier.lead_time_days ?? null;
 
   return {
     ...supplier,
+    supplier_name_en: supplier.supplier_name_en ?? null,
+    supplier_type: normalizeSupplierType(supplier),
     supplier_roles: normalizeSupplierRoles(supplier.supplier_roles, legacySupplier.supplier_type),
     country: supplier.country ?? null,
+    city: supplier.city ?? null,
     address: supplier.address ?? null,
-    contact_name: supplier.contact_name ?? null,
+    contact_person: contactPerson,
+    contact_name: contactPerson,
     contact_email: supplier.contact_email ?? legacySupplier.email ?? null,
     contact_phone: supplier.contact_phone ?? legacySupplier.phone ?? null,
     payment_term: supplier.payment_term ?? null,
@@ -249,15 +277,22 @@ function normalizeSupplier(supplier: Supplier): Supplier {
       is_default: mode.is_default === true,
       transport_mode: mode.transport_mode ? normalizeTransportMode(mode.transport_mode) : null,
     })),
-    lead_time_days: supplier.lead_time_days ?? null,
+    lead_time_production_days: leadTimeProductionDays,
+    lead_time_days: leadTimeProductionDays,
+    bank_info: supplier.bank_info ?? null,
+    note: supplier.note ?? null,
     is_active: supplier.is_active !== false,
   };
 }
 
 function normalizeSupplierRoles(roles: string[] | undefined, supplierType: string | null | undefined) {
+  if (roles && roles.length > 0) {
+    return Array.from(new Set(roles.map((role) => String(role).toUpperCase())));
+  }
+
   const legacyRole = mapLegacySupplierRole(supplierType);
   return Array.from(
-    new Set([...(roles ?? []), legacyRole].filter(Boolean).map((role) => String(role).toUpperCase())),
+    new Set([legacyRole].filter(Boolean).map((role) => String(role).toUpperCase())),
   );
 }
 
@@ -270,6 +305,24 @@ function mapLegacySupplierRole(role: string | null | undefined) {
 
   if (normalized === 'TRUCKING') {
     return 'TRUCKING_VENDOR';
+  }
+
+  return normalized || null;
+}
+
+function normalizeSupplierType(supplier: Supplier) {
+  const normalized = String(supplier.supplier_type ?? '').toUpperCase();
+
+  if (['OVERSEAS_SEA', 'OVERSEAS_AIR', 'DOMESTIC'].includes(normalized)) {
+    return normalized;
+  }
+
+  if (normalized === 'FORWARDER' || normalized === 'TRUCKING') {
+    return 'DOMESTIC';
+  }
+
+  if (normalized === 'MANUFACTURER') {
+    return String(supplier.country ?? '').toUpperCase() === 'VN' ? 'DOMESTIC' : 'OVERSEAS_SEA';
   }
 
   return normalized || null;

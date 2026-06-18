@@ -1,4 +1,4 @@
-import { ActionIcon, Anchor, Badge, Button, Checkbox, Group, Paper, ScrollArea, Select, Stack, Table, Text, TextInput, Tooltip } from '@mantine/core';
+import { ActionIcon, Anchor, Badge, Button, Checkbox, Group, Paper, ScrollArea, SegmentedControl, Select, Stack, Table, Text, TextInput, Tooltip } from '@mantine/core';
 import { IconCalendarStats, IconExternalLink, IconSearch, IconTruck, IconX } from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -79,6 +79,13 @@ export function ShipmentListView({
     () => filteredShipments.filter((shipment) => selectedIds.includes(shipment.id)),
     [filteredShipments, selectedIds],
   );
+  const hasActiveFilters =
+    search.trim() !== '' ||
+    modeFilter !== 'all' ||
+    Boolean(carrierFilter) ||
+    channelFilter !== 'all' ||
+    etdFrom !== '' ||
+    etdTo !== '';
 
   const toggleRow = (id: string) =>
     setSelectedIds((current) =>
@@ -107,63 +114,113 @@ export function ShipmentListView({
           { label: t('shipments.delivered'), value: 'delivered', count: tabCounts.delivered },
         ]}
       >
-        <TextInput
-          label={t('common.search')}
-          placeholder={t('shipments.searchPlaceholder')}
-          leftSection={<IconSearch size={16} />}
-          value={search}
-          onChange={(event) => onSearchChange(event.currentTarget.value)}
-          w={{ base: '100%', sm: 280 }}
-        />
-        <Select
-          label={<HeaderLabel label={t('shipments.shipmentMode')} hint={t('glossary.shippingMode')} />}
-          value={modeFilter}
-          onChange={(value) => onModeFilterChange((value ?? 'all') as ShipmentModeV1 | 'all')}
-          data={[{ label: t('shipments.allModes'), value: 'all' }, ...shipmentModeOptions]}
-          w={{ base: '100%', sm: 150 }}
-        />
-        <Select
-          label={<HeaderLabel label={t('shipments.carrier')} hint={t('glossary.carrier')} />}
-          placeholder={t('shipments.allCarriers')}
-          value={carrierFilter}
-          onChange={onCarrierFilterChange}
-          data={carrierOptions}
-          searchable
-          clearable
-          nothingFoundMessage={t('shipments.allCarriers')}
-          w={{ base: '100%', sm: 200 }}
-        />
-        <Select
-          label={<HeaderLabel label={t('shipments.channel')} hint={t('glossary.customsChannel')} />}
-          value={channelFilter}
-          onChange={(value) => onChannelFilterChange((value ?? 'all') as ShipmentChannelFilter)}
-          data={[
-            { label: t('shipments.allChannels'), value: 'all' },
-            { label: t('shipments.channelGreen'), value: 'GREEN' },
-            { label: t('shipments.channelYellow'), value: 'YELLOW' },
-            { label: t('shipments.channelRed'), value: 'RED' },
-          ]}
-          w={{ base: '100%', sm: 140 }}
-        />
-        <TextInput
-          label={<HeaderLabel label={t('shipments.etdFrom')} hint={t('glossary.etd')} />}
-          leftSection={<IconCalendarStats size={16} />}
-          type="date"
-          value={etdFrom}
-          onChange={(event) => onEtdFromChange(event.currentTarget.value)}
-          w={{ base: '100%', sm: 160 }}
-        />
-        <TextInput
-          label={<HeaderLabel label={t('shipments.etdTo')} hint={t('glossary.etd')} />}
-          leftSection={<IconCalendarStats size={16} />}
-          type="date"
-          value={etdTo}
-          onChange={(event) => onEtdToChange(event.currentTarget.value)}
-          w={{ base: '100%', sm: 160 }}
-        />
-        <Button variant="subtle" leftSection={<IconX size={16} />} onClick={onClearFilters}>
-          {t('common.clear')}
-        </Button>
+        <Stack className="shipment-filter-shell" gap="sm">
+          <div className="shipment-filter-primary">
+            <TextInput
+              label={t('common.search')}
+              placeholder={t('shipments.searchPlaceholder')}
+              leftSection={<IconSearch size={16} />}
+              value={search}
+              onChange={(event) => onSearchChange(event.currentTarget.value)}
+            />
+            <Select
+              label={<HeaderLabel label={t('shipments.shipmentMode')} hint={t('glossary.shippingMode')} />}
+              value={modeFilter}
+              onChange={(value) => onModeFilterChange((value ?? 'all') as ShipmentModeV1 | 'all')}
+              data={[{ label: t('shipments.allModes'), value: 'all' }, ...shipmentModeOptions]}
+            />
+            <Select
+              label={<HeaderLabel label={t('shipments.carrier')} hint={t('glossary.carrier')} />}
+              placeholder={t('shipments.allCarriers')}
+              value={carrierFilter}
+              onChange={onCarrierFilterChange}
+              data={carrierOptions}
+              searchable
+              clearable
+              nothingFoundMessage={t('shipments.allCarriers')}
+            />
+            <Button
+              className="shipment-filter-clear"
+              variant={hasActiveFilters ? 'light' : 'subtle'}
+              leftSection={<IconX size={16} />}
+              onClick={onClearFilters}
+              disabled={!hasActiveFilters}
+            >
+              {t('common.clear')}
+            </Button>
+          </div>
+
+          <div className="shipment-filter-advanced">
+            <div className="shipment-filter-secondary">
+              <Stack gap={6} className="shipment-filter-channel">
+                <Group justify="space-between" gap="xs" wrap="nowrap">
+                  <Text size="sm" fw={500}>
+                    <HeaderLabel label={t('shipments.channel')} hint={t('glossary.customsChannel')} />
+                  </Text>
+                </Group>
+                <SegmentedControl
+                  fullWidth
+                  value={channelFilter}
+                  onChange={(value) => onChannelFilterChange(value as ShipmentChannelFilter)}
+                  data={[
+                    {
+                      label: (
+                        <Group component="span" gap={6} justify="center" wrap="nowrap">
+                          <span className="shipment-filter-channel-dot shipment-filter-channel-dot-all" />
+                          {t('common.all')}
+                        </Group>
+                      ),
+                      value: 'all',
+                    },
+                    {
+                      label: (
+                        <Group component="span" gap={6} justify="center" wrap="nowrap">
+                          <span className="shipment-filter-channel-dot shipment-filter-channel-dot-green" />
+                          {t('shipments.channelGreen')}
+                        </Group>
+                      ),
+                      value: 'GREEN',
+                    },
+                    {
+                      label: (
+                        <Group component="span" gap={6} justify="center" wrap="nowrap">
+                          <span className="shipment-filter-channel-dot shipment-filter-channel-dot-yellow" />
+                          {t('shipments.channelYellow')}
+                        </Group>
+                      ),
+                      value: 'YELLOW',
+                    },
+                    {
+                      label: (
+                        <Group component="span" gap={6} justify="center" wrap="nowrap">
+                          <span className="shipment-filter-channel-dot shipment-filter-channel-dot-red" />
+                          {t('shipments.channelRed')}
+                        </Group>
+                      ),
+                      value: 'RED',
+                    },
+                  ]}
+                />
+              </Stack>
+              <div className="shipment-filter-dates">
+                <TextInput
+                  label={<HeaderLabel label={t('shipments.etdFrom')} hint={t('glossary.etd')} />}
+                  leftSection={<IconCalendarStats size={16} />}
+                  type="date"
+                  value={etdFrom}
+                  onChange={(event) => onEtdFromChange(event.currentTarget.value)}
+                />
+                <TextInput
+                  label={<HeaderLabel label={t('shipments.etdTo')} hint={t('glossary.etd')} />}
+                  leftSection={<IconCalendarStats size={16} />}
+                  type="date"
+                  value={etdTo}
+                  onChange={(event) => onEtdToChange(event.currentTarget.value)}
+                />
+              </div>
+            </div>
+          </div>
+        </Stack>
       </FilterToolbar>
 
       {selectedIds.length > 0 ? (

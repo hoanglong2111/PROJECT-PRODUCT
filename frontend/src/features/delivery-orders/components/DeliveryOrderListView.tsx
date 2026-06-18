@@ -77,6 +77,8 @@ export function DeliveryOrderListView({
     setPage,
     visibleItems: visibleDeliveryOrders,
   } = useListPagination(filteredDeliveryOrders, [activeTab, flowFilter, riskOnly, search, statusParam, supplierFilter]);
+  const hasActiveFilters =
+    search.trim() !== '' || flowFilter !== 'all' || Boolean(supplierFilter) || riskOnly;
 
   return (
     <>
@@ -107,18 +109,33 @@ export function DeliveryOrderListView({
 
       <Paper withBorder p="md">
         <Stack gap="sm">
-          <Tabs value={activeTab} onChange={(value) => onTabChange((value as DeliveryOrderTab) ?? 'processing')} variant="pills" radius="xl">
-            <Tabs.List className="delivery-order-tabs-list">
-              {deliveryOrderTabItems.map((tab) => (
-                <Tabs.Tab key={tab.value} value={tab.value}>
-                  {tab.label} ({tabCounts[tab.value]})
-                </Tabs.Tab>
-              ))}
-            </Tabs.List>
-          </Tabs>
+          <Group justify="space-between" align="center" gap="sm" wrap="wrap">
+            <Tabs
+              value={activeTab}
+              onChange={(value) => onTabChange((value as DeliveryOrderTab) ?? 'processing')}
+              variant="pills"
+              radius="xl"
+              className="delivery-order-tabs"
+            >
+              <Tabs.List className="delivery-order-tabs-list">
+                {deliveryOrderTabItems.map((tab) => (
+                  <Tabs.Tab key={tab.value} value={tab.value}>
+                    {tab.label} ({tabCounts[tab.value]})
+                  </Tabs.Tab>
+                ))}
+              </Tabs.List>
+            </Tabs>
+            <Group gap="xs" wrap="nowrap" className="delivery-order-filter-result">
+              {isFetching ? <Loader size="sm" /> : null}
+              <Text size="sm" c="dimmed">
+                {t('common.shown', { count: filteredDeliveryOrders.length })}
+              </Text>
+            </Group>
+          </Group>
 
-          <SimpleGrid cols={{ base: 1, md: 4 }}>
+          <div className="delivery-order-filter-shell">
             <TextInput
+              className="delivery-order-filter-search"
               label={t('common.search')}
               placeholder={t('deliveryOrders.searchPlaceholder')}
               leftSection={<IconSearch size={16} />}
@@ -146,22 +163,23 @@ export function DeliveryOrderListView({
               clearable
               nothingFoundMessage={t('deliveryOrders.allSuppliers')}
             />
-            <Switch
-              className="filter-switch"
-              checked={riskOnly}
-              onChange={(event) => onRiskOnlyChange(event.currentTarget.checked)}
-              label={t('deliveryOrders.filterRiskOnly')}
-            />
-            <Group className="filter-actions" gap="xs">
-              <Button variant="subtle" size="compact-sm" leftSection={<IconX size={16} />} onClick={onClearFilters}>
-                {t('common.clear')}
-              </Button>
-              {isFetching ? <Loader size="sm" /> : null}
-              <Text size="sm" c="dimmed">
-                {t('common.shown', { count: filteredDeliveryOrders.length })}
-              </Text>
-            </Group>
-          </SimpleGrid>
+            <div className="delivery-order-risk-filter">
+              <Switch
+                checked={riskOnly}
+                onChange={(event) => onRiskOnlyChange(event.currentTarget.checked)}
+                label={t('deliveryOrders.filterRiskOnly')}
+              />
+            </div>
+            <Button
+              className="delivery-order-filter-clear"
+              variant={hasActiveFilters ? 'light' : 'subtle'}
+              leftSection={<IconX size={16} />}
+              onClick={onClearFilters}
+              disabled={!hasActiveFilters}
+            >
+              {t('common.clear')}
+            </Button>
+          </div>
         </Stack>
       </Paper>
 

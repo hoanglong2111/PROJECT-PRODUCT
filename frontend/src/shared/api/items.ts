@@ -58,19 +58,40 @@ export type ListItemsParams = ListParams & {
   item_group_id?: string;
 };
 
+export type ItemCategory = 'NVL' | 'BTP' | 'TP' | 'CCDC' | 'DONG_GOI';
+
+export type ItemType = 'RAW' | 'SEMI' | 'FG' | 'CONSUMABLE' | 'PACKAGING';
+
 export type Item = {
   id: string;
   item_code: string;
   item_name: string;
+  item_name_en?: string | null;
+  item_category?: ItemCategory | string | null;
   item_description?: string | null;
   item_group_id?: string | null;
+  base_uom?: string | null;
+  purchase_uom?: string | null;
+  uom_conversion?: ApiDecimal | null;
+  hs_code?: string | null;
+  country_of_origin?: string | null;
+  unit_price_usd?: ApiDecimal | null;
+  barcode?: string | null;
+  note?: string | null;
+  /** @deprecated use base_uom for item master records */
   unit?: string | null;
-  item_type?: string | null;
+  item_type?: ItemType | string | null;
+  /** @deprecated use country_of_origin for item master records */
   origin_country?: string | null;
+  /** @deprecated optional legacy item fields kept for old records */
   brand?: string | null;
+  /** @deprecated optional legacy item fields kept for old records */
   model?: string | null;
+  /** @deprecated optional legacy item fields kept for old records */
   is_new?: boolean;
+  /** @deprecated optional legacy item fields kept for old records */
   lead_time_days?: number | null;
+  /** @deprecated optional legacy item fields kept for old records */
   moq?: ApiDecimal | null;
   is_active?: boolean;
   create_at?: string;
@@ -84,15 +105,32 @@ export type Item = {
 export type CreateItemPayload = {
   item_code: string;
   item_name: string;
+  item_name_en?: string;
+  item_category?: ItemCategory | string;
   item_description?: string;
   item_group_id?: string;
+  base_uom?: string;
+  purchase_uom?: string;
+  uom_conversion?: number;
+  hs_code?: string;
+  country_of_origin?: string;
+  unit_price_usd?: ApiDecimal;
+  barcode?: string;
+  note?: string;
+  /** @deprecated use base_uom for item master records */
   unit?: string;
-  item_type?: string;
+  item_type?: ItemType | string;
+  /** @deprecated use country_of_origin for item master records */
   origin_country?: string;
+  /** @deprecated optional legacy item fields kept for old records */
   brand?: string;
+  /** @deprecated optional legacy item fields kept for old records */
   model?: string;
+  /** @deprecated optional legacy item fields kept for old records */
   is_new?: boolean;
+  /** @deprecated optional legacy item fields kept for old records */
   lead_time_days?: number;
+  /** @deprecated optional legacy item fields kept for old records */
   moq?: number;
   is_active?: boolean;
 };
@@ -156,10 +194,30 @@ function normalizePaginatedResponse<T>(
   };
 }
 
-function normalizeItem(item: Item): Item {
+export function normalizeItem(item: Item): Item {
+  const legacyItem = item as Item & {
+    description?: string | null;
+  };
+  const baseUom = item.base_uom ?? item.unit ?? null;
+  const countryOfOrigin = item.country_of_origin ?? item.origin_country ?? null;
+  const note = item.note ?? item.item_description ?? legacyItem.description ?? null;
+
   return {
     ...item,
-    item_description: item.item_description ?? null,
+    item_name_en: item.item_name_en ?? item.item_name ?? null,
+    item_category: item.item_category ?? null,
+    item_type: item.item_type ?? null,
+    base_uom: baseUom,
+    unit: baseUom,
+    purchase_uom: item.purchase_uom ?? baseUom,
+    uom_conversion: item.uom_conversion ?? 1,
+    hs_code: item.hs_code ?? item.customs_profiles?.find((profile) => profile.is_default)?.hs_code ?? item.customs_profiles?.[0]?.hs_code ?? null,
+    country_of_origin: countryOfOrigin,
+    origin_country: countryOfOrigin,
+    unit_price_usd: item.unit_price_usd ?? null,
+    barcode: item.barcode ?? null,
+    note,
+    item_description: note,
     is_new: item.is_new ?? true,
     lead_time_days: item.lead_time_days ?? null,
     moq: item.moq ?? null,

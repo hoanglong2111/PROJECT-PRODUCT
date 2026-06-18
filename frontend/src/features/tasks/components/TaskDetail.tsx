@@ -5,6 +5,7 @@ import { InfoField } from '@shared/components/InfoField';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { useI18n } from '@shared/i18n';
 import { EntityLink, UpdateTaskProgressForm } from '@entities/logistics';
+import { departmentLabel, milestoneLabel, templateSlaLabel } from '../model/tasksModel';
 
 export function TaskDetail({ onUpdated, task }: { onUpdated?: (task: LogisticsTask) => void; task: LogisticsTask }) {
   const { priorityLabel, t, taskRoleLabel } = useI18n();
@@ -44,6 +45,26 @@ export function TaskDetail({ onUpdated, task }: { onUpdated?: (task: LogisticsTa
         <InfoField label="PO" value={task.po_number ?? '-'} />
         <InfoField label={t('tasks.requiredForClosure')} value={task.is_required_for_do_closure ? t('common.yes') : t('common.no')} />
       </SimpleGrid>
+
+      {task.template ? (
+        <Paper withBorder p="md">
+          <Group justify="space-between" mb="xs">
+            <Text fw={700}>{t('tasks.sopTemplate')}</Text>
+            {task.template.group_name ? (
+              <Text size="xs" c="dimmed">
+                {task.template.group_code ? `${task.template.group_code} · ` : ''}
+                {task.template.group_name}
+              </Text>
+            ) : null}
+          </Group>
+          <SimpleGrid cols={{ base: 1, sm: 2 }}>
+            <InfoField label={t('tasks.milestone')} value={milestoneLabel(task.template.milestone_code)} />
+            <InfoField label={t('tasks.department')} value={departmentLabel(task.template.department)} />
+            <InfoField label={t('tasks.sla')} value={templateSlaLabel(task.template)} />
+            <InfoField label={t('tasks.relatedDocuments')} value={task.template.related_documents ?? '-'} />
+          </SimpleGrid>
+        </Paper>
+      ) : null}
 
       {task.blocked_reason ? (
         <Paper withBorder p="md" className="risk-panel">

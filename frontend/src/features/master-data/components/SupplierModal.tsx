@@ -15,10 +15,13 @@ import { optionalNumber, optionalString } from '../model/masterDataModel';
 type SupplierFormValues = {
   code: string;
   name: string;
+  nameEn: string;
+  supplierType: string | null;
   roles: string[];
   country: string;
+  city: string;
   address: string;
-  contactName: string;
+  contactPerson: string;
   contactEmail: string;
   contactPhone: string;
   paymentTerm: string;
@@ -26,17 +29,22 @@ type SupplierFormValues = {
   incotermId: string | null;
   transportModeIds: string[];
   defaultTransportModeId: string | null;
-  leadTimeDays: string;
+  leadTimeProductionDays: string;
+  bankInfo: string;
+  note: string;
   isActive: boolean;
 };
 
 const emptyValues: SupplierFormValues = {
   code: '',
   name: '',
+  nameEn: '',
+  supplierType: null,
   roles: ['SUPPLIER'],
   country: '',
+  city: '',
   address: '',
-  contactName: '',
+  contactPerson: '',
   contactEmail: '',
   contactPhone: '',
   paymentTerm: '',
@@ -44,9 +52,17 @@ const emptyValues: SupplierFormValues = {
   incotermId: null,
   transportModeIds: [],
   defaultTransportModeId: null,
-  leadTimeDays: '',
+  leadTimeProductionDays: '',
+  bankInfo: '',
+  note: '',
   isActive: true,
 };
+
+const supplierTypeOptions = [
+  { label: 'OVERSEAS_SEA', value: 'OVERSEAS_SEA' },
+  { label: 'OVERSEAS_AIR', value: 'OVERSEAS_AIR' },
+  { label: 'DOMESTIC', value: 'DOMESTIC' },
+];
 
 function hintedLabel(label: string, hint: string) {
   return (
@@ -86,10 +102,13 @@ export function SupplierModal({
     form.setValues({
       code: editing.supplier_code,
       name: editing.supplier_name,
+      nameEn: editing.supplier_name_en ?? '',
+      supplierType: editing.supplier_type ?? null,
       roles: editing.supplier_roles.length > 0 ? editing.supplier_roles : ['SUPPLIER'],
       country: editing.country ?? '',
+      city: editing.city ?? '',
       address: editing.address ?? '',
-      contactName: editing.contact_name ?? '',
+      contactPerson: editing.contact_person ?? editing.contact_name ?? '',
       contactEmail: editing.contact_email ?? '',
       contactPhone: editing.contact_phone ?? '',
       paymentTerm: editing.payment_term ?? '',
@@ -97,10 +116,12 @@ export function SupplierModal({
       incotermId: editing.default_incoterm_id ?? editing.default_incoterm?.id ?? null,
       transportModeIds: supplierTransportModes.map((mode) => mode.transport_mode_id),
       defaultTransportModeId: supplierTransportModes.find((mode) => mode.is_default)?.transport_mode_id ?? null,
-      leadTimeDays:
-        editing.lead_time_days !== null && editing.lead_time_days !== undefined
-          ? String(editing.lead_time_days)
+      leadTimeProductionDays:
+        editing.lead_time_production_days !== null && editing.lead_time_production_days !== undefined
+          ? String(editing.lead_time_production_days)
           : '',
+      bankInfo: editing.bank_info ?? '',
+      note: editing.note ?? '',
       isActive: editing.is_active,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -116,10 +137,13 @@ export function SupplierModal({
       const payload = {
         supplier_code: form.values.code.trim().toUpperCase(),
         supplier_name: form.values.name.trim(),
+        supplier_name_en: optionalString(form.values.nameEn),
+        supplier_type: form.values.supplierType,
         supplier_roles: form.values.roles.length > 0 ? form.values.roles : ['SUPPLIER'],
         country: optionalString(form.values.country),
+        city: optionalString(form.values.city),
         address: optionalString(form.values.address),
-        contact_name: optionalString(form.values.contactName),
+        contact_person: optionalString(form.values.contactPerson),
         contact_email: optionalString(form.values.contactEmail),
         contact_phone: optionalString(form.values.contactPhone),
         payment_term: optionalString(form.values.paymentTerm),
@@ -127,7 +151,9 @@ export function SupplierModal({
         default_incoterm_id: form.values.incotermId || null,
         transport_mode_ids: form.values.transportModeIds,
         default_transport_mode_id: form.values.defaultTransportModeId || null,
-        lead_time_days: optionalNumber(form.values.leadTimeDays),
+        lead_time_production_days: optionalNumber(form.values.leadTimeProductionDays),
+        bank_info: optionalString(form.values.bankInfo),
+        note: optionalString(form.values.note),
         is_active: form.values.isActive,
       };
       return editing ? updateSupplier(editing.id, payload) : createSupplier(payload);
@@ -142,7 +168,7 @@ export function SupplierModal({
   });
 
   const handleSave = () => {
-    if (!form.values.code.trim() || !form.values.name.trim()) return;
+    if (!form.values.code.trim() || !form.values.name.trim() || !form.values.supplierType) return;
     mutation.mutate();
   };
 
@@ -172,6 +198,18 @@ export function SupplierModal({
             required
             {...form.getInputProps('name')}
           />
+          <TextInput
+            label={t('masterData.supplierNameEn')}
+            placeholder={t('masterData.supplierNameEnPlaceholder')}
+            {...form.getInputProps('nameEn')}
+          />
+          <Select
+            label={t('masterData.supplierType')}
+            data={supplierTypeOptions}
+            searchable
+            required
+            {...form.getInputProps('supplierType')}
+          />
           <MultiSelect
             label={t('masterData.supplierRoles')}
             data={[
@@ -187,7 +225,8 @@ export function SupplierModal({
             {...form.getInputProps('roles')}
           />
           <TextInput label={t('masterData.country')} {...form.getInputProps('country')} />
-          <TextInput label={t('masterData.contactName')} {...form.getInputProps('contactName')} />
+          <TextInput label={t('masterData.city')} {...form.getInputProps('city')} />
+          <TextInput label={t('masterData.contactPerson')} {...form.getInputProps('contactPerson')} />
           <TextInput label={t('masterData.contactEmail')} {...form.getInputProps('contactEmail')} />
           <TextInput label={t('masterData.contactPhone')} {...form.getInputProps('contactPhone')} />
           <TextInput
@@ -230,12 +269,16 @@ export function SupplierModal({
             {...form.getInputProps('defaultTransportModeId')}
           />
           <TextInput
-            label={hintedLabel(t('masterData.leadTimeDays'), t('glossary.leadTimeDays'))}
+            label={hintedLabel(t('masterData.leadTimeProductionDays'), t('glossary.leadTimeDays'))}
             type="number"
-            {...form.getInputProps('leadTimeDays')}
+            {...form.getInputProps('leadTimeProductionDays')}
           />
         </SimpleGrid>
         <Textarea label={t('masterData.address')} autosize minRows={3} {...form.getInputProps('address')} />
+        <SimpleGrid cols={{ base: 1, sm: 2 }}>
+          <Textarea label={t('masterData.bankInfo')} autosize minRows={3} {...form.getInputProps('bankInfo')} />
+          <Textarea label={t('masterData.note')} autosize minRows={3} {...form.getInputProps('note')} />
+        </SimpleGrid>
         <Switch label={t('masterData.active')} {...form.getInputProps('isActive', { type: 'checkbox' })} />
         <Group justify="flex-end">
           <Button variant="subtle" color="gray" onClick={onClose}>
@@ -244,7 +287,12 @@ export function SupplierModal({
           <Button
             onClick={handleSave}
             loading={mutation.isPending}
-            disabled={!form.values.code.trim() || !form.values.name.trim() || form.values.roles.length === 0}
+            disabled={
+              !form.values.code.trim() ||
+              !form.values.name.trim() ||
+              !form.values.supplierType ||
+              form.values.roles.length === 0
+            }
           >
             {t('common.save')}
           </Button>

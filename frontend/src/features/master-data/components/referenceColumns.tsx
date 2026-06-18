@@ -149,6 +149,9 @@ export function buildSupplierColumns(t: T): Array<ReferenceColumn<Supplier>> {
               {supplier.supplier_name}
             </Text>
           </Group>
+          <Text size="xs" c="dimmed" lineClamp={1}>
+            {supplier.supplier_name_en || '-'}
+          </Text>
           <Group gap={4}>
             {supplier.supplier_roles.map((role) => (
               <Badge key={role} size="xs" color="gray" variant="outline">
@@ -163,14 +166,23 @@ export function buildSupplierColumns(t: T): Array<ReferenceColumn<Supplier>> {
       key: 'country',
       label: t('masterData.country'),
       width: 130,
-      render: (supplier) => supplier.country || '-',
+      render: (supplier) => (
+        <Stack gap={2}>
+          <Badge color="blue" variant="light">
+            {supplier.supplier_type || '-'}
+          </Badge>
+          <Text size="xs" c="dimmed">
+            {[supplier.country, supplier.city].filter(Boolean).join(' / ') || '-'}
+          </Text>
+        </Stack>
+      ),
     },
     {
       key: 'contact',
       label: t('masterData.contact'),
       render: (supplier) => (
         <Stack gap={2}>
-          <Text size="sm">{supplier.contact_name || '-'}</Text>
+          <Text size="sm">{supplier.contact_person || supplier.contact_name || '-'}</Text>
           <Text size="xs" c="dimmed">
             {[supplier.contact_email, supplier.contact_phone].filter(Boolean).join(' | ') || '-'}
           </Text>
@@ -223,10 +235,10 @@ export function buildSupplierColumns(t: T): Array<ReferenceColumn<Supplier>> {
     },
     {
       key: 'lead_time',
-      label: t('masterData.leadTimeDays'),
+      label: t('masterData.leadTimeProductionDays'),
       hint: t('glossary.leadTimeDays'),
       width: 150,
-      render: (supplier) => supplier.lead_time_days ?? '-',
+      render: (supplier) => supplier.lead_time_production_days ?? '-',
     },
     {
       key: 'status',

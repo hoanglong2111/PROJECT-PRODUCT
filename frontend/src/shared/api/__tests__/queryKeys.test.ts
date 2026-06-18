@@ -61,6 +61,18 @@ describe('queryKeys', () => {
       'transport-modes',
       { mode_type: 'SEA' },
     ]);
+    expect(queryKeys.forwarders({ q: 'fds' })).toEqual([
+      'forwarders',
+      { q: 'fds' },
+    ]);
+    expect(queryKeys.carriers({ carrier_type: 'SHIPPING_LINE' })).toEqual([
+      'carriers',
+      { carrier_type: 'SHIPPING_LINE' },
+    ]);
+    expect(queryKeys.taskTemplatesList({ milestone_code: 'MS3_LOADED' })).toEqual([
+      'task-templates',
+      { milestone_code: 'MS3_LOADED' },
+    ]);
     expect(queryKeys.masterDataOptions({ types: 'currencies,suppliers' })).toEqual([
       'master-data-options',
       { types: 'currencies,suppliers' },

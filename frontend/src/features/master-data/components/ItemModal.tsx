@@ -1,4 +1,19 @@
-import { Alert, Badge, Button, Divider, Group, Modal, Paper, Select, SimpleGrid, Stack, Switch, Text, Textarea, TextInput } from '@mantine/core';
+import {
+  Alert,
+  Badge,
+  Button,
+  Divider,
+  Group,
+  Modal,
+  Paper,
+  Select,
+  SimpleGrid,
+  Stack,
+  Switch,
+  Text,
+  Textarea,
+  TextInput,
+} from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconTrash } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -28,16 +43,18 @@ import { DetailField } from './DetailField';
 type ItemFormValues = {
   code: string;
   name: string;
+  nameEn: string;
+  category: string | null;
   description: string;
   groupId: string | null;
-  unit: string;
-  type: string;
-  originCountry: string;
-  brand: string;
-  model: string;
-  isNew: boolean;
-  leadTimeDays: string;
-  moq: string;
+  baseUom: string;
+  purchaseUom: string;
+  uomConversion: string;
+  type: string | null;
+  hsCode: string;
+  countryOfOrigin: string;
+  unitPriceUsd: string;
+  barcode: string;
   isActive: boolean;
   taxHsCode: string;
   taxImportDutyRate: string;
@@ -71,19 +88,37 @@ const emptyTaxValues = {
 const emptyValues: ItemFormValues = {
   code: '',
   name: '',
+  nameEn: '',
+  category: null,
   description: '',
   groupId: null,
-  unit: '',
-  type: '',
-  originCountry: '',
-  brand: '',
-  model: '',
-  isNew: true,
-  leadTimeDays: '',
-  moq: '',
+  baseUom: '',
+  purchaseUom: '',
+  uomConversion: '1',
+  type: null,
+  hsCode: '',
+  countryOfOrigin: '',
+  unitPriceUsd: '',
+  barcode: '',
   isActive: true,
   ...emptyTaxValues,
 };
+
+const itemCategoryOptions = [
+  { label: 'NVL', value: 'NVL' },
+  { label: 'BTP', value: 'BTP' },
+  { label: 'TP', value: 'TP' },
+  { label: 'CCDC', value: 'CCDC' },
+  { label: 'DONG_GOI', value: 'DONG_GOI' },
+];
+
+const itemTypeOptions = [
+  { label: 'RAW', value: 'RAW' },
+  { label: 'SEMI', value: 'SEMI' },
+  { label: 'FG', value: 'FG' },
+  { label: 'CONSUMABLE', value: 'CONSUMABLE' },
+  { label: 'PACKAGING', value: 'PACKAGING' },
+];
 
 function hintedLabel(label: string, hint: string) {
   return (
@@ -120,16 +155,18 @@ function itemValuesFromItem(item: Item): Omit<ItemFormValues, keyof typeof empty
   return {
     code: item.item_code,
     name: item.item_name,
-    description: item.item_description ?? '',
+    nameEn: item.item_name_en ?? '',
+    category: item.item_category ?? null,
+    description: item.note ?? item.item_description ?? '',
     groupId: item.item_group_id ?? null,
-    unit: item.unit ?? '',
-    type: item.item_type ?? '',
-    originCountry: item.origin_country ?? '',
-    brand: item.brand ?? '',
-    model: item.model ?? '',
-    isNew: item.is_new ?? true,
-    leadTimeDays: numberToString(item.lead_time_days),
-    moq: numberToString(item.moq),
+    baseUom: item.base_uom ?? '',
+    purchaseUom: item.purchase_uom ?? '',
+    uomConversion: numberToString(item.uom_conversion ?? 1),
+    type: item.item_type ?? null,
+    hsCode: item.hs_code ?? '',
+    countryOfOrigin: item.country_of_origin ?? '',
+    unitPriceUsd: numberToString(item.unit_price_usd),
+    barcode: item.barcode ?? '',
     isActive: item.is_active ?? true,
   };
 }
@@ -202,21 +239,25 @@ export function ItemModal({
       const payload: CreateItemPayload = {
         item_code: form.values.code.trim(),
         item_name: form.values.name.trim(),
+        item_name_en: optionalString(form.values.nameEn),
+        item_category: optionalString(form.values.category ?? ''),
         item_description: optionalString(form.values.description),
         item_group_id: form.values.groupId || undefined,
-        unit: optionalString(form.values.unit),
-        item_type: optionalString(form.values.type),
-        origin_country: optionalString(form.values.originCountry),
-        brand: optionalString(form.values.brand),
-        model: optionalString(form.values.model),
-        is_new: form.values.isNew,
-        lead_time_days: optionalNumber(form.values.leadTimeDays),
-        moq: optionalNumber(form.values.moq),
+        base_uom: optionalString(form.values.baseUom),
+        purchase_uom: optionalString(form.values.purchaseUom),
+        uom_conversion: optionalNumber(form.values.uomConversion),
+        item_type: optionalString(form.values.type ?? ''),
+        hs_code: optionalString(form.values.hsCode),
+        country_of_origin: optionalString(form.values.countryOfOrigin),
+        unit_price_usd: optionalNumber(form.values.unitPriceUsd),
+        barcode: optionalString(form.values.barcode),
+        note: optionalString(form.values.description),
         is_active: form.values.isActive,
       };
+      const primaryHsCode = optionalString(form.values.taxHsCode) ?? optionalString(form.values.hsCode);
 
       const taxPayload: CreateItemTaxProfilePayload = {
-        hs_code: optionalString(form.values.taxHsCode),
+        hs_code: primaryHsCode,
         import_duty_rate: optionalNumber(form.values.taxImportDutyRate),
         vat_rate: optionalNumber(form.values.taxVatRate),
         co_form: optionalString(form.values.taxCoForm),
@@ -287,7 +328,17 @@ export function ItemModal({
 
   const handleSave = () => {
     if (!canManage) return;
-    if (!form.values.code.trim() || !form.values.name.trim()) return;
+    if (
+      !form.values.code.trim() ||
+      !form.values.name.trim() ||
+      !form.values.nameEn.trim() ||
+      !form.values.category ||
+      !form.values.type ||
+      !form.values.baseUom.trim() ||
+      !form.values.hsCode.trim()
+    ) {
+      return;
+    }
     saveMutation.mutate();
   };
 
@@ -334,30 +385,82 @@ export function ItemModal({
           disabled={itemFormReadOnly}
           {...form.getInputProps('name')}
         />
+        <TextInput
+          label={t('masterData.itemNameEn')}
+          placeholder={t('masterData.itemNameEnPlaceholder')}
+          required
+          disabled={itemFormReadOnly}
+          {...form.getInputProps('nameEn')}
+        />
+        <SimpleGrid cols={{ base: 1, sm: 3 }}>
+          <Select
+            label={t('masterData.itemCategory')}
+            data={itemCategoryOptions}
+            required
+            searchable
+            disabled={itemFormReadOnly}
+            {...form.getInputProps('category')}
+          />
+          <Select
+            label={t('masterData.itemType')}
+            data={itemTypeOptions}
+            required
+            searchable
+            disabled={itemFormReadOnly}
+            {...form.getInputProps('type')}
+          />
+          <TextInput
+            label={t('masterData.baseUom')}
+            placeholder={t('masterData.baseUomPlaceholder')}
+            required
+            disabled={itemFormReadOnly}
+            {...form.getInputProps('baseUom')}
+          />
+          <TextInput
+            label={t('masterData.purchaseUom')}
+            placeholder={t('masterData.purchaseUomPlaceholder')}
+            disabled={itemFormReadOnly}
+            {...form.getInputProps('purchaseUom')}
+          />
+          <TextInput
+            label={t('masterData.uomConversion')}
+            type="number"
+            disabled={itemFormReadOnly}
+            {...form.getInputProps('uomConversion')}
+          />
+          <TextInput
+            label={hintedLabel(t('masterData.hsCode'), t('glossary.hsCode'))}
+            placeholder={t('masterData.hsCodePlaceholder')}
+            required
+            disabled={itemFormReadOnly}
+            {...form.getInputProps('hsCode')}
+          />
+          <TextInput
+            label={t('masterData.countryOfOrigin')}
+            placeholder={t('masterData.countryOfOriginPlaceholder')}
+            disabled={itemFormReadOnly}
+            {...form.getInputProps('countryOfOrigin')}
+          />
+          <TextInput
+            label={t('masterData.unitPriceUsd')}
+            type="number"
+            disabled={itemFormReadOnly}
+            {...form.getInputProps('unitPriceUsd')}
+          />
+          <TextInput
+            label={t('masterData.barcode')}
+            disabled={itemFormReadOnly}
+            {...form.getInputProps('barcode')}
+          />
+        </SimpleGrid>
         <Textarea
-          label={t('masterData.itemDescription')}
+          label={t('masterData.note')}
           autosize
           minRows={2}
           disabled={itemFormReadOnly}
           {...form.getInputProps('description')}
         />
-
-        <SimpleGrid cols={{ base: 1, sm: 3 }}>
-          <TextInput label={t('masterData.unit')} disabled={itemFormReadOnly} {...form.getInputProps('unit')} />
-          <TextInput label={t('masterData.itemType')} disabled={itemFormReadOnly} {...form.getInputProps('type')} />
-          <TextInput label={t('masterData.originCountry')} disabled={itemFormReadOnly} {...form.getInputProps('originCountry')} />
-          <TextInput label={t('masterData.brand')} disabled={itemFormReadOnly} {...form.getInputProps('brand')} />
-          <TextInput label={t('masterData.model')} disabled={itemFormReadOnly} {...form.getInputProps('model')} />
-          <TextInput
-            label={hintedLabel(t('masterData.leadTimeDays'), t('glossary.leadTimeDays'))}
-            type="number"
-            disabled={itemFormReadOnly}
-            {...form.getInputProps('leadTimeDays')}
-          />
-          <TextInput label={t('masterData.moq')} type="number" disabled={itemFormReadOnly} {...form.getInputProps('moq')} />
-          <Switch label={t('masterData.newItem')} mt="xl" disabled={itemFormReadOnly} {...form.getInputProps('isNew', { type: 'checkbox' })} />
-          <Switch label={t('masterData.active')} mt="xl" disabled={itemFormReadOnly} {...form.getInputProps('isActive', { type: 'checkbox' })} />
-        </SimpleGrid>
+        <Switch label={t('masterData.active')} disabled={itemFormReadOnly} {...form.getInputProps('isActive', { type: 'checkbox' })} />
 
         {editing ? (
           <Paper withBorder p="md">
@@ -482,7 +585,21 @@ export function ItemModal({
         </Paper>
 
         {canManage ? (
-          <Button onClick={handleSave} fullWidth mt="md" loading={saveMutation.isPending}>
+          <Button
+            onClick={handleSave}
+            fullWidth
+            mt="md"
+            loading={saveMutation.isPending}
+            disabled={
+              !form.values.code.trim() ||
+              !form.values.name.trim() ||
+              !form.values.nameEn.trim() ||
+              !form.values.category ||
+              !form.values.type ||
+              !form.values.baseUom.trim() ||
+              !form.values.hsCode.trim()
+            }
+          >
             {t('masterData.saveItem')}
           </Button>
         ) : null}

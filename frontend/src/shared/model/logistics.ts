@@ -510,6 +510,20 @@ export type EfmsControl = {
   transport: EfmsTransportRecord | null;
 };
 
+// Snapshot of the SOP Task Template (master data) a runtime task is generated from.
+// Lets the Tasks screen surface milestone / department / SLA / required documents
+// without re-deriving the SOP knowledge that lives in the master-data catalog.
+export type LogisticsTaskTemplateRef = {
+  task_template_id: string;
+  group_code: string | null;
+  group_name: string | null;
+  milestone_code: string | null;
+  department: string | null;
+  sla_hours: number | null;
+  sla_text: string | null;
+  related_documents: string | null;
+};
+
 export type LogisticsTask = {
   task_id: string;
   do_number: string;
@@ -530,6 +544,8 @@ export type LogisticsTask = {
   notes: string;
   is_required_for_do_closure: boolean;
   blocked_reason: string | null;
+  task_template_id: string | null;
+  template: LogisticsTaskTemplateRef | null;
 };
 
 // ============================================================================

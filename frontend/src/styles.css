@@ -205,6 +205,42 @@ html[data-kbfe-resolved-color-scheme='dark'] .global-search-dropdown {
   flex: 0 0 auto;
 }
 
+.delivery-order-tabs {
+  flex: 1 1 28rem;
+  min-width: 0;
+}
+
+.delivery-order-filter-result {
+  flex: 0 0 auto;
+  min-height: 2rem;
+}
+
+.delivery-order-filter-shell {
+  display: grid;
+  grid-template-columns: minmax(18rem, 1.4fr) minmax(12rem, 0.72fr) minmax(14rem, 1fr) minmax(12rem, 0.72fr) auto;
+  gap: 0.75rem;
+  align-items: end;
+  min-width: 0;
+}
+
+.delivery-order-filter-shell > * {
+  min-width: 0;
+}
+
+.delivery-order-risk-filter {
+  display: flex;
+  min-height: 2.25rem;
+  align-items: center;
+  padding: 0.375rem 0.625rem;
+  border: 1px solid var(--kbfe-border-primary);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 92%, var(--kbfe-surface-subtle) 8%);
+}
+
+.delivery-order-filter-clear {
+  min-width: 6.75rem;
+}
+
 .delivery-order-control-grid {
   align-items: start;
 }
@@ -237,6 +273,115 @@ html[data-kbfe-resolved-color-scheme='dark'] .global-search-dropdown {
   min-height: 4.25rem;
   background: color-mix(in srgb, var(--kbfe-surface-elevated) 92%, var(--kbfe-primary-color) 8%);
   border-color: var(--kbfe-border-primary);
+}
+
+.purchase-order-filter-primary {
+  display: grid;
+  grid-template-columns: minmax(18rem, 1.35fr) minmax(9rem, 0.55fr) minmax(13rem, 0.8fr) minmax(20rem, 1fr) auto;
+  gap: 0.75rem;
+  align-items: end;
+  min-width: 0;
+}
+
+.purchase-order-filter-primary > * {
+  min-width: 0;
+}
+
+.purchase-order-filter-actions {
+  justify-content: flex-end;
+}
+
+.purchase-order-filter-clear,
+.purchase-order-filter-refresh {
+  min-width: 6.75rem;
+}
+
+.purchase-order-filter-dates {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(9.5rem, 1fr));
+  gap: 0.5rem;
+  align-items: end;
+  min-width: 0;
+}
+
+.shipment-filter-shell {
+  width: 100%;
+  min-width: 0;
+}
+
+.shipment-filter-primary {
+  display: grid;
+  grid-template-columns: minmax(18rem, 1.4fr) minmax(10rem, 0.62fr) minmax(14rem, 0.85fr) auto;
+  gap: 0.75rem;
+  align-items: end;
+  min-width: 0;
+}
+
+.shipment-filter-primary > * {
+  min-width: 0;
+}
+
+.shipment-filter-clear {
+  min-width: 6.75rem;
+}
+
+.shipment-filter-advanced {
+  min-width: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--kbfe-border-primary);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 92%, var(--kbfe-surface-subtle) 8%);
+}
+
+.shipment-filter-secondary {
+  display: grid;
+  grid-template-columns: minmax(18rem, 1fr) minmax(22rem, 1.05fr);
+  gap: 0.75rem;
+  align-items: end;
+  min-width: 0;
+}
+
+.shipment-filter-channel,
+.shipment-filter-dates {
+  min-width: 0;
+}
+
+.shipment-filter-channel .mantine-SegmentedControl-label {
+  min-height: 2rem;
+  padding-inline: 0.5rem;
+  white-space: normal;
+  line-height: 1.15;
+}
+
+.shipment-filter-channel-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex: 0 0 0.5rem;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 28%, transparent);
+}
+
+.shipment-filter-channel-dot-all {
+  background: var(--mantine-color-gray-5);
+}
+
+.shipment-filter-channel-dot-green {
+  background: var(--mantine-color-teal-5);
+}
+
+.shipment-filter-channel-dot-yellow {
+  background: var(--mantine-color-yellow-5);
+}
+
+.shipment-filter-channel-dot-red {
+  background: var(--mantine-color-red-5);
+}
+
+.shipment-filter-dates {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(10rem, 1fr));
+  gap: 0.75rem;
+  align-items: end;
 }
 
 .shipment-detail-card {
@@ -974,6 +1119,46 @@ html[data-kbfe-resolved-color-scheme='dark'] .global-search-dropdown {
     grid-column: 1 / -1;
   }
 
+  .shipment-filter-primary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .shipment-filter-clear {
+    justify-self: start;
+  }
+
+  .shipment-filter-secondary {
+    grid-template-columns: 1fr;
+  }
+
+  .delivery-order-filter-shell {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .delivery-order-filter-search {
+    grid-column: 1 / -1;
+  }
+
+  .delivery-order-filter-clear {
+    justify-self: start;
+  }
+
+  .purchase-order-filter-primary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .purchase-order-filter-search {
+    grid-column: 1 / -1;
+  }
+
+  .purchase-order-filter-dates {
+    grid-column: 1 / -1;
+  }
+
+  .purchase-order-filter-actions {
+    justify-content: flex-start;
+  }
+
   .shipment-progress-tile:nth-child(odd) {
     border-left: 0;
   }
@@ -1105,6 +1290,61 @@ html[data-kbfe-resolved-color-scheme='dark'] .global-search-dropdown {
   .shipment-route {
     grid-template-columns: 1fr;
     gap: 0.75rem;
+  }
+
+  .shipment-filter-primary,
+  .shipment-filter-dates {
+    grid-template-columns: 1fr;
+  }
+
+  .shipment-filter-clear {
+    width: 100%;
+  }
+
+  .delivery-order-tabs {
+    flex-basis: 100%;
+  }
+
+  .delivery-order-filter-result {
+    order: -1;
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .delivery-order-filter-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .delivery-order-filter-search {
+    grid-column: auto;
+  }
+
+  .delivery-order-risk-filter,
+  .delivery-order-filter-clear {
+    width: 100%;
+  }
+
+  .purchase-order-filter-primary,
+  .purchase-order-filter-dates {
+    grid-template-columns: 1fr;
+  }
+
+  .purchase-order-filter-search {
+    grid-column: auto;
+  }
+
+  .purchase-order-filter-dates {
+    grid-column: auto;
+  }
+
+  .purchase-order-filter-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .purchase-order-filter-clear,
+  .purchase-order-filter-refresh {
+    flex: 1 1 10rem;
   }
 
   .purchase-order-route-node.is-right {

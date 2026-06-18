@@ -8,6 +8,7 @@ import {
   ScrollArea,
   Select,
   SimpleGrid,
+  Stack,
   Table,
   Text,
   TextInput,
@@ -73,6 +74,12 @@ export function PurchaseOrderListView({
   const onDateFromChange = usePurchaseOrdersUiStore((s) => s.setDateFrom);
   const onDateToChange = usePurchaseOrdersUiStore((s) => s.setDateTo);
   const onClearFilters = usePurchaseOrdersUiStore((s) => s.clearFilters);
+  const hasActiveFilters =
+    search.trim() !== '' ||
+    statusFilter !== 'all' ||
+    Boolean(supplierFilter) ||
+    dateFrom !== '' ||
+    dateTo !== '';
 
   return (
     <>
@@ -85,68 +92,73 @@ export function PurchaseOrderListView({
       </SimpleGrid>
 
       <Paper withBorder p="sm">
-        <Group align="flex-end" gap="sm">
-          <TextInput
-            label="Search"
-            leftSection={<IconSearch size={16} />}
-            placeholder="PO, contract, type, notes"
-            value={search}
-            onChange={(event) => onSearchChange(event.currentTarget.value)}
-            w={{ base: '100%', sm: 360 }}
-          />
-          <Select
-            label="Status"
-            value={statusFilter}
-            onChange={(value) => onStatusFilterChange((value || 'all') as PurchaseOrderStatusFilter)}
-            data={[
-              { label: 'All', value: 'all' },
-              ...purchaseOrderStatusOptions.map((status) => ({ label: status.replace(/_/g, ' '), value: status })),
-            ]}
-            w={{ base: '100%', sm: 180 }}
-          />
-          <Select
-            label="Supplier"
-            placeholder="All suppliers"
-            value={supplierFilter}
-            onChange={onSupplierFilterChange}
-            data={supplierOptions}
-            searchable
-            clearable
-            nothingFoundMessage="No suppliers"
-            w={{ base: '100%', sm: 260 }}
-          />
-          <TextInput
-            label="Date from"
-            leftSection={<IconCalendarStats size={16} />}
-            type="date"
-            value={dateFrom}
-            onChange={(event) => onDateFromChange(event.currentTarget.value)}
-            w={{ base: '100%', sm: 165 }}
-          />
-          <TextInput
-            label="Date to"
-            leftSection={<IconCalendarStats size={16} />}
-            type="date"
-            value={dateTo}
-            onChange={(event) => onDateToChange(event.currentTarget.value)}
-            w={{ base: '100%', sm: 165 }}
-          />
-          <Button
-            variant="subtle"
-            leftSection={<IconX size={16} />}
-            onClick={onClearFilters}
-          >
-            Clear
-          </Button>
-          <Button
-            variant="light"
-            leftSection={<IconRefresh size={16} />}
-            loading={isFetching}
-            onClick={onRefresh}
-          >
-            Refresh
-          </Button>
-        </Group>
+        <Stack gap="sm">
+          <div className="purchase-order-filter-primary">
+            <TextInput
+              className="purchase-order-filter-search"
+              label="Search"
+              leftSection={<IconSearch size={16} />}
+              placeholder="PO, contract, type, notes"
+              value={search}
+              onChange={(event) => onSearchChange(event.currentTarget.value)}
+            />
+            <Select
+              label="Status"
+              value={statusFilter}
+              onChange={(value) => onStatusFilterChange((value || 'all') as PurchaseOrderStatusFilter)}
+              data={[
+                { label: 'All', value: 'all' },
+                ...purchaseOrderStatusOptions.map((status) => ({ label: status.replace(/_/g, ' '), value: status })),
+              ]}
+            />
+            <Select
+              label="Supplier"
+              placeholder="All suppliers"
+              value={supplierFilter}
+              onChange={onSupplierFilterChange}
+              data={supplierOptions}
+              searchable
+              clearable
+              nothingFoundMessage="No suppliers"
+            />
+            <div className="purchase-order-filter-dates">
+              <TextInput
+                label="Date from"
+                leftSection={<IconCalendarStats size={16} />}
+                type="date"
+                value={dateFrom}
+                onChange={(event) => onDateFromChange(event.currentTarget.value)}
+              />
+              <TextInput
+                label="Date to"
+                leftSection={<IconCalendarStats size={16} />}
+                type="date"
+                value={dateTo}
+                onChange={(event) => onDateToChange(event.currentTarget.value)}
+              />
+            </div>
+            <Group className="purchase-order-filter-actions" gap="xs" wrap="nowrap">
+              <Button
+                className="purchase-order-filter-clear"
+                variant={hasActiveFilters ? 'light' : 'subtle'}
+                leftSection={<IconX size={16} />}
+                onClick={onClearFilters}
+                disabled={!hasActiveFilters}
+              >
+                Clear
+              </Button>
+              <Button
+                className="purchase-order-filter-refresh"
+                variant="light"
+                leftSection={<IconRefresh size={16} />}
+                loading={isFetching}
+                onClick={onRefresh}
+              >
+                Refresh
+              </Button>
+            </Group>
+          </div>
+        </Stack>
       </Paper>
 
       <Paper withBorder p="sm" className="purchase-order-summary-strip">

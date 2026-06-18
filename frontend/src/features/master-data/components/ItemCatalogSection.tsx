@@ -140,17 +140,15 @@ export function ItemCatalogSection({
                             <Text size="sm" fw={700}>
                               {item.item_code}
                             </Text>
-                            <Badge color={item.is_new === false ? 'gray' : 'blue'} variant="light">
-                              {item.is_new === false
-                                ? t('masterData.usedStatus')
-                                : t('masterData.newStatus')}
+                            <Badge color="blue" variant="light">
+                              {item.item_category || '-'}
                             </Badge>
                           </Group>
                           <Text size="sm" fw={600} lineClamp={2} title={item.item_name}>
                             {item.item_name}
                           </Text>
                           <Text size="xs" c="dimmed" lineClamp={2}>
-                            {item.item_description || '-'}
+                            {item.item_name_en || item.note || '-'}
                           </Text>
                         </Table.Td>
                         <Table.Td style={{ minWidth: '12rem' }}>
@@ -166,17 +164,20 @@ export function ItemCatalogSection({
                         </Table.Td>
                         <Table.Td style={{ minWidth: '11rem' }}>
                           <Text size="sm" fw={600}>
-                            {[item.brand, item.model].filter(Boolean).join(' / ') || '-'}
+                            {[item.base_uom, item.purchase_uom].filter(Boolean).join(' / ') || '-'}
                           </Text>
                           <Text size="xs" c="dimmed" lineClamp={2}>
-                            {[item.unit, item.item_type].filter(Boolean).join(' | ') || '-'}
+                            {t('masterData.uomConversion')}: {formatDecimal(item.uom_conversion)} |{' '}
+                            {item.item_type || '-'}
                           </Text>
                         </Table.Td>
                         <Table.Td style={{ minWidth: '9rem' }}>
-                          <Text size="sm">{item.origin_country || '-'}</Text>
+                          <Text size="sm">{item.country_of_origin || '-'}</Text>
                           <Text size="xs" c="dimmed">
-                            {t('masterData.leadTimeDays')}: {item.lead_time_days ?? '-'} | {t('masterData.moq')}:{' '}
-                            {formatDecimal(item.moq)}
+                            {t('masterData.unitPriceUsd')}: {formatDecimal(item.unit_price_usd)}
+                          </Text>
+                          <Text size="xs" c="dimmed">
+                            {t('masterData.barcode')}: {item.barcode || '-'}
                           </Text>
                         </Table.Td>
                         <Table.Td style={{ minWidth: '10rem' }}>

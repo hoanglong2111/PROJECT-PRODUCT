@@ -300,7 +300,7 @@ export function PurchaseOrderForm({
                                   selectedItem?.customs_profiles?.[0]?.id ??
                                   '',
                                 item_description: selectedItem?.item_description ?? selectedItem?.item_name ?? '',
-                                unit: selectedItem?.unit ?? line.unit,
+                                unit: selectedItem?.base_uom ?? line.unit,
                               });
                             }}
                             searchable

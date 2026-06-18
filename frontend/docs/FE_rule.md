@@ -637,3 +637,79 @@ Frontend implementation is correct when:
 - User can view Quotation, Shipment, Customs, Carrier DO, DTO screens.
 - UI actions are disabled when status does not allow them.
 ```
+
+---
+
+# 16. Master Data Rules
+
+Master Data lives in `features/master-data` and is organized into two grouped tab sections:
+
+```txt
+Core master data : Item Master | Supplier | Forwarder & Carrier | Task Template
+Reference data   : Currency | Incoterm | Transport Mode
+```
+
+The four Core entities follow the Phase-1 import templates in
+`docs/master_data/*.html`. Use the documented field schema:
+
+```txt
+Item Master : item_code, item_name, item_name_en, item_category
+              (NVL|BTP|TP|CCDC|DONG_GOI), item_type
+              (RAW|SEMI|FG|CONSUMABLE|PACKAGING), base_uom, purchase_uom,
+              uom_conversion, hs_code (on item), country_of_origin,
+              unit_price_usd, barcode
+Supplier    : supplier_code, supplier_name, supplier_name_en, supplier_type
+              (OVERSEAS_SEA|OVERSEAS_AIR|DOMESTIC), country, city,
+              contact_person, contact_email, contact_phone, payment_term,
+              currency, default_incoterm, lead_time_production_days, bank_info
+Forwarder   : forwarder_code, forwarder_name, forwarder_type
+              (SEA|AIR|TRUCKING|MULTI), country, contact_person, contact_email,
+              contact_phone, is_primary, note
+Carrier     : carrier_code, carrier_name, carrier_type
+              (SHIPPING_LINE|AIRLINE), scac_iata_code, service_route_note,
+              contact_booking, contact_email, note
+```
+
+Rules:
+
+```txt
+- Renamed Item/Supplier fields are entity-scoped. Do NOT rename line-level
+  unit / lead_time_* on PO / DO / Shipment lines.
+- Forwarder & Carrier are SEPARATE entities; do not split or migrate the
+  existing supplier partner rows in this scope.
+- Master-data clients call /api compatibility endpoints and read the
+  { data, total, pagination } / { data } / { data, message } shapes.
+```
+
+---
+
+# 17. Task Template ↔ Runtime Task Rules
+
+Task Template (Master Data, `task-templates`) is the SOP catalog of the 20
+Phase-1 tasks. It is the single source of SOP vocabulary:
+
+```txt
+milestone_code : PRE_SHIPMENT, MS1_BOOKING_CONFIRMED, MS2_CARGO_READY,
+                 MS3_LOADED, MS4_IN_TRANSIT, MS5_ARRIVED_PORT,
+                 MS6_CUSTOMS_SUBMITTED, MS7_CUSTOMS_CLEARED, MS8_DELIVERED_GATE
+department     : FDS_SALES, KBI_PURCHASING, FDS_OPS, FDS_OPS_CUSTOMS,
+                 FDS_ACCOUNTING, KBI_WAREHOUSE
+assignee_code  : S01..S03, O01..O03, A01..A02 (SOP §6.2)
+```
+
+The runtime Tasks screen (`features/tasks`) is **linked to**, not a duplicate
+of, the catalog:
+
+```txt
+- Each runtime task carries task_template_id + a `template` snapshot
+  (milestone_code, department, sla, related_documents, group).
+- Surface the template metadata (milestone badge on the board, SOP panel in
+  TaskDetail). Render milestone/department labels from MILESTONE_CODES /
+  DEPARTMENTS in `@shared/api/taskTemplates` — do not hand-map SOP codes.
+- A runtime task with no template link shows no SOP panel; never invent a link
+  on the frontend (the backend seed owns the mapping).
+```
+
+Out of scope (do not implement unless requested): generating runtime tasks
+from templates per PO/Shipment, and replacing the legacy `TaskRole`/free-text
+assignee.department vocabulary on runtime tasks.

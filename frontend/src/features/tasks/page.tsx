@@ -40,7 +40,7 @@ import {
 import { queryKeys } from '@shared/api/queryKeys';
 import { useEntityParam } from '@shared/hooks/useEntityParam';
 import { useI18n } from '@shared/i18n';
-import { priorityColor } from './model/tasksModel';
+import { milestoneLabel, priorityColor } from './model/tasksModel';
 import { useTasksUiStore } from './model/tasksUiStore';
 import { Gd1PoTasksBoard } from './components/Gd1PoTasksBoard';
 import { Metric } from './components/Metric';
@@ -329,9 +329,16 @@ export function Tasks() {
                       <Table.Tr key={task.task_id}>
                         <Table.Td className="table-cell-truncate" style={{ maxWidth: '20rem' }}>
                           <Text fw={700} lineClamp={1} title={task.task_name}>{task.task_name}</Text>
-                          <Text size="xs" c="dimmed">
-                            {task.task_id}
-                          </Text>
+                          <Group gap={6} mt={2}>
+                            <Text size="xs" c="dimmed">
+                              {task.task_id}
+                            </Text>
+                            {task.template?.milestone_code ? (
+                              <Badge size="xs" variant="light" color="grape">
+                                {milestoneLabel(task.template.milestone_code)}
+                              </Badge>
+                            ) : null}
+                          </Group>
                         </Table.Td>
                         <Table.Td>
                           <Text size="sm" fw={600}>

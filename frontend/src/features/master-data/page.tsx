@@ -4,6 +4,7 @@ import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/rea
 import {
   IconAlertCircle,
   IconCash,
+  IconClipboardList,
   IconFileCode,
   IconMapPin,
   IconRoute,
@@ -11,6 +12,12 @@ import {
 } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 
+import {
+  deleteCarrier,
+  deleteForwarder,
+  type Carrier,
+  type Forwarder,
+} from '@shared/api/forwarders';
 import {
   deleteItem,
   deleteItemGroup,
@@ -22,6 +29,7 @@ import {
   type ItemTaxProfile,
 } from '@shared/api/items';
 import { queryKeys } from '@shared/api/queryKeys';
+import { deleteTaskTemplate, type TaskTemplate } from '@shared/api/taskTemplates';
 import {
   deleteCurrency,
   deleteIncoterm,
@@ -42,7 +50,11 @@ import { useI18n } from '@shared/i18n';
 import { useMasterDataStore } from './model/masterDataStore';
 
 import { optionalString } from './model/masterDataModel';
+import { CarrierModal } from './components/CarrierModal';
+import { CarriersSection } from './components/CarriersSection';
 import { CurrencyModal } from './components/CurrencyModal';
+import { ForwarderModal } from './components/ForwarderModal';
+import { ForwardersSection } from './components/ForwardersSection';
 import { IncotermModal } from './components/IncotermModal';
 import { ItemCatalogSection } from './components/ItemCatalogSection';
 import { ItemGroupModal } from './components/ItemGroupModal';
@@ -56,6 +68,8 @@ import {
   buildTransportModeColumns,
 } from './components/referenceColumns';
 import { SupplierModal } from './components/SupplierModal';
+import { TaskTemplateModal } from './components/TaskTemplateModal';
+import { TaskTemplatesSection } from './components/TaskTemplatesSection';
 import { TransportModeModal } from './components/TransportModeModal';
 
 export function MasterData() {
@@ -74,6 +88,10 @@ export function MasterData() {
     setItemGroupSearch,
     setItemPage,
     setItemSearch,
+    setTaskTemplateDepartmentFilter,
+    setTaskTemplateMilestoneFilter,
+    taskTemplateDepartmentFilter,
+    taskTemplateMilestoneFilter,
   } = useMasterDataStore();
 
   const [itemGroupModalOpened, itemGroupModalHandlers] = useDisclosure(false);
@@ -82,6 +100,9 @@ export function MasterData() {
   const [incotermModalOpened, incotermModalHandlers] = useDisclosure(false);
   const [transportModeModalOpened, transportModeModalHandlers] = useDisclosure(false);
   const [supplierModalOpened, supplierModalHandlers] = useDisclosure(false);
+  const [forwarderModalOpened, forwarderModalHandlers] = useDisclosure(false);
+  const [carrierModalOpened, carrierModalHandlers] = useDisclosure(false);
+  const [taskTemplateModalOpened, taskTemplateModalHandlers] = useDisclosure(false);
 
   const [editingItemGroup, setEditingItemGroup] = useState<ItemGroup | null>(null);
   const [editingItem, setEditingItem] = useState<Item | null>(null);
@@ -89,6 +110,9 @@ export function MasterData() {
   const [editingIncoterm, setEditingIncoterm] = useState<Incoterm | null>(null);
   const [editingTransportMode, setEditingTransportMode] = useState<TransportMode | null>(null);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [editingForwarder, setEditingForwarder] = useState<Forwarder | null>(null);
+  const [editingCarrier, setEditingCarrier] = useState<Carrier | null>(null);
+  const [editingTaskTemplate, setEditingTaskTemplate] = useState<TaskTemplate | null>(null);
   const [transportScope, setTransportScope] = useState<'all' | 'intl' | 'domestic'>('all');
 
   const itemListParams = useMemo(
@@ -251,6 +275,21 @@ export function MasterData() {
     onSuccess: () => invalidateTradeMasterData(queryKeys.supplierLists),
   });
 
+  const deleteForwarderMutation = useMutation({
+    mutationFn: deleteForwarder,
+    onSuccess: () => invalidateTradeMasterData(queryKeys.forwarderLists),
+  });
+
+  const deleteCarrierMutation = useMutation({
+    mutationFn: deleteCarrier,
+    onSuccess: () => invalidateTradeMasterData(queryKeys.carrierLists),
+  });
+
+  const deleteTaskTemplateMutation = useMutation({
+    mutationFn: deleteTaskTemplate,
+    onSuccess: () => invalidateTradeMasterData(queryKeys.taskTemplateLists),
+  });
+
   const openAddCurrency = () => {
     setEditingCurrency(null);
     currencyModalHandlers.open();
@@ -285,6 +324,33 @@ export function MasterData() {
   const openEditSupplier = (supplier: Supplier) => {
     setEditingSupplier(supplier);
     supplierModalHandlers.open();
+  };
+
+  const openAddForwarder = () => {
+    setEditingForwarder(null);
+    forwarderModalHandlers.open();
+  };
+  const openEditForwarder = (forwarder: Forwarder) => {
+    setEditingForwarder(forwarder);
+    forwarderModalHandlers.open();
+  };
+
+  const openAddCarrier = () => {
+    setEditingCarrier(null);
+    carrierModalHandlers.open();
+  };
+  const openEditCarrier = (carrier: Carrier) => {
+    setEditingCarrier(carrier);
+    carrierModalHandlers.open();
+  };
+
+  const openAddTaskTemplate = () => {
+    setEditingTaskTemplate(null);
+    taskTemplateModalHandlers.open();
+  };
+  const openEditTaskTemplate = (template: TaskTemplate) => {
+    setEditingTaskTemplate(template);
+    taskTemplateModalHandlers.open();
   };
 
   const openAddItemGroup = () => {
@@ -323,6 +389,21 @@ export function MasterData() {
   const handleDeleteSupplier = (supplier: Supplier) => {
     if (!window.confirm(t('masterData.confirmDeleteSupplier'))) return;
     deleteSupplierMutation.mutate(supplier.id);
+  };
+
+  const handleDeleteForwarder = (forwarder: Forwarder) => {
+    if (!window.confirm(t('masterData.confirmDeleteForwarder'))) return;
+    deleteForwarderMutation.mutate(forwarder.id);
+  };
+
+  const handleDeleteCarrier = (carrier: Carrier) => {
+    if (!window.confirm(t('masterData.confirmDeleteCarrier'))) return;
+    deleteCarrierMutation.mutate(carrier.id);
+  };
+
+  const handleDeleteTaskTemplate = (template: TaskTemplate) => {
+    if (!window.confirm(t('masterData.confirmDeleteTaskTemplate'))) return;
+    deleteTaskTemplateMutation.mutate(template.id);
   };
 
   const handleDeleteItemGroup = (id: string) => {
@@ -370,23 +451,40 @@ export function MasterData() {
       )}
 
       <Tabs value={activeTab} onChange={(val) => setActiveTab((val || 'suppliers') as typeof activeTab)}>
-        <Tabs.List>
-          <Tabs.Tab value="suppliers" leftSection={<IconTruckDelivery size={16} />}>
-            {t('masterData.tabSuppliers')}
-          </Tabs.Tab>
-          <Tabs.Tab value="currencies" leftSection={<IconCash size={16} />}>
-            {t('masterData.tabCurrencies')}
-          </Tabs.Tab>
-          <Tabs.Tab value="incoterms" leftSection={<IconRoute size={16} />}>
-            {t('masterData.tabIncoterms')}
-          </Tabs.Tab>
-          <Tabs.Tab value="transportModes" leftSection={<IconMapPin size={16} />}>
-            {t('masterData.tabTransportModes')}
-          </Tabs.Tab>
-          <Tabs.Tab value="items" leftSection={<IconFileCode size={16} />}>
-            {t('masterData.tabHsCode')}
-          </Tabs.Tab>
-        </Tabs.List>
+        <Group align="center" gap="md" wrap="wrap">
+          <Group align="center" gap="xs">
+            <Tabs.List>
+              <Tabs.Tab value="items" leftSection={<IconFileCode size={16} />}>
+                {t('masterData.tabItems')}
+              </Tabs.Tab>
+              <Tabs.Tab value="suppliers" leftSection={<IconTruckDelivery size={16} />}>
+                {t('masterData.tabSuppliers')}
+              </Tabs.Tab>
+              <Tabs.Tab value="forwarders" leftSection={<IconRoute size={16} />}>
+                {t('masterData.tabForwarders')}
+              </Tabs.Tab>
+              <Tabs.Tab value="taskTemplates" leftSection={<IconClipboardList size={16} />}>
+                {t('masterData.tabTaskTemplates')}
+              </Tabs.Tab>
+            </Tabs.List>
+          </Group>
+          <Text c="dimmed" fw={700}>
+            |
+          </Text>
+          <Group align="center" gap="xs">
+            <Tabs.List>
+              <Tabs.Tab value="currencies" leftSection={<IconCash size={16} />}>
+                {t('masterData.tabCurrencies')}
+              </Tabs.Tab>
+              <Tabs.Tab value="incoterms" leftSection={<IconRoute size={16} />}>
+                {t('masterData.tabIncoterms')}
+              </Tabs.Tab>
+              <Tabs.Tab value="transportModes" leftSection={<IconMapPin size={16} />}>
+                {t('masterData.tabTransportModes')}
+              </Tabs.Tab>
+            </Tabs.List>
+          </Group>
+        </Group>
 
         <Tabs.Panel value="suppliers" pt="md">
           <ReferenceDataPanel
@@ -402,6 +500,36 @@ export function MasterData() {
             onAdd={openAddSupplier}
             onEdit={openEditSupplier}
             onDelete={handleDeleteSupplier}
+          />
+        </Tabs.Panel>
+
+        <Tabs.Panel value="forwarders" pt="md">
+          <Stack gap="md">
+            <ForwardersSection
+              canManage={canManageMasterData}
+              onAdd={openAddForwarder}
+              onDelete={handleDeleteForwarder}
+              onEdit={openEditForwarder}
+            />
+            <CarriersSection
+              canManage={canManageMasterData}
+              onAdd={openAddCarrier}
+              onDelete={handleDeleteCarrier}
+              onEdit={openEditCarrier}
+            />
+          </Stack>
+        </Tabs.Panel>
+
+        <Tabs.Panel value="taskTemplates" pt="md">
+          <TaskTemplatesSection
+            canManage={canManageMasterData}
+            departmentFilter={taskTemplateDepartmentFilter}
+            milestoneFilter={taskTemplateMilestoneFilter}
+            onAdd={openAddTaskTemplate}
+            onDelete={handleDeleteTaskTemplate}
+            onDepartmentFilterChange={setTaskTemplateDepartmentFilter}
+            onEdit={openEditTaskTemplate}
+            onMilestoneFilterChange={setTaskTemplateMilestoneFilter}
           />
         </Tabs.Panel>
 
@@ -543,6 +671,24 @@ export function MasterData() {
         onClose={supplierModalHandlers.close}
         opened={supplierModalOpened}
         transportModeOptions={transportModeOptions}
+      />
+
+      <ForwarderModal
+        editing={editingForwarder}
+        onClose={forwarderModalHandlers.close}
+        opened={forwarderModalOpened}
+      />
+
+      <CarrierModal
+        editing={editingCarrier}
+        onClose={carrierModalHandlers.close}
+        opened={carrierModalOpened}
+      />
+
+      <TaskTemplateModal
+        editing={editingTaskTemplate}
+        onClose={taskTemplateModalHandlers.close}
+        opened={taskTemplateModalOpened}
       />
 
       <ItemGroupModal

@@ -23,26 +23,31 @@ export function FilterToolbar<T extends string>({
   return (
     <Paper withBorder p="md">
       <Stack gap="sm">
-        <Tabs value={activeTab} onChange={(value) => onTabChange((value ?? tabs[0].value) as T)} variant="pills">
-          <Tabs.List>
-            {tabs.map((tab) => (
-              <Tabs.Tab key={tab.value} value={tab.value}>
-                {tab.label}
-                {tab.count === undefined ? '' : ` (${tab.count})`}
-              </Tabs.Tab>
-            ))}
-          </Tabs.List>
-        </Tabs>
-        <Group justify="space-between" align="flex-end" gap="md" wrap="wrap">
-          <Group align="flex-end" gap="sm" wrap="wrap">
-            {children}
-          </Group>
-          <Group gap="xs" wrap="nowrap">
+        <Group justify="space-between" align="center" gap="sm" wrap="wrap">
+          <Tabs
+            value={activeTab}
+            onChange={(value) => onTabChange((value ?? tabs[0].value) as T)}
+            variant="pills"
+            style={{ flex: '1 1 28rem', minWidth: 0 }}
+          >
+            <Tabs.List>
+              {tabs.map((tab) => (
+                <Tabs.Tab key={tab.value} value={tab.value}>
+                  {tab.label}
+                  {tab.count === undefined ? '' : ` (${tab.count})`}
+                </Tabs.Tab>
+              ))}
+            </Tabs.List>
+          </Tabs>
+          <Group gap="xs" wrap="nowrap" style={{ flex: '0 0 auto' }}>
             {isFetching ? <Loader size="sm" /> : null}
             <Text size="sm" c="dimmed">
               {t('common.shown', { count: shown })}
             </Text>
           </Group>
+        </Group>
+        <Group align="flex-end" gap="sm" wrap="wrap" style={{ width: '100%', minWidth: 0 }}>
+          {children}
         </Group>
       </Stack>
     </Paper>
