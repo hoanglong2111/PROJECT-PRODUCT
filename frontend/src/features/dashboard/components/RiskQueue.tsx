@@ -3,7 +3,7 @@ import { IconArrowRight, IconClockHour4, IconShieldCheck } from '@tabler/icons-r
 import { Link } from 'react-router-dom';
 
 import { useI18n } from '@shared/i18n';
-import { getRiskColor, type OperationalRiskCode } from '@shared/utils/operations';
+import { getRiskColor, type OperationalRiskCode } from '@entities/logistics';
 
 import type { DashboardRiskRow } from '../model/dashboardSelectors';
 

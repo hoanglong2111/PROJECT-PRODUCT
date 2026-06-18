@@ -67,7 +67,7 @@ export function useI18n() {
       },
       documentLabel: (documentName: string) => documentLabels[language][documentName] ?? documentName,
       visualThemeLabel: (theme: VisualTheme) => visualThemeLabels[language][theme],
-      flowTagLabel: (tag: BusinessFlowTag) => flowTagLabels[language][tag],
+      flowTagLabel: (tag: BusinessFlowTag) => flowTagLabels[language][tag] ?? tag,
       formatNumber: (value: number) => value.toLocaleString(language === 'vi' ? 'vi-VN' : 'en-US'),
       languageLabel: (value: WorkspaceLanguage) => languageLabels[language][value],
       priorityLabel: (priority: Priority) => priorityLabels[language][priority],

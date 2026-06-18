@@ -2,6 +2,8 @@
 
 This file applies only to the `frontend/` package. Keep it lean: it is a practical frontend working guide, not an autonomous workflow system.
 
+**This is the canonical guide for every AI agent (Claude Code, Codex, and others) working in this package.** `CLAUDE.md` intentionally contains no duplicated guidance — it only points here, so there is a single source of truth to keep in sync.
+
 ## Project Scope
 
 This is a standalone React/Vite frontend for KBFE GD1: Procurement & Import Tracking.
@@ -29,15 +31,62 @@ Use this vocabulary in new UI copy and docs:
 
 ## Project Structure
 
-Application source lives in `src/` with a feature-sliced layout:
+Application source lives in `src/` with a Feature-Sliced Design (FSD) layout. The
+import direction is one-way: `app → features → entities → shared`.
 
-- `src/app/` contains routing, role configuration, and the root app shell.
-- `src/features/<feature>/` contains page-level feature modules, usually with `page.tsx` and `index.ts`.
-- `src/shared/` contains reusable API clients, auth, components, hooks, i18n, models, stores, theme, and utilities.
-- `src/**/*.test.{ts,tsx}` holds Vitest tests, commonly under `__tests__/`.
-- `public/` contains static assets such as favicons and brand images.
+- `src/app/` — `App.tsx`, `routes.tsx` (lazy feature imports), `routeRoles.ts`, root app shell.
+- `src/features/<feature>/` — one folder per route. Each feature owns its UI and state:
+  - `page.tsx` — thin orchestrator (data wiring + layout), plus `index.ts` barrel.
+  - `components/` — feature-local presentational components (one unit per file, PascalCase).
+  - `hooks/` — feature-local React hooks.
+  - `model/` — non-React feature code: pure selectors/types/constants (`<feature>Model.ts`),
+    label mappers, **and the feature's Zustand UI store** (`<feature>UiStore.ts`).
+- `src/entities/<entity>/` — cross-feature domain building blocks (currently `logistics`):
+  - `ui/` — domain-aware shared components (e.g. `EntityLink`, `FlowTagBadge`, `SourceLineTable`, `UpdateOrderForms`).
+  - `lib/` — domain helpers (e.g. `operations`, `delay`).
+  - `index.ts` — the entity's public API barrel; import entities only through it.
+- `src/shared/` — domain-agnostic reusable code:
+  - `api/` (axios client, per-domain API modules, `queryKeys.ts`), `auth/`, `components/`,
+    `hooks/`, `i18n/` (`messages.ts`, `useI18n`), `lib/`, `model/` (shared domain types,
+    orphan-exempt), `navigation/`, `preferences/`, `theme/`, `utils/`.
+- `src/**/*.test.{ts,tsx}` — Vitest tests, commonly under `__tests__/`.
+- `public/` — static assets such as favicons and brand images.
 
-Use aliases (`@`, `@app`, `@features`, `@shared`) instead of deep relative imports where practical.
+### Path aliases
+
+| Alias | Resolves to |
+|---|---|
+| `@` | `src/` |
+| `@app` | `src/app/` |
+| `@features` | `src/features/` |
+| `@entities` | `src/entities/` |
+| `@shared` | `src/shared/` |
+
+Prefer aliases over deep relative imports. Use relative imports within a single feature
+(`./components/X`); use the alias when crossing slices.
+
+### State management
+
+- **Server state** → TanStack Query v5. `queryKeys.ts` is the single source of query-key
+  constants. Per-domain API modules in `src/shared/api/` call the shared `apiClient` (Axios
+  with an error-normalizing interceptor that unwraps `errors[0].message` from the v1 envelope).
+- **Client/UI state** (search, active tab, filters) → a **per-feature Zustand store** in that
+  feature's `model/<feature>UiStore.ts` with selector hooks. There is no global grab-bag store.
+- Pass server data down as props; keep UI/filter state in the feature store so page and child
+  views read the same store instead of prop-drilling filter state.
+
+### Routing & auth
+
+All workspace routes are wrapped in `<RequireAuth>` + `<AppShellLayout>`; role-gated routes
+add `<RequireRole allowedRoles={...}>`. Auth state is a `localStorage`-backed React context
+(key `kbfe.ui.auth.user`); the current implementation is a UI stub (login derives role from
+email, no real API call).
+
+### i18n
+
+`en` and `vi` message maps live in `src/shared/i18n/messages.ts`, accessed via `useI18n()`.
+Language preference is persisted to `localStorage` through `WorkspacePreferencesContext`.
+Children should call `useI18n()` themselves rather than receiving `t`/label helpers as props.
 
 ## Package Manager And Commands
 
@@ -68,6 +117,18 @@ Use TypeScript and React function components. Follow existing style:
 Keep shared logic under `src/shared`. Keep feature-specific logic inside its feature folder. Do not import from backend/server code.
 
 There is no dedicated lint or formatter script in `package.json`; rely on TypeScript, tests, boundary checks, and existing file style.
+
+## Dependency Boundaries (enforced by `dependency-cruiser.cjs`)
+
+Run `npm run check:boundaries`. The rules:
+
+- **No circular imports.**
+- **No imports from `backend/` paths.**
+- **No legacy root-level imports** (old `src/api`, `src/auth`, `src/entities`, etc. paths that predate the `src/shared/` move).
+- **`entities/` must not import from `features/`** (`entities-no-upward-imports`).
+- **`shared/` must not import from `entities/` or `features/`** (`shared-no-upward-imports`).
+
+This enforces the one-way layering `app → features → entities → shared` automatically, so it does not rely on convention alone.
 
 ## UI Engineering Rules
 

@@ -13,7 +13,9 @@ const flowTagColor: Record<BusinessFlowTag, string> = {
 
 export function FlowTagBadge({ compact = false, tags }: { compact?: boolean; tags?: BusinessFlowTag[] }) {
   const { flowTagLabel } = useI18n();
-  const visibleTags = tags && tags.length > 0 ? tags : ['LINEAR' as const];
+  const visibleTags = (tags ?? []).filter((tag) => tag !== 'LINEAR');
+
+  if (visibleTags.length === 0) return null;
 
   return (
     <Group gap={4}>

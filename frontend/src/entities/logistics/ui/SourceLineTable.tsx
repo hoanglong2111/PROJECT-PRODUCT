@@ -1,9 +1,11 @@
 import { Badge, Group, NumberFormatter, Paper, ScrollArea, Stack, Table, Text } from '@mantine/core';
 
 import type { DeliverySourceLine, PurchaseOrderLineItem } from '@shared/api/logistics';
+import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { useI18n } from '@shared/i18n';
 
 type SourceLine = DeliverySourceLine | PurchaseOrderLineItem;
+type T = ReturnType<typeof useI18n>['t'];
 
 function isDeliveryLine(line: SourceLine): line is DeliverySourceLine {
   return 'po_number' in line;
@@ -25,18 +27,26 @@ function formatRoute(line: DeliverySourceLine) {
   return `${line.route_origin ?? '-'} -> ${line.route_destination ?? '-'}`;
 }
 
-function renderDeliveryLines(lines: DeliverySourceLine[]) {
+function renderDeliveryLines(lines: DeliverySourceLine[], t: T) {
   return (
     <Paper withBorder p={0}>
       <ScrollArea className="data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
         <Table miw={1040} verticalSpacing="sm">
           <Table.Thead>
             <Table.Tr>
-              <Table.Th>DO / LOT</Table.Th>
+              <Table.Th>
+                <HeaderLabel label="DO / LOT" hint={`${t('glossary.do')} ${t('glossary.lot')}`} />
+              </Table.Th>
               <Table.Th>Item</Table.Th>
-              <Table.Th>Allocation</Table.Th>
-              <Table.Th>Shipment</Table.Th>
-              <Table.Th>Route / ETA</Table.Th>
+              <Table.Th>
+                <HeaderLabel label="Allocation" hint={t('glossary.allocation')} />
+              </Table.Th>
+              <Table.Th>
+                <HeaderLabel label="Shipment" hint={t('glossary.shipment')} />
+              </Table.Th>
+              <Table.Th>
+                <HeaderLabel label="Route / ETA" hint={`${t('glossary.route')} ${t('glossary.eta')}`} />
+              </Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
@@ -142,7 +152,7 @@ export function SourceLineTable({ lines }: { lines: SourceLine[] }) {
   }
 
   if (lines.every(isDeliveryLine)) {
-    return renderDeliveryLines(lines);
+    return renderDeliveryLines(lines, t);
   }
 
   return (
@@ -154,11 +164,19 @@ export function SourceLineTable({ lines }: { lines: SourceLine[] }) {
               <Table.Th>{t('common.source')}</Table.Th>
               <Table.Th>{t('forms.itemCode')}</Table.Th>
               <Table.Th>{t('forms.itemName')}</Table.Th>
-              <Table.Th>HS</Table.Th>
-              <Table.Th>{t('common.dutyVatHeader')}</Table.Th>
-              <Table.Th>{t('common.tariffHeader')}</Table.Th>
+              <Table.Th>
+                <HeaderLabel label="HS" hint={t('glossary.hsCode')} />
+              </Table.Th>
+              <Table.Th>
+                <HeaderLabel label={t('common.dutyVatHeader')} hint={t('glossary.dutyVat')} />
+              </Table.Th>
+              <Table.Th>
+                <HeaderLabel label={t('common.tariffHeader')} hint={t('glossary.tariffCode')} />
+              </Table.Th>
               <Table.Th>{t('forms.quantity')}</Table.Th>
-              <Table.Th>{t('forms.warehouse')}</Table.Th>
+              <Table.Th>
+                <HeaderLabel label={t('forms.warehouse')} hint={t('glossary.warehouse')} />
+              </Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>

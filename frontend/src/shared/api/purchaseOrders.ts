@@ -202,6 +202,8 @@ export type ListPurchaseOrdersParams = {
   q?: string;
   status?: PurchaseOrderStatusV1 | '';
   supplier_id?: string;
+  from_date?: string;
+  to_date?: string;
 };
 
 export type PurchaseOrderLinePayload = {

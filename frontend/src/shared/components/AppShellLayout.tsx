@@ -42,54 +42,54 @@ import { RouteErrorBoundary } from './PageFeedback';
 const navigation: Array<{
   icon: ComponentType<{ size?: number | string; stroke?: number | string }>;
   labelKey:
-    | 'shell.dashboard'
-    | 'shell.deliveryOrders'
-    | 'shell.domesticTransportOrders'
-    | 'shell.purchaseOrders'
-    | 'shell.shipments'
-    | 'shell.masterData'
-    | 'shell.tasks';
+  | 'shell.dashboard'
+  | 'shell.deliveryOrders'
+  | 'shell.domesticTransportOrders'
+  | 'shell.purchaseOrders'
+  | 'shell.shipments'
+  | 'shell.masterData'
+  | 'shell.tasks';
   path: string;
   roles?: AppRole[];
 }> = [
-  { labelKey: 'shell.dashboard', path: '/', icon: IconLayoutDashboard },
-  {
-    labelKey: 'shell.purchaseOrders',
-    path: '/purchase-orders',
-    icon: IconShoppingCart,
-    roles: ['ADMIN', 'PIC_MANAGER', 'SALE_STAFF', 'FINANCE_OFFICER'],
-  },
-  {
-    labelKey: 'shell.deliveryOrders',
-    path: '/delivery-orders',
-    icon: IconTruckDelivery,
-    roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'WAREHOUSE_STAFF'],
-  },
-  {
-    labelKey: 'shell.shipments',
-    path: '/shipments',
-    icon: IconShip,
-    roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'FINANCE_OFFICER', 'WAREHOUSE_STAFF'],
-  },
-  {
-    labelKey: 'shell.domesticTransportOrders',
-    path: '/domestic-transport-orders',
-    icon: IconTruck,
-    roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'FINANCE_OFFICER', 'WAREHOUSE_STAFF'],
-  },
-  {
-    labelKey: 'shell.masterData',
-    path: '/master-data',
-    icon: IconFileText,
-    roles: ['ADMIN', 'PIC_MANAGER'],
-  },
-  {
-    labelKey: 'shell.tasks',
-    path: '/tasks',
-    icon: IconChecklist,
-    roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'FINANCE_OFFICER', 'WAREHOUSE_STAFF'],
-  },
-];
+    { labelKey: 'shell.dashboard', path: '/', icon: IconLayoutDashboard },
+    {
+      labelKey: 'shell.purchaseOrders',
+      path: '/purchase-orders',
+      icon: IconShoppingCart,
+      roles: ['ADMIN', 'PIC_MANAGER', 'SALE_STAFF', 'FINANCE_OFFICER'],
+    },
+    {
+      labelKey: 'shell.deliveryOrders',
+      path: '/delivery-orders',
+      icon: IconTruckDelivery,
+      roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'WAREHOUSE_STAFF'],
+    },
+    {
+      labelKey: 'shell.shipments',
+      path: '/shipments',
+      icon: IconShip,
+      roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'FINANCE_OFFICER', 'WAREHOUSE_STAFF'],
+    },
+    {
+      labelKey: 'shell.domesticTransportOrders',
+      path: '/domestic-transport-orders',
+      icon: IconTruck,
+      roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'FINANCE_OFFICER', 'WAREHOUSE_STAFF'],
+    },
+    {
+      labelKey: 'shell.masterData',
+      path: '/master-data',
+      icon: IconFileText,
+      roles: ['ADMIN', 'PIC_MANAGER'],
+    },
+    {
+      labelKey: 'shell.tasks',
+      path: '/tasks',
+      icon: IconChecklist,
+      roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'FINANCE_OFFICER', 'WAREHOUSE_STAFF'],
+    },
+  ];
 
 export function AppShellLayout() {
   const [mobileOpened, mobileHandlers] = useDisclosure(false);
@@ -134,11 +134,6 @@ export function AppShellLayout() {
             <UnstyledButton component={Link} to="/" className="brand-mark">
               <span className="brand-logo-frame">
                 <img src="/brand/fds_logo.png" alt="FDS" className="brand-logo" />
-              </span>
-              <span>
-                <Text size="sm" fw={700} className="brand-title">
-                  FDS
-                </Text>
               </span>
             </UnstyledButton>
           </Group>

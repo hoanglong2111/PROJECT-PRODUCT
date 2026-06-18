@@ -71,6 +71,7 @@ import {
   requestQuotation,
   submitQuotationToKbi,
   type QuotationChargeLineV1,
+  type QuotationChargeTypeV1,
   type QuotationStatusV1,
   type QuotationTypeV1,
   type QuotationV1,
@@ -358,11 +359,24 @@ export type LogisticsAttachment = {
   uploadedBy: string | null;
 };
 
+export type QuotationChargeLineInput = {
+  charge_type: string;
+  description: string;
+  unit?: string;
+  quantity?: number;
+  unit_price: number;
+};
+
 export type CreateQuotationPayload = {
   requestCode: string;
   shippingMode: ShippingMode;
   quoteAmount?: number | null;
   currency?: string | null;
+  /**
+   * Itemized Incoterms-aware charge lines. When provided, these are persisted
+   * verbatim and the legacy flat freight/local/customs fields are ignored.
+   */
+  chargeLines?: QuotationChargeLineInput[];
 };
 
 export type CreateShipmentPayload = {
@@ -693,8 +707,15 @@ function quotationStatusToUi(status: QuotationStatusV1): QuotationStatus {
 }
 
 function inferQuotationShippingMode(quotation: QuotationV1): ShippingMode {
-  const chargeTypes = new Set((quotation.charge_lines ?? []).map((line) => line.charge_type));
+  const lines = quotation.charge_lines ?? [];
+  const chargeTypes = new Set(lines.map((line) => line.charge_type));
   if (chargeTypes.has('AIR_FREIGHT')) return 'AIR';
+  // Fall back to the per-line pricing basis (CONT/RT/KGS) emitted by the
+  // Incoterms-aware form, since the quotation record has no shipping-mode field.
+  const units = new Set(lines.map((line) => (line.unit ?? '').toUpperCase()));
+  if (units.has('KGS')) return 'AIR';
+  if (units.has('RT') || chargeTypes.has('CFS')) return 'LCL';
+  if (units.has('CONT')) return 'FCL';
   if (chargeTypes.has('TRUCKING')) return 'LCL';
   return 'FCL';
 }
@@ -710,6 +731,7 @@ function sumChargeLines(chargeLines: QuotationChargeLineV1[] | undefined, types:
 
 function mapV1Quotation(quotation: QuotationV1, requestCode?: string): Quotation & {
   carrierName?: string;
+  chargeLines?: QuotationChargeLineV1[];
   customsFee?: number;
   freightCost?: number;
   isFinal?: boolean;
@@ -719,8 +741,11 @@ function mapV1Quotation(quotation: QuotationV1, requestCode?: string): Quotation
   version?: number;
 } {
   const chargeLines = quotation.charge_lines ?? [];
-  const freightCost = sumChargeLines(chargeLines, ['OCEAN_FREIGHT', 'AIR_FREIGHT']);
-  const localCharges = sumChargeLines(chargeLines, ['LOCAL_CHARGE', 'TRUCKING', 'DO_FEE', 'DEMURRAGE', 'DETENTION', 'WAREHOUSE', 'DOCUMENT_FEE']);
+  const freightCost = sumChargeLines(chargeLines, ['OCEAN_FREIGHT', 'AIR_FREIGHT', 'BREAKBULK_FREIGHT', 'ORIGIN_CHARGE']);
+  const localCharges = sumChargeLines(chargeLines, [
+    'LOCAL_CHARGE', 'TRUCKING', 'DO_FEE', 'HANDLING', 'THC', 'CIC', 'EMC_EMF', 'CLEANING', 'CFS',
+    'LOWERING_FEE', 'LOADING_FEE', 'DEMURRAGE', 'DETENTION', 'WAREHOUSE', 'DOCUMENT_FEE',
+  ]);
   const customsFee = sumChargeLines(chargeLines, ['CUSTOMS_FEE']);
   const quotationTotal = Number(quotation.grand_total_amount ?? quotation.total_amount);
   const chargeLineTotal = sumNumbers(chargeLines.map((line) => line.total_amount ?? line.amount));
@@ -730,6 +755,7 @@ function mapV1Quotation(quotation: QuotationV1, requestCode?: string): Quotation
     bookingConfirmedAt: quotation.confirmed_at,
     bookingNumber: quotation.is_final ? quotation.quotation_no : null,
     carrierName: quotation.supplier?.supplier_name ?? quotation.supplier_id,
+    chargeLines,
     createdAt: quotation.create_at,
     createdBy: null,
     currency: quotation.currency?.currency_code ?? quotation.currency_code ?? quotation.currency_id ?? null,
@@ -799,21 +825,34 @@ async function resolveShipmentId(value: string) {
   return shipment.id;
 }
 
-function buildQuotationChargeLines(payload: CreateQuotationPayload) {
+type BuiltQuotationChargeLine = {
+  charge_type: QuotationChargeTypeV1;
+  description: string;
+  line_no: number;
+  quantity: number;
+  unit: string;
+  unit_price: number;
+};
+
+function buildQuotationChargeLines(payload: CreateQuotationPayload): BuiltQuotationChargeLine[] {
+  // Preferred path: itemized Incoterms-aware lines from the form.
+  if (Array.isArray(payload.chargeLines) && payload.chargeLines.length > 0) {
+    return payload.chargeLines
+      .filter((line) => toNumber(line.unit_price) > 0)
+      .map((line, index) => ({
+        charge_type: line.charge_type as QuotationChargeTypeV1,
+        description: line.description,
+        line_no: index + 1,
+        quantity: toNumber(line.quantity) || 1,
+        unit: line.unit || 'SET',
+        unit_price: toNumber(line.unit_price),
+      }));
+  }
+
+  // Legacy fallback: flat freight/local/customs aggregate fields.
   const shippingMode = payload.shippingMode.toUpperCase();
-  const chargeLines: Array<{
-    charge_type: 'AIR_FREIGHT' | 'CUSTOMS_FEE' | 'LOCAL_CHARGE' | 'OCEAN_FREIGHT';
-    description: string;
-    line_no: number;
-    quantity: number;
-    unit: string;
-    unit_price: number;
-  }> = [];
-  const addLine = (
-    chargeType: 'AIR_FREIGHT' | 'CUSTOMS_FEE' | 'LOCAL_CHARGE' | 'OCEAN_FREIGHT',
-    description: string,
-    amount: number,
-  ) => {
+  const chargeLines: BuiltQuotationChargeLine[] = [];
+  const addLine = (chargeType: QuotationChargeTypeV1, description: string, amount: number) => {
     if (amount <= 0) return;
     chargeLines.push({
       charge_type: chargeType,

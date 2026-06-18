@@ -117,6 +117,8 @@ export type CreateDomesticTransportOrderPayload = {
   vehicle_plate?: string | null;
   driver_name?: string | null;
   driver_phone?: string | null;
+  container_ids?: string[];
+  container_no?: string[] | string | null;
   scheduled_pickup_at?: string | null;
   scheduled_delivery_at?: string | null;
   note?: string | null;

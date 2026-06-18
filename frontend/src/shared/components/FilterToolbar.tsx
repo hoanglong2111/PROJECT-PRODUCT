@@ -33,9 +33,11 @@ export function FilterToolbar<T extends string>({
             ))}
           </Tabs.List>
         </Tabs>
-        <Group justify="space-between" align="end">
-          {children}
-          <Group gap="xs">
+        <Group justify="space-between" align="flex-end" gap="md" wrap="wrap">
+          <Group align="flex-end" gap="sm" wrap="wrap">
+            {children}
+          </Group>
+          <Group gap="xs" wrap="nowrap">
             {isFetching ? <Loader size="sm" /> : null}
             <Text size="sm" c="dimmed">
               {t('common.shown', { count: shown })}

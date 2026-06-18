@@ -143,14 +143,24 @@ Frontend should prioritize these screens:
 ```txt
 1. PO List
 2. PO Detail
-3. PO LOT Planning Board
-4. Internal DO Detail
-5. Quotation Detail / Versioning
-6. Shipment Dashboard
-7. Shipment Detail + Milestones + Documents
-8. Customs Detail
-9. Carrier DO Detail
-10. DTO Detail
+3. PO LOT Planning Board (inside PO Detail)
+4. Internal DO List + Detail
+5. Quotation (inside DO Detail → Quotations tab)
+6. Shipment List
+7. Shipment Detail — tabs: Overview, Milestones, Documents, Customs,
+   Landed Cost, PO Tasks, Carrier DO, DTOs
+8. Domestic Transport Orders (own list + detail screen)
+```
+
+Note on screen structure:
+
+```txt
+- Customs, Carrier DO, and the (read-only) Shipment↔DTO list are TABS inside Shipment Detail,
+  not standalone top-level screens.
+- DTO has a dedicated list/detail screen (Domestic Transport Orders). DTOs are created from
+  customs-cleared shipment(s) through ONE shared, container-aware modal — opened either from the
+  Shipment List (single selection = Create, multi-selection = Consolidate) or from the DTO
+  screen's "Create from shipment" control — and then driven through their status flow.
 ```
 
 ---
@@ -476,6 +486,20 @@ EXPIRED
 CANCELLED
 ```
 
+## 12.1 Carrier DO tab (Shipment detail)
+
+Carrier DO is managed in the **"Carrier DO" tab of Shipment detail** (next to the DTOs tab):
+
+```txt
+- List   : GET    /api/v1/shipments/:shipmentId/carrier-delivery-orders
+- Create : POST   /api/v1/shipments/:shipmentId/carrier-delivery-orders  (only when CUSTOMS_CLEARED)
+- Issue  : POST   /api/v1/carrier-delivery-orders/:id/issue              (PENDING -> ISSUED)
+- Release: POST   /api/v1/carrier-delivery-orders/:id/release            (ISSUED -> RELEASED)
+- Cancel : POST   /api/v1/carrier-delivery-orders/:id/cancel
+```
+
+Disable each action button when the current status does not allow that transition.
+
 ---
 
 # 13. DTO UI Rules
@@ -493,14 +517,18 @@ The relationship is **many-to-many**:
 
 Frontend must reflect this n:n relationship in both Shipment detail and DTO detail screens.
 
-## 13.2 Shipment detail — DTOs tab
+## 13.2 Shipment detail — DTOs tab (read-only + Unlink)
 
-Shipment detail must include a **"DTOs" tab** that:
+Shipment detail includes a **"DTOs" tab** that is **read-only with Unlink only**:
 
 - Lists all DTOs currently linked to the shipment (fetched via `GET /api/v1/shipments/:id/domestic-transport-orders`).
-- Allows linking an existing DTO to the shipment (via `POST /api/v1/shipments/:id/domestic-transport-orders/link` with `{ dto_id }`).
-- Allows unlinking a DTO from the shipment (via `DELETE /api/v1/shipments/:id/domestic-transport-orders/:dtoId/unlink`).
+- Allows **unlinking** a DTO from the shipment (via `DELETE /api/v1/shipments/:id/domestic-transport-orders/:dtoId/unlink`). Unlink only detaches the n:n link; it does not delete the DTO.
 - Shows a notice explaining the n:n model so users understand one DTO can serve multiple shipments.
+
+The tab has **no "create" button and no manual "link existing DTO" control**. Creating a DTO and
+consolidating multiple shipments onto one DTO both go through the shared container-aware modal
+(see 13.4) so container allocation and POD validation always apply. The backend `.../link` endpoint
+still exists and is called internally by that modal when consolidating.
 
 ## 13.3 DTO list / detail — multi-shipment display
 
@@ -511,17 +539,39 @@ When a DTO is linked to more than one shipment:
 
 When a DTO is linked to only one shipment, display the single shipment number as before.
 
-## 13.4 Create DTO
+## 13.4 Create DTO (shared modal)
 
-Frontend should allow creating DTO only when:
+DTO creation/consolidation is funneled through **one shared, container-aware modal**, reachable from two places:
+
+```txt
+1. Shipment List — select one or more customs-cleared shipments, then:
+   - 1 shipment   -> "Create DTO"
+   - 2+ shipments -> "Consolidate DTO (N)"   (LCL consolidation into one DTO)
+2. Domestic Transport Orders screen — pick one customs-cleared shipment in
+   "Create from shipment", then "Create DTO".
+```
+
+Frontend should allow creation only for shipments where:
 
 ```txt
 shipment.status = CUSTOMS_CLEARED
 ```
 
-API: `POST /api/v1/shipments/:shipmentId/domestic-transport-orders`
+In the modal:
 
-The backend automatically creates the junction record linking the new DTO to the creating shipment.
+```txt
+- Containers : list containers of the selected shipment(s). A container already allocated
+               (container.dto_id set) is shown disabled/allocated; free containers are
+               selectable. Empty selection -> DTO created without container allocation.
+- POD check  : for consolidation, all selected shipments must share the same discharge port
+               (dest_port). Mismatched PODs block creation.
+- Other      : truck vendor, warehouse (default "KBI Main Warehouse"), scheduled pickup, note.
+```
+
+API: `POST /api/v1/shipments/:shipmentId/domestic-transport-orders` (the primary shipment).
+The backend auto-creates the junction record linking the new DTO to the primary shipment. For
+consolidation the modal additionally calls `.../domestic-transport-orders/link` for each other
+shipment and reassigns their selected containers to the new DTO.
 
 ## 13.5 DTO status flow
 
