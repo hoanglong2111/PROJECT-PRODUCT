@@ -20,7 +20,8 @@ import {
   Tabs,
 } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
-import { IconAlertTriangle, IconChecklist, IconClock, IconEye, IconGitBranch, IconSearch, IconUserCheck, IconX } from '@tabler/icons-react';
+import { useDisclosure } from '@mantine/hooks';
+import { IconAlertTriangle, IconChecklist, IconClock, IconEye, IconGitBranch, IconPlus, IconSearch, IconUserCheck, IconX } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -40,11 +41,13 @@ import {
 import { queryKeys } from '@shared/api/queryKeys';
 import { useEntityParam } from '@shared/hooks/useEntityParam';
 import { useI18n } from '@shared/i18n';
-import { milestoneLabel, priorityColor } from './model/tasksModel';
+import { MILESTONE_CODES } from '@shared/api/taskTemplates';
+import { departmentLabel, milestoneLabel, priorityColor } from './model/tasksModel';
 import { useTasksUiStore } from './model/tasksUiStore';
 import { Gd1PoTasksBoard } from './components/Gd1PoTasksBoard';
 import { Metric } from './components/Metric';
 import { TaskDetail } from './components/TaskDetail';
+import { TaskFormModal } from './components/TaskFormModal';
 
 export function Tasks() {
   const { priorityLabel, statusLabel, t, taskRoleLabel } = useI18n();
@@ -57,16 +60,28 @@ export function Tasks() {
   const focusedContext = focusedPo || focusedDo;
   const { close: closeTaskParam, open: openTaskParam, value: focusedTask } = useEntityParam('task');
   const [selectedTask, setSelectedTask] = useState<LogisticsTask | null>(null);
+  const [taskFormOpened, taskFormHandlers] = useDisclosure(false);
+  const [editingTask, setEditingTask] = useState<LogisticsTask | null>(null);
+  const openCreateTask = () => {
+    setEditingTask(null);
+    taskFormHandlers.open();
+  };
+  const openEditTask = (task: LogisticsTask) => {
+    setEditingTask(task);
+    taskFormHandlers.open();
+  };
   const search = useTasksUiStore((s) => s.search);
   const statusFilter = useTasksUiStore((s) => s.statusFilter);
   const roleFilter = useTasksUiStore((s) => s.roleFilter);
   const priorityFilter = useTasksUiStore((s) => s.priorityFilter);
+  const milestoneFilter = useTasksUiStore((s) => s.milestoneFilter);
   const requiredOnly = useTasksUiStore((s) => s.requiredOnly);
   const overdueOnly = useTasksUiStore((s) => s.overdueOnly);
   const setSearch = useTasksUiStore((s) => s.setSearch);
   const setStatusFilter = useTasksUiStore((s) => s.setStatusFilter);
   const setRoleFilter = useTasksUiStore((s) => s.setRoleFilter);
   const setPriorityFilter = useTasksUiStore((s) => s.setPriorityFilter);
+  const setMilestoneFilter = useTasksUiStore((s) => s.setMilestoneFilter);
   const setRequiredOnly = useTasksUiStore((s) => s.setRequiredOnly);
   const setOverdueOnly = useTasksUiStore((s) => s.setOverdueOnly);
 
@@ -112,6 +127,7 @@ export function Tasks() {
       const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
       const matchesRole = roleFilter === 'all' || task.role === roleFilter;
       const matchesPriority = priorityFilter === 'all' || task.priority === priorityFilter;
+      const matchesMilestone = milestoneFilter === 'all' || task.template?.milestone_code === milestoneFilter;
       const matchesRequired = !requiredOnly || task.is_required_for_do_closure;
       const matchesOverdue = !overdueOnly || isOverdue(task);
       const matchesSearch = [
@@ -126,9 +142,18 @@ export function Tasks() {
         .toLowerCase()
         .includes(normalizedSearch);
 
-      return matchesFlowContext && matchesStatus && matchesRole && matchesPriority && matchesRequired && matchesOverdue && matchesSearch;
+      return (
+        matchesFlowContext &&
+        matchesStatus &&
+        matchesRole &&
+        matchesPriority &&
+        matchesMilestone &&
+        matchesRequired &&
+        matchesOverdue &&
+        matchesSearch
+      );
     });
-  }, [focusedContext, isOverdue, overdueOnly, priorityFilter, requiredOnly, roleFilter, search, statusFilter, tasks]);
+  }, [focusedContext, isOverdue, milestoneFilter, overdueOnly, priorityFilter, requiredOnly, roleFilter, search, statusFilter, tasks]);
 
   const {
     page,
@@ -137,7 +162,7 @@ export function Tasks() {
     pageStart,
     setPage,
     visibleItems: visibleTasks,
-  } = useListPagination(filteredTasks, [focusedContext, overdueOnly, priorityFilter, requiredOnly, roleFilter, search, statusFilter]);
+  } = useListPagination(filteredTasks, [focusedContext, milestoneFilter, overdueOnly, priorityFilter, requiredOnly, roleFilter, search, statusFilter]);
 
   const clearFilters = useTasksUiStore((s) => s.clearFilters);
 
@@ -187,9 +212,14 @@ export function Tasks() {
             {t('tasks.subtitle')}
           </Text>
         </div>
-        <Badge leftSection={<IconUserCheck size={14} />} size="lg" variant="light">
-          {t('tasks.completionBadge', { percent: completionRate })}
-        </Badge>
+        <Group gap="sm">
+          <Button leftSection={<IconPlus size={16} />} onClick={openCreateTask}>
+            {t('tasks.createTask')}
+          </Button>
+          <Badge leftSection={<IconUserCheck size={14} />} size="lg" variant="light">
+            {t('tasks.completionBadge', { percent: completionRate })}
+          </Badge>
+        </Group>
       </Group>
 
       <Tabs defaultValue="closure">
@@ -279,6 +309,15 @@ export function Tasks() {
                     { label: priorityLabel('LOW'), value: 'LOW' },
                   ]}
                 />
+                <Select
+                  label={t('tasks.milestone')}
+                  value={milestoneFilter}
+                  onChange={(value) => setMilestoneFilter(value ?? 'all')}
+                  data={[
+                    { label: t('common.all'), value: 'all' },
+                    ...Object.entries(MILESTONE_CODES).map(([value, label]) => ({ label, value })),
+                  ]}
+                />
                 <Switch
                   className="filter-switch"
                   checked={requiredOnly}
@@ -336,6 +375,11 @@ export function Tasks() {
                             {task.template?.milestone_code ? (
                               <Badge size="xs" variant="light" color="grape">
                                 {milestoneLabel(task.template.milestone_code)}
+                              </Badge>
+                            ) : null}
+                            {task.template?.department ? (
+                              <Badge size="xs" variant="light" color="blue">
+                                {departmentLabel(task.template.department)}
                               </Badge>
                             ) : null}
                           </Group>
@@ -415,8 +459,15 @@ export function Tasks() {
       </Tabs>
 
       <Drawer opened={Boolean(focusedTask && selectedTask)} onClose={closeDrawer} title={t('tasks.detailTitle')} position="right" size="lg">
-        {selectedTask ? <TaskDetail task={selectedTask} onUpdated={setSelectedTask} /> : null}
+        {selectedTask ? <TaskDetail task={selectedTask} onUpdated={setSelectedTask} onEdit={openEditTask} /> : null}
       </Drawer>
+
+      <TaskFormModal
+        editing={editingTask}
+        opened={taskFormOpened}
+        onClose={taskFormHandlers.close}
+        onSaved={(saved) => setSelectedTask((current) => (current && current.task_id === saved.task_id ? saved : current))}
+      />
     </Stack>
   );
 }

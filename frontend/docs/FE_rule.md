@@ -710,6 +710,19 @@ of, the catalog:
   on the frontend (the backend seed owns the mapping).
 ```
 
+Manual add / edit (`TaskFormModal`, opened from the board "Create task" button
+and the TaskDetail "Edit" button):
+
+```txt
+- The modal is template-driven: picking a Task Template prefills task_name and
+  previews the SOP milestone / department / SLA that the backend will snapshot.
+- A task can also be created freeform (no template) and any field overridden.
+- Create -> createLogisticsTask (POST /v1/tasks); edit -> updateLogisticsTask
+  (PATCH /v1/tasks/:id). Invalidate queryKeys.tasks + globalPoStageTasks after.
+- Default tasks/roles are system-generated (backend seed). The modal is the
+  manual escape hatch, not a replacement for that default generation.
+```
+
 Out of scope (do not implement unless requested): generating runtime tasks
 from templates per PO/Shipment, and replacing the legacy `TaskRole`/free-text
 assignee.department vocabulary on runtime tasks.

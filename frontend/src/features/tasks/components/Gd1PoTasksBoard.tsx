@@ -10,6 +10,8 @@ import { EntityLink } from '@entities/logistics';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { useI18n } from '@shared/i18n';
 import { getApiErrorMessage } from '@shared/lib/errors';
+import { formatDate } from '@shared/utils/date';
+import { departmentLabel, milestoneLabel } from '../model/tasksModel';
 
 export function Gd1PoTasksBoard() {
   const { t } = useI18n();
@@ -138,9 +140,21 @@ export function Gd1PoTasksBoard() {
                       <EntityLink type="po" id={task.purchase_order_id} />
                     </Table.Td>
                     <Table.Td>
-                      <Badge color="gray" variant="light">
-                        {task.po_stage}
-                      </Badge>
+                      <Group gap={6}>
+                        <Badge color="gray" variant="light">
+                          {task.po_stage}
+                        </Badge>
+                        {task.template_milestone_code ? (
+                          <Badge color="grape" variant="light">
+                            {milestoneLabel(task.template_milestone_code)}
+                          </Badge>
+                        ) : null}
+                        {task.template_department ? (
+                          <Badge color="blue" variant="light">
+                            {departmentLabel(task.template_department)}
+                          </Badge>
+                        ) : null}
+                      </Group>
                     </Table.Td>
                     <Table.Td>
                       <Badge color="blue" variant="light">
@@ -149,7 +163,7 @@ export function Gd1PoTasksBoard() {
                     </Table.Td>
                     <Table.Td>
                       <Text size="xs" className="tabular-nums">
-                        {task.due_date ? new Date(task.due_date).toLocaleDateString() : '-'}
+                        {formatDate(task.due_date)}
                       </Text>
                     </Table.Td>
                   </Table.Tr>

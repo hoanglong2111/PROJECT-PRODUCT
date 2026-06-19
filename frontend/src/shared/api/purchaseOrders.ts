@@ -57,6 +57,10 @@ export type PurchaseOrderV1 = {
   expected_warehouse_eta?: string | null;
   actual_warehouse_ata?: string | null;
   status: PurchaseOrderStatusV1;
+  // Resolved PO-level lifecycle status code (taxonomy member, e.g. CONFIRMED,
+  // IN_TRANSIT, CUSTOMS_CLEARED). Demo/real-data hook: when the backend computes
+  // the laggard shipment status it populates this; the UI reads it the same way.
+  lifecycle_status?: string | null;
   sent_at: string | null;
   confirmed_at: string | null;
   cancelled_at: string | null;

@@ -7,7 +7,7 @@ import type { ShippingMode } from '@shared/model/logistics';
  *
  * The set of fees a KBI customer owes depends on the Incoterms group of the
  * originating PO and the shipping mode of the quote. See
- * `kbi-mock-api/docs/quotation_Incoterms.md` for the source rules.
+ * `kbi-mock-api/docs/quotation/quotation_Incoterms.md` for the source rules.
  */
 
 export type QuotationIncotermGroup = 'EXW_FCA' | 'FOB' | 'CFR' | 'PREPAID' | 'UNKNOWN';
@@ -87,16 +87,16 @@ function vnLocalFields(mode: ShippingMode): QuotationChargeField[] {
     { charge_type: 'DO_FEE', code: 'DO_FEE', labelKey: 'quotations.feeDo', unit: 'BL' },
     { charge_type: 'HANDLING', code: 'HANDLING', labelKey: 'quotations.feeHandling', unit: 'BL' },
     { charge_type: 'THC', code: 'THC', labelKey: 'quotations.feeThc', unit: modeUnit },
-    { charge_type: 'CIC', code: 'CIC', labelKey: 'quotations.feeCic', unit: modeUnit },
   ];
+  if (mode === 'LCL') {
+    shared.push({ charge_type: 'CFS', code: 'CFS', labelKey: 'quotations.feeCfs', unit: 'RT' });
+  }
+  shared.push({ charge_type: 'CIC', code: 'CIC', labelKey: 'quotations.feeCic', unit: modeUnit });
   if (mode === 'FCL') {
     shared.push(
       { charge_type: 'EMC_EMF', code: 'EMC_EMF', labelKey: 'quotations.feeEmcEmf', unit: 'CONT' },
       { charge_type: 'CLEANING', code: 'CLEANING', labelKey: 'quotations.feeCleaning', unit: 'CONT' },
     );
-  }
-  if (mode === 'LCL') {
-    shared.push({ charge_type: 'CFS', code: 'CFS', labelKey: 'quotations.feeCfs', unit: 'RT' });
   }
   return shared;
 }

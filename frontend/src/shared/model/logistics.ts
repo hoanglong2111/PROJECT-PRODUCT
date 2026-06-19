@@ -775,6 +775,8 @@ export interface Gd1PoStageTask {
   po_stage: Gd1PoStatus;
   task_name: string;
   task_template_id: string | null;
+  template_milestone_code: string | null;
+  template_department: string | null;
   assignee_id: string;
   assigned_by: string;
   status: Gd1TaskStatus;

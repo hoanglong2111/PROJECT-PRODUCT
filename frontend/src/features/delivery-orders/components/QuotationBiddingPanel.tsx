@@ -15,6 +15,7 @@ import {
   Table,
   Text,
   Title,
+  Tooltip,
 } from '@mantine/core';
 import { IconInfoCircle, IconPlus, IconX } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -32,7 +33,7 @@ import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { InfoField } from '@shared/components/InfoField';
 import { useTradeMasterDataOptions } from '@shared/hooks/useTradeMasterDataOptions';
 import { useI18n } from '@shared/i18n';
-import type { ShippingMode } from '@shared/model/logistics';
+import type { DeliveryOrderStatus, ShippingMode } from '@shared/model/logistics';
 
 import { getChargeFields, groupLabelKey, incotermToGroup } from '../lib/quotationCharges';
 import { SlaTimer } from './SlaTimer';
@@ -60,11 +61,22 @@ type Gd1QuotationBiddingPanelProps = {
   requestCode: string;
   incoterms?: string;
   shippingMethod?: 'SEA' | 'AIR' | 'ROAD';
+  status?: DeliveryOrderStatus;
 };
 
-export function Gd1QuotationBiddingPanel({ requestCode, incoterms, shippingMethod }: Gd1QuotationBiddingPanelProps) {
+/** DO must reach one of these states before quotations may be created. */
+const QUOTE_CREATE_STATUSES: DeliveryOrderStatus[] = ['READY_FOR_QUOTATION', 'QUOTATION_CONFIRMED'];
+
+export function Gd1QuotationBiddingPanel({
+  requestCode,
+  incoterms,
+  shippingMethod,
+  status,
+}: Gd1QuotationBiddingPanelProps) {
   const queryClient = useQueryClient();
   const { t } = useI18n();
+
+  const canCreateQuote = status !== undefined && QUOTE_CREATE_STATUSES.includes(status);
 
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [showComparison, setShowComparison] = useState(false);
@@ -204,9 +216,22 @@ export function Gd1QuotationBiddingPanel({ requestCode, incoterms, shippingMetho
           >
             {showComparison ? t('quotations.hideCompare') : t('quotations.compare')} ({compareIds.length}/2)
           </Button>
-          <Button size="xs" leftSection={<IconPlus size={14} />} onClick={() => setCreateOpened(true)}>
-            {t('quotations.createBtn')}
-          </Button>
+          <Tooltip label={t('quotations.createGateHint')} disabled={canCreateQuote} withArrow>
+            <Button
+              size="xs"
+              leftSection={<IconPlus size={14} />}
+              data-disabled={!canCreateQuote || undefined}
+              onClick={(event) => {
+                if (!canCreateQuote) {
+                  event.preventDefault();
+                  return;
+                }
+                setCreateOpened(true);
+              }}
+            >
+              {t('quotations.createBtn')}
+            </Button>
+          </Tooltip>
         </Group>
       </Group>
 
@@ -337,11 +362,25 @@ export function Gd1QuotationBiddingPanel({ requestCode, incoterms, shippingMetho
         <Paper withBorder p="md">
           <Group justify="space-between" align="center">
             <Text size="sm" c="dimmed">
-              {t('quotations.noQuotes')}
+              {canCreateQuote ? t('quotations.noQuotes') : t('quotations.createGateHint')}
             </Text>
-            <Button size="xs" variant="light" leftSection={<IconPlus size={14} />} onClick={() => setCreateOpened(true)}>
-              {t('quotations.createBtn')}
-            </Button>
+            <Tooltip label={t('quotations.createGateHint')} disabled={canCreateQuote} withArrow>
+              <Button
+                size="xs"
+                variant="light"
+                leftSection={<IconPlus size={14} />}
+                data-disabled={!canCreateQuote || undefined}
+                onClick={(event) => {
+                  if (!canCreateQuote) {
+                    event.preventDefault();
+                    return;
+                  }
+                  setCreateOpened(true);
+                }}
+              >
+                {t('quotations.createBtn')}
+              </Button>
+            </Tooltip>
           </Group>
         </Paper>
       ) : (

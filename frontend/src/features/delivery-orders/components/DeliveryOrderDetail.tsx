@@ -364,6 +364,7 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
             requestCode={deliveryOrder.order_info.order_number}
             incoterms={deliveryOrder.logistics_shipping.incoterms}
             shippingMethod={deliveryOrder.logistics_shipping.shipping_method}
+            status={deliveryOrder.order_info.status}
           />
         </Tabs.Panel>
 

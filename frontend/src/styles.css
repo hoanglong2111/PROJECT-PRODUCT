@@ -277,10 +277,114 @@ html[data-kbfe-resolved-color-scheme='dark'] .global-search-dropdown {
 
 .purchase-order-filter-primary {
   display: grid;
-  grid-template-columns: minmax(18rem, 1.35fr) minmax(9rem, 0.55fr) minmax(13rem, 0.8fr) minmax(20rem, 1fr) auto;
+  grid-template-columns: minmax(16rem, 1.6fr) minmax(13rem, 0.9fr) minmax(18rem, 1fr) auto;
   gap: 0.75rem;
   align-items: end;
   min-width: 0;
+}
+
+/* Stage filter (segmented chips that replace the status select). */
+.po-stage-filter,
+.po-stage-subfilter {
+  padding-bottom: 0.125rem;
+}
+
+.po-stage-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--kbfe-border-primary);
+  background: var(--kbfe-surface-elevated);
+  color: var(--kbfe-text-primary);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.po-stage-chip:hover {
+  border-color: var(--chip-color);
+}
+
+.po-stage-chip-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--chip-color);
+  flex-shrink: 0;
+}
+
+.po-stage-chip-count {
+  min-width: 1.35rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--chip-color) 16%, transparent);
+  color: var(--chip-color);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.po-stage-chip.is-active {
+  border-color: var(--chip-color);
+  background: color-mix(in srgb, var(--chip-color) 12%, var(--kbfe-surface-elevated));
+  color: var(--chip-color);
+}
+
+.po-stage-chip.is-active .po-stage-chip-count {
+  background: var(--chip-color);
+  color: #fff;
+}
+
+.po-stage-subchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.55rem 0.25rem 0.65rem;
+  border-radius: 999px;
+  border: 1px dashed var(--kbfe-border-primary);
+  background: transparent;
+  color: var(--kbfe-text-primary);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  transition: background 120ms ease, border-color 120ms ease, opacity 120ms ease;
+}
+
+.po-stage-subchip:hover {
+  border-color: var(--kbfe-primary-color);
+}
+
+.po-stage-subchip.is-active {
+  border-style: solid;
+  border-color: var(--kbfe-primary-color);
+  background: color-mix(in srgb, var(--kbfe-primary-color) 12%, var(--kbfe-surface-elevated));
+  color: var(--kbfe-primary-color);
+}
+
+.po-stage-subchip-count {
+  min-width: 1.2rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 999px;
+  background: var(--kbfe-surface-subtle);
+  color: var(--kbfe-text-secondary, var(--kbfe-text-primary));
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.po-stage-subchip.is-active .po-stage-subchip-count {
+  background: var(--kbfe-primary-color);
+  color: #fff;
+}
+
+/* Sub-status with no matching POs on this page: dimmed but still clickable. */
+.po-stage-subchip.is-empty:not(.is-active) {
+  opacity: 0.5;
 }
 
 .purchase-order-filter-primary > * {
@@ -302,6 +406,55 @@ html[data-kbfe-resolved-color-scheme='dark'] .global-search-dropdown {
   gap: 0.5rem;
   align-items: end;
   min-width: 0;
+}
+
+.po-stage-cell {
+  min-width: 9.5rem;
+}
+
+/* Three logistics stops sized to their content so full YYYY-MM-DD dates always
+   fit (no truncation, no tooltip). No connector line — order + dots imply the
+   route POL -> POD -> Kho. */
+.po-logistics-route {
+  display: grid;
+  grid-template-columns: repeat(3, max-content);
+  column-gap: 1.5rem;
+  row-gap: 0.1rem;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.po-logistics-node {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.po-logistics-stop {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--kbfe-text-primary);
+}
+
+.po-logistics-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex-shrink: 0;
+  border: 2px solid var(--kbfe-border-strong);
+  border-radius: 999px;
+  background: var(--kbfe-surface-elevated);
+}
+
+.po-logistics-node.is-actual .po-logistics-dot {
+  border-color: var(--kbfe-primary-color);
+  background: color-mix(in srgb, var(--kbfe-primary-color) 24%, var(--kbfe-surface-elevated));
+}
+
+.po-logistics-date {
+  white-space: nowrap;
 }
 
 .shipment-filter-shell {
@@ -1347,6 +1500,12 @@ html[data-kbfe-resolved-color-scheme='dark'] .global-search-dropdown {
     flex: 1 1 10rem;
   }
 
+  .po-logistics-route {
+    grid-template-columns: 1fr;
+    column-gap: 1.5rem;
+    row-gap: 0.1rem;
+  }
+
   .purchase-order-route-node.is-right {
     text-align: left;
   }
@@ -1355,28 +1514,14 @@ html[data-kbfe-resolved-color-scheme='dark'] .global-search-dropdown {
     text-align: left;
   }
 
-  .purchase-order-route-line {
-    justify-content: center;
-    min-height: 3.25rem;
-  }
-
   .shipment-route-line {
     justify-content: center;
     min-height: 3.25rem;
   }
 
-  .purchase-order-route-line::before {
-    right: 0;
-    left: 0;
-  }
-
   .shipment-route-line::before {
     right: 0;
     left: 0;
-  }
-
-  .purchase-order-route-dot {
-    display: none;
   }
 
   .shipment-route-dot {

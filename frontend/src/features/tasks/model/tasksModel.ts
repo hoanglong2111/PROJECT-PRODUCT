@@ -1,4 +1,3 @@
-import type { LogisticsTaskTemplateRef } from '@shared/api/logistics';
 import { DEPARTMENTS, MILESTONE_CODES } from '@shared/api/taskTemplates';
 
 export const priorityColor = {
@@ -18,7 +17,9 @@ export function departmentLabel(code: string | null | undefined) {
   return (DEPARTMENTS as Record<string, string>)[code] ?? code;
 }
 
-export function templateSlaLabel(template: LogisticsTaskTemplateRef | null | undefined) {
+export function templateSlaLabel(
+  template: { sla_hours?: number | null; sla_text?: string | null } | null | undefined,
+) {
   if (!template) return '-';
   if (template.sla_hours !== null && template.sla_hours !== undefined) return `${template.sla_hours}h`;
   return template.sla_text ?? '-';

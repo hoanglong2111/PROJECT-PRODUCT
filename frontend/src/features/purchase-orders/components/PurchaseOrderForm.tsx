@@ -106,7 +106,7 @@ export function PurchaseOrderForm({
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
-    if (!draft.po_no.trim() || !draft.supplier_id) return;
+    if (!draft.po_no.trim() || !draft.supplier_id || !draft.incoterm_id) return;
     if (mode === 'create') {
       const payload = buildPoPayload(draft);
       if (!payload.lines?.length) return;
@@ -201,7 +201,7 @@ export function PurchaseOrderForm({
             value={draft.incoterm_id}
             onChange={(value) => setDraft((current) => ({ ...current, incoterm_id: value ?? '' }))}
             searchable
-            clearable
+            required
           />
           <Select
             label="Currency"

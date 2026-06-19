@@ -2,7 +2,9 @@ import { Badge } from '@mantine/core';
 
 import { useI18n } from '@shared/i18n';
 
-const STATUS_MAP: Record<string, { color: string; variant?: 'filled' | 'light' | 'outline' }> = {
+export type StatusBadgeConfig = { color: string; variant?: 'filled' | 'light' | 'outline' };
+
+export const STATUS_MAP: Record<string, StatusBadgeConfig> = {
   APPROVED: { color: 'blue' },
   ARRIVED: { color: 'grape' },
   ARRIVED_PORT: { color: 'grape' },
@@ -22,6 +24,7 @@ const STATUS_MAP: Record<string, { color: string; variant?: 'filled' | 'light' |
   CONVERTED_TO_PO: { color: 'blue' },
   CREATED: { color: 'gray' },
   COPY: { color: 'gray' },
+  CUSTOMS: { color: 'teal' },
   CUSTOMS_CLEARED: { color: 'teal' },
   CUSTOMS_DRAFT: { color: 'blue' },
   CUSTOMS_PROCESSING: { color: 'yellow' },
@@ -55,6 +58,8 @@ const STATUS_MAP: Record<string, { color: string; variant?: 'filled' | 'light' |
   PENDING_CONFIG: { color: 'yellow' },
   PENDING_APPROVAL: { color: 'yellow' },
   PRELIMINARY_SENT: { color: 'blue' },
+  PROCUREMENT: { color: 'blue' },
+  PRODUCTION: { color: 'indigo' },
   QUOTATION_CONFIRMED: { color: 'blue' },
   QUOTE_CONFIRMED: { color: 'blue' },
   QUOTE_PENDING: { color: 'orange' },
@@ -81,9 +86,13 @@ const STATUS_MAP: Record<string, { color: string; variant?: 'filled' | 'light' |
   YELLOW_NEED_SUPPLEMENT: { color: 'yellow' },
 };
 
+export function getStatusBadgeConfig(status: string): StatusBadgeConfig {
+  return STATUS_MAP[status] ?? { color: 'gray' };
+}
+
 export function StatusBadge({ status }: { status: string }) {
   const { statusLabel } = useI18n();
-  const config = STATUS_MAP[status] ?? { color: 'gray' };
+  const config = getStatusBadgeConfig(status);
 
   return (
     <Badge color={config.color} variant={config.variant ?? 'light'}>

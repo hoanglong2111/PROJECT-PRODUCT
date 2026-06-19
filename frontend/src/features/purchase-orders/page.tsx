@@ -22,8 +22,10 @@ import {
   PAGE_SIZE,
   getDelayedDays,
   getPurchaseOrderSummary,
+  resolvePoStage,
   type PurchaseOrderWorkbench,
 } from './model/purchaseOrderModel';
+import { mapStatusFilterToApi } from './model/poStageConfig';
 import { usePurchaseOrdersUiStore } from './model/purchaseOrdersUiStore';
 import { PurchaseOrderDetailPanel } from './components/PurchaseOrderDetailPanel';
 import { PurchaseOrderForm } from './components/PurchaseOrderForm';
@@ -61,17 +63,19 @@ export function PurchaseOrders() {
     setPage(1);
   }, [dateFrom, dateTo, search, statusFilter, supplierFilter, monthParam]);
 
+  const statusFilterRoute = useMemo(() => mapStatusFilterToApi(statusFilter), [statusFilter]);
+
   const listParams = useMemo<ListPurchaseOrdersParams>(
     () => ({
       page,
       limit: PAGE_SIZE,
       search: search.trim() || monthParam || undefined,
-      status: statusFilter === 'all' ? undefined : statusFilter,
+      status: statusFilterRoute.apiStatus,
       supplier_id: supplierFilter || undefined,
       from_date: dateFrom || undefined,
       to_date: dateTo || undefined,
     }),
-    [dateFrom, dateTo, monthParam, page, search, statusFilter, supplierFilter],
+    [dateFrom, dateTo, monthParam, page, search, statusFilterRoute.apiStatus, supplierFilter],
   );
 
   const purchaseOrdersQuery = useQuery({
@@ -80,9 +84,40 @@ export function PurchaseOrders() {
     placeholderData: keepPreviousData,
   });
 
-  const purchaseOrders = purchaseOrdersQuery.data?.data ?? [];
+  const rawPurchaseOrders = purchaseOrdersQuery.data?.data ?? [];
+  const purchaseOrders = useMemo(() => {
+    const clientFilter = statusFilterRoute.clientStageFilter;
+    if (!clientFilter) return rawPurchaseOrders;
+    return rawPurchaseOrders.filter((order) => {
+      const resolvedStage = resolvePoStage(order);
+      if (clientFilter.kind === 'stage') return resolvedStage.stageKey === clientFilter.stageKey;
+      return resolvedStage.statusCode === clientFilter.statusCode;
+    });
+  }, [rawPurchaseOrders, statusFilterRoute.clientStageFilter]);
+  // Stage chip counts use the UNFILTERED page so the chips stay switchable even
+  // while a stage filter is active.
+  const stageCounts = useMemo(
+    () =>
+      rawPurchaseOrders.reduce<Record<string, number>>((acc, order) => {
+        const { stageKey } = resolvePoStage(order);
+        acc[stageKey] = (acc[stageKey] ?? 0) + 1;
+        return acc;
+      }, {}),
+    [rawPurchaseOrders],
+  );
+  // Sub-status chip counts, keyed by the resolved lifecycle status code, so a
+  // drilled-down chip shows how many POs it will match before clicking.
+  const subStageCounts = useMemo(
+    () =>
+      rawPurchaseOrders.reduce<Record<string, number>>((acc, order) => {
+        const { statusCode } = resolvePoStage(order);
+        acc[statusCode] = (acc[statusCode] ?? 0) + 1;
+        return acc;
+      }, {}),
+    [rawPurchaseOrders],
+  );
   const pagination = purchaseOrdersQuery.data?.meta.pagination;
-  const total = purchaseOrdersQuery.data?.meta.total ?? purchaseOrders.length;
+  const total = purchaseOrdersQuery.data?.meta.total ?? rawPurchaseOrders.length;
   const purchaseOrderSummary = useMemo(() => getPurchaseOrderSummary(purchaseOrders), [purchaseOrders]);
   const delayedPurchaseOrders = purchaseOrders.filter((order) => getDelayedDays(order) > 0).length;
 
@@ -193,6 +228,7 @@ export function PurchaseOrders() {
       {workbench === 'list' ? (
         <PurchaseOrderListView
           delayedPurchaseOrders={delayedPurchaseOrders}
+          isClientSideStatusFilter={Boolean(statusFilterRoute.clientStageFilter)}
           isFetching={purchaseOrdersQuery.isFetching}
           onOpenDetail={openDetail}
           onRefresh={() => {
@@ -203,6 +239,8 @@ export function PurchaseOrders() {
           purchaseOrderSummary={purchaseOrderSummary}
           purchaseOrders={purchaseOrders}
           setPage={setPage}
+          stageCounts={stageCounts}
+          subStageCounts={subStageCounts}
           supplierOptions={supplierOptions}
           total={total}
         />

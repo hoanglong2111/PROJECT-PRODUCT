@@ -254,6 +254,12 @@ export type UpdateDeliveryOrderPayload = {
   warehouseDeadline?: string;
 };
 
+export type TaskAssigneeInput = {
+  id?: string | null;
+  name: string;
+  department?: string | null;
+};
+
 export type UpdateTaskPayload = {
   blockedReason?: string | null;
   completedAt?: string | null;
@@ -261,6 +267,31 @@ export type UpdateTaskPayload = {
   notes?: string;
   progress?: number;
   status?: TaskStatus;
+  taskName?: string;
+  role?: TaskRole;
+  stage?: TaskScreenStage;
+  refType?: string;
+  refId?: string;
+  refNo?: string;
+  priority?: Priority;
+  assignee?: TaskAssigneeInput;
+  taskTemplateId?: string | null;
+};
+
+export type CreateTaskPayload = {
+  taskName: string;
+  taskTemplateId?: string | null;
+  refType?: string;
+  refId?: string;
+  refNo?: string;
+  stage?: TaskScreenStage;
+  role?: TaskRole;
+  assignee?: TaskAssigneeInput;
+  status?: TaskStatus;
+  priority?: Priority;
+  dueDate?: string | null;
+  progress?: number;
+  notes?: string;
 };
 
 export type TaskScreenStage =
@@ -713,6 +744,8 @@ function mapTaskScreenToPoStageTask(task: TaskScreenItem): Gd1PoStageTask {
     status: taskScreenStatusToGd1(task.status),
     task_name: task.task_name,
     task_template_id: task.task_template_id ?? null,
+    template_milestone_code: task.milestone_code ?? null,
+    template_department: task.department ?? null,
     tenant_id: null,
     updated_at: task.update_at ?? '',
   };
@@ -1718,6 +1751,34 @@ export async function uploadDeliveryOrderAttachment({
   } satisfies UploadDeliveryOrderAttachmentResult;
 }
 
+function mapTaskAssigneeInput(assignee?: TaskAssigneeInput) {
+  if (!assignee) return undefined;
+  return {
+    id: assignee.id ?? null,
+    name: assignee.name,
+    department: assignee.department ?? null,
+  };
+}
+
+export async function createLogisticsTask(payload: CreateTaskPayload) {
+  const response = await apiClient.post<ApiResponse<TaskScreenItem>>('/v1/tasks', {
+    task_name: payload.taskName,
+    task_template_id: payload.taskTemplateId,
+    ref_type: payload.refType,
+    ref_id: payload.refId,
+    ref_no: payload.refNo,
+    stage: payload.stage,
+    role: payload.role,
+    assignee: mapTaskAssigneeInput(payload.assignee),
+    status: payload.status,
+    priority: payload.priority,
+    due_at: payload.dueDate,
+    progress: payload.progress,
+    note: payload.notes,
+  });
+  return mapTaskScreenToLogisticsTask(response.data.data);
+}
+
 export async function updateLogisticsTask(taskId: string, payload: UpdateTaskPayload) {
   const response = await apiClient.patch<ApiResponse<TaskScreenItem>>(`/v1/tasks/${taskId}`, {
     blocked_reason: payload.blockedReason,
@@ -1726,6 +1787,15 @@ export async function updateLogisticsTask(taskId: string, payload: UpdateTaskPay
     note: payload.notes,
     progress: payload.progress,
     status: payload.status,
+    task_name: payload.taskName,
+    role: payload.role,
+    stage: payload.stage,
+    ref_type: payload.refType,
+    ref_id: payload.refId,
+    ref_no: payload.refNo,
+    priority: payload.priority,
+    assignee: mapTaskAssigneeInput(payload.assignee),
+    task_template_id: payload.taskTemplateId,
   });
   return mapTaskScreenToLogisticsTask(response.data.data);
 }

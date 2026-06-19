@@ -23,6 +23,7 @@ import { queryKeys } from '@shared/api/queryKeys';
 import { EmptyState } from '@shared/components/EmptyState';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { useI18n } from '@shared/i18n';
+import { formatDate } from '@shared/utils/date';
 
 export function ShipmentDtosPanel({ shipment }: { shipment: ShipmentRecord }) {
   const queryClient = useQueryClient();
@@ -75,7 +76,7 @@ export function ShipmentDtosPanel({ shipment }: { shipment: ShipmentRecord }) {
                       <Text size="xs" c="dimmed">{dto.destination ?? '-'}</Text>
                     </Table.Td>
                     <Table.Td>
-                      <Text size="xs">{dto.scheduled_pickup_at ? new Date(dto.scheduled_pickup_at).toLocaleDateString() : '-'}</Text>
+                      <Text size="xs">{formatDate(dto.scheduled_pickup_at)}</Text>
                     </Table.Td>
                     <Table.Td><StatusBadge status={dto.status} /></Table.Td>
                     <Table.Td>

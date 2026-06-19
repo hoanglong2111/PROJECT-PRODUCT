@@ -1,5 +1,3 @@
-import dayjs from 'dayjs';
-
 import type {
   CreateItemPayload,
   CreateItemTaxProfilePayload,
@@ -152,9 +150,7 @@ export function formatRate(value: number | string | null | undefined) {
   return formatted === '-' ? formatted : `${formatted}%`;
 }
 
-export function formatDateTime(value: string | null | undefined) {
-  return value ? dayjs(value).format('DD/MM/YYYY HH:mm') : '-';
-}
+export { formatDateTime } from '@shared/utils/date';
 
 export function getPrimaryTaxProfile(profiles: ItemTaxProfile[]) {
   return profiles.find((profile) => profile.is_default) ?? profiles[0] ?? null;

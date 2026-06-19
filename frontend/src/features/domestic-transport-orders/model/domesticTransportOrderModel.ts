@@ -67,12 +67,7 @@ export function fromDateTimeInput(value: string) {
   return value ? new Date(value).toISOString() : null;
 }
 
-export function formatDateTime(value: string | null | undefined) {
-  if (!value) return '-';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString();
-}
+export { formatDateTime } from '@shared/utils/date';
 
 export function formatNumber(value: unknown) {
   const number = Number(value);

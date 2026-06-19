@@ -12,8 +12,16 @@ import type {
   UpdatePurchaseOrderV1Payload,
 } from '@shared/api/purchaseOrders';
 
+import {
+  STAGE_BY_STATUS,
+  stageOrder,
+  type PoStageFilterValue,
+  type PoStageKey,
+  type PoStageStatusCode,
+} from './poStageConfig';
+
 export type PurchaseOrderWorkbench = 'list' | 'create' | 'detail';
-export type PurchaseOrderStatusFilter = 'all' | PurchaseOrderStatusV1;
+export type PurchaseOrderStatusFilter = 'all' | PurchaseOrderStatusV1 | PoStageFilterValue | PoStageStatusCode;
 
 export const PAGE_SIZE = 20;
 export const purchaseOrderStatusOptions: PurchaseOrderStatusV1[] = [
@@ -228,6 +236,36 @@ export function getPoLineLotState(line: PurchaseOrderLineV1) {
 
 export function getDelayedDays(order: PurchaseOrderV1) {
   return toNumber(order.delayed_days);
+}
+
+export function resolvePoStage(po: PurchaseOrderV1): { stageKey: PoStageKey; statusCode: string } {
+  // An explicit lifecycle status wins over the timeline derivation. This is the
+  // single hook for real data: when the backend computes the laggard shipment
+  // status it sets `lifecycle_status`, and the UI keeps reading it here unchanged.
+  // TODO(real-data): feed `lifecycle_status` from the laggard shipment.status and
+  // expand to a breakdown[] for multi-shipment POs (HoverCard in PoStageBadge).
+  const statusCode = po.lifecycle_status?.trim() ? po.lifecycle_status : deriveMockPoStatusCode(po);
+  return selectLaggardStage([statusCode], po.status);
+}
+
+function deriveMockPoStatusCode(po: PurchaseOrderV1): string {
+  if (po.status === 'CANCELLED') return 'CANCELLED';
+  if (dateOnly(po.logistics_timeline?.warehouse?.ata ?? po.actual_warehouse_ata)) return 'DELIVERED';
+  if (dateOnly(po.logistics_timeline?.unloading_port?.ata ?? po.actual_eta)) return 'ARRIVED';
+  if (dateOnly(po.logistics_timeline?.loading_port?.atd ?? po.actual_etd)) return 'IN_TRANSIT';
+  return po.status;
+}
+
+function selectLaggardStage(
+  statusCodes: string[],
+  fallbackPoStatus: PurchaseOrderStatusV1,
+): { stageKey: PoStageKey; statusCode: string } {
+  return statusCodes
+    .map((statusCode) => ({
+      stageKey: STAGE_BY_STATUS[statusCode] ?? STAGE_BY_STATUS[fallbackPoStatus],
+      statusCode,
+    }))
+    .sort((left, right) => stageOrder(left.stageKey) - stageOrder(right.stageKey))[0];
 }
 
 export function getDateDelayDays(planned: string | null | undefined, actual: string | null | undefined) {

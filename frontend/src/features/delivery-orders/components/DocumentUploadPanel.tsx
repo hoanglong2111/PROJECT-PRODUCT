@@ -12,6 +12,7 @@ import {
 import { queryKeys } from '@shared/api/queryKeys';
 import { getApiErrorMessage } from '@shared/lib/errors';
 import { useI18n } from '@shared/i18n';
+import { formatDateTime } from '@shared/utils/date';
 
 export function DocumentUploadPanel({
   deliveryOrder,
@@ -124,7 +125,7 @@ function AttachmentList({ attachments }: { attachments: LogisticsAttachment[] })
               {attachment.fileName}
             </Text>
             <Text size="xs" c="dimmed">
-              {formatBytes(attachment.size)} · {new Date(attachment.uploadedAt).toLocaleString()}
+              {formatBytes(attachment.size)} · {formatDateTime(attachment.uploadedAt)}
             </Text>
           </div>
           <Button

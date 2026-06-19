@@ -141,6 +141,11 @@ This enforces the one-way layering `app → features → entities → shared` au
 
 ## Business Rules For Frontend Work
 
+**`docs/FE_rule.md` is the canonical frontend business-rule reference** (screen
+list, per-screen flow, LOT/DO/Quotation/Shipment/Customs/Carrier DO/DTO UI rules).
+Read it before building or changing a screen, and update it when a rule changes;
+the bullets below are orientation only and `FE_rule.md` wins on any conflict.
+
 - PO/DO/Shipment/DTO behavior should match `../docs/context/PROJECT_CONTEXT.md` and `../docs/context/OPERATING_MODEL.md`.
 - Do not add PR flows unless the product owner explicitly reintroduces PR scope.
 - DO is a separate business entity between PO and Shipment: `PO 1-n DO`, `DO 1-1 Shipment`.

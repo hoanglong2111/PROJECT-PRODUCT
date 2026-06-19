@@ -1,4 +1,5 @@
-import { Group, Paper, Progress, SimpleGrid, Stack, Text, Title } from '@mantine/core';
+import { Button, Group, Paper, Progress, SimpleGrid, Stack, Text, Title } from '@mantine/core';
+import { IconPencil } from '@tabler/icons-react';
 
 import type { LogisticsTask } from '@shared/api/logistics';
 import { InfoField } from '@shared/components/InfoField';
@@ -7,7 +8,15 @@ import { useI18n } from '@shared/i18n';
 import { EntityLink, UpdateTaskProgressForm } from '@entities/logistics';
 import { departmentLabel, milestoneLabel, templateSlaLabel } from '../model/tasksModel';
 
-export function TaskDetail({ onUpdated, task }: { onUpdated?: (task: LogisticsTask) => void; task: LogisticsTask }) {
+export function TaskDetail({
+  onEdit,
+  onUpdated,
+  task,
+}: {
+  onEdit?: (task: LogisticsTask) => void;
+  onUpdated?: (task: LogisticsTask) => void;
+  task: LogisticsTask;
+}) {
   const { priorityLabel, t, taskRoleLabel } = useI18n();
 
   return (
@@ -19,7 +28,14 @@ export function TaskDetail({ onUpdated, task }: { onUpdated?: (task: LogisticsTa
             {task.do_number}
           </Text>
         </div>
-        <StatusBadge status={task.status} />
+        <Group gap="xs">
+          {onEdit ? (
+            <Button size="xs" variant="light" leftSection={<IconPencil size={14} />} onClick={() => onEdit(task)}>
+              {t('common.edit')}
+            </Button>
+          ) : null}
+          <StatusBadge status={task.status} />
+        </Group>
       </Group>
 
       <Group gap="xs">

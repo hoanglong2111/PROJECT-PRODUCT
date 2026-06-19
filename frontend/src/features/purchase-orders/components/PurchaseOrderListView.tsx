@@ -14,31 +14,39 @@ import {
   TextInput,
   Tooltip,
 } from '@mantine/core';
-import { IconCalendarStats, IconEye, IconRefresh, IconSearch, IconX } from '@tabler/icons-react';
+import {
+  IconAlertTriangle,
+  IconBox,
+  IconCalendarStats,
+  IconCircleCheck,
+  IconContainer,
+  IconEye,
+  IconRefresh,
+  IconSearch,
+  IconX,
+} from '@tabler/icons-react';
 
 import type { PurchaseOrderV1 } from '@shared/api/purchaseOrders';
 import { EmptyState } from '@shared/components/EmptyState';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { ListPagination } from '@shared/components/ListPagination';
-import { StatusBadge } from '@shared/components/StatusBadge';
 import { useI18n } from '@shared/i18n';
 
 import {
   PAGE_SIZE,
   dateOnly,
-  formatWeightKg,
   getDelayedDays,
-  purchaseOrderStatusOptions,
   totalPoAmount,
-  type PurchaseOrderStatusFilter,
 } from '../model/purchaseOrderModel';
 import { usePurchaseOrdersUiStore } from '../model/purchaseOrdersUiStore';
-import { DateStack } from './DateStack';
+import { LogisticsRouteCell } from './LogisticsRouteCell';
 import { Metric } from './Metric';
-import { SummaryItem } from './SummaryItem';
+import { PoStageBadge } from './PoStageBadge';
+import { PoStageFilter } from './PoStageFilter';
 
 export function PurchaseOrderListView({
   delayedPurchaseOrders,
+  isClientSideStatusFilter,
   isFetching,
   onOpenDetail,
   onRefresh,
@@ -47,10 +55,13 @@ export function PurchaseOrderListView({
   purchaseOrderSummary,
   purchaseOrders,
   setPage,
+  stageCounts,
+  subStageCounts,
   supplierOptions,
   total,
 }: {
   delayedPurchaseOrders: number;
+  isClientSideStatusFilter: boolean;
   isFetching: boolean;
   onOpenDetail: (order: PurchaseOrderV1) => void;
   onRefresh: () => void;
@@ -59,6 +70,8 @@ export function PurchaseOrderListView({
   purchaseOrderSummary: { totalWeightKg: number; totalContainers: number; totalLots: number };
   purchaseOrders: PurchaseOrderV1[];
   setPage: (page: number) => void;
+  stageCounts: Record<string, number>;
+  subStageCounts: Record<string, number>;
   supplierOptions: Array<{ label: string; value: string }>;
   total: number;
 }) {
@@ -80,19 +93,62 @@ export function PurchaseOrderListView({
     Boolean(supplierFilter) ||
     dateFrom !== '' ||
     dateTo !== '';
+  // Share of the loaded rows that are not delayed (same denominator as the
+  // Delayed metric so the two read consistently). Empty list = 100%.
+  const onTimeRate =
+    purchaseOrders.length === 0
+      ? 100
+      : Math.round(((purchaseOrders.length - delayedPurchaseOrders) / purchaseOrders.length) * 100);
 
   return (
     <>
-      <SimpleGrid cols={{ base: 1, sm: 5 }}>
-        <Metric label="Total rows" value={total} color="blue" />
-        <Metric label="Draft" value={purchaseOrders.filter((order) => order.status === 'DRAFT').length} color="gray" />
-        <Metric label="Delayed" value={delayedPurchaseOrders} color="red" />
-        <Metric label="Sent" value={purchaseOrders.filter((order) => order.status === 'SENT').length} color="orange" />
-        <Metric label="Active" value={purchaseOrders.filter((order) => order.status !== 'CANCELLED').length} color="teal" />
+      {/* Operational aggregates for the loaded rows. The per-status counts live on
+          the stage chips below (incl. the "All" total), so this strip intentionally
+          omits Total POs / status breakdowns to avoid duplicating them. */}
+      <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }}>
+        <Metric
+          label="Delayed"
+          value={String(delayedPurchaseOrders)}
+          color="red"
+          icon={<IconAlertTriangle size={22} />}
+        />
+        <Metric
+          label="On-time rate"
+          value={`${onTimeRate}%`}
+          color="green"
+          icon={<IconCircleCheck size={22} />}
+        />
+        <Metric
+          label="Total Cont."
+          value={String(purchaseOrderSummary.totalContainers)}
+          color="teal"
+          icon={<IconContainer size={22} />}
+        />
+        <Metric
+          label="Total LOT"
+          value={String(purchaseOrderSummary.totalLots)}
+          color="yellow"
+          icon={<IconBox size={22} />}
+        />
       </SimpleGrid>
 
-      <Paper withBorder p="sm">
-        <Stack gap="sm">
+      <Paper withBorder p="md">
+        <Stack gap="md">
+          <Stack gap={6}>
+            <PoStageFilter
+              value={statusFilter}
+              onChange={onStatusFilterChange}
+              stageCounts={stageCounts}
+              subStageCounts={subStageCounts}
+              totalCount={total}
+            />
+            {isClientSideStatusFilter ? (
+              <Text size="xs" c="dimmed">
+                Stage / status filtering applies to the current page only.
+              </Text>
+            ) : null}
+          </Stack>
+
           <div className="purchase-order-filter-primary">
             <TextInput
               className="purchase-order-filter-search"
@@ -101,15 +157,6 @@ export function PurchaseOrderListView({
               placeholder="PO, contract, type, notes"
               value={search}
               onChange={(event) => onSearchChange(event.currentTarget.value)}
-            />
-            <Select
-              label="Status"
-              value={statusFilter}
-              onChange={(value) => onStatusFilterChange((value || 'all') as PurchaseOrderStatusFilter)}
-              data={[
-                { label: 'All', value: 'all' },
-                ...purchaseOrderStatusOptions.map((status) => ({ label: status.replace(/_/g, ' '), value: status })),
-              ]}
             />
             <Select
               label="Supplier"
@@ -161,20 +208,12 @@ export function PurchaseOrderListView({
         </Stack>
       </Paper>
 
-      <Paper withBorder p="sm" className="purchase-order-summary-strip">
-        <SimpleGrid cols={{ base: 1, xs: 2, md: 3 }}>
-          <SummaryItem label="Total Weight" value={formatWeightKg(purchaseOrderSummary.totalWeightKg)} />
-          <SummaryItem label="Total Cont." value={String(purchaseOrderSummary.totalContainers)} />
-          <SummaryItem label="Total LOT" value={String(purchaseOrderSummary.totalLots)} />
-        </SimpleGrid>
-      </Paper>
-
       <Paper withBorder p={0}>
         {purchaseOrders.length === 0 ? (
           <EmptyState title="No purchase orders" description="Create a PO or adjust the filters." />
         ) : (
           <ScrollArea className="data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
-            <Table miw={1520} verticalSpacing="sm" highlightOnHover>
+            <Table miw={1140} verticalSpacing="sm" highlightOnHover>
               <Table.Thead>
                 <Table.Tr>
                   <Table.Th>
@@ -185,13 +224,10 @@ export function PurchaseOrderListView({
                     <HeaderLabel label="Terms" hint={t('glossary.incoterm')} />
                   </Table.Th>
                   <Table.Th>
-                    <HeaderLabel label="Loading Port" hint={t('glossary.loadingPort')} />
-                  </Table.Th>
-                  <Table.Th>
-                    <HeaderLabel label="Unloading Port" hint={t('glossary.unloadingPort')} />
-                  </Table.Th>
-                  <Table.Th>
-                    <HeaderLabel label="In Warehouse" hint={t('glossary.warehouse')} />
+                    <HeaderLabel
+                      label="Logistics"
+                      hint={`${t('glossary.loadingPort')} -> ${t('glossary.unloadingPort')} -> ${t('glossary.warehouse')}`}
+                    />
                   </Table.Th>
                   <Table.Th>Lines</Table.Th>
                   <Table.Th>Amount</Table.Th>
@@ -229,34 +265,7 @@ export function PurchaseOrderListView({
                       </Text>
                     </Table.Td>
                     <Table.Td>
-                      <DateStack
-                        primaryHint={t('glossary.etd')}
-                        primaryLabel="ETD"
-                        primaryValue={dateOnly(order.logistics_timeline?.loading_port?.etd ?? order.expected_etd)}
-                        secondaryHint={t('glossary.atd')}
-                        secondaryLabel="ATD"
-                        secondaryValue={dateOnly(order.logistics_timeline?.loading_port?.atd)}
-                      />
-                    </Table.Td>
-                    <Table.Td>
-                      <DateStack
-                        primaryHint={t('glossary.eta')}
-                        primaryLabel="ETA"
-                        primaryValue={dateOnly(order.logistics_timeline?.unloading_port?.eta ?? order.expected_eta)}
-                        secondaryHint={t('glossary.ata')}
-                        secondaryLabel="ATA"
-                        secondaryValue={dateOnly(order.logistics_timeline?.unloading_port?.ata)}
-                      />
-                    </Table.Td>
-                    <Table.Td>
-                      <DateStack
-                        primaryHint={t('glossary.eta')}
-                        primaryLabel="ETA"
-                        primaryValue={dateOnly(order.logistics_timeline?.warehouse?.eta ?? order.expected_warehouse_eta)}
-                        secondaryHint={t('glossary.ata')}
-                        secondaryLabel="ATA"
-                        secondaryValue={dateOnly(order.logistics_timeline?.warehouse?.ata ?? order.actual_warehouse_ata)}
-                      />
+                      <LogisticsRouteCell order={order} />
                     </Table.Td>
                     <Table.Td>
                       <Badge variant="light">{order.lines?.length ?? 0} lines</Badge>
@@ -278,8 +287,8 @@ export function PurchaseOrderListView({
                         </Text>
                       )}
                     </Table.Td>
-                    <Table.Td>
-                      <StatusBadge status={order.status} />
+                    <Table.Td className="po-stage-cell">
+                      <PoStageBadge order={order} />
                     </Table.Td>
                     <Table.Td>
                       <Tooltip label="Open detail">
