@@ -1,0 +1,116 @@
+/* base.css — split from src/styles.css. Global classes; do not rename. See AGENTS.md "Styling". */
+
+:root {
+  color-scheme: light dark;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+  color: var(--kbfe-text-primary);
+  background: var(--kbfe-page-background);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-family: "Geist Mono", "Geist", monospace;
+}
+
+.risk-panel {
+  border-color: var(--kbfe-risk-border);
+  background: var(--kbfe-risk-background);
+}
+
+html[data-kbfe-resolved-color-scheme='light'] {
+  color-scheme: light;
+}
+
+html[data-kbfe-resolved-color-scheme='dark'] {
+  color-scheme: dark;
+}
+
+html[data-kbfe-visual-theme='high-contrast'] :focus-visible {
+  outline: 3px solid var(--kbfe-primary-color);
+  outline-offset: 2px;
+}
+
+html[data-kbfe-density='compact'] .mantine-Button-root,
+html[data-kbfe-density='compact'] .mantine-Input-input {
+  min-height: var(--kbfe-control-height-md);
+}
+
+/* Premium smooth scroll globally */
+html {
+  scroll-behavior: smooth;
+}
+
+/* NavLink hover effect transition (sidebar navigation) */
+.mantine-NavLink-root {
+  transition: background-color 150ms cubic-bezier(0.2, 0.8, 0.2, 1), transform 120ms cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+}
+
+.mantine-NavLink-root:hover {
+  transform: translateX(3px);
+}
+
+/* Focus ring accessibility */
+:focus-visible {
+  outline: 2px solid var(--kbfe-primary-color) !important;
+  outline-offset: 2px !important;
+}
+
+/* Staggered card fade-in entry animation for metric cards */
+@keyframes cardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Accessibility Skip Link styling */
+.skip-link {
+  position: absolute;
+  top: -48px;
+  left: 1.5rem;
+  background: var(--kbfe-primary-color);
+  color: var(--kbfe-primary-contrast) !important;
+  padding: 8px 16px;
+  z-index: 10000;
+  transition: top 150ms ease;
+  font-weight: 600;
+  border-radius: 0 0 8px 8px;
+  text-decoration: none;
+  font-size: 0.875rem;
+}
+
+.skip-link:focus {
+  top: 0;
+  outline: 2px solid var(--kbfe-primary-color) !important;
+  outline-offset: 2px !important;
+}
+
+/* Text wrap balance and pretty styling to prevent orphans */
+.mantine-Text-root,
+.mantine-Title-root,
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  text-wrap: pretty;
+}

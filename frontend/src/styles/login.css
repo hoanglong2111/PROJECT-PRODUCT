@@ -1,0 +1,41 @@
+/* login.css — split from src/styles.css. Global classes; do not rename. See AGENTS.md "Styling". */
+
+.login-page-shell {
+  min-height: 100dvh;
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(circle at 10% 20%, var(--kbfe-hover-background) 0%, var(--kbfe-background-primary) 90%);
+}
+
+.login-page-shell::before {
+  content: "";
+  position: absolute;
+  top: -20%;
+  right: -10%;
+  width: 40rem;
+  height: 40rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--kbfe-primary-color) 8%, transparent) 0%, transparent 70%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.login-card {
+  background: var(--kbfe-surface-elevated) !important;
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--kbfe-border-primary) !important;
+  box-shadow: var(--kbfe-shadow-lg) !important;
+  position: relative;
+  z-index: 1;
+  border-top: 4px solid var(--kbfe-primary-color) !important;
+}
+
+html[data-kbfe-resolved-color-scheme='light'] .login-card {
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  box-shadow: var(--kbfe-shadow-lg), inset 0 1.5px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+html[data-kbfe-resolved-color-scheme='dark'] .login-card {
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: var(--kbfe-shadow-lg), inset 0 1.5px 0 rgba(255, 255, 255, 0.12) !important;
+}

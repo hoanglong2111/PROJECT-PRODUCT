@@ -1,6 +1,15 @@
-import { Alert, Button, Group, Paper, Select, SimpleGrid, Stack, Text, TextInput, Title } from '@mantine/core';
+import { Alert, Badge, Button, Drawer, Group, Paper, Select, SimpleGrid, Stack, Text, TextInput, Title } from '@mantine/core';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { IconRefresh, IconSearch, IconTruck, IconX } from '@tabler/icons-react';
+import {
+  IconCircleCheck,
+  IconClipboardList,
+  IconRefresh,
+  IconRoute,
+  IconSearch,
+  IconTruck,
+  IconTruckDelivery,
+  IconX,
+} from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import {
@@ -14,7 +23,6 @@ import {
 import { fetchShipments, type ShipmentRecord } from '@shared/api/logistics';
 import { queryKeys } from '@shared/api/queryKeys';
 import { fetchSuppliers } from '@shared/api/tradeMasterData';
-import { EmptyState } from '@shared/components/EmptyState';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
 import { useEntityParam } from '@shared/hooks/useEntityParam';
 
@@ -84,8 +92,8 @@ export function DomesticTransportOrders() {
   }, [focusedDto, orders]);
 
   useEffect(() => {
-    if (selectedDtoId && orders.some((order) => order.id === selectedDtoId)) return;
-    setSelectedDtoId(orders[0]?.id ?? null);
+    if (!selectedDtoId || orders.some((order) => order.id === selectedDtoId)) return;
+    setSelectedDtoId(null);
   }, [orders, selectedDtoId]);
 
   const selectedSummary = orders.find((order) => order.id === selectedDtoId) ?? null;
@@ -219,43 +227,42 @@ export function DomesticTransportOrders() {
   }
 
   return (
-    <Stack gap="lg">
-      <Group justify="space-between" align="flex-start">
-        <div>
-          <Title order={1}>Domestic Transport Orders</Title>
-          <Text c="dimmed" mt={4}>
-            Track inland trucking from customs-cleared shipment to warehouse POD and closure.
-          </Text>
-        </div>
-        <Group gap="xs">
-          <Button
-            leftSection={<IconX size={16} />}
-            variant="subtle"
-            onClick={clearFilters}
-          >
-            Clear
-          </Button>
-          <Button
-            leftSection={<IconRefresh size={16} />}
-            variant="light"
-            loading={ordersQuery.isFetching}
-            onClick={() => void ordersQuery.refetch()}
-          >
-            Refresh
-          </Button>
+    <Stack gap="lg" className="dto-page">
+      <Paper withBorder p="lg" className="dto-page-hero">
+        <Group justify="space-between" align="flex-start" gap="lg" className="dto-page-header">
+          <div className="dto-title-block">
+            <Badge leftSection={<IconTruckDelivery size={14} />} variant="light" mb="xs">
+              Domestic trucking
+            </Badge>
+            <Title order={1} className="dto-page-title">Domestic Transport Orders</Title>
+            <Text c="dimmed" mt={6} maw={760}>
+              Track inland trucking from customs-cleared shipment to warehouse POD and closure.
+            </Text>
+          </div>
+          <Group gap="xs" className="dto-page-actions">
+            <Button
+              leftSection={<IconRefresh size={16} />}
+              variant="light"
+              loading={ordersQuery.isFetching}
+              onClick={() => void ordersQuery.refetch()}
+            >
+              Refresh
+            </Button>
+          </Group>
         </Group>
-      </Group>
+      </Paper>
 
-      <SimpleGrid cols={{ base: 1, sm: 4 }}>
-        <Metric label="Total DTO" value={counts.total} />
-        <Metric label="Active" value={counts.active} />
-        <Metric label="Dispatched" value={counts.dispatched} />
-        <Metric label="Closed" value={counts.closed} />
+      <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} className="dto-metric-grid">
+        <Metric label="Total DTO" value={counts.total} color="gray" icon={<IconClipboardList size={22} />} />
+        <Metric label="Active" value={counts.active} color="blue" icon={<IconTruckDelivery size={22} />} />
+        <Metric label="Dispatched" value={counts.dispatched} color="cyan" icon={<IconRoute size={22} />} />
+        <Metric label="Closed" value={counts.closed} color="teal" icon={<IconCircleCheck size={22} />} />
       </SimpleGrid>
 
-      <Paper withBorder p="md">
-        <SimpleGrid cols={{ base: 1, md: 4 }} spacing="sm">
+      <Paper withBorder p="md" className="dto-filter-panel">
+        <div className="dto-filter-grid">
           <TextInput
+            className="dto-filter-search"
             label="Search"
             placeholder="DTO, shipment, vendor, driver, route"
             leftSection={<IconSearch size={16} />}
@@ -289,7 +296,14 @@ export function DomesticTransportOrders() {
             onChange={setSelectedShipmentId}
             nothingFoundMessage={availableShipmentsQuery.isLoading ? 'Loading shipments...' : 'No customs-cleared shipment'}
           />
-          <Group align="flex-end">
+          <Group align="flex-end" gap="xs" className="dto-filter-actions">
+            <Button
+              leftSection={<IconX size={16} />}
+              variant="subtle"
+              onClick={clearFilters}
+            >
+              Clear
+            </Button>
             <Button
               leftSection={<IconTruck size={16} />}
               disabled={!selectedShipment || availableShipmentsQuery.isLoading}
@@ -298,23 +312,37 @@ export function DomesticTransportOrders() {
               Create DTO
             </Button>
           </Group>
-        </SimpleGrid>
+        </div>
       </Paper>
 
-      <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="lg" style={{ alignItems: 'start' }}>
-        <DtoListTable
-          onSelect={(order) => {
-            setSelectedDtoId(order.id);
-            openDtoParam(order.dto_no);
-          }}
-          orders={orders}
-          page={page}
-          pageCount={pagination?.totalPages ?? 1}
-          selectedDtoId={selectedDtoId}
-          setPage={setPage}
-          total={total}
-        />
+      <DtoListTable
+        onSelect={(order) => {
+          setSelectedDtoId(order.id);
+          openDtoParam(order.dto_no);
+        }}
+        orders={orders}
+        page={page}
+        pageCount={pagination?.totalPages ?? 1}
+        selectedDtoId={selectedDtoId}
+        setPage={setPage}
+        total={total}
+      />
 
+      <Drawer
+        classNames={{
+          body: 'dto-detail-drawer-body',
+          content: 'dto-detail-drawer-content',
+          header: 'dto-detail-drawer-header',
+        }}
+        opened={Boolean(selectedDtoId)}
+        onClose={() => {
+          setSelectedDtoId(null);
+          closeDtoParam();
+        }}
+        position="right"
+        size="min(94vw, 58rem)"
+        withCloseButton={false}
+      >
         {selectedOrder ? (
           <DomesticTransportOrderDetail
             actionPending={actionMutation.isPending}
@@ -331,15 +359,11 @@ export function DomesticTransportOrders() {
             saving={updateMutation.isPending}
             truckVendorOptions={truckVendorOptions}
           />
-        ) : (
-          <Paper withBorder p="lg">
-            <EmptyState title="Select a DTO" description="Choose a domestic transport order to inspect route, vehicle, POD, and item lines." />
-          </Paper>
-        )}
-      </SimpleGrid>
+        ) : null}
+      </Drawer>
 
       {updateMutation.isError || actionMutation.isError ? (
-        <Alert color="red" icon={<IconX size={18} />}>
+        <Alert color="red" icon={<IconX size={18} />} className="dto-error-alert">
           {getErrorMessage(updateMutation.error ?? actionMutation.error)}
         </Alert>
       ) : null}

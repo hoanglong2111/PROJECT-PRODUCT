@@ -50,6 +50,8 @@ import direction is one-way: `app → features → entities → shared`.
     `hooks/`, `i18n/` (`messages.ts`, `useI18n`), `lib/`, `model/` (shared domain types,
     orphan-exempt), `navigation/`, `preferences/`, `theme/`, `utils/`.
 - `src/**/*.test.{ts,tsx}` — Vitest tests, commonly under `__tests__/`.
+- `src/theme.css` — design tokens (`--kbfe-*` CSS variables); `src/styles.css` — barrel of
+  `@import`s; `src/styles/<domain>.css` — one global stylesheet per domain. See **Styling** below.
 - `public/` — static assets such as favicons and brand images.
 
 ### Path aliases
@@ -138,6 +140,35 @@ This enforces the one-way layering `app → features → entities → shared` au
 - Do not add decorative UI, landing-page sections, or large hero layouts unless the product requirement explicitly asks for them.
 - Keep table, filter, status, empty, loading, and error states complete for user-facing flows.
 - Preserve accessibility basics: labels, button names, keyboard reachability, and readable contrast.
+
+## Styling (CSS architecture)
+
+Global CSS is loaded once at app entry (`src/main.tsx`) and is organized one file per domain.
+Follow this so styles never collapse back into one giant file:
+
+- `src/theme.css` — design tokens only (CSS custom properties `--kbfe-*`: colors, spacing, shadows).
+- `src/styles.css` — **barrel only**: a list of `@import './styles/<domain>.css'` in cascade order.
+  Do **not** add rules here.
+- `src/styles/<domain>.css` — the actual rules, one file per domain: `base`, `app-shell`,
+  `global-search`, `components`, `dashboard`, `purchase-orders`, `lots`, `shipments`,
+  `delivery-orders`, `login`.
+
+When adding or changing UI:
+
+- Classes are **global and namespaced by a domain prefix** (`shipment-*`, `purchase-order-*`/`po-*`,
+  `lot-*`, `delivery-order-*`/`quotation-*`, `dashboard-*`, `global-search-*`, `brand-*`/`profile-*`,
+  `login-*`). This is intentional — we do **not** use CSS Modules. One prefix per domain keeps a
+  class's home file obvious.
+- Put new rules in the **matching domain file**. Cross-feature widgets (metric cards, tables,
+  page-state, filters) go in `components.css`; truly global element/`html`/`:focus`/keyframes/Mantine
+  overrides go in `base.css`.
+- Keep a domain's responsive `@media` rules **in that same domain file**, beside the rules they override.
+- **New feature/screen** → create `src/styles/<feature>.css` and add one `@import` line to
+  `src/styles.css` at the right cascade position (base first, features after the shared layers).
+- **Keep files focused.** When a domain file grows unwieldy (~600+ lines), peel a cohesive sub-area
+  into its own file and add it to the barrel — e.g. `lots.css` was split out of `purchase-orders.css`.
+- Prefer Mantine props / `style` / `styles` for one-off, component-local styling; use a global class
+  only for reusable, structural, or cross-component rules.
 
 ## Business Rules For Frontend Work
 
