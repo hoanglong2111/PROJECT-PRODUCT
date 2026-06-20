@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 function normalizeApiBaseUrl(value: string | undefined) {
-  const rawUrl = value?.trim() || 'http://localhost:3001/api';
+  //const rawUrl = value?.trim() || 'http://localhost:3001/api';
   const withoutTrailingSlash = rawUrl.replace(/\/+$/, '');
 
   return withoutTrailingSlash.endsWith('/api')
