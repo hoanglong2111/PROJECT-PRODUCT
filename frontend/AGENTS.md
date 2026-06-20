@@ -157,7 +157,7 @@ the bullets below are orientation only and `FE_rule.md` wins on any conflict.
 
 ## Testing Guidelines
 
-Vitest is configured with `jsdom`, globals, and `src/test-setup.ts`.
+Vitest is configured with `jsdom` and globals (see `vitest.config.ts`).
 
 Name tests `*.test.ts` or `*.test.tsx`; place focused unit tests near the module or in `__tests__/`. Prefer deterministic tests for selectors, query keys, theme builders, data transforms, and component behavior.
 

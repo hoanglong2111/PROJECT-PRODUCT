@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { PurchaseOrderV1 } from '@shared/api/purchaseOrders';
 
 import { mapStatusFilterToApi } from '../poStageConfig';
-import { resolvePoStage } from '../purchaseOrderModel';
+import { deriveContractNo, resolvePoStage } from '../purchaseOrderModel';
 
 describe('resolvePoStage', () => {
   it('keeps cancelled purchase orders in the cancelled stage first', () => {
@@ -90,6 +90,26 @@ describe('mapStatusFilterToApi', () => {
     expect(mapStatusFilterToApi('ARRIVED')).toEqual({
       clientStageFilter: { kind: 'status', statusCode: 'ARRIVED' },
     });
+  });
+});
+
+describe('deriveContractNo', () => {
+  it('swaps the PO prefix for CT', () => {
+    expect(deriveContractNo('PO-2026-123456')).toBe('CT-2026-123456');
+    expect(deriveContractNo('PO-abc')).toBe('CT-abc');
+  });
+
+  it('is case-insensitive and tolerates a missing separator', () => {
+    expect(deriveContractNo('poabc')).toBe('CT-abc');
+  });
+
+  it('prepends CT when there is no PO prefix', () => {
+    expect(deriveContractNo('XYZ-1')).toBe('CT-XYZ-1');
+  });
+
+  it('returns an empty string for blank input', () => {
+    expect(deriveContractNo('')).toBe('');
+    expect(deriveContractNo('   ')).toBe('');
   });
 });
 

@@ -138,8 +138,3 @@ export function getChargeFields(group: QuotationIncotermGroup, mode: ShippingMod
   sections.push({ fields: customsTransportFields(mode), id: 'customsTransport', titleKey: 'quotations.customsTransport' });
   return sections;
 }
-
-/** Flat list of every field across the sections for a (group, mode). */
-export function getChargeFieldList(group: QuotationIncotermGroup, mode: ShippingMode): QuotationChargeField[] {
-  return getChargeFields(group, mode).flatMap((section) => section.fields);
-}

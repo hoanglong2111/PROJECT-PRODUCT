@@ -65,15 +65,15 @@ export function LotCard({
             />
             <IconGripVertical size={16} color="var(--mantine-color-gray-5)" />
             <div className="lot-list-title-text">
-              <Group gap="xs" wrap="nowrap">
-                <Text fw={800} size="sm" truncate>
+              <Group gap="xs" wrap="nowrap" className="lot-list-title-row">
+                <Text fw={800} size="sm" truncate title={lot.lot_no}>
                   {lot.lot_no}
                 </Text>
-                <Badge size="xs" color={lot.status === 'READY' ? 'teal' : undefined} variant="light">
+                <Badge size="xs" color={lot.status === 'READY' ? 'teal' : undefined} variant="light" className="purchase-order-nowrap-badge">
                   {lot.status}
                 </Badge>
               </Group>
-              <Text size="xs" c="dimmed" truncate>
+              <Text size="xs" c="dimmed" truncate title={lot.lot_name || 'Empty LOT'}>
                 {lot.lot_name || 'Empty LOT'}
               </Text>
             </div>
@@ -87,7 +87,7 @@ export function LotCard({
           </SimpleGrid>
 
           <Group gap={4} wrap="nowrap" className="lot-list-actions">
-            <Badge size="xs" color={lot.status === 'READY' ? 'teal' : undefined} variant="light">
+            <Badge size="xs" color={lot.status === 'READY' ? 'teal' : undefined} variant="light" className="purchase-order-nowrap-badge">
               {isLocked ? 'Locked' : 'Open'}
             </Badge>
             <ActionIcon variant="subtle" size="sm" aria-label="Edit LOT" disabled={!canManage} onClick={onEdit}>

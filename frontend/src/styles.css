@@ -264,6 +264,138 @@ html[data-kbfe-resolved-color-scheme='dark'] .global-search-dropdown {
   }
 }
 
+.quotation-bidding-panel {
+  min-width: 0;
+}
+
+.quotation-bidding-header {
+  min-width: 0;
+}
+
+.quotation-bidding-actions,
+.quotation-row-actions {
+  flex: 0 0 auto;
+}
+
+.quotation-action-button .mantine-Button-label,
+.quotation-table-action .mantine-Button-label {
+  white-space: nowrap;
+}
+
+.quotation-form-section,
+.quotation-empty-panel,
+.quotation-compare-panel,
+.quotation-compare-card {
+  border-color: var(--kbfe-border-primary) !important;
+  background: var(--kbfe-surface-elevated);
+}
+
+.quotation-section-kicker {
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.quotation-create-form .mantine-InputWrapper-label {
+  display: flex;
+  width: 100%;
+  min-height: 2rem;
+  align-items: flex-end;
+  min-width: 0;
+}
+
+.quotation-create-form .mantine-InputWrapper-label > span {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.quotation-create-form .mantine-InputWrapper-label span span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quotation-charge-grid .mantine-InputWrapper-description {
+  min-height: 1.0625rem;
+  white-space: nowrap;
+}
+
+.quotation-info-grid > *,
+.quotation-form-grid > *,
+.quotation-charge-grid > * {
+  min-width: 0;
+}
+
+.quotation-pricing-section {
+  background:
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--kbfe-primary-color) 10%, transparent), transparent 34%),
+    var(--kbfe-surface-elevated);
+}
+
+.quotation-modal-footer {
+  gap: 0.75rem;
+  padding-top: 0.125rem;
+}
+
+.quotation-empty-content {
+  min-width: 0;
+}
+
+.quotation-empty-copy {
+  min-width: 0;
+}
+
+.quotation-table-scroll {
+  border: 1px solid var(--kbfe-border-primary);
+  border-radius: 0.5rem;
+  background: var(--kbfe-surface-elevated);
+}
+
+.quotation-table th {
+  color: var(--kbfe-text-secondary, var(--kbfe-text-primary));
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--kbfe-surface-subtle) 80%, var(--kbfe-surface-elevated) 20%);
+}
+
+.quotation-table td {
+  vertical-align: top;
+}
+
+.quotation-table tbody tr {
+  transition: background-color 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.quotation-table tbody tr:hover td {
+  background: color-mix(in srgb, var(--kbfe-primary-color) 5%, transparent);
+}
+
+.quotation-status-badge .mantine-Badge-label,
+.quotation-money {
+  white-space: nowrap;
+}
+
+.quotation-charge-summary,
+.quotation-charge-summary-list,
+.quotation-compare-line {
+  min-width: 0;
+}
+
+.quotation-charge-summary .mantine-Group-root,
+.quotation-charge-summary span,
+.quotation-charge-summary .mantine-Text-root {
+  min-width: 0;
+}
+
+.quotation-compare-header {
+  min-width: 0;
+}
+
+.quotation-compare-line > .mantine-Text-root:first-child {
+  min-width: 0;
+}
+
 .purchase-order-summary-strip {
   background: var(--kbfe-surface-elevated);
   border-color: var(--kbfe-border-primary);
@@ -273,6 +405,190 @@ html[data-kbfe-resolved-color-scheme='dark'] .global-search-dropdown {
   min-height: 4.25rem;
   background: color-mix(in srgb, var(--kbfe-surface-elevated) 92%, var(--kbfe-primary-color) 8%);
   border-color: var(--kbfe-border-primary);
+}
+
+.purchase-orders-workbench {
+  min-width: 0;
+}
+
+.purchase-orders-page-header,
+.purchase-orders-subheader,
+.purchase-order-detail-hero-inner,
+.purchase-order-detail-title-row,
+.purchase-order-po-lines-header,
+.lot-planning-header {
+  min-width: 0;
+}
+
+.purchase-orders-page-title,
+.purchase-order-detail-title,
+.lot-planning-copy {
+  min-width: 0;
+  max-width: 68ch;
+}
+
+.purchase-orders-page-title .mantine-Title-root,
+.purchase-order-detail-title .mantine-Title-root {
+  line-height: 1.05;
+}
+
+.purchase-orders-page-actions,
+.purchase-order-detail-actions,
+.purchase-order-modal-footer,
+.lot-planning-actions {
+  flex: 0 0 auto;
+}
+
+.purchase-orders-primary-action .mantine-Button-label,
+.purchase-orders-back-action .mantine-Button-label,
+.purchase-order-action-button .mantine-Button-label,
+.lot-planning-action-button .mantine-Button-label {
+  white-space: nowrap;
+}
+
+.purchase-order-detail-hero,
+.purchase-order-po-lines-panel,
+.lot-planning-board {
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--kbfe-border-primary) 82%, transparent) !important;
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 96%, var(--kbfe-surface-subtle) 4%);
+  box-shadow: var(--kbfe-shadow-xs);
+}
+
+.purchase-order-filter-panel,
+.purchase-order-list-panel {
+  overflow: hidden;
+  border-color: var(--kbfe-border-primary) !important;
+  background: var(--mantine-color-white);
+  box-shadow: var(--kbfe-shadow-xs);
+}
+
+.purchase-order-filter-panel .mantine-Input-input,
+.purchase-order-filter-panel .mantine-Select-input {
+  background: var(--mantine-color-white);
+}
+
+.purchase-order-detail-hero {
+  position: relative;
+  background:
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--kbfe-primary-color) 10%, transparent), transparent 32%),
+    var(--kbfe-surface-elevated);
+}
+
+.purchase-order-list-empty {
+  padding: 1rem;
+}
+
+.purchase-order-form {
+  width: 100%;
+  min-width: 0;
+}
+
+.purchase-order-form-hero,
+.purchase-order-form-section {
+  overflow: hidden;
+  border-color: var(--kbfe-border-primary) !important;
+  background: var(--kbfe-surface-elevated);
+  box-shadow: var(--kbfe-shadow-xs);
+}
+
+.purchase-order-form-hero {
+  position: relative;
+  background:
+    radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--kbfe-primary-color) 12%, transparent), transparent 32%),
+    color-mix(in srgb, var(--kbfe-surface-elevated) 94%, var(--kbfe-surface-subtle) 6%);
+}
+
+.purchase-order-form-hero::before {
+  position: absolute;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+  background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0, transparent 42%);
+}
+
+.purchase-order-form-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.purchase-order-form-actions {
+  flex: 0 0 auto;
+}
+
+.purchase-order-form-summary-tile {
+  min-width: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--kbfe-border-primary);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 88%, var(--kbfe-surface-subtle) 12%);
+}
+
+.purchase-order-form-summary-tile.is-accent {
+  border-color: color-mix(in srgb, var(--kbfe-primary-color) 36%, var(--kbfe-border-primary));
+  background: color-mix(in srgb, var(--kbfe-primary-color) 10%, var(--kbfe-surface-elevated));
+}
+
+.purchase-order-form-summary-tile .mantine-Text-root {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.purchase-order-form-section {
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 96%, var(--kbfe-surface-subtle) 4%);
+}
+
+.purchase-order-lines-panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.purchase-order-lines-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.purchase-order-lines-table th {
+  color: var(--kbfe-text-secondary, var(--kbfe-text-primary));
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--kbfe-surface-subtle) 78%, var(--kbfe-surface-elevated) 22%);
+}
+
+.purchase-order-lines-table td {
+  vertical-align: top;
+}
+
+.purchase-order-lines-table .mantine-Input-input {
+  min-height: 2.25rem;
+}
+
+.purchase-order-form-line-row {
+  transition: background-color 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.purchase-order-form-line-row:hover td {
+  background: color-mix(in srgb, var(--kbfe-primary-color) 5%, transparent);
+}
+
+.purchase-order-form-line-number-cell {
+  background: color-mix(in srgb, var(--kbfe-surface-subtle) 55%, transparent);
+}
+
+.purchase-order-line-footer {
+  gap: 0.75rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--kbfe-border-primary);
+}
+
+.purchase-order-total-pill {
+  min-height: 2.5rem;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--kbfe-primary-color) 28%, var(--kbfe-border-primary));
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--kbfe-primary-color) 9%, var(--kbfe-surface-elevated));
 }
 
 .purchase-order-filter-primary {
@@ -410,6 +726,138 @@ html[data-kbfe-resolved-color-scheme='dark'] .global-search-dropdown {
 
 .po-stage-cell {
   min-width: 9.5rem;
+}
+
+.purchase-order-list-table,
+.purchase-order-po-lines-table,
+.purchase-order-confirmation-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.purchase-order-list-table th,
+.purchase-order-po-lines-table th,
+.purchase-order-confirmation-table th {
+  color: var(--kbfe-text-secondary, var(--kbfe-text-primary));
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--kbfe-surface-subtle) 78%, var(--kbfe-surface-elevated) 22%);
+}
+
+.purchase-order-list-table th,
+.purchase-order-list-table td {
+  background: var(--mantine-color-white);
+}
+
+.purchase-order-list-table td,
+.purchase-order-po-lines-table td,
+.purchase-order-confirmation-table td {
+  vertical-align: top;
+}
+
+.purchase-order-list-table tbody tr,
+.purchase-order-po-lines-table tbody tr,
+.purchase-order-confirmation-table tbody tr {
+  transition: background-color 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.purchase-order-list-table tbody tr:hover td,
+.purchase-order-po-lines-table tbody tr:hover td,
+.purchase-order-confirmation-table tbody tr:hover td {
+  background: color-mix(in srgb, var(--kbfe-primary-color) 5%, transparent);
+}
+
+.purchase-order-list-lines-cell,
+.purchase-order-list-delay-cell,
+.purchase-order-list-action-cell,
+.purchase-order-line-index,
+.purchase-order-quantity-cell,
+.purchase-order-money,
+.purchase-order-line-hscode {
+  white-space: nowrap;
+}
+
+.purchase-order-list-action-cell {
+  text-align: right;
+}
+
+.purchase-order-money,
+.purchase-order-quantity-cell,
+.purchase-order-line-index {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+.purchase-order-nowrap-badge .mantine-Badge-label,
+.purchase-order-quantity-badge .mantine-Badge-label,
+.purchase-order-po-lines-badges .mantine-Badge-label,
+.lot-line-quantity-badge .mantine-Badge-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.purchase-order-quantity-badge,
+.lot-line-quantity-badge {
+  max-width: 100%;
+}
+
+.purchase-order-po-lines-header {
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--kbfe-border-primary);
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 94%, var(--kbfe-primary-color) 6%);
+}
+
+.purchase-order-po-lines-badges {
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.purchase-order-po-lines-badges::-webkit-scrollbar {
+  display: none;
+}
+
+.purchase-order-confirmation-table .mantine-Input-input {
+  min-height: 2.25rem;
+}
+
+.purchase-order-confirmation-check-cell {
+  text-align: center;
+}
+
+.purchase-order-confirmation-check-cell .mantine-Checkbox-root {
+  display: inline-flex;
+}
+
+.purchase-order-modal-grid {
+  align-items: start;
+}
+
+.purchase-order-modal-grid .mantine-InputWrapper-label,
+.purchase-order-confirmation-form .mantine-InputWrapper-label,
+.purchase-order-lot-modal-form .mantine-InputWrapper-label,
+.purchase-order-split-modal-form .mantine-InputWrapper-label {
+  min-height: 1.25rem;
+  white-space: nowrap;
+}
+
+.purchase-order-modal-footer {
+  padding-top: 0.25rem;
+}
+
+.purchase-order-split-source {
+  overflow: hidden;
+  border: 0 !important;
+  background: color-mix(in srgb, var(--kbfe-primary-color) 8%, var(--kbfe-surface-elevated));
+}
+
+.purchase-order-split-source-line {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Three logistics stops sized to their content so full YYYY-MM-DD dates always
@@ -1078,6 +1526,32 @@ html[data-kbfe-resolved-color-scheme='dark'] .global-search-dropdown {
   min-height: 12rem;
 }
 
+.lot-planning-board {
+  background:
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--mantine-color-teal-6) 7%, transparent), transparent 30%),
+    color-mix(in srgb, var(--kbfe-surface-elevated) 96%, var(--kbfe-surface-subtle) 4%);
+}
+
+.lot-planning-header {
+  gap: 1rem;
+}
+
+.lot-planning-actions {
+  align-items: center;
+}
+
+.lot-planning-select-all {
+  min-width: max-content;
+}
+
+.lot-planning-select-all .mantine-Checkbox-label {
+  white-space: nowrap;
+}
+
+.lot-planning-action-button {
+  min-width: max-content;
+}
+
 .lot-planning-empty {
   border-style: dashed;
   background: color-mix(in srgb, var(--kbfe-surface-elevated) 92%, var(--kbfe-surface-subtle) 8%);
@@ -1105,6 +1579,7 @@ html[data-kbfe-resolved-color-scheme='dark'] .global-search-dropdown {
 }
 
 .lot-list-title,
+.lot-list-title-row,
 .lot-list-title-text,
 .lot-line-main,
 .lot-line-item-text {
@@ -1123,6 +1598,7 @@ html[data-kbfe-resolved-color-scheme='dark'] .global-search-dropdown {
 
 .lot-list-actions {
   justify-content: flex-end;
+  min-width: max-content;
 }
 
 .lot-toggle-button svg {
@@ -1137,10 +1613,9 @@ html[data-kbfe-resolved-color-scheme='dark'] .global-search-dropdown {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.625rem;
-  margin-left: 1.25rem;
-  padding: 0.625rem 0.875rem 0.875rem;
+  margin-left: 0;
+  padding: 0.75rem 0.875rem 0.875rem;
   border-top: 1px solid var(--kbfe-border-primary);
-  border-left: 1px solid var(--kbfe-border-primary);
   background: color-mix(in srgb, var(--kbfe-surface-elevated) 88%, var(--kbfe-surface-subtle) 12%);
 }
 
@@ -1150,13 +1625,14 @@ html[data-kbfe-resolved-color-scheme='dark'] .global-search-dropdown {
   align-items: center;
   justify-content: space-between;
   padding: 0.625rem 0.75rem;
-  border: 1px solid var(--kbfe-border-primary);
+  border: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 72%, transparent);
   border-radius: 0.375rem;
   background: var(--kbfe-surface-elevated);
+  box-shadow: 0 1px 0 color-mix(in srgb, #fff 42%, transparent) inset;
 }
 
 .lot-line-row+.lot-line-row {
-  border-top: 1px solid var(--kbfe-border-primary);
+  border-top-color: color-mix(in srgb, var(--kbfe-border-primary) 72%, transparent);
 }
 
 .lot-line-row:hover {
@@ -1181,9 +1657,13 @@ html[data-kbfe-resolved-color-scheme='dark'] .global-search-dropdown {
   flex: 0 0 auto;
   justify-content: flex-end;
   margin-left: auto;
+  max-width: 23rem;
+  min-width: 0;
 }
 
 .lot-line-quantity-badge {
+  min-width: 0;
+  max-width: 11rem;
   font-weight: 700;
   text-transform: none;
   letter-spacing: 0;
@@ -1198,8 +1678,9 @@ html[data-kbfe-resolved-color-scheme='dark'] .global-search-dropdown {
 
 .lot-line-empty {
   grid-column: 1 / -1;
-  padding: 0.75rem 1rem 0.75rem 2.75rem;
-  border-top: 1px dashed var(--kbfe-border-primary);
+  padding: 0.75rem 1rem;
+  border: 1px dashed var(--kbfe-border-primary);
+  border-radius: 0.375rem;
   background: color-mix(in srgb, var(--kbfe-surface-elevated) 92%, var(--kbfe-surface-subtle) 8%);
 }
 
@@ -1312,6 +1793,20 @@ html[data-kbfe-resolved-color-scheme='dark'] .global-search-dropdown {
     justify-content: flex-start;
   }
 
+  .purchase-orders-page-header,
+  .purchase-order-detail-hero-inner,
+  .lot-planning-header {
+    align-items: stretch;
+  }
+
+  .purchase-orders-page-actions,
+  .purchase-order-detail-actions,
+  .lot-planning-actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
   .shipment-progress-tile:nth-child(odd) {
     border-left: 0;
   }
@@ -1331,6 +1826,7 @@ html[data-kbfe-resolved-color-scheme='dark'] .global-search-dropdown {
 
   .lot-list-actions {
     justify-content: flex-start;
+    min-width: 0;
   }
 
   .lot-line-list {
@@ -1477,6 +1973,24 @@ html[data-kbfe-resolved-color-scheme='dark'] .global-search-dropdown {
     width: 100%;
   }
 
+  .quotation-bidding-actions,
+  .quotation-modal-footer,
+  .quotation-empty-content,
+  .quotation-compare-header {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .quotation-bidding-actions .mantine-Button-root,
+  .quotation-modal-footer .mantine-Button-root,
+  .quotation-empty-content .mantine-Button-root {
+    flex: 1 1 9rem;
+  }
+
+  .quotation-empty-copy {
+    flex: 1 1 100%;
+  }
+
   .purchase-order-filter-primary,
   .purchase-order-filter-dates {
     grid-template-columns: 1fr;
@@ -1498,6 +2012,44 @@ html[data-kbfe-resolved-color-scheme='dark'] .global-search-dropdown {
   .purchase-order-filter-clear,
   .purchase-order-filter-refresh {
     flex: 1 1 10rem;
+  }
+
+  .purchase-orders-page-actions .mantine-Button-root,
+  .purchase-order-detail-actions .mantine-Button-root,
+  .purchase-order-modal-footer .mantine-Button-root,
+  .lot-planning-actions .mantine-Button-root {
+    flex: 1 1 9rem;
+  }
+
+  .purchase-order-modal-footer {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .purchase-order-po-lines-header {
+    align-items: flex-start;
+  }
+
+  .purchase-order-po-lines-badges {
+    width: 100%;
+  }
+
+  .purchase-order-form-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .purchase-order-form-actions .mantine-Button-root {
+    flex: 1 1 9rem;
+  }
+
+  .purchase-order-line-footer {
+    align-items: stretch;
+  }
+
+  .purchase-order-total-pill {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .po-logistics-route {
@@ -1538,6 +2090,7 @@ html[data-kbfe-resolved-color-scheme='dark'] .global-search-dropdown {
     width: 100%;
     justify-content: flex-start;
     margin-left: 1.5rem;
+    max-width: none;
     flex-wrap: wrap;
   }
 
@@ -1833,18 +2386,8 @@ html[data-kbfe-resolved-color-scheme='dark'] .global-search-dropdown {
   min-height: auto;
 }
 
-.dashboard-progress-link {
-  display: block;
-  color: inherit;
-  text-decoration: none;
-}
-
 .dashboard-progress-row {
   padding: 0.5rem 0;
-}
-
-.dashboard-progress-link:hover .hover-underline {
-  text-decoration: underline;
 }
 
 .dashboard-risk-row {
@@ -1921,10 +2464,6 @@ html[data-kbfe-resolved-color-scheme='dark'] .global-search-dropdown {
 .metric-icon-red {
   background: #fee2e2;
   color: #b91c1c;
-}
-
-.stack-pill {
-  background: var(--kbfe-background-secondary);
 }
 
 .module-link {
