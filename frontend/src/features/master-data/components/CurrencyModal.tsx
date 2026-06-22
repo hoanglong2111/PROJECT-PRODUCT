@@ -1,0 +1,129 @@
+import { Alert, Button, Group, Modal, SimpleGrid, Stack, Switch, TextInput } from '@mantine/core';
+import { useForm } from '@mantine/form';
+import { IconAlertCircle } from '@tabler/icons-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
+
+import { queryKeys } from '@shared/api/queryKeys';
+import { createCurrency, updateCurrency, type Currency } from '@shared/api/tradeMasterData';
+import { FieldHint } from '@shared/components/FieldHint';
+import { useI18n } from '@shared/i18n';
+import { getApiErrorMessage } from '@shared/lib/errors';
+
+import { optionalNumber, optionalString } from '../model/masterDataModel';
+
+type CurrencyFormValues = {
+  code: string;
+  name: string;
+  symbol: string;
+  decimalPlaces: string;
+  isActive: boolean;
+};
+
+const emptyValues: CurrencyFormValues = { code: '', name: '', symbol: '', decimalPlaces: '2', isActive: true };
+
+function hintedLabel(label: string, hint: string) {
+  return (
+    <Group gap={4} component="span" wrap="nowrap">
+      <span>{label}</span>
+      <FieldHint label={hint} />
+    </Group>
+  );
+}
+
+export function CurrencyModal({
+  editing,
+  onClose,
+  opened,
+}: {
+  editing: Currency | null;
+  onClose: () => void;
+  opened: boolean;
+}) {
+  const { t } = useI18n();
+  const queryClient = useQueryClient();
+  const form = useForm<CurrencyFormValues>({ initialValues: emptyValues });
+
+  useEffect(() => {
+    if (!opened) return;
+    form.setValues(
+      editing
+        ? {
+          code: editing.currency_code,
+          name: editing.currency_name,
+          symbol: editing.symbol ?? '',
+          decimalPlaces: String(editing.decimal_places),
+          isActive: editing.is_active,
+        }
+        : emptyValues,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opened, editing]);
+
+  const mutation = useMutation({
+    mutationFn: () => {
+      const payload = {
+        currency_code: form.values.code.trim().toUpperCase(),
+        currency_name: form.values.name.trim(),
+        symbol: optionalString(form.values.symbol),
+        decimal_places: optionalNumber(form.values.decimalPlaces) ?? 2,
+        is_active: form.values.isActive,
+      };
+      return editing ? updateCurrency(editing.id, payload) : createCurrency(payload);
+    },
+    onSuccess: () => {
+      onClose();
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.currencyLists }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.masterDataOptionLists }),
+      ]);
+    },
+  });
+
+  const handleSave = () => {
+    if (!form.values.code.trim() || !form.values.name.trim()) return;
+    mutation.mutate();
+  };
+
+  return (
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title={editing ? t('masterData.editCurrency') : t('masterData.createCurrency')}
+    >
+      <Stack gap="md">
+        {mutation.isError ? (
+          <Alert color="red" icon={<IconAlertCircle size={18} />}>
+            {getApiErrorMessage(mutation.error)}
+          </Alert>
+        ) : null}
+        <SimpleGrid cols={{ base: 1, sm: 2 }}>
+          <TextInput label={t('masterData.currencyCode')} required {...form.getInputProps('code')} />
+          <TextInput label={t('masterData.currencyName')} required {...form.getInputProps('name')} />
+          <TextInput
+            label={hintedLabel(t('masterData.currencySymbol'), t('glossary.currencySymbol'))}
+            {...form.getInputProps('symbol')}
+          />
+          <TextInput
+            label={hintedLabel(t('masterData.decimalPlaces'), t('glossary.decimalPlaces'))}
+            type="number"
+            {...form.getInputProps('decimalPlaces')}
+          />
+        </SimpleGrid>
+        <Switch label={t('masterData.active')} {...form.getInputProps('isActive', { type: 'checkbox' })} />
+        <Group justify="flex-end">
+          <Button variant="subtle" color="gray" onClick={onClose}>
+            {t('common.cancel')}
+          </Button>
+          <Button
+            onClick={handleSave}
+            loading={mutation.isPending}
+            disabled={!form.values.code.trim() || !form.values.name.trim()}
+          >
+            {t('common.save')}
+          </Button>
+        </Group>
+      </Stack>
+    </Modal>
+  );
+}

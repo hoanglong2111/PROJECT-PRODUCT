@@ -50,13 +50,3 @@ export type UpdateProfilePayload = {
   workLocation: string | null;
   workShift: string | null;
 };
-
-export const ROLE_LABEL: Record<AppRole, string> = {
-  ADMIN: 'Admin',
-  PIC_MANAGER: 'PIC Manager',
-  SALE_STAFF: 'Sale Staff',
-  PORT_OFFICER: 'Port Officer',
-  CUSTOMS_OFFICER: 'Customs Officer',
-  FINANCE_OFFICER: 'Finance Officer',
-  WAREHOUSE_STAFF: 'Warehouse Staff',
-};

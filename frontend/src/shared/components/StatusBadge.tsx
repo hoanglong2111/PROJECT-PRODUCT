@@ -2,7 +2,9 @@ import { Badge } from '@mantine/core';
 
 import { useI18n } from '@shared/i18n';
 
-const STATUS_MAP: Record<string, { color: string; variant?: 'filled' | 'light' | 'outline' }> = {
+export type StatusBadgeConfig = { color: string; variant?: 'filled' | 'light' | 'outline' };
+
+export const STATUS_MAP: Record<string, StatusBadgeConfig> = {
   APPROVED: { color: 'blue' },
   ARRIVED: { color: 'grape' },
   ARRIVED_PORT: { color: 'grape' },
@@ -22,14 +24,17 @@ const STATUS_MAP: Record<string, { color: string; variant?: 'filled' | 'light' |
   CONVERTED_TO_PO: { color: 'blue' },
   CREATED: { color: 'gray' },
   COPY: { color: 'gray' },
+  CUSTOMS: { color: 'teal' },
   CUSTOMS_CLEARED: { color: 'teal' },
   CUSTOMS_DRAFT: { color: 'blue' },
   CUSTOMS_PROCESSING: { color: 'yellow' },
   CUSTOM_DRAFT_SUBMITTED: { color: 'blue' },
   DRAFT: { color: 'gray' },
+  DRAFT_OPENED: { color: 'blue' },
   DRAFT_BL_CONFIRMED: { color: 'teal' },
   DELAYED: { color: 'red', variant: 'filled' },
   DELIVERED: { color: 'teal' },
+  DISPATCHED: { color: 'blue' },
   DONE: { color: 'teal' },
   FINAL_BL_CONFIRMED: { color: 'teal' },
   GATE_IN_POL: { color: 'indigo' },
@@ -43,15 +48,22 @@ const STATUS_MAP: Record<string, { color: string; variant?: 'filled' | 'light' |
   NEW: { color: 'gray' },
   NEEDS_DOCUMENTS: { color: 'orange' },
   OFFICIAL_SENT: { color: 'indigo' },
+  OFFICIAL_OPENED: { color: 'indigo' },
   ON_TRACK: { color: 'teal' },
   ORIGINAL: { color: 'blue' },
   OVERDUE: { color: 'red', variant: 'filled' },
   PARTIALLY_DELIVERED: { color: 'blue' },
   PICKED_UP: { color: 'blue' },
+  POD_RECEIVED: { color: 'teal' },
   PENDING_CONFIG: { color: 'yellow' },
   PENDING_APPROVAL: { color: 'yellow' },
   PRELIMINARY_SENT: { color: 'blue' },
+  PROCUREMENT: { color: 'blue' },
+  PRODUCTION: { color: 'indigo' },
   QUOTATION_CONFIRMED: { color: 'blue' },
+  QUOTE_CONFIRMED: { color: 'blue' },
+  QUOTE_PENDING: { color: 'orange' },
+  QUOTED: { color: 'yellow' },
   RED_FIELD_INSPECTION: { color: 'red', variant: 'outline' },
   RED_VIOLATION_HANDLING: { color: 'red' },
   READY: { color: 'blue' },
@@ -74,9 +86,13 @@ const STATUS_MAP: Record<string, { color: string; variant?: 'filled' | 'light' |
   YELLOW_NEED_SUPPLEMENT: { color: 'yellow' },
 };
 
+export function getStatusBadgeConfig(status: string): StatusBadgeConfig {
+  return STATUS_MAP[status] ?? { color: 'gray' };
+}
+
 export function StatusBadge({ status }: { status: string }) {
   const { statusLabel } = useI18n();
-  const config = STATUS_MAP[status] ?? { color: 'gray' };
+  const config = getStatusBadgeConfig(status);
 
   return (
     <Badge color={config.color} variant={config.variant ?? 'light'}>

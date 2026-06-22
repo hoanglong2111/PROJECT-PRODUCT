@@ -61,6 +61,18 @@ describe('queryKeys', () => {
       'transport-modes',
       { mode_type: 'SEA' },
     ]);
+    expect(queryKeys.forwarders({ q: 'fds' })).toEqual([
+      'forwarders',
+      { q: 'fds' },
+    ]);
+    expect(queryKeys.carriers({ carrier_type: 'SHIPPING_LINE' })).toEqual([
+      'carriers',
+      { carrier_type: 'SHIPPING_LINE' },
+    ]);
+    expect(queryKeys.taskTemplatesList({ milestone_code: 'MS3_LOADED' })).toEqual([
+      'task-templates',
+      { milestone_code: 'MS3_LOADED' },
+    ]);
     expect(queryKeys.masterDataOptions({ types: 'currencies,suppliers' })).toEqual([
       'master-data-options',
       { types: 'currencies,suppliers' },
@@ -75,6 +87,20 @@ describe('queryKeys', () => {
     ]);
     expect(queryKeys.deliveryOrderLots('do-1')).toEqual(['delivery-orders', 'do-1', 'lots']);
     expect(queryKeys.deliveryOrderLines('do-1')).toEqual(['delivery-orders', 'do-1', 'lines']);
+  });
+
+  it('builds domestic transport order V1 keys with query params and identifiers', () => {
+    expect(queryKeys.domesticTransportOrders).toEqual(['domestic-transport-orders']);
+    expect(queryKeys.domesticTransportOrdersList({ status: 'QUOTE_CONFIRMED' })).toEqual([
+      'domestic-transport-orders',
+      'list',
+      { status: 'QUOTE_CONFIRMED' },
+    ]);
+    expect(queryKeys.domesticTransportOrderDetail('dto-1')).toEqual([
+      'domestic-transport-orders',
+      'detail',
+      'dto-1',
+    ]);
   });
 
   it('builds quotation V1 keys with query params and identifiers', () => {
@@ -97,5 +123,15 @@ describe('queryKeys', () => {
     expect(queryKeys.shipmentDetail('shp-1')).toEqual(['shipments', 'detail', 'shp-1']);
     expect(queryKeys.shipmentMilestones('shp-1')).toEqual(['shipments', 'shp-1', 'milestones']);
     expect(queryKeys.shipmentDocuments('shp-1')).toEqual(['shipments', 'shp-1', 'documents']);
+  });
+
+  it('builds customs declaration V1 keys with shipment and declaration identifiers', () => {
+    expect(queryKeys.customsDeclarationsByShipment('shp-1')).toEqual([
+      'shipments',
+      'shp-1',
+      'customs-declarations',
+    ]);
+    expect(queryKeys.customsDeclarationDetail('cd-1')).toEqual(['customs-declarations', 'detail', 'cd-1']);
+    expect(queryKeys.customsDeclarationLines('cd-1')).toEqual(['customs-declarations', 'cd-1', 'lines']);
   });
 });

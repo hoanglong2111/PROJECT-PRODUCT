@@ -1,5 +1,6 @@
 import { apiClient } from './axiosConfig';
 import type { Item } from './items';
+import type { ShipmentLineV1, ShipmentV1 } from './shipments';
 import type {
   ApiDecimal,
   PaginationMeta,
@@ -12,9 +13,17 @@ import type { TransportMode } from './tradeMasterData';
 
 export type DeliveryOrderStatusV1 =
   | 'DRAFT'
+  | 'CREATED'
   | 'READY_FOR_QUOTATION'
   | 'QUOTATION_CONFIRMED'
   | 'ASSIGNED_TO_SHIPMENT'
+  | 'SHIPPED'
+  | 'IN_TRANSIT'
+  | 'ARRIVED_PORT'
+  | 'CUSTOMS_PROCESSING'
+  | 'CUSTOMS_CLEARED'
+  | 'WAREHOUSE_PENDING'
+  | 'DELIVERED'
   | 'CANCELLED'
   | 'CLOSED';
 
@@ -25,16 +34,18 @@ export type DeliveryOrderListMeta = {
 
 export type DeliveryOrderV1 = {
   id: string;
-  do_no: string;
+  do_no?: string;
+  delivery_order_no?: string;
   purchase_order_id: string;
-  transport_mode_id: string | null;
+  transport_mode_id?: string | null;
   status: DeliveryOrderStatusV1;
-  planned_cargo_ready_date: string | null;
-  planned_etd: string | null;
-  planned_eta: string | null;
-  origin_address: string | null;
-  destination_address: string | null;
-  warehouse_name: string | null;
+  requested_pickup_date?: string | null;
+  planned_cargo_ready_date?: string | null;
+  planned_etd?: string | null;
+  planned_eta?: string | null;
+  origin_address?: string | null;
+  destination_address?: string | null;
+  warehouse_name?: string | null;
   requested_by: string | null;
   handled_by: string | null;
   notes: string | null;
@@ -44,6 +55,8 @@ export type DeliveryOrderV1 = {
   is_delete?: boolean;
   purchase_order?: PurchaseOrderV1 | null;
   transport_mode?: TransportMode | null;
+  linked_shipment_number?: string | null;
+  shipments?: ShipmentV1[];
   lots?: DeliveryOrderLotV1[];
   lines?: DeliveryOrderLineV1[];
 };
@@ -52,28 +65,35 @@ export type DeliveryOrderLotV1 = {
   id: string;
   delivery_order_id: string;
   po_lot_id: string;
-  lot_no: string;
-  lot_name: string | null;
-  planned_cargo_ready_date: string | null;
-  planned_etd: string | null;
-  planned_eta: string | null;
+  lot_no?: string;
+  lot_name?: string | null;
+  planned_cargo_ready_date?: string | null;
+  planned_etd?: string | null;
+  planned_eta?: string | null;
   notes: string | null;
   create_at: string;
   update_at: string;
   delete_at?: string | null;
   is_delete?: boolean;
   po_lot?: PoLot | null;
+  lot?: PoLot | null;
   lines?: DeliveryOrderLineV1[];
 };
 
 export type DeliveryOrderLineV1 = {
   id: string;
   delivery_order_id: string;
-  delivery_order_lot_id: string;
+  delivery_order_lot_id?: string;
+  po_lot_id?: string;
   purchase_order_line_id: string;
   item_id: string;
+  item_code?: string | null;
+  item_name?: string | null;
+  hs_code?: string | null;
   item_description: string | null;
   qty: ApiDecimal;
+  qty_ordered?: ApiDecimal | null;
+  gross_weight_kg?: ApiDecimal | null;
   unit: string;
   notes: string | null;
   create_at: string;
@@ -83,6 +103,16 @@ export type DeliveryOrderLineV1 = {
   delivery_order_lot?: DeliveryOrderLotV1 | null;
   purchase_order_line?: PurchaseOrderLineV1 | null;
   item?: Item | null;
+  lot?: PoLot | null;
+  lot_no?: string | null;
+  shipment?: ShipmentV1 | null;
+  shipment_line?: ShipmentLineV1 | null;
+  shipment_number?: string | null;
+  container_no?: string | null;
+  route_origin?: string | null;
+  route_destination?: string | null;
+  etd?: string | null;
+  eta?: string | null;
 };
 
 export type ListDeliveryOrdersParams = {
@@ -115,8 +145,11 @@ export type CreateDeliveryOrderPayload = Required<
 > &
   DeliveryOrderPayload;
 
-export type CreateDeliveryOrderFromLotsPayload = CreateDeliveryOrderPayload & {
+export type CreateDeliveryOrderFromLotsPayload = {
   lot_ids: string[];
+  delivery_order_no?: string;
+  requested_pickup_date?: string | null;
+  notes?: string | null;
 };
 
 function unwrapV1Data<T, TMeta>(response: { data: V1Response<T, TMeta> }) {
@@ -151,7 +184,13 @@ export async function fetchDeliveryOrderV1(id: string) {
 }
 
 export async function createDeliveryOrderV1(payload: CreateDeliveryOrderPayload) {
-  const response = await apiClient.post<V1Response<DeliveryOrderV1>>('/v1/delivery-orders', payload);
+  const response = await apiClient.post<V1Response<DeliveryOrderV1>>('/v1/mock/delivery_orders', {
+    delivery_order_no: payload.do_no,
+    purchase_order_id: payload.purchase_order_id,
+    status: 'DRAFT',
+    requested_pickup_date: payload.planned_cargo_ready_date ?? null,
+    notes: payload.notes ?? null,
+  });
   return unwrapV1Data(response);
 }
 
@@ -164,12 +203,24 @@ export async function createDeliveryOrderFromLots(payload: CreateDeliveryOrderFr
 }
 
 export async function updateDeliveryOrderV1(id: string, payload: DeliveryOrderPayload) {
-  const response = await apiClient.patch<V1Response<DeliveryOrderV1>>(`/v1/delivery-orders/${id}`, payload);
+  const response = await apiClient.patch<V1Response<DeliveryOrderV1>>(`/v1/delivery-orders/${id}`, {
+    delivery_order_no: payload.do_no,
+    purchase_order_id: payload.purchase_order_id,
+    transport_mode_id: payload.transport_mode_id,
+    requested_pickup_date: payload.planned_cargo_ready_date,
+    planned_cargo_ready_date: payload.planned_cargo_ready_date,
+    planned_etd: payload.planned_etd,
+    planned_eta: payload.planned_eta,
+    origin_address: payload.origin_address,
+    destination_address: payload.destination_address,
+    warehouse_name: payload.warehouse_name,
+    notes: payload.notes,
+  });
   return unwrapV1Data(response);
 }
 
 export async function deleteDeliveryOrderV1(id: string) {
-  const response = await apiClient.delete<V1Response<DeliveryOrderV1>>(`/v1/delivery-orders/${id}`);
+  const response = await apiClient.delete<V1Response<DeliveryOrderV1>>(`/v1/mock/delivery_orders/${id}`);
   return unwrapV1Data(response);
 }
 
@@ -181,16 +232,16 @@ export async function markDeliveryOrderReadyForQuotation(id: string) {
 }
 
 export async function confirmDeliveryOrderQuotation(id: string) {
-  const response = await apiClient.post<V1Response<DeliveryOrderV1>>(
-    `/v1/delivery-orders/${id}/confirm-quotation`,
-  );
+  const response = await apiClient.patch<V1Response<DeliveryOrderV1>>(`/v1/delivery-orders/${id}`, {
+    status: 'QUOTATION_CONFIRMED',
+  });
   return unwrapV1Data(response);
 }
 
 export async function assignDeliveryOrderToShipment(id: string) {
-  const response = await apiClient.post<V1Response<DeliveryOrderV1>>(
-    `/v1/delivery-orders/${id}/assign-to-shipment`,
-  );
+  const response = await apiClient.patch<V1Response<DeliveryOrderV1>>(`/v1/delivery-orders/${id}`, {
+    status: 'ASSIGNED_TO_SHIPMENT',
+  });
   return unwrapV1Data(response);
 }
 
@@ -200,7 +251,9 @@ export async function cancelDeliveryOrderV1(id: string) {
 }
 
 export async function closeDeliveryOrderV1(id: string) {
-  const response = await apiClient.post<V1Response<DeliveryOrderV1>>(`/v1/delivery-orders/${id}/close`);
+  const response = await apiClient.patch<V1Response<DeliveryOrderV1>>(`/v1/delivery-orders/${id}`, {
+    status: 'CLOSED',
+  });
   return unwrapV1Data(response);
 }
 

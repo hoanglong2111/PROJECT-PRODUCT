@@ -7,4 +7,5 @@ export const purchaseOrderRoles: AppRole[] = [...salesRoles, 'FINANCE_OFFICER'];
 export const deliveryOrderRoles: AppRole[] = operationsRoles; // Ships renamed DO
 export const masterDataRoles: AppRole[] = managerRoles;
 export const shipmentRoles: AppRole[] = [...operationsRoles, 'FINANCE_OFFICER'];
+export const domesticTransportOrderRoles: AppRole[] = [...operationsRoles, 'FINANCE_OFFICER'];
 export const taskRoles: AppRole[] = [...operationsRoles, 'FINANCE_OFFICER'];

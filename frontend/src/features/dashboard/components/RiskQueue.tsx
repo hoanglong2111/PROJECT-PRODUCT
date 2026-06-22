@@ -1,9 +1,9 @@
-import { Badge, Button, Group, Paper, ScrollArea, Table, Text, Title } from '@mantine/core';
-import { IconArrowRight, IconClockHour4 } from '@tabler/icons-react';
+import { Badge, Button, Group, Paper, Stack, Text, Title } from '@mantine/core';
+import { IconArrowRight, IconClockHour4, IconShieldCheck } from '@tabler/icons-react';
 import { Link } from 'react-router-dom';
 
 import { useI18n } from '@shared/i18n';
-import { getRiskColor, type OperationalRiskCode } from '@shared/utils/operations';
+import { getRiskColor, type OperationalRiskCode } from '@entities/logistics';
 
 import type { DashboardRiskRow } from '../model/dashboardSelectors';
 
@@ -11,8 +11,8 @@ export function RiskQueue({ riskRows }: { riskRows: DashboardRiskRow[] }) {
   const { t } = useI18n();
 
   return (
-    <Paper withBorder p="lg">
-      <Group justify="space-between" mb="md">
+    <Paper withBorder p="lg" className="metric-card dashboard-card dashboard-risk-card">
+      <Group justify="space-between" mb="md" align="flex-start">
         <div>
           <Title order={3}>{t('dashboard.riskQueue')}</Title>
           <Text size="sm" c="dimmed">
@@ -22,22 +22,13 @@ export function RiskQueue({ riskRows }: { riskRows: DashboardRiskRow[] }) {
         <Badge variant="light">{t('common.records', { count: riskRows.length })}</Badge>
       </Group>
 
-      <ScrollArea>
-        <Table miw={720} verticalSpacing="sm">
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>DO</Table.Th>
-              <Table.Th>{t('dashboard.nextAction')}</Table.Th>
-              <Table.Th>{t('common.owner')}</Table.Th>
-              <Table.Th>SLA</Table.Th>
-              <Table.Th>{t('common.blockers')}</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {riskRows.map(({ deliveryOrder, primaryRisk, risks }) => (
-              <Table.Tr key={deliveryOrder.id}>
-                <Table.Td>
-                  <Text fw={700}>{deliveryOrder.order_info.order_number}</Text>
+      {riskRows.length > 0 ? (
+        <Stack gap="xs">
+          {riskRows.map(({ deliveryOrder, primaryRisk, risks }) => (
+            <div key={deliveryOrder.id} className="dashboard-risk-row">
+              <Group justify="space-between" gap="md" align="flex-start" wrap="nowrap">
+                <div className="dashboard-risk-identity">
+                  <Text fw={900}>{deliveryOrder.order_info.order_number}</Text>
                   <Text size="xs" c="dimmed">
                     {deliveryOrder.source_po_number ?? deliveryOrder.sap_integration.po_number}
                   </Text>
@@ -47,42 +38,55 @@ export function RiskQueue({ riskRows }: { riskRows: DashboardRiskRow[] }) {
                     size="compact-xs"
                     variant="subtle"
                     rightSection={<IconArrowRight size={12} />}
+                    mt={4}
                   >
                     {t('dashboard.openDo')}
                   </Button>
-                </Table.Td>
-                <Table.Td>
+                </div>
+
+                <div className="dashboard-risk-action">
                   <Badge color={getRiskColor(primaryRisk.severity)} variant="light">
                     {riskLabel(primaryRisk.code, t)}
                   </Badge>
-                  <Text size="xs" c="dimmed" mt={4}>
+                  <Text size="xs" c="dimmed" mt={4} lineClamp={2}>
                     {primaryRisk.detail}
                   </Text>
-                </Table.Td>
-                <Table.Td>
-                  <Text size="sm" fw={600}>
+                </div>
+
+                <div className="dashboard-risk-owner">
+                  <Text size="xs" c="dimmed" fw={800}>
+                    {t('common.owner')}
+                  </Text>
+                  <Text size="sm" fw={800}>
                     {primaryRisk.owner}
                   </Text>
-                </Table.Td>
-                <Table.Td>
+                </div>
+
+                <div className="dashboard-risk-sla">
                   <Badge leftSection={<IconClockHour4 size={12} />} color="blue" variant="light">
                     {primaryRisk.sla}
                   </Badge>
-                </Table.Td>
-                <Table.Td>
-                  <Group gap={6}>
-                    {risks.map((risk) => (
-                      <Badge key={risk.code} color={getRiskColor(risk.severity)} variant="light" size="xs">
-                        {riskLabel(risk.code, t)}
-                      </Badge>
-                    ))}
-                  </Group>
-                </Table.Td>
-              </Table.Tr>
-            ))}
-          </Table.Tbody>
-        </Table>
-      </ScrollArea>
+                </div>
+              </Group>
+
+              <Group gap={6} mt="sm">
+                {risks.map((risk) => (
+                  <Badge key={risk.code} color={getRiskColor(risk.severity)} variant="light" size="xs">
+                    {riskLabel(risk.code, t)}
+                  </Badge>
+                ))}
+              </Group>
+            </div>
+          ))}
+        </Stack>
+      ) : (
+        <div className="dashboard-risk-empty">
+          <IconShieldCheck size={22} />
+          <Text size="sm" fw={800}>
+            Không có rủi ro vận hành nổi bật
+          </Text>
+        </div>
+      )}
     </Paper>
   );
 }

@@ -42,6 +42,13 @@ function interpolate(template: string, params?: TranslationParams) {
   return template.replace(/\{(\w+)\}/g, (_, key: string) => String(params[key] ?? ''));
 }
 
+function fallbackLabel(value: string) {
+  return value
+    .split('_')
+    .map((part) => `${part.slice(0, 1)}${part.slice(1).toLowerCase()}`)
+    .join(' ');
+}
+
 export function useI18n() {
   const { language } = useWorkspacePreferences();
 
@@ -60,7 +67,7 @@ export function useI18n() {
       },
       documentLabel: (documentName: string) => documentLabels[language][documentName] ?? documentName,
       visualThemeLabel: (theme: VisualTheme) => visualThemeLabels[language][theme],
-      flowTagLabel: (tag: BusinessFlowTag) => flowTagLabels[language][tag],
+      flowTagLabel: (tag: BusinessFlowTag) => flowTagLabels[language][tag] ?? tag,
       formatNumber: (value: number) => value.toLocaleString(language === 'vi' ? 'vi-VN' : 'en-US'),
       languageLabel: (value: WorkspaceLanguage) => languageLabels[language][value],
       priorityLabel: (priority: Priority) => priorityLabels[language][priority],
@@ -72,7 +79,7 @@ export function useI18n() {
         (key: MessageKey, params?: TranslationParams): string;
         (key: string, params?: TranslationParams): string;
       },
-      taskRoleLabel: (role: TaskRole) => taskRoleLabels[language][role],
+      taskRoleLabel: (role: TaskRole) => taskRoleLabels[language][role] ?? fallbackLabel(role),
     };
   }, [language]);
 }

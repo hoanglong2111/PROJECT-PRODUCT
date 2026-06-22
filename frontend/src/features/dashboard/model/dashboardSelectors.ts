@@ -5,7 +5,7 @@ import {
   getDeliveryOrderRisks,
   getPrimaryOperationalRisk,
   type OperationalRisk,
-} from '@shared/utils/operations';
+} from '@entities/logistics';
 
 export type DashboardRiskRow = {
   deliveryOrder: DeliveryOrder;

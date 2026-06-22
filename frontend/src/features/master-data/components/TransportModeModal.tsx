@@ -1,0 +1,163 @@
+import { Alert, Button, Group, Modal, Select, SimpleGrid, Stack, Switch, Textarea, TextInput } from '@mantine/core';
+import { useForm } from '@mantine/form';
+import { IconAlertCircle } from '@tabler/icons-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
+
+import { queryKeys } from '@shared/api/queryKeys';
+import { createTransportMode, updateTransportMode, type TransportMode } from '@shared/api/tradeMasterData';
+import { FieldHint } from '@shared/components/FieldHint';
+import { useI18n } from '@shared/i18n';
+import { getApiErrorMessage } from '@shared/lib/errors';
+
+import { optionalString } from '../model/masterDataModel';
+
+type TransportModeFormValues = {
+  code: string;
+  name: string;
+  modeType: string;
+  description: string;
+  isInternational: boolean;
+  isActive: boolean;
+};
+
+const emptyValues: TransportModeFormValues = {
+  code: '',
+  name: '',
+  modeType: 'SEA',
+  description: '',
+  isInternational: true,
+  isActive: true,
+};
+
+function hintedLabel(label: string, hint: string) {
+  return (
+    <Group gap={4} component="span" wrap="nowrap">
+      <span>{label}</span>
+      <FieldHint label={hint} />
+    </Group>
+  );
+}
+
+export function TransportModeModal({
+  editing,
+  onClose,
+  opened,
+}: {
+  editing: TransportMode | null;
+  onClose: () => void;
+  opened: boolean;
+}) {
+  const { t } = useI18n();
+  const queryClient = useQueryClient();
+  const form = useForm<TransportModeFormValues>({ initialValues: emptyValues });
+
+  useEffect(() => {
+    if (!opened) return;
+    form.setValues(
+      editing
+        ? {
+          code: editing.mode_code,
+          name: editing.mode_name,
+          modeType: editing.mode_type,
+          description: editing.description ?? '',
+          isInternational: editing.is_international,
+          isActive: editing.is_active,
+        }
+        : emptyValues,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opened, editing]);
+
+  const mutation = useMutation({
+    mutationFn: () => {
+      const payload = {
+        mode_code: form.values.code.trim().toUpperCase(),
+        mode_name: form.values.name.trim(),
+        mode_type: form.values.modeType.trim().toUpperCase(),
+        description: optionalString(form.values.description),
+        is_international: form.values.isInternational,
+        is_active: form.values.isActive,
+      };
+      return editing ? updateTransportMode(editing.id, payload) : createTransportMode(payload);
+    },
+    onSuccess: () => {
+      onClose();
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.transportModeLists }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.masterDataOptionLists }),
+      ]);
+    },
+  });
+
+  const handleSave = () => {
+    if (!form.values.code.trim() || !form.values.name.trim() || !form.values.modeType.trim()) return;
+    mutation.mutate();
+  };
+
+  return (
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title={editing ? t('masterData.editTransportMode') : t('masterData.createTransportMode')}
+    >
+      <Stack gap="md">
+        {mutation.isError ? (
+          <Alert color="red" icon={<IconAlertCircle size={18} />}>
+            {getApiErrorMessage(mutation.error)}
+          </Alert>
+        ) : null}
+        <SimpleGrid cols={{ base: 1, sm: 2 }}>
+          <TextInput
+            label={t('masterData.transportModeCode')}
+            placeholder={t('masterData.transportModeCodePlaceholder')}
+            required
+            {...form.getInputProps('code')}
+          />
+          <TextInput
+            label={t('masterData.transportModeName')}
+            placeholder={t('masterData.transportModeNamePlaceholder')}
+            required
+            {...form.getInputProps('name')}
+          />
+          <Select
+            label={hintedLabel(t('masterData.transportModeType'), t('glossary.transportModeType'))}
+            data={[
+              { label: t('masterData.transportModeTypeSea'), value: 'SEA' },
+              { label: t('masterData.transportModeTypeAir'), value: 'AIR' },
+              { label: t('masterData.transportModeTypeRoad'), value: 'ROAD' },
+              { label: t('masterData.transportModeTypeRail'), value: 'RAIL' },
+              { label: t('masterData.transportModeTypeMultimodal'), value: 'MULTIMODAL' },
+              { label: t('masterData.transportModeTypeFcl'), value: 'FCL' },
+              { label: t('masterData.transportModeTypeLcl'), value: 'LCL' },
+            ]}
+            searchable
+            required
+            value={form.values.modeType}
+            onChange={(value) => form.setFieldValue('modeType', value || 'SEA')}
+          />
+        </SimpleGrid>
+        <Textarea label={t('masterData.description')} autosize minRows={3} {...form.getInputProps('description')} />
+        <SimpleGrid cols={{ base: 1, sm: 2 }}>
+          <Switch
+            label={hintedLabel(t('masterData.international'), t('glossary.transportScope'))}
+            {...form.getInputProps('isInternational', { type: 'checkbox' })}
+          />
+          <Switch label={t('masterData.active')} {...form.getInputProps('isActive', { type: 'checkbox' })} />
+        </SimpleGrid>
+        <Group justify="flex-end">
+          <Button variant="subtle" color="gray" onClick={onClose}>
+            {t('common.cancel')}
+          </Button>
+          <Button
+            onClick={handleSave}
+            loading={mutation.isPending}
+            disabled={!form.values.code.trim() || !form.values.name.trim() || !form.values.modeType.trim()}
+          >
+            {t('common.save')}
+          </Button>
+        </Group>
+      </Stack>
+    </Modal>
+  );
+}

@@ -1,59 +1,22 @@
-﻿import {
-  ActionIcon,
-  Alert,
+import {
   Badge,
   Button,
-  Checkbox,
-  FileInput,
   Group,
-  Loader,
   Paper,
-  ScrollArea,
   Select,
   SimpleGrid,
   Stack,
-  Table,
-  Tabs,
   Text,
   TextInput,
   Title,
-  Tooltip,
 } from '@mantine/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  IconAnchor,
-  IconCalendar,
-  IconCheck,
-  IconClock,
-  IconExternalLink,
-  IconFileCheck,
-  IconHourglassHigh,
-  IconPlus,
-  IconSearch,
-  IconSettings,
-  IconShield,
-  IconX,
-  IconChecklist,
-} from '@tabler/icons-react';
+import { IconAnchor, IconCheck, IconClock, IconPlus, IconShield, IconX } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 
-import { EntityLink } from '@shared/components/EntityLink';
-import { FilterToolbar } from '@shared/components/FilterToolbar';
-import { FlowTagBadge } from '@shared/components/FlowTagBadge';
-import { ListPagination, useListPagination } from '@shared/components/ListPagination';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
-import { StatusBadge } from '@shared/components/StatusBadge';
-import { EmptyState } from '@shared/components/EmptyState';
-import {
-  fetchShipments,
-  createShipment,
-  updateShipment,
-  type ShipmentRecord,
-  type ShipmentMilestone,
-  type ShipmentDocument,
-  type ShipmentPoTask,
-} from '@shared/api/logistics';
-import { fetchDeliveryOrdersV1, type DeliveryOrderV1 } from '@shared/api/deliveryOrders';
+import { fetchShipments, createShipment } from '@shared/api/logistics';
+import { fetchDeliveryOrdersV1 } from '@shared/api/deliveryOrders';
 import {
   createShipmentDocument,
   markShipmentMilestoneDone,
@@ -66,93 +29,30 @@ import { queryKeys } from '@shared/api/queryKeys';
 import { useEntityParam } from '@shared/hooks/useEntityParam';
 import { useI18n } from '@shared/i18n';
 
-type ShipmentTab = 'all' | 'in_transit' | 'customs' | 'delivered';
-type ShipmentWorkbench = 'list' | 'create' | 'detail';
-
-const inTransitStatuses = new Set<ShipmentRecord['status']>([
-  'BOOKED',
-  'BOOKING_PENDING',
-  'BOOKING_CONFIRMED',
-  'CARGO_READY',
-  'PICKED_UP',
-  'BL_ISSUED',
-  'GATE_IN_POL',
-  'IN_TRANSIT',
-  'ARRIVED',
-  'ARRIVED_PORT',
-]);
-
-const customsStatuses = new Set<ShipmentRecord['status']>([
-  'CUSTOMS_DRAFT',
-  'CUSTOMS_CLEARED',
-  'CUSTOMS_PROCESSING',
-]);
-
-const shipmentModeOptions: Array<{ label: string; value: ShipmentModeV1 }> = [
-  { label: 'Sea', value: 'SEA' },
-  { label: 'Air', value: 'AIR' },
-  { label: 'Road', value: 'ROAD' },
-  { label: 'Rail', value: 'RAIL' },
-  { label: 'Multimodal', value: 'MULTIMODAL' },
-  { label: 'Trucking', value: 'TRUCKING' },
-  { label: 'Other', value: 'OTHER' },
-];
-
-function inferShipmentModeFromDeliveryOrder(deliveryOrder: DeliveryOrderV1): ShipmentModeV1 {
-  const modeType = deliveryOrder.transport_mode?.mode_type?.toUpperCase();
-  if (modeType === 'AIR') return 'AIR';
-  if (modeType === 'ROAD' || modeType === 'TRUCKING') return 'ROAD';
-  if (modeType === 'RAIL') return 'RAIL';
-  if (modeType === 'MULTIMODAL') return 'MULTIMODAL';
-  return 'SEA';
-}
-
-function Metric({
-  color = 'blue',
-  icon,
-  label,
-  value,
-}: {
-  color?: string;
-  icon?: React.ReactNode;
-  label: string;
-  value: number;
-}) {
-  return (
-    <Paper withBorder p="md" className="metric-card">
-      <Group justify="space-between" wrap="nowrap">
-        <div>
-          <Text className="metric-label" size="xs" fw={700} lts="0.05em" tt="uppercase" mb={4}>
-            {label}
-          </Text>
-          <Title order={1} fw={800} c={color} style={{ lineHeight: 1.1 }}>
-            {value}
-          </Title>
-        </div>
-        {icon && <span className={`metric-icon metric-icon-${color}`}>{icon}</span>}
-      </Group>
-    </Paper>
-  );
-}
-
-function Info({ label, value }: { label: string; value: string }) {
-  return (
-    <Paper withBorder p="sm">
-      <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
-        {label}
-      </Text>
-      <Text fw={600}>{value}</Text>
-    </Paper>
-  );
-}
+import {
+  customsStatuses,
+  inTransitStatuses,
+  inferShipmentModeFromDeliveryOrder,
+  shipmentModeOptions,
+  type ShipmentWorkbench,
+} from './model/shipmentModel';
+import { useShipmentsUiStore } from './model/shipmentsUiStore';
+import { Metric } from './components/Metric';
+import { ShipmentDetailView } from './components/ShipmentDetailView';
+import { ShipmentListView } from './components/ShipmentListView';
 
 export function Shipments() {
   const { t } = useI18n();
   const { close: closeShpParam, open: openShpParam, value: focusedShp } = useEntityParam('shp');
   const [selectedShpId, setSelectedShpId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<ShipmentTab>('all');
   const [workbench, setWorkbench] = useState<ShipmentWorkbench>('list');
-  const [search, setSearch] = useState('');
+  const activeTab = useShipmentsUiStore((s) => s.activeTab);
+  const search = useShipmentsUiStore((s) => s.search);
+  const modeFilter = useShipmentsUiStore((s) => s.modeFilter);
+  const carrierFilter = useShipmentsUiStore((s) => s.carrierFilter);
+  const channelFilter = useShipmentsUiStore((s) => s.channelFilter);
+  const etdFrom = useShipmentsUiStore((s) => s.etdFrom);
+  const etdTo = useShipmentsUiStore((s) => s.etdTo);
 
   // Create form states
   const [newShpNumber, setNewShpNumber] = useState('');
@@ -210,6 +110,14 @@ export function Shipments() {
     }
   }, [focusedShp, shipments, workbench]);
 
+  const carrierOptions = useMemo(
+    () =>
+      Array.from(new Set(shipments.map((shp) => shp.carrier_name).filter(Boolean)))
+        .sort((a, b) => a.localeCompare(b))
+        .map((carrier) => ({ label: carrier, value: carrier })),
+    [shipments],
+  );
+
   const filteredShipments = useMemo(() => {
     const query = search.toLowerCase().trim();
     return shipments.filter((shp) => {
@@ -218,6 +126,13 @@ export function Shipments() {
         (activeTab === 'in_transit' && inTransitStatuses.has(shp.status)) ||
         (activeTab === 'customs' && customsStatuses.has(shp.status)) ||
         (activeTab === 'delivered' && shp.status === 'DELIVERED');
+
+      const matchesMode = modeFilter === 'all' || shp.shipping_mode === modeFilter;
+      const matchesCarrier = !carrierFilter || shp.carrier_name === carrierFilter;
+      const matchesChannel =
+        channelFilter === 'all' || (shp.customs.lane_status !== '' && shp.customs.stream === channelFilter);
+      const matchesEtdFrom = !etdFrom || (shp.etd !== '' && shp.etd >= etdFrom);
+      const matchesEtdTo = !etdTo || (shp.etd !== '' && shp.etd <= etdTo);
 
       const matchesSearch = [
         shp.shipment_number,
@@ -230,18 +145,17 @@ export function Shipments() {
         .toLowerCase()
         .includes(query);
 
-      return statusMatches && matchesSearch;
+      return (
+        statusMatches &&
+        matchesMode &&
+        matchesCarrier &&
+        matchesChannel &&
+        matchesEtdFrom &&
+        matchesEtdTo &&
+        matchesSearch
+      );
     });
-  }, [shipments, activeTab, search]);
-
-  const {
-    page,
-    pageCount,
-    pageEnd,
-    pageStart,
-    setPage,
-    visibleItems: visibleShipments,
-  } = useListPagination(filteredShipments, [activeTab, search]);
+  }, [shipments, activeTab, search, modeFilter, carrierFilter, channelFilter, etdFrom, etdTo]);
 
   const tabCounts = useMemo(
     () => ({
@@ -257,8 +171,8 @@ export function Shipments() {
     selectedShpId === null
       ? null
       : filteredShipments.find((s) => s.id === selectedShpId) ??
-        shipments.find((s) => s.id === selectedShpId) ??
-        null;
+      shipments.find((s) => s.id === selectedShpId) ??
+      null;
 
   const createMutation = useMutation({
     mutationFn: createShipment,
@@ -283,13 +197,6 @@ export function Shipments() {
     },
   });
 
-  const updateMutation = useMutation({
-    mutationFn: (updated: ShipmentRecord) => updateShipment(updated.id, updated),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
-    },
-  });
-
   const milestoneMutation = useMutation({
     mutationFn: ({
       actualAt,
@@ -304,6 +211,7 @@ export function Shipments() {
     }) => markShipmentMilestoneDone(shipmentId, milestoneCode, { actual_at: actualAt, notes }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.shipmentLists });
     },
   });
 
@@ -327,7 +235,7 @@ export function Shipments() {
     const deliveryOrderId = value ?? '';
     const deliveryOrder = availableDeliveryOrders.find((item) => item.id === deliveryOrderId);
     setNewDeliveryOrderId(deliveryOrderId);
-    setNewDoNumber(deliveryOrder?.do_no ?? '');
+    setNewDoNumber(deliveryOrder?.do_no ?? deliveryOrder?.delivery_order_no ?? '');
     setNewPoNumber(deliveryOrder?.purchase_order?.po_no ?? '');
     setNewMode(deliveryOrder ? inferShipmentModeFromDeliveryOrder(deliveryOrder) : 'SEA');
     setNewOriginPort(deliveryOrder?.origin_address ?? '');
@@ -353,10 +261,6 @@ export function Shipments() {
       vesselVoyage: newVoyage || undefined,
       voyageNo: newVoyageNo || undefined,
     });
-  };
-
-  const handleUpdateShipment = (updated: ShipmentRecord) => {
-    updateMutation.mutate(updated);
   };
 
   const closeWorkbench = () => {
@@ -391,12 +295,13 @@ export function Shipments() {
         description={t('shipments.loadingDescription')}
         tableColumns={[
           t('shipments.shipmentNumber'),
-          t('shipments.linkedDo'),
+          t('shipments.links'),
           t('common.carrier'),
           t('common.route'),
           t('shipments.etd'),
           t('shipments.eta'),
           t('common.status'),
+          t('shipments.channel'),
         ]}
       />
     );
@@ -537,8 +442,8 @@ export function Shipments() {
                 onChange={(e) => setNewOriginPort(e.currentTarget.value)}
               />
               <TextInput
-                label="POD"
-                placeholder="Cat Lai"
+                label={t('shipments.port')}
+                placeholder="Cát Lái, Tân Sơn Nhất..."
                 value={newDestPort}
                 onChange={(e) => setNewDestPort(e.currentTarget.value)}
               />
@@ -560,744 +465,41 @@ export function Shipments() {
       ) : null}
 
       {workbench === 'detail' && selectedShipment ? (
-        <Stack gap="lg">
-          {/* Identity card */}
-          <Paper withBorder p="lg" className="workbench-section">
-            <Group justify="space-between" align="flex-start">
-              <div>
-                <Group gap="xs" mb={4} wrap="nowrap">
-                  <Title order={3}>{selectedShipment.shipment_number}</Title>
-                  <StatusBadge status={selectedShipment.status} />
-                </Group>
-                <Text c="dimmed" size="sm">
-                  {selectedShipment.carrier_name} · {selectedShipment.vessel_voyage}
-                </Text>
-              </div>
-              <Group gap="xs">
-                <EntityLink type="do" id={selectedShipment.do_number} />
-                <EntityLink type="po" id={selectedShipment.po_number} />
-              </Group>
-            </Group>
-          </Paper>
-
-          <Tabs defaultValue="overview">
-            <Tabs.List>
-              <Tabs.Tab value="overview" leftSection={<IconAnchor size={14} />}>
-                {t('shipments.overview')}
-              </Tabs.Tab>
-              <Tabs.Tab value="milestones" leftSection={<IconCalendar size={14} />}>
-                {t('shipments.milestones')}
-              </Tabs.Tab>
-              <Tabs.Tab value="documents" leftSection={<IconFileCheck size={14} />}>
-                {t('shipments.documents')}
-              </Tabs.Tab>
-              <Tabs.Tab value="customs" leftSection={<IconShield size={14} />}>
-                {t('shipments.customs')}
-              </Tabs.Tab>
-              <Tabs.Tab value="costs" leftSection={<IconHourglassHigh size={14} />}>
-                {t('shipments.costs')}
-              </Tabs.Tab>
-              <Tabs.Tab value="tasks" leftSection={<IconChecklist size={14} />}>
-                {t('shipments.tasks')}
-              </Tabs.Tab>
-            </Tabs.List>
-
-            <Tabs.Panel value="overview" pt="md">
-              <SimpleGrid cols={{ base: 1, sm: 4 }}>
-                <Info label={t('shipments.carrier')} value={selectedShipment.carrier_name} />
-                <Info label={t('shipments.vessel')} value={selectedShipment.vessel_voyage} />
-                <Info label="POL" value={selectedShipment.origin_port} />
-                <Info label="POD" value={selectedShipment.dest_port} />
-                <Info label={t('shipments.etd')} value={selectedShipment.etd} />
-                <Info label={t('shipments.eta')} value={selectedShipment.eta} />
-                <Info label="Customs Stream" value={selectedShipment.customs.stream} />
-                <Info label="Tasks Completed" value={`${selectedShipment.po_tasks.filter((t) => t.status === 'COMPLETED').length}/${selectedShipment.po_tasks.length}`} />
-              </SimpleGrid>
-            </Tabs.Panel>
-
-            <Tabs.Panel value="milestones" pt="md">
-              <ShipmentMilestonesPanel
-                shipment={selectedShipment}
-                isSaving={milestoneMutation.isPending}
-                onMarkDone={(milestoneCode, payload) => {
-                  milestoneMutation.mutate({
-                    actualAt: payload.actualAt,
-                    milestoneCode,
-                    notes: payload.notes,
-                    shipmentId: selectedShipment.id,
-                  });
-                }}
-                t={t}
-              />
-            </Tabs.Panel>
-
-            <Tabs.Panel value="documents" pt="md">
-              <ShipmentDocumentsPanel
-                shipment={selectedShipment}
-                isSaving={updateDocumentMutation.isPending || createDocumentMutation.isPending}
-                onCreateDocument={(payload) => {
-                  createDocumentMutation.mutate({ payload, shipmentId: selectedShipment.id });
-                }}
-                onUpdateDocument={(documentId, payload) => {
-                  updateDocumentMutation.mutate({ documentId, payload });
-                }}
-                t={t}
-              />
-            </Tabs.Panel>
-
-            <Tabs.Panel value="customs" pt="md">
-              <ShipmentCustomsPanel shipment={selectedShipment} onUpdate={handleUpdateShipment} />
-            </Tabs.Panel>
-
-            <Tabs.Panel value="costs" pt="md">
-              <ShipmentCostsPanel shippingMode={selectedShipment.shipping_mode} />
-            </Tabs.Panel>
-
-            <Tabs.Panel value="tasks" pt="md">
-              <ShipmentTasksPanel tasks={selectedShipment.po_tasks} />
-            </Tabs.Panel>
-          </Tabs>
-        </Stack>
+        <ShipmentDetailView
+          shipment={selectedShipment}
+          isMilestoneSaving={milestoneMutation.isPending}
+          onMarkMilestone={(milestoneCode, payload) => {
+            milestoneMutation.mutate({
+              actualAt: payload.actualAt,
+              milestoneCode,
+              notes: payload.notes,
+              shipmentId: selectedShipment.id,
+            });
+          }}
+          isDocumentSaving={updateDocumentMutation.isPending || createDocumentMutation.isPending}
+          onCreateDocument={(payload) => {
+            createDocumentMutation.mutate({ payload, shipmentId: selectedShipment.id });
+          }}
+          onUpdateDocument={(documentId, payload) => {
+            updateDocumentMutation.mutate({ documentId, payload });
+          }}
+          t={t}
+        />
       ) : null}
 
       {workbench === 'list' ? (
-        <>
-          <FilterToolbar
-            activeTab={activeTab}
-            isFetching={isFetching}
-            onTabChange={setActiveTab}
-            shown={filteredShipments.length}
-            tabs={[
-              { label: t('common.all'), value: 'all', count: tabCounts.all },
-              { label: t('shipments.inTransit'), value: 'in_transit', count: tabCounts.in_transit },
-              { label: t('shipments.customsProcessing'), value: 'customs', count: tabCounts.customs },
-              { label: t('shipments.delivered'), value: 'delivered', count: tabCounts.delivered },
-            ]}
-          >
-            <TextInput
-              label={t('common.search')}
-              placeholder={t('shipments.searchPlaceholder')}
-              leftSection={<IconSearch size={16} />}
-              value={search}
-              onChange={(event) => setSearch(event.currentTarget.value)}
-              w={{ base: '100%', sm: 360 }}
-            />
-          </FilterToolbar>
-
-          <Paper withBorder p={0}>
-            {filteredShipments.length === 0 ? (
-              <EmptyState title={t('shipments.emptyTitle')} description={t('shipments.emptyDescription')} />
-            ) : (
-              <ScrollArea className="data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
-                <Table miw={1180} verticalSpacing="sm" highlightOnHover>
-                  <Table.Thead>
-                    <Table.Tr>
-                      <Table.Th>{t('shipments.shipmentNumber')}</Table.Th>
-                      <Table.Th>{t('shipments.linkedDo')}</Table.Th>
-                      <Table.Th>{t('common.carrier')}</Table.Th>
-                      <Table.Th>{t('shipments.vessel')}</Table.Th>
-                      <Table.Th>{t('common.route')}</Table.Th>
-                      <Table.Th>{t('shipments.etd')}</Table.Th>
-                      <Table.Th>{t('shipments.eta')}</Table.Th>
-                      <Table.Th>{t('common.status')}</Table.Th>
-                      <Table.Th />
-                    </Table.Tr>
-                  </Table.Thead>
-                  <Table.Tbody>
-                    {visibleShipments.map((shp) => (
-                      <Table.Tr
-                        key={shp.id}
-                        onClick={() => {
-                          setSelectedShpId(shp.id);
-                          setWorkbench('detail');
-                          openShpParam(shp.shipment_number, { clear: ['pr', 'po', 'do', 'task'] });
-                        }}
-                        style={{ cursor: 'pointer' }}
-                      >
-                        <Table.Td>
-                          <Text fw={700}>{shp.shipment_number}</Text>
-                          <FlowTagBadge tags={[]} />
-                        </Table.Td>
-                        <Table.Td>
-                          <Group gap="xs">
-                            <EntityLink type="do" id={shp.do_number} compact />
-                            <EntityLink type="po" id={shp.po_number} compact />
-                          </Group>
-                        </Table.Td>
-                        <Table.Td>{shp.carrier_name}</Table.Td>
-                        <Table.Td>{shp.vessel_voyage}</Table.Td>
-                        <Table.Td>
-                          <Text size="sm" fw={600}>{shp.origin_port}</Text>
-                          <Text size="xs" c="dimmed">{shp.dest_port}</Text>
-                        </Table.Td>
-                        <Table.Td>{shp.etd}</Table.Td>
-                        <Table.Td>{shp.eta}</Table.Td>
-                        <Table.Td>
-                          <StatusBadge status={shp.status} />
-                        </Table.Td>
-                        <Table.Td>
-                          <Tooltip label={t('shipments.inTransit')}>
-                            <ActionIcon
-                              variant="subtle"
-                              aria-label={t('common.view')}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                setSelectedShpId(shp.id);
-                                setWorkbench('detail');
-                                openShpParam(shp.shipment_number, { clear: ['pr', 'po', 'do', 'task'] });
-                              }}
-                            >
-                              <IconExternalLink size={18} />
-                            </ActionIcon>
-                          </Tooltip>
-                        </Table.Td>
-                      </Table.Tr>
-                    ))}
-                  </Table.Tbody>
-                </Table>
-              </ScrollArea>
-            )}
-            <ListPagination
-              page={page}
-              pageCount={pageCount}
-              pageEnd={pageEnd}
-              pageStart={pageStart}
-              setPage={setPage}
-              total={filteredShipments.length}
-            />
-          </Paper>
-        </>
+        <ShipmentListView
+          carrierOptions={carrierOptions}
+          filteredShipments={filteredShipments}
+          isFetching={isFetching}
+          onSelectShipment={(shp) => {
+            setSelectedShpId(shp.id);
+            setWorkbench('detail');
+            openShpParam(shp.shipment_number, { clear: ['pr', 'po', 'do', 'task'] });
+          }}
+          tabCounts={tabCounts}
+        />
       ) : null}
     </Stack>
-  );
-}
-
-function ShipmentMilestonesPanel({
-  isSaving,
-  onMarkDone,
-  shipment,
-  t,
-}: {
-  isSaving: boolean;
-  onMarkDone: (milestoneCode: ShipmentMilestoneCodeV1, payload: { actualAt: string; notes?: string | null }) => void;
-  shipment: ShipmentRecord;
-  t: (key: string) => string;
-}) {
-  const [editingMilestoneId, setEditingMilestoneId] = useState<string | null>(null);
-  const [milestoneDate, setMilestoneDate] = useState('');
-  const [milestoneSource, setMilestoneSource] = useState<'MANUAL' | 'API' | 'EMAIL'>('MANUAL');
-  const [milestoneNote, setMilestoneNote] = useState('');
-
-  const milestoneLabels: Record<string, string> = {
-    BOOKING_CONFIRMED: '1. Booking Confirmed',
-    CARGO_READY: '2. Cargo Ready',
-    PICKED_UP: '3. Picked up',
-    BL_ISSUED: '4. B/L Issued',
-    GATE_IN_POL: '5. Gate in POL',
-    ATD: '6. ATD',
-    CUSTOMS_DRAFT: '7. Customs Draft',
-    ARRIVAL_NOTICE: '8. Arrival Notice',
-    CUSTOMS_CLEARED: '9. Customs Cleared',
-    DELIVERED: '10. Delivered',
-  };
-
-  const renderedMilestones = useMemo(() => {
-    const sequence = [
-      'BOOKING_CONFIRMED',
-      'CARGO_READY',
-      'PICKED_UP',
-      'BL_ISSUED',
-      'GATE_IN_POL',
-      'ATD',
-      'CUSTOMS_DRAFT',
-      'ARRIVAL_NOTICE',
-      'CUSTOMS_CLEARED',
-      'DELIVERED',
-    ];
-    return sequence.map((code) => {
-      const found = shipment.milestones.find((m) => m.milestone_code === code);
-      return found ?? {
-        id: `m-dummy-${code}`,
-        milestone_code: code as any,
-        planned_date: null,
-        actual_date: null,
-        source: 'MANUAL' as const,
-        note: null,
-      };
-    });
-  }, [shipment.milestones]);
-
-  const handleUpdateMilestone = (milestoneId: string) => {
-    const milestone = renderedMilestones.find((item) => item.id === milestoneId);
-    if (!milestone) return;
-    const actualAt = milestoneDate ? new Date(milestoneDate).toISOString() : new Date().toISOString();
-    onMarkDone(milestone.milestone_code as ShipmentMilestoneCodeV1, {
-      actualAt,
-      notes: milestoneNote || null,
-    });
-    setEditingMilestoneId(null);
-    setMilestoneDate('');
-    setMilestoneNote('');
-  };
-
-  return (
-    <Stack gap="md">
-      <Alert color="blue" icon={<IconCalendar size={18} />}>
-        Track 10 logistics milestones for international shipping.
-      </Alert>
-      <Paper withBorder p="md">
-        <Stack gap="xs">
-          {renderedMilestones.map((m, idx) => {
-            const label = milestoneLabels[m.milestone_code] || m.milestone_code;
-            const isCompleted = !!m.actual_date;
-            const isNested = m.milestone_code === 'PICKED_UP' || m.milestone_code === 'GATE_IN_POL';
-
-            return (
-              <div
-                key={m.id}
-                style={{
-                  paddingLeft: isNested ? '24px' : '0px',
-                  borderLeft: isNested ? '2px dashed var(--mantine-color-blue-light)' : 'none',
-                  marginLeft: isNested ? '12px' : '0px',
-                }}
-              >
-                <Paper
-                  withBorder
-                  p="xs"
-                  mb="xs"
-                  style={{
-                    backgroundColor: isCompleted ? 'var(--mantine-color-teal-light)' : 'transparent',
-                  }}
-                >
-                  <Group justify="space-between" wrap="nowrap">
-                    <Text size="sm" fw={isCompleted ? 700 : 400}>
-                      {label}
-                    </Text>
-                    <Button
-                      size="xs"
-                      variant="light"
-                      color={isCompleted ? 'teal' : 'blue'}
-                      loading={isSaving && editingMilestoneId === m.id}
-                      onClick={() => {
-                        setEditingMilestoneId(m.id);
-                        setMilestoneDate(m.actual_date ? m.actual_date.slice(0, 10) : '');
-                        setMilestoneSource(m.source);
-                        setMilestoneNote(m.note || '');
-                      }}
-                    >
-                      {isCompleted ? 'Update' : 'Mark done'}
-                    </Button>
-                  </Group>
-                  {isCompleted ? (
-                    <Text size="xs" c="teal">
-                      Completed: {m.actual_date} ({m.source}) · {m.note || 'No note'}
-                    </Text>
-                  ) : (
-                    <Text size="xs" c="dimmed">
-                      Planned: {m.planned_date || '-'}
-                    </Text>
-                  )}
-                </Paper>
-
-                {editingMilestoneId === m.id && (
-                  <Paper withBorder p="xs" mt="xs">
-                    <Stack gap="xs">
-                      <TextInput
-                        label="Actual date"
-                        type="date"
-                        value={milestoneDate}
-                        onChange={(e) => setMilestoneDate(e.currentTarget.value)}
-                        size="xs"
-                      />
-                      <Select
-                        label="Source"
-                        value={milestoneSource}
-                        onChange={(val) => setMilestoneSource((val as any) || 'MANUAL')}
-                        data={['MANUAL', 'API', 'EMAIL']}
-                        size="xs"
-                      />
-                      <TextInput
-                        label="Note"
-                        value={milestoneNote}
-                        onChange={(e) => setMilestoneNote(e.currentTarget.value)}
-size="xs"
-                      />
-                      <Group justify="flex-end" gap="xs">
-                        <Button size="xs" variant="subtle" onClick={() => setEditingMilestoneId(null)}>
-                          {t('common.cancel')}
-                        </Button>
-                        <Button size="xs" color="blue" onClick={() => handleUpdateMilestone(m.id)}>
-                          {t('common.save')}
-                        </Button>
-                      </Group>
-                    </Stack>
-                  </Paper>
-                )}
-              </div>
-            );
-          })}
-        </Stack>
-      </Paper>
-    </Stack>
-  );
-}
-
-function ShipmentDocumentsPanel({
-  isSaving,
-  onCreateDocument,
-  onUpdateDocument,
-  shipment,
-  t,
-}: {
-  isSaving: boolean;
-  onCreateDocument: (payload: ShipmentDocumentPayload) => void;
-  onUpdateDocument: (documentId: string, payload: Partial<ShipmentDocumentPayload>) => void;
-  shipment: ShipmentRecord;
-  t: (key: string) => string;
-}) {
-  const [rejectingDocId, setRejectingDocId] = useState<string | null>(null);
-  const [rejectReason, setRejectReason] = useState('');
-  const [newDocumentType, setNewDocumentType] = useState<ShipmentDocumentPayload['document_type']>('BILL_OF_LADING');
-  const [newDocumentNo, setNewDocumentNo] = useState('');
-
-  const documentTypeOptions: Array<{ label: string; value: ShipmentDocumentPayload['document_type'] }> = [
-    { label: 'Commercial invoice', value: 'COMMERCIAL_INVOICE' },
-    { label: 'Packing list', value: 'PACKING_LIST' },
-    { label: 'Contract', value: 'CONTRACT' },
-    { label: 'Booking confirmation', value: 'BOOKING_CONFIRMATION' },
-    { label: 'Bill of lading', value: 'BILL_OF_LADING' },
-    { label: 'Air waybill', value: 'AIR_WAYBILL' },
-    { label: 'Arrival notice', value: 'ARRIVAL_NOTICE' },
-    { label: 'Certificate of origin', value: 'CERTIFICATE_OF_ORIGIN' },
-    { label: 'Insurance', value: 'INSURANCE' },
-    { label: 'Customs declaration', value: 'CUSTOMS_DECLARATION' },
-    { label: 'eDO', value: 'EDO' },
-    { label: 'POD', value: 'POD' },
-    { label: 'Other', value: 'OTHER' },
-  ];
-
-  const getStatusColor = (status: ShipmentDocument['status']) => {
-    switch (status) {
-      case 'APPROVED':
-      case 'VERIFIED': return 'green';
-      case 'RECEIVED':
-      case 'WAITING_REVIEW': return 'orange';
-      case 'REJECTED': return 'red';
-      case 'CANCELLED': return 'gray';
-      default: return 'gray';
-    }
-  };
-
-  const handleDocumentApprove = (docId: string) => {
-    onUpdateDocument(docId, { status: 'VERIFIED' });
-  };
-
-  const handleDocumentReject = (docId: string) => {
-    if (!rejectReason) return;
-    onUpdateDocument(docId, { notes: rejectReason, status: 'REJECTED' });
-    setRejectingDocId(null);
-    setRejectReason('');
-  };
-
-  const handleDocumentUpload = (docId: string, file: File | null) => {
-    if (!file) return;
-    onUpdateDocument(docId, {
-      file_name: file.name,
-      mime_type: file.type || null,
-      received_at: new Date().toISOString(),
-      status: 'RECEIVED',
-    });
-  };
-
-  const handleCreateDocument = () => {
-    onCreateDocument({
-      document_no: newDocumentNo || null,
-      document_type: newDocumentType,
-      status: 'DRAFT',
-    });
-    setNewDocumentNo('');
-  };
-
-  return (
-    <Stack gap="md">
-      <Alert color="orange" icon={<IconHourglassHigh size={18} />}>
-        Draft B/L SLA: 2-hour review window for cross-check.
-      </Alert>
-      <Paper withBorder p="md">
-        <SimpleGrid cols={{ base: 1, md: 3 }} spacing="sm">
-          <Select
-            label="Document type"
-            data={documentTypeOptions}
-            value={newDocumentType}
-            onChange={(value) => setNewDocumentType((value as ShipmentDocumentPayload['document_type'] | null) ?? 'OTHER')}
-          />
-          <TextInput
-            label="Document no."
-            placeholder="BL123456"
-            value={newDocumentNo}
-            onChange={(event) => setNewDocumentNo(event.currentTarget.value)}
-          />
-          <Group align="flex-end">
-            <Button
-              fullWidth
-              leftSection={<IconPlus size={16} />}
-              loading={isSaving}
-              onClick={handleCreateDocument}
-            >
-              Add document
-            </Button>
-          </Group>
-        </SimpleGrid>
-      </Paper>
-      <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
-        {shipment.documents.map((doc) => {
-          const isWaitingReview = doc.status === 'WAITING_REVIEW' || doc.status === 'RECEIVED';
-          const hasFile = !!doc.file_name;
-
-          return (
-            <Paper key={doc.id} withBorder p="md">
-              <Stack gap="xs">
-                <Group justify="space-between">
-                  <Text fw={700} size="sm">
-                    {doc.document_type}
-                  </Text>
-                  <Badge color={getStatusColor(doc.status)}>{doc.status}</Badge>
-                </Group>
-
-                {hasFile ? (
-                  <Text size="xs" c="blue" style={{ textDecoration: 'underline', cursor: 'pointer' }}>
-                    {doc.file_name}
-                  </Text>
-                ) : (
-                  <Text size="xs" c="dimmed" fs="italic">
-                    No file uploaded.
-                  </Text>
-                )}
-
-                {isWaitingReview && doc.review_due_at && (
-                  <Group justify="space-between">
-                    <Text size="xs" fw={700}>SLA Review Timeleft:</Text>
-                    <Badge color="orange" variant="filled">
-                      2h SLA
-                    </Badge>
-                  </Group>
-                )}
-
-                {doc.reject_reason && (
-                  <Text size="xs" c="red" fw={600}>
-                    Rejected: {doc.reject_reason}
-                  </Text>
-                )}
-
-                <Group gap="xs" justify="flex-end" mt="xs">
-                  <FileInput
-                    placeholder="Upload..."
-                    size="xs"
-                    onChange={(file) => handleDocumentUpload(doc.id, file)}
-                    style={{ maxWidth: 120 }}
-                  />
-                  {isWaitingReview && (
-                    <>
-                      <Button size="xs" color="green" loading={isSaving} onClick={() => handleDocumentApprove(doc.id)}>
-                        Approve
-                      </Button>
-                      <Button size="xs" color="red" variant="light" onClick={() => setRejectingDocId(doc.id)}>
-                        Reject
-                      </Button>
-                    </>
-                  )}
-                </Group>
-
-                {rejectingDocId === doc.id && (
-                  <Paper withBorder p="xs" mt="xs">
-                    <Stack gap="xs">
-                      <TextInput
-                        label="Reject reason"
-                        value={rejectReason}
-                        onChange={(e) => setRejectReason(e.currentTarget.value)}
-                        size="xs"
-                        required
-                      />
-                      <Group justify="flex-end" gap="xs">
-                        <Button size="xs" variant="subtle" onClick={() => setRejectingDocId(null)}>
-                          {t('common.cancel')}
-                        </Button>
-                        <Button
-                          size="xs"
-                          color="red"
-                          disabled={!rejectReason}
-                          loading={isSaving}
-                          onClick={() => handleDocumentReject(doc.id)}
-                        >
-                          Confirm reject
-                        </Button>
-                      </Group>
-                    </Stack>
-                  </Paper>
-                )}
-              </Stack>
-            </Paper>
-          );
-        })}
-      </SimpleGrid>
-    </Stack>
-  );
-}
-
-function ShipmentCustomsPanel({
-  onUpdate,
-  shipment,
-}: {
-  onUpdate: (updated: ShipmentRecord) => void;
-  shipment: ShipmentRecord;
-}) {
-  const [customsStream, setCustomsStream] = useState(shipment.customs.stream);
-  const [declarationNo, setDeclarationNo] = useState(shipment.customs.declaration_no || '');
-  const [laneStatus, setLaneStatus] = useState(shipment.customs.lane_status);
-
-  const handleSave = () => {
-    onUpdate({
-      ...shipment,
-      customs: {
-        ...shipment.customs,
-        stream: customsStream,
-        declaration_no: declarationNo || undefined,
-        lane_status: laneStatus,
-      },
-    });
-  };
-
-  return (
-    <Paper withBorder p="md">
-      <Stack gap="md">
-        <Text fw={700} size="sm">
-          Customs Classification (GD1 Flow)
-        </Text>
-        <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm">
-          {(['GREEN', 'YELLOW', 'RED'] as const).map((stream) => (
-            <Paper
-              key={stream}
-              withBorder
-              p="md"
-              onClick={() => setCustomsStream(stream)}
-              style={{
-                cursor: 'pointer',
-                borderColor: customsStream === stream ? `var(--mantine-color-${stream === 'GREEN' ? 'teal' : stream === 'YELLOW' ? 'yellow' : 'red'}-filled)` : 'transparent',
-                backgroundColor: customsStream === stream ? `var(--mantine-color-${stream === 'GREEN' ? 'teal' : stream === 'YELLOW' ? 'yellow' : 'red'}-light)` : 'transparent',
-              }}
-            >
-              <Stack align="center" gap={4}>
-                <Badge color={stream === 'GREEN' ? 'teal' : stream === 'YELLOW' ? 'yellow' : 'red'} size="lg">
-                  {stream} stream
-                </Badge>
-                <Text size="xs" c="dimmed" style={{ textAlign: 'center' }}>
-                  {stream === 'GREEN' && 'Green lane - automated customs clearance'}
-                  {stream === 'YELLOW' && 'Yellow lane - document supplement required'}
-                  {stream === 'RED' && 'Red lane - field inspection required'}
-                </Text>
-              </Stack>
-            </Paper>
-          ))}
-        </SimpleGrid>
-
-        <SimpleGrid cols={{ base: 1, sm: 2 }} mt="md">
-          <TextInput
-            label="Declaration number"
-            placeholder="Customs declaration number"
-            value={declarationNo}
-            onChange={(e) => setDeclarationNo(e.currentTarget.value)}
-          />
-          <TextInput
-            label="Lane status"
-            placeholder="Detailed status"
-            value={laneStatus}
-            onChange={(e) => setLaneStatus(e.currentTarget.value)}
-          />
-        </SimpleGrid>
-
-        <Group justify="flex-end">
-          <Button color="blue" onClick={handleSave}>
-            Save customs
-          </Button>
-        </Group>
-      </Stack>
-    </Paper>
-  );
-}
-
-function ShipmentCostsPanel({ shippingMode }: { shippingMode: ShipmentRecord['shipping_mode'] }) {
-  const freight = shippingMode === 'SEA' ? 4200 : 8800;
-  const costs = [
-    { code: 'FREIGHT', label: 'Freight', amount: freight, currency: 'USD' },
-    { code: 'INSURANCE', label: 'Insurance', amount: 360, currency: 'USD' },
-    { code: 'CUSTOMS', label: 'Customs clearance', amount: 220, currency: 'USD' },
-    { code: 'LOCAL', label: 'Local charges', amount: 680, currency: 'USD' },
-    { code: 'DUTY', label: 'Import duty estimate', amount: 950, currency: 'USD' },
-  ];
-  const total = costs.reduce((sum, c) => sum + c.amount, 0);
-
-  return (
-    <Paper withBorder p="md">
-      <Stack gap="md">
-        <Group justify="space-between">
-          <Text fw={700} size="sm">Landed Cost</Text>
-          <Badge size="lg" color="teal">
-            {total.toLocaleString()} USD
-          </Badge>
-        </Group>
-        <ScrollArea type="always" offsetScrollbars scrollbarSize={8}>
-          <Table miw={680} verticalSpacing="sm">
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Code</Table.Th>
-                <Table.Th>Charge</Table.Th>
-                <Table.Th style={{ textAlign: 'right' }}>Amount</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {costs.map((cost) => (
-                <Table.Tr key={cost.code}>
-                  <Table.Td>{cost.code}</Table.Td>
-                  <Table.Td>{cost.label}</Table.Td>
-                  <Table.Td style={{ textAlign: 'right' }}>
-                    {cost.amount.toLocaleString()} {cost.currency}
-                  </Table.Td>
-                </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
-        </ScrollArea>
-      </Stack>
-    </Paper>
-  );
-}
-
-function ShipmentTasksPanel({ tasks }: { tasks: ShipmentPoTask[] }) {
-  return (
-    <Paper withBorder p="md">
-      <Stack gap="sm">
-        <Text fw={700} size="sm">
-          PO Stage Closure Tasks
-        </Text>
-        <Text size="xs" c="dimmed">
-          Tasks must be completed before shipment can proceed to next stage.
-        </Text>
-        <Stack mt="sm" gap="xs">
-          {tasks.map((task) => (
-            <Paper key={task.id} withBorder p="sm">
-              <Group justify="space-between">
-                <Group gap="sm">
-                  <Checkbox checked={task.status === 'COMPLETED'} readOnly />
-                  <Text size="sm" fw={task.status === 'COMPLETED' ? 500 : 600} style={{ textDecoration: task.status === 'COMPLETED' ? 'line-through' : 'none' }}>
-                    {task.task_name}
-                  </Text>
-                </Group>
-                <Badge color="gray">{task.assignee_role}</Badge>
-              </Group>
-            </Paper>
-          ))}
-        </Stack>
-      </Stack>
-    </Paper>
   );
 }

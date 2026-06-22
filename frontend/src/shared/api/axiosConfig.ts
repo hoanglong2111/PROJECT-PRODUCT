@@ -28,8 +28,9 @@ apiClient.interceptors.response.use(
       const v1Message = v1Error?.message;
       if (typeof v1Message === 'string' && v1Message.trim().length > 0) {
         const normalizedError = new Error(v1Message) as Error & { code?: string };
-        if (typeof v1Error?.code === 'string') {
-          normalizedError.code = v1Error.code;
+        const errorCode = v1Error?.error_code ?? v1Error?.code;
+        if (typeof errorCode === 'string') {
+          normalizedError.code = errorCode;
         }
         return Promise.reject(normalizedError);
       }

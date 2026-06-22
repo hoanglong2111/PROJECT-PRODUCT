@@ -24,6 +24,7 @@ import {
   IconSettings,
   IconShip,
   IconShoppingCart,
+  IconTruck,
   IconTruckDelivery,
   IconUserCircle,
 } from '@tabler/icons-react';
@@ -41,47 +42,54 @@ import { RouteErrorBoundary } from './PageFeedback';
 const navigation: Array<{
   icon: ComponentType<{ size?: number | string; stroke?: number | string }>;
   labelKey:
-    | 'shell.dashboard'
-    | 'shell.deliveryOrders'
-    | 'shell.purchaseOrders'
-    | 'shell.shipments'
-    | 'shell.masterData'
-    | 'shell.tasks';
+  | 'shell.dashboard'
+  | 'shell.deliveryOrders'
+  | 'shell.domesticTransportOrders'
+  | 'shell.purchaseOrders'
+  | 'shell.shipments'
+  | 'shell.masterData'
+  | 'shell.tasks';
   path: string;
   roles?: AppRole[];
 }> = [
-  { labelKey: 'shell.dashboard', path: '/', icon: IconLayoutDashboard },
-  {
-    labelKey: 'shell.purchaseOrders',
-    path: '/purchase-orders',
-    icon: IconShoppingCart,
-    roles: ['ADMIN', 'PIC_MANAGER', 'SALE_STAFF', 'FINANCE_OFFICER'],
-  },
-  {
-    labelKey: 'shell.deliveryOrders',
-    path: '/delivery-orders',
-    icon: IconTruckDelivery,
-    roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'WAREHOUSE_STAFF'],
-  },
-  {
-    labelKey: 'shell.shipments',
-    path: '/shipments',
-    icon: IconShip,
-    roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'FINANCE_OFFICER', 'WAREHOUSE_STAFF'],
-  },
-  {
-    labelKey: 'shell.masterData',
-    path: '/master-data',
-    icon: IconFileText,
-    roles: ['ADMIN', 'PIC_MANAGER'],
-  },
-  {
-    labelKey: 'shell.tasks',
-    path: '/tasks',
-    icon: IconChecklist,
-    roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'FINANCE_OFFICER', 'WAREHOUSE_STAFF'],
-  },
-];
+    { labelKey: 'shell.dashboard', path: '/', icon: IconLayoutDashboard },
+    {
+      labelKey: 'shell.purchaseOrders',
+      path: '/purchase-orders',
+      icon: IconShoppingCart,
+      roles: ['ADMIN', 'PIC_MANAGER', 'SALE_STAFF', 'FINANCE_OFFICER'],
+    },
+    {
+      labelKey: 'shell.deliveryOrders',
+      path: '/delivery-orders',
+      icon: IconTruckDelivery,
+      roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'WAREHOUSE_STAFF'],
+    },
+    {
+      labelKey: 'shell.shipments',
+      path: '/shipments',
+      icon: IconShip,
+      roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'FINANCE_OFFICER', 'WAREHOUSE_STAFF'],
+    },
+    {
+      labelKey: 'shell.domesticTransportOrders',
+      path: '/domestic-transport-orders',
+      icon: IconTruck,
+      roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'FINANCE_OFFICER', 'WAREHOUSE_STAFF'],
+    },
+    {
+      labelKey: 'shell.masterData',
+      path: '/master-data',
+      icon: IconFileText,
+      roles: ['ADMIN', 'PIC_MANAGER'],
+    },
+    {
+      labelKey: 'shell.tasks',
+      path: '/tasks',
+      icon: IconChecklist,
+      roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'FINANCE_OFFICER', 'WAREHOUSE_STAFF'],
+    },
+  ];
 
 export function AppShellLayout() {
   const [mobileOpened, mobileHandlers] = useDisclosure(false);
@@ -125,12 +133,7 @@ export function AppShellLayout() {
             <Burger opened={desktopOpened} onClick={desktopHandlers.toggle} visibleFrom="sm" size="sm" />
             <UnstyledButton component={Link} to="/" className="brand-mark">
               <span className="brand-logo-frame">
-                <img src="/brand/kbi-logo.png" alt="KBI" className="brand-logo" />
-              </span>
-              <span>
-                <Text size="sm" fw={700} className="brand-title">
-                  KBI
-                </Text>
+                <img src="/brand/fds_logo.png" alt="FDS" className="brand-logo" />
               </span>
             </UnstyledButton>
           </Group>
@@ -148,6 +151,7 @@ export function AppShellLayout() {
                     queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats }),
                     queryClient.invalidateQueries({ queryKey: queryKeys.purchaseOrders }),
                     queryClient.invalidateQueries({ queryKey: queryKeys.deliveryOrders }),
+                    queryClient.invalidateQueries({ queryKey: queryKeys.domesticTransportOrders }),
                     queryClient.invalidateQueries({ queryKey: queryKeys.shipments }),
                     queryClient.invalidateQueries({ queryKey: queryKeys.masterData }),
                     queryClient.invalidateQueries({ queryKey: queryKeys.tasks }),

@@ -17,6 +17,7 @@ export type DeliveryOrderStatus =
   | 'IN_TRANSIT'
   | 'ARRIVED_PORT'
   | 'CUSTOMS_PROCESSING'
+  | 'CUSTOMS_CLEARED'
   | 'WAREHOUSE_PENDING'
   | 'DELIVERED'
   | 'CLOSED'
@@ -26,9 +27,15 @@ export type DeliveryOrderStatus =
   | 'ASSIGNED_TO_SHIPMENT'
   | 'CANCELLED';
 
-export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'WAITING' | 'BLOCKED' | 'COMPLETED' | 'CANCELLED';
+export type TaskStatus = 'TODO' | 'PENDING' | 'IN_PROGRESS' | 'WAITING' | 'BLOCKED' | 'COMPLETED' | 'CANCELLED';
 
 export type TaskRole =
+  | 'BUYER'
+  | 'LOGISTICS_PLANNER'
+  | 'PIC_MANAGER'
+  | 'PORT_OFFICER'
+  | 'CUSTOMS_OFFICER'
+  | 'WAREHOUSE_STAFF'
   | 'PIC Manager'
   | 'Sale Staff'
   | 'Port Officer'
@@ -159,14 +166,26 @@ export type PurchaseOrderLot = {
 
 export type DeliverySourceLine = {
   id: string;
+  do_number?: string;
+  lot_number?: string | null;
+  shipment_number?: string | null;
   po_number: string;
   po_line_id: string;
   request_code: string;
   pr_line_id: string;
   item_code: string;
   item_name: string;
+  hs_code?: string | null;
   quantity: number;
+  ordered_quantity?: number | null;
   unit: string;
+  weight_kg?: number | null;
+  container_count?: number | null;
+  container_no?: string | null;
+  route_origin?: string | null;
+  route_destination?: string | null;
+  etd?: string | null;
+  eta?: string | null;
 };
 
 export type PurchaseOrder = {
@@ -491,6 +510,20 @@ export type EfmsControl = {
   transport: EfmsTransportRecord | null;
 };
 
+// Snapshot of the SOP Task Template (master data) a runtime task is generated from.
+// Lets the Tasks screen surface milestone / department / SLA / required documents
+// without re-deriving the SOP knowledge that lives in the master-data catalog.
+export type LogisticsTaskTemplateRef = {
+  task_template_id: string;
+  group_code: string | null;
+  group_name: string | null;
+  milestone_code: string | null;
+  department: string | null;
+  sla_hours: number | null;
+  sla_text: string | null;
+  related_documents: string | null;
+};
+
 export type LogisticsTask = {
   task_id: string;
   do_number: string;
@@ -511,6 +544,8 @@ export type LogisticsTask = {
   notes: string;
   is_required_for_do_closure: boolean;
   blocked_reason: string | null;
+  task_template_id: string | null;
+  template: LogisticsTaskTemplateRef | null;
 };
 
 // ============================================================================
@@ -740,6 +775,8 @@ export interface Gd1PoStageTask {
   po_stage: Gd1PoStatus;
   task_name: string;
   task_template_id: string | null;
+  template_milestone_code: string | null;
+  template_department: string | null;
   assignee_id: string;
   assigned_by: string;
   status: Gd1TaskStatus;

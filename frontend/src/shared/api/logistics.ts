@@ -20,6 +20,7 @@
   CustomsLaneStatus,
   CustomsStatus,
   LogisticsTask,
+  LogisticsTaskTemplateRef,
   MblType,
   Priority,
   PurchaseOrder,
@@ -35,6 +36,7 @@
   UserRef,
   Gd1ApprovalStep,
   Gd1PoStageTask,
+  Gd1TaskStatus,
   Gd1ShipmentMilestone,
   Gd1ShipmentCost,
   Gd1PoStatus,
@@ -46,7 +48,11 @@
   ShipmentRecord,
 } from '@shared/model/logistics';
 import {
+  fetchDeliveryOrderLines,
+  fetchDeliveryOrderLots,
   fetchDeliveryOrdersV1,
+  updateDeliveryOrderV1,
+  type DeliveryOrderLotV1,
   type DeliveryOrderLineV1,
   type DeliveryOrderV1,
 } from './deliveryOrders';
@@ -57,15 +63,16 @@ import {
 } from './purchaseOrders';
 import {
   cancelQuotation,
-  confirmQuotationByKbi,
   createDeliveryOrderQuotation,
   fetchQuotationV1,
   fetchQuotationsV1,
+  markQuotationFinal,
   receiveQuotation,
   rejectQuotation,
   requestQuotation,
   submitQuotationToKbi,
   type QuotationChargeLineV1,
+  type QuotationChargeTypeV1,
   type QuotationStatusV1,
   type QuotationTypeV1,
   type QuotationV1,
@@ -86,6 +93,7 @@ import {
   type ShipmentV1,
 } from './shipments';
 import { fetchCurrencies, fetchSuppliers } from './tradeMasterData';
+import { apiClient } from './axiosConfig';
 
 export type {
   BusinessFlowTag,
@@ -109,6 +117,7 @@ export type {
   CustomsLaneStatus,
   CustomsStatus,
   LogisticsTask,
+  LogisticsTaskTemplateRef,
   MblType,
   Priority,
   PurchaseOrder,
@@ -245,6 +254,12 @@ export type UpdateDeliveryOrderPayload = {
   warehouseDeadline?: string;
 };
 
+export type TaskAssigneeInput = {
+  id?: string | null;
+  name: string;
+  department?: string | null;
+};
+
 export type UpdateTaskPayload = {
   blockedReason?: string | null;
   completedAt?: string | null;
@@ -252,6 +267,101 @@ export type UpdateTaskPayload = {
   notes?: string;
   progress?: number;
   status?: TaskStatus;
+  taskName?: string;
+  role?: TaskRole;
+  stage?: TaskScreenStage;
+  refType?: string;
+  refId?: string;
+  refNo?: string;
+  priority?: Priority;
+  assignee?: TaskAssigneeInput;
+  taskTemplateId?: string | null;
+};
+
+export type CreateTaskPayload = {
+  taskName: string;
+  taskTemplateId?: string | null;
+  refType?: string;
+  refId?: string;
+  refNo?: string;
+  stage?: TaskScreenStage;
+  role?: TaskRole;
+  assignee?: TaskAssigneeInput;
+  status?: TaskStatus;
+  priority?: Priority;
+  dueDate?: string | null;
+  progress?: number;
+  notes?: string;
+};
+
+export type TaskScreenStage =
+  | 'SUPPLIER_CONFIRMATION'
+  | 'LOT_PLANNING'
+  | 'INTERNAL_DO'
+  | 'QUOTATION'
+  | 'SHIPMENT'
+  | 'CUSTOMS'
+  | 'CARRIER_DO'
+  | 'DTO';
+
+export type TaskScreenItem = {
+  id: string;
+  task_no: string;
+  task_name: string;
+  ref_type: 'PURCHASE_ORDER' | string;
+  ref_id: string;
+  ref_no: string;
+  stage: TaskScreenStage;
+  role: TaskRole;
+  assignee: {
+    id?: string;
+    user_id?: string;
+    name: string;
+    department: string | null;
+  };
+  status: TaskStatus;
+  priority: Priority;
+  due_at: string | null;
+  completed_at: string | null;
+  progress: number;
+  blocked_reason: string | null;
+  note?: string | null;
+  description?: string | null;
+  task_template_id?: string | null;
+  milestone_code?: string | null;
+  department?: string | null;
+  sla_hours?: number | null;
+  sla_text?: string | null;
+  related_documents?: string | null;
+  template_group_code?: string | null;
+  template_group_name?: string | null;
+  create_at?: string;
+  update_at?: string;
+};
+
+export type TaskListScreenDto = {
+  items: TaskScreenItem[];
+  summary?: {
+    total: number;
+    pending: number;
+    in_progress: number;
+    blocked: number;
+    completed: number;
+    overdue?: number;
+  };
+  filters?: Record<string, string[]>;
+};
+
+export type PurchaseOrderTasksScreenDto = {
+  purchase_order: {
+    id: string;
+    po_no: string;
+    status: string;
+  };
+  task_groups: Array<{
+    stage: TaskScreenStage;
+    tasks: TaskScreenItem[];
+  }>;
 };
 
 export type DashboardStats = {
@@ -290,11 +400,24 @@ export type LogisticsAttachment = {
   uploadedBy: string | null;
 };
 
+export type QuotationChargeLineInput = {
+  charge_type: string;
+  description: string;
+  unit?: string;
+  quantity?: number;
+  unit_price: number;
+};
+
 export type CreateQuotationPayload = {
   requestCode: string;
   shippingMode: ShippingMode;
   quoteAmount?: number | null;
   currency?: string | null;
+  /**
+   * Itemized Incoterms-aware charge lines. When provided, these are persisted
+   * verbatim and the legacy flat freight/local/customs fields are ignored.
+   */
+  chargeLines?: QuotationChargeLineInput[];
 };
 
 export type CreateShipmentPayload = {
@@ -456,6 +579,10 @@ function dateOnly(value: string | null | undefined) {
   return value ? value.slice(0, 10) : '';
 }
 
+function deliveryOrderNo(deliveryOrder: DeliveryOrderV1) {
+  return deliveryOrder.do_no ?? deliveryOrder.delivery_order_no ?? deliveryOrder.id;
+}
+
 function uiId(prefix: string) {
   return `${prefix}-${Date.now()}`;
 }
@@ -467,8 +594,7 @@ function addDaysIso(days: number) {
 }
 
 function inferPoFlowTags(purchaseOrder: PurchaseOrderV1): BusinessFlowTag[] {
-  const lots = purchaseOrder.delivery_slots?.flatMap((slot) => slot.lots ?? []) ?? [];
-  if (lots.length > 1 || (purchaseOrder.delivery_slots?.length ?? 0) > 1) {
+  if ((purchaseOrder.lines ?? []).some((line) => toNumber(line.qty_lotted) > 0 && toNumber(line.qty_lotted) < toNumber(line.qty_ordered))) {
     return ['PARTIAL_DELIVERY'];
   }
   return ['LINEAR'];
@@ -534,8 +660,94 @@ function mapV1PurchaseOrder(purchaseOrder: PurchaseOrderV1, linkedDoNumbers: str
     supplier_name: purchaseOrder.supplier?.supplier_name ?? '',
     total_amount: totalAmount,
     version: 1,
-    warehouse_code: purchaseOrder.delivery_slots?.[0]?.warehouse_name ?? '',
+    warehouse_code: '',
     confirmed_date: purchaseOrder.confirmed_at,
+  };
+}
+
+function mapTaskScreenToTemplateRef(task: TaskScreenItem): LogisticsTaskTemplateRef | null {
+  if (!task.task_template_id) return null;
+
+  return {
+    task_template_id: task.task_template_id,
+    group_code: task.template_group_code ?? null,
+    group_name: task.template_group_name ?? null,
+    milestone_code: task.milestone_code ?? null,
+    department: task.department ?? null,
+    sla_hours: task.sla_hours ?? null,
+    sla_text: task.sla_text ?? null,
+    related_documents: task.related_documents ?? null,
+  };
+}
+
+function mapTaskScreenToLogisticsTask(task: TaskScreenItem): LogisticsTask {
+  const assigneeId = task.assignee.id ?? task.assignee.user_id ?? '';
+
+  return {
+    assigned_at: task.create_at ?? null,
+    assignee: {
+      department: task.assignee.department ?? '',
+      name: task.assignee.name,
+      user_id: assigneeId,
+    },
+    blocked_reason: task.blocked_reason ?? null,
+    completed_at: task.completed_at,
+    created_at: task.create_at ?? '',
+    do_number: task.ref_no,
+    due_date: dateOnly(task.due_at) || '',
+    hbl_number: null,
+    is_required_for_do_closure: true,
+    notes: task.note ?? task.description ?? '',
+    po_number: task.ref_type === 'PURCHASE_ORDER' ? task.ref_no : null,
+    priority: task.priority,
+    production_contract_number: task.ref_id,
+    progress: toNumber(task.progress),
+    request_code: task.ref_no,
+    role: task.role,
+    status: task.status,
+    task_id: task.id,
+    task_name: task.task_name,
+    task_template_id: task.task_template_id ?? null,
+    template: mapTaskScreenToTemplateRef(task),
+  };
+}
+
+function taskScreenStatusToGd1(status: TaskStatus): Gd1TaskStatus {
+  if (status === 'COMPLETED') return 'DONE';
+  if (status === 'TODO') return 'PENDING';
+  if (status === 'WAITING') return 'PENDING';
+  return status as Gd1TaskStatus;
+}
+
+function gd1StatusToTaskScreen(status: string): TaskStatus {
+  if (status === 'DONE') return 'COMPLETED';
+  if (status === 'PENDING') return 'PENDING';
+  return status as TaskStatus;
+}
+
+function mapTaskScreenToPoStageTask(task: TaskScreenItem): Gd1PoStageTask {
+  const assigneeId = task.assignee.id ?? task.assignee.user_id ?? '';
+
+  return {
+    assigned_by: 'mock-api',
+    assignee_id: assigneeId,
+    completed_at: task.completed_at,
+    completed_by: task.completed_at ? assigneeId : null,
+    created_at: task.create_at ?? '',
+    due_date: dateOnly(task.due_at) || null,
+    id: task.id,
+    linked_shipment_milestone: null,
+    note: task.note ?? null,
+    po_stage: task.stage as Gd1PoStageTask['po_stage'],
+    purchase_order_id: task.ref_id,
+    started_at: task.status === 'IN_PROGRESS' ? task.update_at ?? task.create_at ?? null : null,
+    status: taskScreenStatusToGd1(task.status),
+    task_name: task.task_name,
+    task_template_id: task.task_template_id ?? null,
+    template_milestone_code: task.milestone_code ?? null,
+    template_department: task.department ?? null,
+    tenant_id: null,
+    updated_at: task.update_at ?? '',
   };
 }
 
@@ -555,8 +767,15 @@ function quotationStatusToUi(status: QuotationStatusV1): QuotationStatus {
 }
 
 function inferQuotationShippingMode(quotation: QuotationV1): ShippingMode {
-  const chargeTypes = new Set((quotation.charge_lines ?? []).map((line) => line.charge_type));
+  const lines = quotation.charge_lines ?? [];
+  const chargeTypes = new Set(lines.map((line) => line.charge_type));
   if (chargeTypes.has('AIR_FREIGHT')) return 'AIR';
+  // Fall back to the per-line pricing basis (CONT/RT/KGS) emitted by the
+  // Incoterms-aware form, since the quotation record has no shipping-mode field.
+  const units = new Set(lines.map((line) => (line.unit ?? '').toUpperCase()));
+  if (units.has('KGS')) return 'AIR';
+  if (units.has('RT') || chargeTypes.has('CFS')) return 'LCL';
+  if (units.has('CONT')) return 'FCL';
   if (chargeTypes.has('TRUCKING')) return 'LCL';
   return 'FCL';
 }
@@ -572,46 +791,59 @@ function sumChargeLines(chargeLines: QuotationChargeLineV1[] | undefined, types:
 
 function mapV1Quotation(quotation: QuotationV1, requestCode?: string): Quotation & {
   carrierName?: string;
+  chargeLines?: QuotationChargeLineV1[];
   customsFee?: number;
   freightCost?: number;
+  isFinal?: boolean;
   isAllInclusive?: boolean;
   localCharges?: number;
+  quotationGroupId?: string;
+  version?: number;
 } {
   const chargeLines = quotation.charge_lines ?? [];
-  const freightCost = sumChargeLines(chargeLines, ['OCEAN_FREIGHT', 'AIR_FREIGHT']);
-  const localCharges = sumChargeLines(chargeLines, ['LOCAL_CHARGE', 'TRUCKING', 'DO_FEE', 'DEMURRAGE', 'DETENTION', 'WAREHOUSE', 'DOCUMENT_FEE']);
+  const freightCost = sumChargeLines(chargeLines, ['OCEAN_FREIGHT', 'AIR_FREIGHT', 'BREAKBULK_FREIGHT', 'ORIGIN_CHARGE']);
+  const localCharges = sumChargeLines(chargeLines, [
+    'LOCAL_CHARGE', 'TRUCKING', 'DO_FEE', 'HANDLING', 'THC', 'CIC', 'EMC_EMF', 'CLEANING', 'CFS',
+    'LOWERING_FEE', 'LOADING_FEE', 'DEMURRAGE', 'DETENTION', 'WAREHOUSE', 'DOCUMENT_FEE',
+  ]);
   const customsFee = sumChargeLines(chargeLines, ['CUSTOMS_FEE']);
+  const quotationTotal = Number(quotation.grand_total_amount ?? quotation.total_amount);
+  const chargeLineTotal = sumNumbers(chargeLines.map((line) => line.total_amount ?? line.amount));
 
   return {
     autoApproveAt: null,
     bookingConfirmedAt: quotation.confirmed_at,
     bookingNumber: quotation.is_final ? quotation.quotation_no : null,
     carrierName: quotation.supplier?.supplier_name ?? quotation.supplier_id,
+    chargeLines,
     createdAt: quotation.create_at,
     createdBy: null,
-    currency: quotation.currency?.currency_code ?? null,
+    currency: quotation.currency?.currency_code ?? quotation.currency_code ?? quotation.currency_id ?? null,
     customerResponseAt: quotation.confirmed_at ?? quotation.rejected_at ?? quotation.cancelled_at,
     customsFee,
     freightCost,
     id: quotation.id,
+    isFinal: quotation.is_final,
     isAllInclusive: quotation.quotation_type === 'MIXED',
     localCharges,
     officialDueAt: quotation.valid_until ?? addDaysIso(3),
     officialSentAt: quotation.submitted_at,
     preliminaryDueAt: quotation.quoted_at ?? addDaysIso(1),
     preliminarySentAt: quotation.quoted_at,
-    quoteAmount: quotation.grand_total_amount ?? quotation.total_amount,
+    quoteAmount: Number.isFinite(quotationTotal) ? quotationTotal : chargeLineTotal,
     quoteNumber: quotation.version > 1 ? `${quotation.quotation_no} v${quotation.version}` : quotation.quotation_no,
+    quotationGroupId: quotation.quotation_group_id,
     requestCode: requestCode ?? quotation.ref_id,
     shippingMode: inferQuotationShippingMode(quotation),
     status: quotationStatusToUi(quotation.status),
     updatedAt: quotation.update_at,
+    version: quotation.version,
   };
 }
 
 async function resolveDeliveryOrderId(value: string) {
   const response = await fetchDeliveryOrdersV1({ page: 1, limit: 100, search: value });
-  const deliveryOrder = response.data.find((order) => order.id === value || order.do_no === value);
+  const deliveryOrder = response.data.find((order) => order.id === value || deliveryOrderNo(order) === value);
   if (!deliveryOrder) {
     throw new Error(`Delivery order ${value} not found`);
   }
@@ -620,7 +852,10 @@ async function resolveDeliveryOrderId(value: string) {
 
 async function resolveSupplierId(value: string) {
   const response = await fetchSuppliers({ page: 1, limit: 100, role: 'FORWARDER', is_active: true });
-  const supplier = response.data.find(
+  const suppliers = response.data.length > 0
+    ? response.data
+    : (await fetchSuppliers({ page: 1, limit: 100, is_active: true })).data;
+  const supplier = suppliers.find(
     (item) => item.id === value || item.supplier_code === value || item.supplier_name === value,
   );
   if (!supplier) {
@@ -638,7 +873,7 @@ async function resolveCurrencyId(value: string | null | undefined) {
   if (!currency) {
     throw new Error(`Currency ${currencyCode} not found`);
   }
-  return currency.id;
+  return currency.currency_code;
 }
 
 async function resolveShipmentId(value: string) {
@@ -650,21 +885,34 @@ async function resolveShipmentId(value: string) {
   return shipment.id;
 }
 
-function buildQuotationChargeLines(payload: CreateQuotationPayload) {
+type BuiltQuotationChargeLine = {
+  charge_type: QuotationChargeTypeV1;
+  description: string;
+  line_no: number;
+  quantity: number;
+  unit: string;
+  unit_price: number;
+};
+
+function buildQuotationChargeLines(payload: CreateQuotationPayload): BuiltQuotationChargeLine[] {
+  // Preferred path: itemized Incoterms-aware lines from the form.
+  if (Array.isArray(payload.chargeLines) && payload.chargeLines.length > 0) {
+    return payload.chargeLines
+      .filter((line) => toNumber(line.unit_price) > 0)
+      .map((line, index) => ({
+        charge_type: line.charge_type as QuotationChargeTypeV1,
+        description: line.description,
+        line_no: index + 1,
+        quantity: toNumber(line.quantity) || 1,
+        unit: line.unit || 'SET',
+        unit_price: toNumber(line.unit_price),
+      }));
+  }
+
+  // Legacy fallback: flat freight/local/customs aggregate fields.
   const shippingMode = payload.shippingMode.toUpperCase();
-  const chargeLines: Array<{
-    charge_type: 'AIR_FREIGHT' | 'CUSTOMS_FEE' | 'LOCAL_CHARGE' | 'OCEAN_FREIGHT';
-    description: string;
-    line_no: number;
-    quantity: number;
-    unit: string;
-    unit_price: number;
-  }> = [];
-  const addLine = (
-    chargeType: 'AIR_FREIGHT' | 'CUSTOMS_FEE' | 'LOCAL_CHARGE' | 'OCEAN_FREIGHT',
-    description: string,
-    amount: number,
-  ) => {
+  const chargeLines: BuiltQuotationChargeLine[] = [];
+  const addLine = (chargeType: QuotationChargeTypeV1, description: string, amount: number) => {
     if (amount <= 0) return;
     chargeLines.push({
       charge_type: chargeType,
@@ -693,31 +941,80 @@ function inferQuotationTypeFromChargeLines(chargeLines: ReturnType<typeof buildQ
 }
 
 function mapDeliveryOrderStatus(status: DeliveryOrderV1['status']): DeliveryOrderStatus {
+  if (status === 'SHIPPED') return 'IN_TRANSIT';
   return status;
 }
 
 function inferShippingMethod(deliveryOrder: DeliveryOrderV1): DeliveryOrder['logistics_shipping']['shipping_method'] {
-  const modeType = deliveryOrder.transport_mode?.mode_type?.toUpperCase();
+  const modeType = (
+    deliveryOrder.transport_mode?.mode_type ??
+    deliveryOrder.transport_mode?.mode_code ??
+    ''
+  ).toUpperCase();
   if (modeType === 'AIR') return 'AIR';
-  if (modeType === 'ROAD' || modeType === 'TRUCKING') return 'ROAD';
+  if (modeType === 'ROAD' || modeType === 'TRUCKING' || modeType.includes('TRUCK')) return 'ROAD';
   return 'SEA';
+}
+
+function transportModeIdFromShippingMethod(
+  shippingMethod: DeliveryOrder['logistics_shipping']['shipping_method'] | undefined,
+) {
+  if (shippingMethod === 'AIR') return 'tm_air';
+  if (shippingMethod === 'ROAD') return 'tm_trucking';
+  if (shippingMethod === 'SEA') return 'tm_sea_fcl';
+  return undefined;
+}
+
+function resolveDestinationPort(deliveryOrder: DeliveryOrderV1, firstLot?: DeliveryOrderLotV1 | null) {
+  const explicitPort = firstLot?.po_lot?.destination_port ?? firstLot?.lot?.destination_port;
+  if (explicitPort) return explicitPort;
+
+  const destination = deliveryOrder.destination_address ?? '';
+  if (/port|cang|cảng|cat\s?lai|cát\s?lái/i.test(destination)) {
+    return destination;
+  }
+
+  return inferShippingMethod(deliveryOrder) === 'AIR' ? 'Tan Son Nhat Airport' : 'CatLai Port';
 }
 
 function mapDeliverySourceLine(deliveryOrder: DeliveryOrderV1, line: DeliveryOrderLineV1): DeliverySourceLine {
   const purchaseOrder = deliveryOrder.purchase_order;
   const purchaseOrderLine = line.purchase_order_line;
   const item = line.item ?? purchaseOrderLine?.item ?? null;
+  const orderNo = deliveryOrderNo(deliveryOrder);
+  const shipmentContainer = Array.isArray(line.shipment?.container_no)
+    ? line.shipment.container_no.filter(Boolean).join(', ')
+    : line.shipment?.container_no;
+  const lineQuantity = toNumber(line.qty);
+  const orderedQuantity = toNumber(purchaseOrderLine?.qty_ordered);
+  const lineGrossWeight = toNumber(purchaseOrderLine?.gross_weight_kg);
+  const allocatedWeight =
+    lineGrossWeight > 0 && orderedQuantity > 0
+      ? (lineGrossWeight * lineQuantity) / orderedQuantity
+      : lineGrossWeight || null;
 
   return {
     id: line.id,
+    do_number: orderNo,
+    lot_number: line.lot_no ?? line.lot?.lot_no ?? null,
+    shipment_number: line.shipment_number ?? line.shipment?.shipment_no ?? deliveryOrder.linked_shipment_number ?? null,
     item_code: item?.item_code ?? line.item_id,
     item_name: item?.item_name ?? line.item_description ?? '',
+    hs_code: line.hs_code ?? purchaseOrderLine?.item_customs_profile?.hs_code ?? null,
     po_line_id: line.purchase_order_line_id,
     po_number: purchaseOrder?.po_no ?? deliveryOrder.purchase_order_id,
     pr_line_id: '',
-    quantity: toNumber(line.qty),
-    request_code: purchaseOrder?.po_no ?? deliveryOrder.do_no,
+    quantity: lineQuantity,
+    ordered_quantity: orderedQuantity || null,
+    request_code: purchaseOrder?.po_no ?? orderNo,
     unit: line.unit,
+    weight_kg: allocatedWeight,
+    container_count: purchaseOrder?.total_containers ?? purchaseOrder?.lot_summary?.total_containers ?? null,
+    container_no: line.container_no ?? shipmentContainer ?? null,
+    route_origin: line.route_origin ?? line.shipment?.pol ?? deliveryOrder.origin_address ?? null,
+    route_destination: line.route_destination ?? line.shipment?.pod ?? deliveryOrder.destination_address ?? null,
+    etd: dateOnly(line.etd ?? line.shipment?.etd ?? deliveryOrder.planned_etd),
+    eta: dateOnly(line.eta ?? line.shipment?.eta ?? deliveryOrder.planned_eta),
   };
 }
 
@@ -728,15 +1025,17 @@ function mapV1DeliveryOrder(deliveryOrder: DeliveryOrderV1): DeliveryOrder {
   const purchaseOrder = deliveryOrder.purchase_order;
   const supplier = purchaseOrder?.supplier;
   const firstLot = deliveryOrder.lots?.[0];
+  const firstLotNo = firstLot?.lot_no ?? firstLot?.lot?.lot_no ?? firstLot?.po_lot?.lot_no ?? null;
   const plannedEta = dateOnly(deliveryOrder.planned_eta);
   const plannedEtd = dateOnly(deliveryOrder.planned_etd);
   const plannedCargoReady = dateOnly(deliveryOrder.planned_cargo_ready_date);
   const warehouseDeadline = plannedEta || plannedCargoReady || plannedEtd || dateOnly(deliveryOrder.create_at);
+  const orderNo = deliveryOrderNo(deliveryOrder);
 
   return {
     id: deliveryOrder.id,
     flow_tags: deliveryOrder.lots && deliveryOrder.lots.length > 1 ? ['PARTIAL_DELIVERY'] : ['LINEAR'],
-    linked_shipment_number: null,
+    linked_shipment_number: deliveryOrder.linked_shipment_number ?? deliveryOrder.shipments?.[0]?.shipment_no ?? null,
     logistics_shipping: {
       cut_off_date: null,
       documents_list: [],
@@ -745,23 +1044,23 @@ function mapV1DeliveryOrder(deliveryOrder: DeliveryOrderV1): DeliveryOrder {
       incoterms: purchaseOrder?.incoterm?.incoterm_code ?? '',
       missing_documents: [],
       port_of_departure: deliveryOrder.origin_address ?? '',
-      port_of_destination: deliveryOrder.destination_address ?? '',
+      port_of_destination: resolveDestinationPort(deliveryOrder, firstLot),
       shipping_line: null,
       shipping_method: inferShippingMethod(deliveryOrder),
       vessel_code: null,
     },
     order_info: {
       notes: deliveryOrder.notes ?? '',
-      order_number: deliveryOrder.do_no,
+      order_number: orderNo,
       purchase_contract_number: purchaseOrder?.contract_no ?? '',
-      request_code: purchaseOrder?.po_no ?? deliveryOrder.do_no,
+      request_code: purchaseOrder?.po_no ?? orderNo,
       status: mapDeliveryOrderStatus(deliveryOrder.status),
       tracking_number: null,
       xnk_notes: '',
     },
     product_details: {
       item_name_requested: firstLine?.item_name ?? '',
-      lot_number: firstLot?.lot_no ?? null,
+      lot_number: firstLotNo,
       lot_unit_quantity: firstLot ? totalQuantity : null,
       lot_unit_type: firstLine?.unit ?? null,
       packaging_type: null,
@@ -778,7 +1077,7 @@ function mapV1DeliveryOrder(deliveryOrder: DeliveryOrderV1): DeliveryOrder {
     },
     source_lines: sourceLines,
     source_lot_id: firstLot?.po_lot_id,
-    source_lot_no: firstLot?.lot_no,
+    source_lot_no: firstLotNo ?? undefined,
     source_po_number: purchaseOrder?.po_no,
     task_summary: {
       blocked_tasks: 0,
@@ -878,7 +1177,7 @@ function mapV1Shipment(shipment: ShipmentV1): ShipmentRecord {
       stream: shipment.customs_channel ?? 'GREEN',
     },
     dest_port: shipment.pod ?? deliveryOrder?.destination_address ?? '',
-    do_number: deliveryOrder?.do_no ?? shipment.delivery_order_id,
+    do_number: deliveryOrder ? deliveryOrderNo(deliveryOrder) : shipment.delivery_order_id,
     documents: (shipment.documents ?? []).map(mapV1ShipmentDocument),
     etd: dateOnly(shipment.etd),
     eta: dateOnly(shipment.eta),
@@ -1088,11 +1387,20 @@ export async function fetchQuotations() {
     fetchQuotationsV1({ page: 1, limit: 100 }),
     fetchDeliveryOrdersV1({ page: 1, limit: 100 }),
   ]);
+  const detailedQuotations = await Promise.all(
+    quotationResponse.data.map(async (quotation) => {
+      try {
+        return await fetchQuotationV1(quotation.id);
+      } catch {
+        return quotation;
+      }
+    }),
+  );
   const deliveryOrderNoById = new Map(
-    deliveryOrderResponse.data.map((deliveryOrder) => [deliveryOrder.id, deliveryOrder.do_no]),
+    deliveryOrderResponse.data.map((deliveryOrder) => [deliveryOrder.id, deliveryOrderNo(deliveryOrder)]),
   );
 
-  return quotationResponse.data.map((quotation) =>
+  return detailedQuotations.map((quotation) =>
     mapV1Quotation(quotation, deliveryOrderNoById.get(quotation.ref_id)),
   );
 }
@@ -1107,7 +1415,7 @@ export async function fetchPurchaseOrders() {
   deliveryOrderResponse.data.forEach((deliveryOrder) => {
     deliveryOrdersByPoId.set(deliveryOrder.purchase_order_id, [
       ...(deliveryOrdersByPoId.get(deliveryOrder.purchase_order_id) ?? []),
-      deliveryOrder.do_no,
+      deliveryOrderNo(deliveryOrder),
     ]);
   });
 
@@ -1118,11 +1426,29 @@ export async function fetchPurchaseOrders() {
 
 export async function fetchDeliveryOrders() {
   const response = await fetchDeliveryOrdersV1({ page: 1, limit: 100 });
-  return response.data.map(mapV1DeliveryOrder);
+  const detailed = await Promise.all(
+    response.data.map(async (deliveryOrder) => {
+      try {
+        const [lots, lines] = await Promise.all([
+          fetchDeliveryOrderLots(deliveryOrder.id),
+          fetchDeliveryOrderLines(deliveryOrder.id),
+        ]);
+        return {
+          ...deliveryOrder,
+          lots,
+          lines,
+        };
+      } catch {
+        return deliveryOrder;
+      }
+    }),
+  );
+  return detailed.map(mapV1DeliveryOrder);
 }
 
 export async function fetchLogisticsTasks() {
-  return [] as LogisticsTask[];
+  const response = await apiClient.get<ApiResponse<TaskListScreenDto>>('/v1/tasks');
+  return response.data.data.items.map(mapTaskScreenToLogisticsTask);
 }
 
 export async function fetchDashboardStats() {
@@ -1190,7 +1516,7 @@ export async function fetchSlaAlerts() {
 }
 
 export async function createQuotation(payload: CreateQuotationPayload) {
-  const [deliveryOrderId, supplierId, currencyId] = await Promise.all([
+  const [deliveryOrderId, supplierId, currencyCode] = await Promise.all([
     resolveDeliveryOrderId(payload.requestCode),
     resolveSupplierId((payload as any).carrierId ?? (payload as any).carrierName ?? ''),
     resolveCurrencyId(payload.currency),
@@ -1198,7 +1524,7 @@ export async function createQuotation(payload: CreateQuotationPayload) {
   const chargeLines = buildQuotationChargeLines(payload);
   const quotation = await createDeliveryOrderQuotation(deliveryOrderId, {
     charge_lines: chargeLines,
-    currency_id: currencyId,
+    currency_code: currencyCode,
     exchange_rate: 1,
     note: (payload as any).isAllInclusive ? 'All-inclusive quotation' : null,
     quotation_no: `QT-${payload.requestCode}-${Date.now().toString().slice(-6)}`,
@@ -1268,7 +1594,7 @@ export async function updateQuotationAction(quotationId: string, payload: Update
     if (nextQuotation.status === 'DRAFT' || nextQuotation.status === 'REQUESTED') {
       nextQuotation = await receiveQuotation(quotationId);
     }
-    return mapV1Quotation(await confirmQuotationByKbi(nextQuotation.id));
+    return mapV1Quotation(await markQuotationFinal(nextQuotation.id));
   }
 
   if (payload.action === 'CUSTOMER_REJECTED') {
@@ -1290,7 +1616,19 @@ export async function confirmQuotationBooking(quotationId: string, payload: Conf
 }
 
 export async function updateDeliveryOrder(orderNumber: string, payload: UpdateDeliveryOrderPayload) {
-  return buildUiDeliveryOrder({ ...payload, requestCode: orderNumber });
+  const deliveryOrderId = await resolveDeliveryOrderId(orderNumber);
+  const updated = await updateDeliveryOrderV1(deliveryOrderId, {
+    destination_address: payload.portOfDestination,
+    notes: payload.notes,
+    origin_address: payload.portOfDeparture,
+    planned_cargo_ready_date: payload.plannedEntryDate,
+    planned_eta: payload.etaPlanned,
+    planned_etd: payload.etdPlanned,
+    transport_mode_id: transportModeIdFromShippingMethod(payload.shippingMethod),
+    warehouse_name: payload.warehouseCode,
+  });
+
+  return mapV1DeliveryOrder(updated);
 }
 
 export async function fetchEfmsControl(_orderNumber: string) {
@@ -1413,16 +1751,62 @@ export async function uploadDeliveryOrderAttachment({
   } satisfies UploadDeliveryOrderAttachmentResult;
 }
 
+function mapTaskAssigneeInput(assignee?: TaskAssigneeInput) {
+  if (!assignee) return undefined;
+  return {
+    id: assignee.id ?? null,
+    name: assignee.name,
+    department: assignee.department ?? null,
+  };
+}
+
+export async function createLogisticsTask(payload: CreateTaskPayload) {
+  const response = await apiClient.post<ApiResponse<TaskScreenItem>>('/v1/tasks', {
+    task_name: payload.taskName,
+    task_template_id: payload.taskTemplateId,
+    ref_type: payload.refType,
+    ref_id: payload.refId,
+    ref_no: payload.refNo,
+    stage: payload.stage,
+    role: payload.role,
+    assignee: mapTaskAssigneeInput(payload.assignee),
+    status: payload.status,
+    priority: payload.priority,
+    due_at: payload.dueDate,
+    progress: payload.progress,
+    note: payload.notes,
+  });
+  return mapTaskScreenToLogisticsTask(response.data.data);
+}
+
 export async function updateLogisticsTask(taskId: string, payload: UpdateTaskPayload) {
-  return { task_id: taskId, ...payload } as LogisticsTask;
+  const response = await apiClient.patch<ApiResponse<TaskScreenItem>>(`/v1/tasks/${taskId}`, {
+    blocked_reason: payload.blockedReason,
+    completed_at: payload.completedAt,
+    due_at: payload.dueDate,
+    note: payload.notes,
+    progress: payload.progress,
+    status: payload.status,
+    task_name: payload.taskName,
+    role: payload.role,
+    stage: payload.stage,
+    ref_type: payload.refType,
+    ref_id: payload.refId,
+    ref_no: payload.refNo,
+    priority: payload.priority,
+    assignee: mapTaskAssigneeInput(payload.assignee),
+    task_template_id: payload.taskTemplateId,
+  });
+  return mapTaskScreenToLogisticsTask(response.data.data);
 }
 
 export async function advancePurchaseOrderStage(_poNumber: string, _stage: Gd1PoStatus) {
   return uiOnlySuccess;
 }
 
-export async function fetchPurchaseOrderStageTasks(_poNumber: string) {
-  return [] as Gd1PoStageTask[];
+export async function fetchPurchaseOrderStageTasks(poNumber: string) {
+  const response = await apiClient.get<ApiResponse<PurchaseOrderTasksScreenDto>>(`/v1/purchase-orders/${poNumber}/tasks`);
+  return response.data.data.task_groups.flatMap((group) => group.tasks.map(mapTaskScreenToPoStageTask));
 }
 
 export async function fetchShipmentMilestones(orderNumber: string) {
@@ -1479,10 +1863,15 @@ export async function deleteShipmentCost(_costId: string) {
   return uiOnlySuccess;
 }
 
-export async function updatePoStageTask(_taskId: string, _payload: { status: string; note?: string }) {
-  return uiOnlySuccess;
+export async function updatePoStageTask(taskId: string, payload: { status: string; note?: string }) {
+  const response = await apiClient.patch<ApiResponse<TaskScreenItem>>(`/v1/tasks/${taskId}`, {
+    note: payload.note,
+    status: gd1StatusToTaskScreen(payload.status),
+  });
+  return mapTaskScreenToPoStageTask(response.data.data);
 }
 
 export async function fetchGlobalPoStageTasks() {
-  return [] as Gd1PoStageTask[];
+  const response = await apiClient.get<ApiResponse<TaskListScreenDto>>('/v1/tasks');
+  return response.data.data.items.map(mapTaskScreenToPoStageTask);
 }
