@@ -31,6 +31,7 @@ export function LotModal({
       {localDraft ? (
         <Stack
           component="form"
+          className="purchase-order-lot-modal-form"
           gap="md"
           onSubmit={(event) => {
             event.preventDefault();
@@ -42,7 +43,7 @@ export function LotModal({
               {getApiErrorMessage(error)}
             </Alert>
           ) : null}
-          <SimpleGrid cols={{ base: 1, md: 2 }}>
+          <SimpleGrid cols={{ base: 1, md: 2 }} className="purchase-order-modal-grid">
             <TextInput
               label="LOT no"
               value={localDraft.lot_no}
@@ -93,11 +94,11 @@ export function LotModal({
             autosize
             minRows={2}
           />
-          <Group justify="flex-end">
-            <Button variant="subtle" onClick={onClose}>
+          <Group justify="flex-end" wrap="nowrap" className="purchase-order-modal-footer">
+            <Button className="purchase-order-action-button" variant="subtle" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" loading={loading}>
+            <Button className="purchase-order-action-button" type="submit" loading={loading}>
               Save
             </Button>
           </Group>

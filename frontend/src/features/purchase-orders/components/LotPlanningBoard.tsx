@@ -250,10 +250,10 @@ export function LotPlanningBoard({ canManage, planning }: { canManage: boolean; 
   const lotMutationError = createLotMutation.error ?? updateLotMutation.error;
 
   return (
-    <Paper withBorder p="md">
+    <Paper withBorder p="md" className="lot-planning-board">
       <Stack gap="md">
-        <Group justify="space-between" align="flex-start">
-          <div>
+        <Group justify="space-between" align="flex-start" className="lot-planning-header">
+          <div className="lot-planning-copy">
             <Group gap="xs">
               <IconTruckDelivery size={20} />
               <Text fw={700}>LOT planning</Text>
@@ -262,8 +262,9 @@ export function LotPlanningBoard({ canManage, planning }: { canManage: boolean; 
               Drag LOT rows to reorder. Drag item lines between LOTs, or split a line into another LOT.
             </Text>
           </div>
-          <Group gap="xs">
+          <Group gap="xs" wrap="nowrap" className="lot-planning-actions">
             <Checkbox
+              className="lot-planning-select-all"
               label="Select all open LOTs"
               checked={selectableLotIds.length > 0 && selectedLotIds.length === selectableLotIds.length}
               indeterminate={selectedLotIds.length > 0 && selectedLotIds.length < selectableLotIds.length}
@@ -271,6 +272,7 @@ export function LotPlanningBoard({ canManage, planning }: { canManage: boolean; 
               onChange={(event) => toggleAllSelectableLots(event.currentTarget.checked)}
             />
             <Button
+              className="lot-planning-action-button"
               size="xs"
               color="teal"
               leftSection={<IconTruckDelivery size={14} />}
@@ -280,7 +282,7 @@ export function LotPlanningBoard({ canManage, planning }: { canManage: boolean; 
             >
               Create Internal DO ({selectedLotIds.length})
             </Button>
-            <Button size="xs" leftSection={<IconPlus size={14} />} onClick={openCreateLot} disabled={!canManage}>
+            <Button className="lot-planning-action-button" size="xs" leftSection={<IconPlus size={14} />} onClick={openCreateLot} disabled={!canManage}>
               Add LOT
             </Button>
           </Group>

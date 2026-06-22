@@ -101,6 +101,14 @@ export function nullIfEmpty(value: string) {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+// Derives the contract number from the PO number (PO no is the source of truth).
+// Swaps a leading "PO" token (case-insensitive, optional - _ or space separator)
+// for the contract prefix, preserving the rest. Blank input yields "".
+export function deriveContractNo(poNo: string, prefix = 'CT'): string {
+  const core = poNo.trim().replace(/^PO[-_\s]?/i, '');
+  return core ? `${prefix}-${core}` : '';
+}
+
 export function toNumber(value: unknown, fallback = 0) {
   const next = Number(value);
   return Number.isFinite(next) ? next : fallback;
@@ -125,9 +133,10 @@ export function newLineDraft(index: number): PoLineDraft {
 }
 
 export function createInitialPoDraft(order?: PurchaseOrderV1): PoFormDraft {
+  const poNo = order?.po_no ?? `PO-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
   return {
-    po_no: order?.po_no ?? `PO-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`,
-    contract_no: order?.contract_no ?? '',
+    po_no: poNo,
+    contract_no: order?.contract_no ?? deriveContractNo(poNo),
     supplier_id: order?.supplier_id ?? '',
     currency_id: order?.currency_id ?? '',
     incoterm_id: order?.incoterm_id ?? '',

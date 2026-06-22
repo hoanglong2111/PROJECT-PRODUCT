@@ -30,9 +30,20 @@ export function DtoListTable({
   const { t } = useI18n();
 
   return (
-    <Paper withBorder p={0}>
-      <ScrollArea type="always" offsetScrollbars scrollbarSize={8}>
-        <Table miw={900} verticalSpacing="sm" highlightOnHover>
+    <Paper withBorder p={0} className="dto-list-panel">
+      <Group justify="space-between" align="flex-start" gap="sm" className="dto-list-header">
+        <div>
+          <Text fw={700}>Transport queue</Text>
+          <Text size="sm" c="dimmed" className="tabular-nums">
+            {total} orders
+          </Text>
+        </div>
+        <Text size="xs" c="dimmed" className="tabular-nums">
+          Page {page} / {pageCount}
+        </Text>
+      </Group>
+      <ScrollArea className="dto-list-scroll data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
+        <Table miw={820} verticalSpacing="sm" highlightOnHover className="dto-table dto-list-table">
           <Table.Thead>
             <Table.Tr>
               <Table.Th>
@@ -42,8 +53,7 @@ export function DtoListTable({
                 <HeaderLabel label="Shipment" hint={t('glossary.shipment')} />
               </Table.Th>
               <Table.Th>Vendor</Table.Th>
-              <Table.Th>Pickup</Table.Th>
-              <Table.Th>Delivery</Table.Th>
+              <Table.Th>Route</Table.Th>
               <Table.Th>Status</Table.Th>
               <Table.Th style={{ textAlign: 'right' }}>Open</Table.Th>
             </Table.Tr>
@@ -52,15 +62,14 @@ export function DtoListTable({
             {orders.map((order) => (
               <Table.Tr
                 key={order.id}
-                bg={order.id === selectedDtoId ? 'var(--mantine-color-blue-light)' : undefined}
-                style={{ cursor: 'pointer' }}
+                className={order.id === selectedDtoId ? 'dto-list-row is-selected' : 'dto-list-row'}
                 onClick={() => onSelect(order)}
               >
-                <Table.Td>
+                <Table.Td className="dto-identity-cell">
                   <Text fw={700}>{order.dto_no}</Text>
                   <Text size="xs" c="dimmed">{order.vehicle_plate ?? order.vehicle_type ?? '-'}</Text>
                 </Table.Td>
-                <Table.Td>
+                <Table.Td className="dto-shipment-cell">
                   <Text size="sm">
                     {order.shipments && order.shipments.length > 1
                       ? `${order.shipments.length} shipments`
@@ -68,14 +77,13 @@ export function DtoListTable({
                   </Text>
                   <Text size="xs" c="dimmed">{formatContainers(order.shipment?.container_no)}</Text>
                 </Table.Td>
-                <Table.Td>{order.truck_vendor?.supplier_name ?? order.truck_vendor_id ?? '-'}</Table.Td>
-                <Table.Td>
-                  <Text size="sm">{order.origin ?? '-'}</Text>
-                  <Text size="xs" c="dimmed">{formatDateTime(order.scheduled_pickup_at)}</Text>
-                </Table.Td>
-                <Table.Td>
-                  <Text size="sm">{order.destination ?? '-'}</Text>
-                  <Text size="xs" c="dimmed">{formatDateTime(order.scheduled_delivery_at)}</Text>
+                <Table.Td className="dto-vendor-cell">{order.truck_vendor?.supplier_name ?? order.truck_vendor_id ?? '-'}</Table.Td>
+                <Table.Td className="dto-route-cell">
+                  <Text size="sm" fw={600} lineClamp={1} title={`${order.origin ?? '-'} -> ${order.destination ?? '-'}`}>
+                    {order.origin ?? '-'} {'->'} {order.destination ?? '-'}
+                  </Text>
+                  <Text size="xs" c="dimmed">Pickup {formatDateTime(order.scheduled_pickup_at)}</Text>
+                  <Text size="xs" c="dimmed">Delivery {formatDateTime(order.scheduled_delivery_at)}</Text>
                 </Table.Td>
                 <Table.Td><StatusBadge status={order.status} /></Table.Td>
                 <Table.Td>

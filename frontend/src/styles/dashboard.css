@@ -1,0 +1,331 @@
+/* dashboard.css - split from src/styles.css. Global classes; do not rename. See AGENTS.md "Styling". */
+
+@media (max-width: 62em) {
+  .dashboard-header {
+    align-items: stretch;
+  }
+
+  .dashboard-time-filter {
+    align-self: flex-start;
+  }
+
+  .dashboard-shipment-layout {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .dashboard-risk-row > .mantine-Group-root {
+    flex-wrap: wrap;
+  }
+
+  .dashboard-risk-identity,
+  .dashboard-risk-owner,
+  .dashboard-risk-sla {
+    flex: 1 1 12rem;
+  }
+
+  .dashboard-risk-action {
+    flex-basis: 100%;
+    order: 4;
+  }
+}
+
+@media (max-width: 48em) {
+  .dashboard-header .mantine-Title-root {
+    font-size: 1.5rem;
+  }
+
+  .dashboard-kpi-stat {
+    padding-inline: 0.5rem;
+  }
+
+  .dashboard-number-badge {
+    min-width: 1.75rem;
+  }
+
+  .dashboard-bar-chart {
+    height: 12rem;
+    gap: 0.75rem;
+    padding-inline: 0.5rem;
+  }
+}
+
+.dashboard-page {
+  width: 100%;
+  max-width: 100%;
+}
+
+.dashboard-card {
+  min-height: 100%;
+  border-color: #dbe3ef !important;
+  background: #ffffff !important;
+  box-shadow: 0 10px 28px -24px rgba(15, 23, 42, 0.42);
+}
+
+.dashboard-header {
+  padding: 0.25rem 0 0.125rem;
+}
+
+.dashboard-header-icon,
+.dashboard-mini-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 0.5rem;
+}
+
+.dashboard-header-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  color: #1d4ed8;
+  background: #dbeafe;
+}
+
+.dashboard-mini-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.dashboard-mini-icon-blue {
+  color: #1d4ed8;
+  background: #dbeafe;
+}
+
+.dashboard-mini-icon-orange {
+  color: #c2410c;
+  background: #ffedd5;
+}
+
+.dashboard-mini-icon-red {
+  color: #b91c1c;
+  background: #fee2e2;
+}
+
+.dashboard-time-filter {
+  flex: 0 0 auto;
+}
+
+.dashboard-card > * {
+  position: relative;
+  z-index: 3;
+}
+
+.dashboard-kpi-card {
+  min-height: 9.5rem;
+}
+
+.dashboard-po-card,
+.dashboard-shipment-card,
+.dashboard-urgent-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-po-split {
+  flex: 1;
+  align-items: stretch;
+}
+
+.dashboard-kpi-stat {
+  min-width: 0;
+  justify-content: center;
+  padding-inline: 0.75rem;
+}
+
+.dashboard-kpi-stat:not(:first-child) {
+  border-left: 1px solid #e5eaf2;
+}
+
+.dashboard-shipment-layout {
+  display: grid;
+  height: 100%;
+  grid-template-columns: minmax(7.5rem, 0.9fr) minmax(11.5rem, 1.1fr);
+  gap: 1rem;
+  align-items: center;
+}
+
+.dashboard-shipment-metrics {
+  min-width: 0;
+}
+
+.dashboard-badge-metric {
+  min-height: 1.75rem;
+  padding: 0.125rem 0;
+}
+
+.dashboard-number-badge {
+  display: inline-flex;
+  min-width: 2rem;
+  height: 1.625rem;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  padding-inline: 0.55rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.dashboard-number-badge-blue {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.dashboard-number-badge-orange {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.dashboard-number-badge-teal {
+  background: #ccfbf1;
+  color: #0f766e;
+}
+
+.dashboard-number-badge-yellow {
+  background: #fef3c7;
+  color: #a16207;
+}
+
+.dashboard-number-badge-red {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.dashboard-warning-icon {
+  display: grid;
+  width: 3.25rem;
+  height: 3.25rem;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 0.75rem;
+  background: #fff7ed;
+  color: #dc2626;
+}
+
+.dashboard-alert {
+  border-color: #fecaca;
+  background: #fff7f7;
+}
+
+.dashboard-bar-chart {
+  display: grid;
+  height: 14rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: clamp(1rem, 4vw, 2rem);
+  padding: 1rem 1rem 0.25rem;
+  border-radius: 0.5rem;
+  background: linear-gradient(to top, #eef2f7 1px, transparent 1px);
+  background-size: 100% 25%;
+}
+
+.dashboard-bar-column {
+  display: grid;
+  min-width: 0;
+  height: 100%;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  justify-items: center;
+  gap: 0.625rem;
+}
+
+.dashboard-bar {
+  width: min(4.25rem, 70%);
+  align-self: end;
+  border-radius: 0.5rem 0.5rem 0.125rem 0.125rem;
+  transition: height 160ms ease;
+}
+
+.dashboard-bar-blue,
+.dashboard-legend-dot-blue {
+  background: #2563eb;
+}
+
+.dashboard-bar-orange,
+.dashboard-legend-dot-orange {
+  background: #f97316;
+}
+
+.dashboard-bar-teal,
+.dashboard-legend-dot-teal {
+  background: #14b8a6;
+}
+
+.dashboard-bar-yellow,
+.dashboard-legend-dot-yellow {
+  background: #eab308;
+}
+
+.dashboard-bar-red,
+.dashboard-legend-dot-red {
+  background: #ef4444;
+}
+
+.dashboard-legend-dot {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+}
+
+.dashboard-list-row {
+  min-height: 2.625rem;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid #e5eaf2;
+  border-radius: 0.5rem;
+  background: #f8fafc;
+}
+
+.dashboard-list-row .dashboard-number-badge {
+  min-width: 2.5rem;
+  margin-left: auto;
+}
+
+.dashboard-chart-card,
+.dashboard-list-card,
+.dashboard-risk-card {
+  min-height: auto;
+}
+
+.dashboard-progress-row {
+  padding: 0.5rem 0;
+}
+
+.dashboard-risk-row {
+  padding: 0.75rem;
+  border: 1px solid #e5eaf2;
+  border-radius: 0.5rem;
+  background: #f8fafc;
+}
+
+.dashboard-risk-identity {
+  min-width: 10rem;
+  flex: 0 0 12rem;
+}
+
+.dashboard-risk-action {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.dashboard-risk-owner {
+  flex: 0 0 9.5rem;
+}
+
+.dashboard-risk-sla {
+  flex: 0 0 auto;
+}
+
+.dashboard-risk-empty {
+  display: flex;
+  min-height: 5rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  border: 1px dashed #cbd5e1;
+  border-radius: 0.5rem;
+  color: #0f766e;
+  background: #f0fdfa;
+}

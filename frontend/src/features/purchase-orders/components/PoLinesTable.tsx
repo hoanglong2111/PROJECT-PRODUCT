@@ -25,30 +25,30 @@ export function PoLinesTable({ currencyCode, lines }: { currencyCode: string; li
   );
 
   return (
-    <Paper withBorder p={0}>
-      <Group justify="space-between" p="sm">
+    <Paper withBorder p={0} className="purchase-order-po-lines-panel">
+      <Group justify="space-between" p="sm" className="purchase-order-po-lines-header">
         <Text fw={700}>PO lines</Text>
-        <Group gap={6}>
-          <Badge variant="light">{lines.length} rows</Badge>
+        <Group gap={6} wrap="nowrap" className="purchase-order-po-lines-badges">
+          <Badge variant="light" className="purchase-order-nowrap-badge">{lines.length} rows</Badge>
           {lotMetrics.full > 0 ? (
-            <Badge color="teal" variant="light">
+            <Badge color="teal" variant="light" className="purchase-order-nowrap-badge">
               {lotMetrics.full} lotted
             </Badge>
           ) : null}
           {lotMetrics.partial > 0 ? (
-            <Badge color="orange" variant="light">
+            <Badge color="orange" variant="light" className="purchase-order-nowrap-badge">
               {lotMetrics.partial} partial
             </Badge>
           ) : null}
           {lotMetrics.needsLot > 0 ? (
-            <Badge color="red" variant="light">
+            <Badge color="red" variant="light" className="purchase-order-nowrap-badge">
               {lotMetrics.needsLot} needs LOT
             </Badge>
           ) : null}
         </Group>
       </Group>
       <ScrollArea type="always" offsetScrollbars scrollbarSize={8}>
-        <Table miw={1260} verticalSpacing="xs">
+        <Table className="purchase-order-po-lines-table" miw={1260} verticalSpacing="xs">
           <Table.Thead>
             <Table.Tr>
               <Table.Th style={{ width: 80 }}>Line</Table.Th>
@@ -77,14 +77,14 @@ export function PoLinesTable({ currencyCode, lines }: { currencyCode: string; li
                 lotState === 'full' ? 'Lotted' : lotState === 'partial' ? 'Partial' : lotState === 'needs-lot' ? 'Needs LOT' : 'No LOT';
               return (
                 <Table.Tr key={line.id} className={`po-line-row po-line-row-${lotState}`}>
-                  <Table.Td>#{line.line_no}</Table.Td>
+                  <Table.Td className="purchase-order-line-index">#{line.line_no}</Table.Td>
                   <Table.Td className="table-cell-truncate" style={{ maxWidth: '22rem' }}>
                     <Group gap="xs" wrap="nowrap">
-                      <Text size="sm" fw={700} lineClamp={1}>
+                      <Text size="sm" fw={700} lineClamp={1} title={line.item?.item_code ?? line.item_id}>
                         {line.item?.item_code ?? line.item_id}
                       </Text>
                       {lotState !== 'none' ? (
-                        <Badge size="xs" color={lotColor} variant="light">
+                        <Badge size="xs" color={lotColor} variant="light" className="purchase-order-nowrap-badge">
                           {lotLabel}
                         </Badge>
                       ) : null}
@@ -93,30 +93,30 @@ export function PoLinesTable({ currencyCode, lines }: { currencyCode: string; li
                       {line.item?.item_name ?? line.item_description ?? '-'}
                     </Text>
                   </Table.Td>
-                  <Table.Td>
+                  <Table.Td className="purchase-order-line-hscode">
                     <Text size="sm">{line.item_customs_profile?.hs_code ?? '-'}</Text>
                     <Text size="xs" c="dimmed">
                       {line.item_customs_profile?.co_form ?? '-'}
                     </Text>
                   </Table.Td>
-                  <Table.Td>
+                  <Table.Td className="purchase-order-quantity-cell">
                     <NumberFormatter value={line.qty_ordered} thousandSeparator /> {line.unit ?? ''}
                   </Table.Td>
-                  <Table.Td>
+                  <Table.Td className="purchase-order-quantity-cell">
                     <NumberFormatter value={line.qty_confirmed} thousandSeparator /> {line.unit ?? ''}
                   </Table.Td>
-                  <Table.Td>
-                    <Badge color={lotColor} variant={lotState === 'none' ? 'outline' : 'light'} radius="sm">
+                  <Table.Td className="purchase-order-quantity-cell">
+                    <Badge color={lotColor} variant={lotState === 'none' ? 'outline' : 'light'} radius="sm" className="purchase-order-quantity-badge">
                       <NumberFormatter value={line.qty_lotted} thousandSeparator /> {line.unit ?? ''}
                     </Badge>
                   </Table.Td>
-                  <Table.Td>
+                  <Table.Td className="purchase-order-quantity-cell">
                     <NumberFormatter value={line.qty_shipped} thousandSeparator /> {line.unit ?? ''}
                   </Table.Td>
-                  <Table.Td>
+                  <Table.Td className="purchase-order-quantity-cell">
                     <NumberFormatter value={line.qty_received} thousandSeparator /> {line.unit ?? ''}
                   </Table.Td>
-                  <Table.Td>
+                  <Table.Td className="purchase-order-quantity-cell">
                     {toNumber(line.gross_weight_kg) ? (
                       <>
                         <NumberFormatter value={line.gross_weight_kg ?? 0} thousandSeparator /> kg
@@ -125,7 +125,7 @@ export function PoLinesTable({ currencyCode, lines }: { currencyCode: string; li
                       '-'
                     )}
                   </Table.Td>
-                  <Table.Td>
+                  <Table.Td className="purchase-order-money">
                     <NumberFormatter value={line.unit_price ?? 0} thousandSeparator /> {currencyCode}
                   </Table.Td>
                 </Table.Tr>

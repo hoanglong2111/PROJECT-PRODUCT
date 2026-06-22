@@ -105,7 +105,7 @@ export function PurchaseOrderListView({
       {/* Operational aggregates for the loaded rows. The per-status counts live on
           the stage chips below (incl. the "All" total), so this strip intentionally
           omits Total POs / status breakdowns to avoid duplicating them. */}
-      <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }}>
+      <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }} className="purchase-order-metric-grid">
         <Metric
           label="Delayed"
           value={String(delayedPurchaseOrders)}
@@ -132,7 +132,7 @@ export function PurchaseOrderListView({
         />
       </SimpleGrid>
 
-      <Paper withBorder p="md">
+      <Paper withBorder p="md" className="purchase-order-filter-panel">
         <Stack gap="md">
           <Stack gap={6}>
             <PoStageFilter
@@ -208,12 +208,14 @@ export function PurchaseOrderListView({
         </Stack>
       </Paper>
 
-      <Paper withBorder p={0}>
+      <Paper withBorder p={0} className="purchase-order-list-panel">
         {purchaseOrders.length === 0 ? (
-          <EmptyState title="No purchase orders" description="Create a PO or adjust the filters." />
+          <div className="purchase-order-list-empty">
+            <EmptyState title="No purchase orders" description="Create a PO or adjust the filters." />
+          </div>
         ) : (
           <ScrollArea className="data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
-            <Table miw={1140} verticalSpacing="sm" highlightOnHover>
+            <Table className="purchase-order-list-table" miw={1180} verticalSpacing="sm" highlightOnHover>
               <Table.Thead>
                 <Table.Tr>
                   <Table.Th>
@@ -239,7 +241,7 @@ export function PurchaseOrderListView({
               <Table.Tbody>
                 {purchaseOrders.map((order) => (
                   <Table.Tr key={order.id}>
-                    <Table.Td className="table-cell-truncate" style={{ maxWidth: '16rem' }}>
+                    <Table.Td className="table-cell-truncate purchase-order-list-po-cell" style={{ maxWidth: '16rem' }}>
                       <Text fw={700} lineClamp={1} title={order.po_no}>
                         {order.po_no}
                       </Text>
@@ -250,15 +252,15 @@ export function PurchaseOrderListView({
                         Created {dateOnly(order.create_at)}
                       </Text>
                     </Table.Td>
-                    <Table.Td className="table-cell-truncate" style={{ maxWidth: '20rem' }}>
-                      <Text size="sm" fw={600} lineClamp={1}>
+                    <Table.Td className="table-cell-truncate purchase-order-list-supplier-cell" style={{ maxWidth: '20rem' }}>
+                      <Text size="sm" fw={600} lineClamp={1} title={order.supplier?.supplier_name ?? '-'}>
                         {order.supplier?.supplier_name ?? '-'}
                       </Text>
                       <Text size="xs" c="dimmed">
                         {order.supplier?.supplier_code ?? order.supplier_id}
                       </Text>
                     </Table.Td>
-                    <Table.Td>
+                    <Table.Td className="purchase-order-list-terms-cell">
                       <Text size="sm">{order.incoterm?.incoterm_code ?? '-'}</Text>
                       <Text size="xs" c="dimmed">
                         {order.transport_mode?.mode_code ?? order.payment_term ?? '-'}
@@ -267,18 +269,18 @@ export function PurchaseOrderListView({
                     <Table.Td>
                       <LogisticsRouteCell order={order} />
                     </Table.Td>
-                    <Table.Td>
+                    <Table.Td className="purchase-order-list-lines-cell">
                       <Badge variant="light">{order.lines?.length ?? 0} lines</Badge>
                     </Table.Td>
-                    <Table.Td>
-                      <Text fw={600}>
+                    <Table.Td className="purchase-order-list-money-cell">
+                      <Text fw={600} className="purchase-order-money">
                         <NumberFormatter value={totalPoAmount(order.lines)} thousandSeparator />{' '}
                         {order.currency?.currency_code ?? ''}
                       </Text>
                     </Table.Td>
-                    <Table.Td>
+                    <Table.Td className="purchase-order-list-delay-cell">
                       {getDelayedDays(order) > 0 ? (
-                        <Badge color="red" variant="light">
+                        <Badge color="red" variant="light" className="purchase-order-nowrap-badge">
                           {getDelayedDays(order)} days
                         </Badge>
                       ) : (
@@ -290,7 +292,7 @@ export function PurchaseOrderListView({
                     <Table.Td className="po-stage-cell">
                       <PoStageBadge order={order} />
                     </Table.Td>
-                    <Table.Td>
+                    <Table.Td className="purchase-order-list-action-cell">
                       <Tooltip label="Open detail">
                         <ActionIcon variant="subtle" aria-label="Open detail" onClick={() => onOpenDetail(order)}>
                           <IconEye size={18} />

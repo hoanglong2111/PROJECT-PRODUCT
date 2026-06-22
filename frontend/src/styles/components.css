@@ -1,0 +1,232 @@
+/* components.css — split from src/styles.css. Global classes; do not rename. See AGENTS.md "Styling". */
+
+.data-table-scroll {
+  width: 100%;
+}
+
+.data-table-scroll .mantine-ScrollArea-scrollbar[data-orientation='horizontal'] {
+  height: 0.625rem;
+}
+
+.table-cell-truncate {
+  max-width: var(--cell-max-width, 16rem);
+  min-width: 0;
+}
+
+.table-cell-truncate .mantine-Text-root {
+  overflow-wrap: anywhere;
+}
+
+.table-cell-truncate .mantine-Badge-root {
+  max-width: 100%;
+}
+
+.table-cell-truncate .mantine-Badge-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metric-card {
+  position: relative;
+  background: var(--kbfe-surface-elevated);
+  backdrop-filter: blur(8px);
+  border-color: var(--kbfe-border-primary);
+  transition: transform 150ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 150ms cubic-bezier(0.2, 0.8, 0.2, 1), border-color 150ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  overflow: hidden;
+}
+
+.metric-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 2;
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 20px -8px color-mix(in srgb, var(--kbfe-primary-color) 20%, rgba(0, 0, 0, 0.08)) !important;
+  border-color: var(--kbfe-primary-color) !important;
+}
+
+.metric-label {
+  color: var(--kbfe-text-primary) !important;
+  opacity: 0.85;
+  transition: color 150ms ease, opacity 150ms ease;
+}
+
+.metric-icon {
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-items: center;
+  border-radius: 0.5rem;
+}
+
+.metric-icon-teal {
+  background: #ccfbf1;
+  color: #0f766e;
+}
+
+.metric-icon-blue {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.metric-icon-yellow {
+  background: #fef3c7;
+  color: #a16207;
+}
+
+.metric-icon-red {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.module-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  background: var(--kbfe-background-secondary);
+  transition:
+    border-color 120ms ease,
+    transform 120ms ease;
+}
+
+.module-link:hover {
+  border-color: var(--kbfe-primary-color);
+  transform: translateY(-1px);
+}
+
+.module-link-icon {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 0.5rem;
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.flow-context {
+  border-color: var(--kbfe-flow-border);
+  background: var(--kbfe-flow-background);
+}
+
+.ops-panel {
+  border-color: var(--kbfe-ops-border);
+  background: var(--kbfe-ops-background);
+}
+
+.ops-panel-risk {
+  border-color: var(--kbfe-ops-risk-border);
+  background: var(--kbfe-ops-risk-background);
+}
+
+/* Workbench section card — used in Create and Detail panels to visually group
+   related fields. Has a subtle left accent border to signal active editing context. */
+.workbench-section {
+  border-left-width: 3px;
+  border-left-color: var(--kbfe-primary-color);
+}
+
+/* Workbench breadcrumb bar — compact context strip shown when outside list view */
+.workbench-breadcrumb {
+  padding: var(--kbfe-space-xs) 0;
+  border-bottom: 1px solid var(--kbfe-border-primary);
+}
+
+.page-state-panel {
+  max-width: 56rem;
+}
+
+.page-state-panel-error {
+  border-color: var(--kbfe-risk-border);
+  background: var(--kbfe-risk-background);
+}
+
+.settings-account-row-highlight {
+  outline: 2px solid var(--kbfe-primary-color);
+  outline-offset: -2px;
+}
+
+.status-control {
+  align-self: end;
+}
+
+.filter-switch,
+.filter-actions {
+  align-self: end;
+  min-height: 2.25rem;
+}
+@media (max-width: 48em) {
+
+  .status-control,
+  .filter-switch,
+  .filter-actions {
+    align-self: stretch;
+  }
+}
+
+
+
+html[data-kbfe-visual-theme='high-contrast'] .metric-label,
+html[data-kbfe-visual-theme='high-contrast'] .mantine-Text-root {
+  opacity: 1;
+}
+
+html[data-kbfe-density='compact'] .metric-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.settings-info-tile {
+  min-width: 0;
+  border-left: 3px solid var(--kbfe-primary-color);
+  padding-left: var(--kbfe-space-sm);
+}
+
+/* Active/pressed state on all buttons and interactive elements */
+.mantine-Button-root:active:not(:disabled),
+.module-link:active {
+  transform: scale(0.97) translateY(1px);
+  transition: transform 80ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.metric-card {
+  animation: cardFadeIn 350ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.metric-card:nth-child(1) {
+  animation-delay: 0ms;
+}
+
+.metric-card:nth-child(2) {
+  animation-delay: 50ms;
+}
+
+.metric-card:nth-child(3) {
+  animation-delay: 100ms;
+}
+
+.metric-card:nth-child(4) {
+  animation-delay: 150ms;
+}
+
+/* Enable tabular numbers globally for tables and metrics */
+.tabular-nums,
+table td,
+.metric-card [fw="800"],
+.metric-card Title,
+.metric-card [size="xl"] {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}

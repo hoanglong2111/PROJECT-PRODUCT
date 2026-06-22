@@ -49,6 +49,7 @@ export function SplitLotModal({
       {localDraft ? (
         <Stack
           component="form"
+          className="purchase-order-split-modal-form"
           gap="md"
           onSubmit={(event) => {
             event.preventDefault();
@@ -61,21 +62,23 @@ export function SplitLotModal({
               {getApiErrorMessage(error)}
             </Alert>
           ) : null}
-          <Paper withBorder p="sm">
+          <Paper withBorder p="sm" className="purchase-order-split-source">
             <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
               Source
             </Text>
-            <Text fw={700}>{localDraft.sourceLot.lot_no}</Text>
-            <Text size="sm" c="dimmed">
+            <Text fw={700} lineClamp={1} title={localDraft.sourceLot.lot_no}>
+              {localDraft.sourceLot.lot_no}
+            </Text>
+            <Text size="sm" c="dimmed" className="purchase-order-split-source-line">
               {localDraft.sourceLine.item_code ??
                 localDraft.sourceLine.item?.item_code ??
                 localDraft.sourceLine.purchase_order_line?.item?.item_code ??
                 localDraft.sourceLine.item_id}{' '}
-              · <NumberFormatter value={localDraft.sourceLine.qty_lotted} thousandSeparator />{' '}
+              / <NumberFormatter value={localDraft.sourceLine.qty_lotted} thousandSeparator />{' '}
               {localDraft.sourceLine.unit ?? ''}
             </Text>
           </Paper>
-          <SimpleGrid cols={{ base: 1, md: 2 }}>
+          <SimpleGrid cols={{ base: 1, md: 2 }} className="purchase-order-modal-grid">
             <Select
               label="Target LOT"
               data={targetOptions}
@@ -95,11 +98,11 @@ export function SplitLotModal({
               required
             />
           </SimpleGrid>
-          <Group justify="flex-end">
-            <Button variant="subtle" onClick={onClose}>
+          <Group justify="flex-end" wrap="nowrap" className="purchase-order-modal-footer">
+            <Button className="purchase-order-action-button" variant="subtle" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" loading={loading} disabled={!canSubmit} leftSection={<IconGitBranch size={16} />}>
+            <Button className="purchase-order-action-button" type="submit" loading={loading} disabled={!canSubmit} leftSection={<IconGitBranch size={16} />}>
               Split line
             </Button>
           </Group>

@@ -72,16 +72,16 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
 
   return (
     <Stack gap="lg">
-      <Paper withBorder p="md">
-        <Group justify="space-between" align="flex-start">
-          <div>
-            <Group gap="xs">
+      <Paper withBorder p="md" className="purchase-order-detail-hero">
+        <Group justify="space-between" align="flex-start" className="purchase-order-detail-hero-inner">
+          <div className="purchase-order-detail-title">
+            <Group gap="xs" className="purchase-order-detail-title-row">
               <Title order={3}>{order.po_no}</Title>
               <StatusBadge status={order.status} />
-              <Badge size="sm" variant="light">
+              <Badge size="sm" variant="light" className="purchase-order-nowrap-badge">
                 {order.po_type || 'STANDARD'}
               </Badge>
-              <Badge size="sm" variant="light" color="blue">
+              <Badge size="sm" variant="light" color="blue" className="purchase-order-nowrap-badge">
                 Contract {order.contract_no}
               </Badge>
             </Group>
@@ -89,11 +89,12 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
               {order.supplier?.supplier_name ?? order.supplier_id}
             </Text>
           </div>
-          <Group gap="xs">
-            <Button variant="subtle" leftSection={<IconX size={16} />} onClick={onClose}>
+          <Group gap="xs" wrap="nowrap" className="purchase-order-detail-actions">
+            <Button className="purchase-order-action-button" variant="subtle" leftSection={<IconX size={16} />} onClick={onClose}>
               Close
             </Button>
             <Button
+              className="purchase-order-action-button"
               variant="light"
               leftSection={<IconPencil size={16} />}
               disabled={!canEdit}
@@ -102,6 +103,7 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
               Edit
             </Button>
             <Button
+              className="purchase-order-action-button"
               leftSection={<IconSend size={16} />}
               loading={sendMutation.isPending}
               disabled={!canSend}
@@ -110,6 +112,7 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
               Send PO
             </Button>
             <Button
+              className="purchase-order-action-button"
               color="teal"
               leftSection={<IconCircleCheck size={16} />}
               disabled={!canConfirm}

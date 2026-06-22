@@ -174,18 +174,19 @@ export function PurchaseOrders() {
   }
 
   return (
-    <Stack gap="lg">
+    <Stack gap="lg" className="purchase-orders-workbench">
       {workbench === 'list' ? (
-        <Group justify="space-between" align="flex-start">
-          <div>
+        <Group justify="space-between" align="flex-start" className="purchase-orders-page-header">
+          <div className="purchase-orders-page-title">
             <Title order={1}>Purchase Orders</Title>
             <Text c="dimmed" mt={4}>
               Operational PO intake, supplier confirmation, and LOT planning.
             </Text>
           </div>
-          <Group gap="xs">
+          <Group gap="xs" wrap="nowrap" className="purchase-orders-page-actions">
             {canManagePurchaseOrders ? (
               <Button
+                className="purchase-orders-primary-action"
                 leftSection={<IconPlus size={16} />}
                 onClick={() => {
                   closePoParam({ clear: ['pr', 'do', 'task'] });
@@ -199,11 +200,11 @@ export function PurchaseOrders() {
           </Group>
         </Group>
       ) : (
-        <Group justify="space-between">
-          <Button leftSection={<IconArrowBackUp size={16} />} variant="subtle" onClick={closeWorkbench}>
+        <Group justify="space-between" className="purchase-orders-subheader">
+          <Button className="purchase-orders-back-action" leftSection={<IconArrowBackUp size={16} />} variant="subtle" onClick={closeWorkbench}>
             Back to list
           </Button>
-          <Badge leftSection={<IconTruckDelivery size={14} />} variant="light">
+          <Badge className="purchase-orders-api-badge" leftSection={<IconTruckDelivery size={14} />} variant="light">
             Live API V1
           </Badge>
         </Group>

@@ -199,18 +199,19 @@ export function Gd1QuotationBiddingPanel({
   };
 
   return (
-    <Stack gap="md">
-      <Group justify="space-between">
+    <Stack gap="md" className="quotation-bidding-panel">
+      <Group justify="space-between" align="flex-start" gap="md" className="quotation-bidding-header">
         <Stack gap={2}>
           <Title order={4}>{t('quotations.title')}</Title>
           <Text size="xs" c="dimmed">
             {t('quotations.quoteCount', { count: quotations.length })}
           </Text>
         </Stack>
-        <Group>
+        <Group gap="xs" wrap="nowrap" className="quotation-bidding-actions">
           <Button
             size="xs"
             variant="outline"
+            className="quotation-action-button"
             disabled={compareIds.length !== 2}
             onClick={() => setShowComparison((current) => !current)}
           >
@@ -219,6 +220,7 @@ export function Gd1QuotationBiddingPanel({
           <Tooltip label={t('quotations.createGateHint')} disabled={canCreateQuote} withArrow>
             <Button
               size="xs"
+              className="quotation-action-button"
               leftSection={<IconPlus size={14} />}
               data-disabled={!canCreateQuote || undefined}
               onClick={(event) => {
@@ -242,18 +244,18 @@ export function Gd1QuotationBiddingPanel({
         size="lg"
         centered
       >
-        <form onSubmit={handleCreateQuotation}>
+        <form onSubmit={handleCreateQuotation} className="quotation-create-form">
           <Stack gap="md">
             <Text size="sm" c="dimmed">
               {t('quotations.createFormSubtitle', { requestCode })}
             </Text>
 
-            <Paper withBorder p="md" radius="sm">
+            <Paper withBorder p="md" radius="sm" className="quotation-form-section">
               <Stack gap="sm">
-                <Text size="xs" fw={700} tt="uppercase" c="dimmed">
+                <Text size="xs" fw={700} tt="uppercase" c="dimmed" className="quotation-section-kicker">
                   {t('quotations.carrierSection')}
                 </Text>
-                <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                <SimpleGrid cols={{ base: 1, sm: 2 }} className="quotation-form-grid">
                   <Select
                     label={<HeaderLabel label={t('quotations.carrier')} hint={t('glossary.carrier')} />}
                     placeholder={t('quotations.carrierPlaceholder')}
@@ -272,7 +274,7 @@ export function Gd1QuotationBiddingPanel({
                     data={SHIPPING_MODE_OPTIONS}
                   />
                 </SimpleGrid>
-                <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                <SimpleGrid cols={{ base: 1, sm: 2 }} className="quotation-info-grid">
                   <InfoField
                     label={<HeaderLabel label={t('quotations.incotermsReadonly')} hint={t('glossary.incoterm')} />}
                     value={incoterms?.trim() || '—'}
@@ -296,15 +298,16 @@ export function Gd1QuotationBiddingPanel({
             </Paper>
 
             {chargeSections.map((section) => (
-              <Paper key={section.id} withBorder p="md" radius="sm">
+              <Paper key={section.id} withBorder p="md" radius="sm" className="quotation-form-section quotation-charge-section">
                 <Stack gap="sm">
-                  <Text size="xs" fw={700} tt="uppercase" c="dimmed">
+                  <Text size="xs" fw={700} tt="uppercase" c="dimmed" className="quotation-section-kicker">
                     {t(section.titleKey)}
                   </Text>
-                  <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                  <SimpleGrid cols={{ base: 1, sm: 2 }} className="quotation-charge-grid">
                     {section.fields.map((field) => (
                       <NumberInput
                         key={field.code}
+                        className="quotation-charge-input"
                         label={<HeaderLabel label={t(field.labelKey)} hint={t(chargeHintKey(field))} />}
                         description={`${currency} / ${field.unit}`}
                         placeholder="0.00"
@@ -320,12 +323,12 @@ export function Gd1QuotationBiddingPanel({
               </Paper>
             ))}
 
-            <Paper withBorder p="md" radius="sm">
+            <Paper withBorder p="md" radius="sm" className="quotation-form-section quotation-pricing-section">
               <Stack gap="sm">
-                <Text size="xs" fw={700} tt="uppercase" c="dimmed">
+                <Text size="xs" fw={700} tt="uppercase" c="dimmed" className="quotation-section-kicker">
                   <HeaderLabel label={t('quotations.pricingSection')} hint={t('glossary.landedCost')} />
                 </Text>
-                <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                <SimpleGrid cols={{ base: 1, sm: 2 }} className="quotation-form-grid">
                   <Select
                     label={t('quotations.currency')}
                     value={currency}
@@ -342,7 +345,7 @@ export function Gd1QuotationBiddingPanel({
               </Stack>
             </Paper>
 
-            <Group justify="space-between">
+            <Group justify="space-between" className="quotation-modal-footer">
               <Button variant="subtle" onClick={() => setCreateOpened(false)}>
                 {t('common.cancel')}
               </Button>
@@ -359,15 +362,16 @@ export function Gd1QuotationBiddingPanel({
           <Loader size="sm" />
         </Group>
       ) : quotations.length === 0 ? (
-        <Paper withBorder p="md">
-          <Group justify="space-between" align="center">
-            <Text size="sm" c="dimmed">
+        <Paper withBorder p="md" className="quotation-empty-panel">
+          <Group justify="space-between" align="center" gap="md" className="quotation-empty-content">
+            <Text size="sm" c="dimmed" className="quotation-empty-copy">
               {canCreateQuote ? t('quotations.noQuotes') : t('quotations.createGateHint')}
             </Text>
             <Tooltip label={t('quotations.createGateHint')} disabled={canCreateQuote} withArrow>
               <Button
                 size="xs"
                 variant="light"
+                className="quotation-action-button"
                 leftSection={<IconPlus size={14} />}
                 data-disabled={!canCreateQuote || undefined}
                 onClick={(event) => {
@@ -384,8 +388,8 @@ export function Gd1QuotationBiddingPanel({
           </Group>
         </Paper>
       ) : (
-        <ScrollArea.Autosize mah={560} offsetScrollbars>
-          <Table verticalSpacing="xs" miw={980} stickyHeader>
+        <ScrollArea.Autosize mah={560} offsetScrollbars className="quotation-table-scroll">
+          <Table verticalSpacing="xs" miw={1080} stickyHeader className="quotation-table">
             <Table.Thead>
               <Table.Tr>
                 <Table.Th style={{ width: 40 }}></Table.Th>
@@ -422,16 +426,20 @@ export function Gd1QuotationBiddingPanel({
                       <Text size="xs" c="dimmed">
                         {quote.shippingMode} {quote.version ? `| v${quote.version}` : ''}
                       </Text>
-                      {quote.isFinal ? (
-                        <Badge size="xs" color="teal" variant="filled" mt={4}>
+                        {quote.isFinal ? (
+                        <Badge size="xs" color="teal" variant="filled" mt={4} className="quotation-status-badge">
                           Final
                         </Badge>
                       ) : null}
                     </Table.Td>
-                    <Table.Td>{quote.carrierName || 'N/A'}</Table.Td>
+                    <Table.Td>
+                      <Text size="sm" lineClamp={2}>
+                        {quote.carrierName || 'N/A'}
+                      </Text>
+                    </Table.Td>
                     <Table.Td>
                       {quote.quoteAmount ? (
-                        <Text fw={700}>
+                        <Text fw={700} className="quotation-money">
                           {Number(quote.quoteAmount).toLocaleString()} {quote.currency}
                         </Text>
                       ) : (
@@ -440,20 +448,20 @@ export function Gd1QuotationBiddingPanel({
                     </Table.Td>
                     <Table.Td>
                       <Stack gap={2}>
-                        <Group gap={4} wrap="nowrap">
+                        <Group gap={4} wrap="nowrap" className="quotation-charge-summary">
                           <HeaderLabel label={t('quotations.mainFreight')} hint={t('glossary.freight')} />
                           <Text size="xs">
                             {Number(quote.freightCost || 0).toLocaleString()} {quote.currency ?? ''}
                           </Text>
                         </Group>
-                        <Group gap={8} wrap="wrap">
-                          <Group gap={4} wrap="nowrap">
+                        <Group gap={8} wrap="wrap" className="quotation-charge-summary-list">
+                          <Group gap={4} wrap="nowrap" className="quotation-charge-summary">
                             <HeaderLabel label={t('quotations.localCharges')} hint={t('glossary.localCharges')} />
                             <Text size="xs" c="dimmed">
                               {Number(quote.localCharges || 0).toLocaleString()}
                             </Text>
                           </Group>
-                          <Group gap={4} wrap="nowrap">
+                          <Group gap={4} wrap="nowrap" className="quotation-charge-summary">
                             <HeaderLabel label={t('quotations.customsFee')} hint={t('glossary.customsClearance')} />
                             <Text size="xs" c="dimmed">
                               {Number(quote.customsFee || 0).toLocaleString()}
@@ -474,6 +482,7 @@ export function Gd1QuotationBiddingPanel({
                                 : 'gray'
                         }
                         variant="light"
+                        className="quotation-status-badge"
                       >
                         {quote.status}
                       </Badge>
@@ -486,11 +495,12 @@ export function Gd1QuotationBiddingPanel({
                       )}
                     </Table.Td>
                     <Table.Td style={{ textAlign: 'right' }}>
-                      <Group gap="xs" justify="flex-end">
+                      <Group gap="xs" justify="flex-end" wrap="nowrap" className="quotation-row-actions">
                         {quote.status === 'DRAFT' && (
                           <Button
                             size="compact-xs"
                             color="blue"
+                            className="quotation-table-action"
                             onClick={() => actionMutation.mutate({ id: quote.id, action: 'SEND_PRELIMINARY' })}
                             loading={actionMutation.isPending}
                           >
@@ -502,6 +512,7 @@ export function Gd1QuotationBiddingPanel({
                             <Button
                               size="compact-xs"
                               color="green"
+                              className="quotation-table-action"
                               onClick={() => actionMutation.mutate({ id: quote.id, action: 'CUSTOMER_APPROVED' })}
                               loading={actionMutation.isPending}
                             >
@@ -511,6 +522,7 @@ export function Gd1QuotationBiddingPanel({
                               size="compact-xs"
                               color="red"
                               variant="light"
+                              className="quotation-table-action"
                               onClick={() => actionMutation.mutate({ id: quote.id, action: 'CUSTOMER_REJECTED' })}
                               loading={actionMutation.isPending}
                             >
@@ -529,10 +541,16 @@ export function Gd1QuotationBiddingPanel({
       )}
 
       {showComparison && selectedQuotes.length === 2 ? (
-        <Paper withBorder p="md">
-          <Group justify="space-between" mb="md">
+        <Paper withBorder p="md" className="quotation-compare-panel">
+          <Group justify="space-between" mb="md" gap="md" className="quotation-compare-header">
             <Title order={4}>{t('quotations.compareTitle')}</Title>
-            <Button size="xs" variant="subtle" onClick={() => setShowComparison(false)} leftSection={<IconX size={14} />}>
+            <Button
+              size="xs"
+              variant="subtle"
+              className="quotation-action-button"
+              onClick={() => setShowComparison(false)}
+              leftSection={<IconX size={14} />}
+            >
               {t('common.close')}
             </Button>
           </Group>
@@ -547,7 +565,7 @@ export function Gd1QuotationBiddingPanel({
                 amount?: number | string;
               }>;
               return (
-                <Paper key={quote.id} withBorder p="md">
+                <Paper key={quote.id} withBorder p="md" className="quotation-compare-card">
                   <Title order={5} mb="md">
                     {t('quotations.option', { num: idx + 1, code: quote.quoteNumber })}
                   </Title>
@@ -574,8 +592,8 @@ export function Gd1QuotationBiddingPanel({
                           {t('quotations.chargeBreakdown')}
                         </Text>
                         {lines.map((line) => (
-                          <Group key={line.id} justify="space-between" gap="xs" wrap="nowrap">
-                            <Text size="xs">
+                          <Group key={line.id} justify="space-between" gap="xs" wrap="nowrap" className="quotation-compare-line">
+                            <Text size="xs" lineClamp={2}>
                               {line.description || line.charge_type}
                               {line.unit ? (
                                 <Text span size="xs" c="dimmed">
@@ -584,7 +602,7 @@ export function Gd1QuotationBiddingPanel({
                                 </Text>
                               ) : null}
                             </Text>
-                            <Text size="xs" fw={600}>
+                            <Text size="xs" fw={600} className="quotation-money">
                               {Number(line.total_amount ?? line.amount ?? 0).toLocaleString()} {quote.currency}
                             </Text>
                           </Group>

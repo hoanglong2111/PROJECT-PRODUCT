@@ -94,13 +94,13 @@ export function SupplierConfirmationModal({
 
   return (
     <Modal opened={opened} onClose={onClose} title="Supplier confirmation" size="xl">
-      <Stack component="form" gap="md" onSubmit={handleSubmit}>
+      <Stack component="form" gap="md" onSubmit={handleSubmit} className="purchase-order-confirmation-form">
         {mutation.isError ? (
           <Alert color="red" icon={<IconAlertTriangle size={18} />}>
             {getApiErrorMessage(mutation.error)}
           </Alert>
         ) : null}
-        <SimpleGrid cols={{ base: 1, md: 2 }}>
+        <SimpleGrid cols={{ base: 1, md: 2 }} className="purchase-order-modal-grid">
           <TextInput label="Confirmed by" value={confirmedBy} onChange={(event) => setConfirmedBy(event.currentTarget.value)} />
           <TextInput label="Supplier ref no" value={supplierRefNo} onChange={(event) => setSupplierRefNo(event.currentTarget.value)} />
           <Switch label="Full shipment" checked={isFullShipment} onChange={(event) => setIsFullShipment(event.currentTarget.checked)} />
@@ -111,8 +111,8 @@ export function SupplierConfirmationModal({
           />
         </SimpleGrid>
         <Textarea label="Note" value={note} onChange={(event) => setNote(event.currentTarget.value)} autosize minRows={2} />
-        <ScrollArea type="always" offsetScrollbars scrollbarSize={8}>
-          <Table miw={860} verticalSpacing="xs">
+        <ScrollArea className="purchase-order-confirmation-scroll" type="always" offsetScrollbars scrollbarSize={8}>
+          <Table className="purchase-order-confirmation-table" miw={920} verticalSpacing="xs">
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>Line</Table.Th>
@@ -130,16 +130,16 @@ export function SupplierConfirmationModal({
                 const lineDraft = lineDrafts[line.id];
                 return (
                   <Table.Tr key={line.id}>
-                    <Table.Td>#{line.line_no}</Table.Td>
-                    <Table.Td>
-                      <Text size="sm" fw={700}>
+                    <Table.Td className="purchase-order-line-index">#{line.line_no}</Table.Td>
+                    <Table.Td className="table-cell-truncate" style={{ maxWidth: '18rem' }}>
+                      <Text size="sm" fw={700} lineClamp={1} title={line.item?.item_code ?? line.item_id}>
                         {line.item?.item_code ?? line.item_id}
                       </Text>
-                      <Text size="xs" c="dimmed">
+                      <Text size="xs" c="dimmed" lineClamp={1} title={line.item?.item_name ?? line.item_description ?? '-'}>
                         {line.item?.item_name ?? line.item_description ?? '-'}
                       </Text>
                     </Table.Td>
-                    <Table.Td>
+                    <Table.Td className="purchase-order-quantity-cell">
                       <NumberFormatter value={line.qty_ordered} thousandSeparator /> {line.unit ?? ''}
                     </Table.Td>
                     <Table.Td>
@@ -170,7 +170,7 @@ export function SupplierConfirmationModal({
                         }}
                       />
                     </Table.Td>
-                    <Table.Td>
+                    <Table.Td className="purchase-order-confirmation-check-cell">
                       <Checkbox
                         checked={lineDraft?.can_fulfill ?? true}
                         onChange={(event) => {
@@ -188,11 +188,11 @@ export function SupplierConfirmationModal({
             </Table.Tbody>
           </Table>
         </ScrollArea>
-        <Group justify="flex-end">
-          <Button variant="subtle" onClick={onClose}>
+        <Group justify="flex-end" wrap="nowrap" className="purchase-order-modal-footer">
+          <Button className="purchase-order-action-button" variant="subtle" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" loading={mutation.isPending} leftSection={<IconCircleCheck size={16} />}>
+          <Button className="purchase-order-action-button" type="submit" loading={mutation.isPending} leftSection={<IconCircleCheck size={16} />}>
             Confirm PO
           </Button>
         </Group>
