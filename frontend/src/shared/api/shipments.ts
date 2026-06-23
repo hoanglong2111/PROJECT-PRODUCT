@@ -114,6 +114,34 @@ export type ShipmentDocumentV1 = {
   is_delete?: boolean;
 };
 
+export type ShipmentCostTypeV1 =
+  | 'FREIGHT'
+  | 'INSURANCE'
+  | 'CUSTOMS_DUTY'
+  | 'VAT'
+  | 'LOCAL_CHARGES'
+  | 'DEMURRAGE'
+  | 'OTHER';
+
+export type ShipmentCostAllocMethodV1 = 'BY_VALUE' | 'BY_WEIGHT' | 'BY_QTY';
+
+export type ShipmentCostV1 = {
+  id: string;
+  shipment_id: string;
+  cost_type: ShipmentCostTypeV1;
+  description: string | null;
+  amount: ApiDecimal;
+  currency_code: string;
+  exchange_rate: ApiDecimal;
+  alloc_method: ShipmentCostAllocMethodV1;
+  invoice_ref: string | null;
+  notes: string | null;
+  create_at?: string;
+  update_at?: string;
+  delete_at?: string | null;
+  is_delete?: boolean;
+};
+
 export type ShipmentV1 = {
   id: string;
   shipment_no: string;
@@ -151,6 +179,7 @@ export type ShipmentV1 = {
   lines?: ShipmentLineV1[];
   milestones?: ShipmentMilestoneV1[];
   documents?: ShipmentDocumentV1[];
+  costs?: ShipmentCostV1[];
 };
 
 export type ListShipmentsParams = {
@@ -169,7 +198,7 @@ export type ListShipmentsParams = {
 };
 
 export type CreateShipmentFromDeliveryOrderPayload = {
-  shipment_no: string;
+  shipment_no?: string;
   delivery_order_id: string;
   final_quotation_id?: string | null;
   transport_mode_id?: string | null;
@@ -237,6 +266,19 @@ export type ShipmentDocumentPayload = {
 };
 
 export type UpdateShipmentDocumentPayload = Partial<ShipmentDocumentPayload>;
+
+export type ShipmentCostPayload = {
+  cost_type: ShipmentCostTypeV1;
+  description?: string | null;
+  amount: number;
+  currency_code?: string;
+  exchange_rate?: number;
+  alloc_method?: ShipmentCostAllocMethodV1;
+  invoice_ref?: string | null;
+  notes?: string | null;
+};
+
+export type UpdateShipmentCostPayload = Partial<ShipmentCostPayload>;
 
 function unwrapV1Data<T, TMeta>(response: { data: V1Response<T, TMeta> }) {
   const apiResponse = response.data;
@@ -343,6 +385,36 @@ export async function updateShipmentDocument(
 export async function deleteShipmentDocument(id: string) {
   const response = await apiClient.delete<V1Response<ShipmentDocumentV1>>(
     `/v1/shipment-documents/${id}`,
+  );
+  return unwrapV1Data(response);
+}
+
+export async function fetchShipmentCosts(id: string) {
+  const response = await apiClient.get<V1Response<ShipmentCostV1[], { total: number }>>(
+    `/v1/shipments/${id}/costs`,
+  );
+  return unwrapV1Data(response);
+}
+
+export async function createShipmentCost(id: string, payload: ShipmentCostPayload) {
+  const response = await apiClient.post<V1Response<ShipmentCostV1>>(
+    `/v1/shipments/${id}/costs`,
+    payload,
+  );
+  return unwrapV1Data(response);
+}
+
+export async function updateShipmentCost(id: string, payload: UpdateShipmentCostPayload) {
+  const response = await apiClient.patch<V1Response<ShipmentCostV1>>(
+    `/v1/shipment-costs/${id}`,
+    payload,
+  );
+  return unwrapV1Data(response);
+}
+
+export async function deleteShipmentCost(id: string) {
+  const response = await apiClient.delete<V1Response<ShipmentCostV1>>(
+    `/v1/shipment-costs/${id}`,
   );
   return unwrapV1Data(response);
 }

@@ -3,6 +3,8 @@ import {
   Badge,
   Button,
   Group,
+  List,
+  Modal,
   NumberFormatter,
   Paper,
   Progress,
@@ -14,14 +16,18 @@ import {
 } from '@mantine/core';
 import {
   IconAlertTriangle,
+  IconAnchor,
   IconArrowRight,
   IconChecklist,
+  IconCircleCheck,
+  IconCircleX,
   IconClipboardCheck,
   IconFileCheck,
   IconGitBranch,
   IconTruckDelivery,
 } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import type { DeliveryOrder } from '@shared/api/logistics';
@@ -40,6 +46,7 @@ import { EntityLink, FlowTagBadge, SourceLineTable, UpdateDeliveryOrderForm, cal
 
 import { getAllocationWeightKg, getContainerCount, shippingIcon } from '../model/deliveryOrderModel';
 import { gateDetail, gateLabel, riskDetail, riskLabel, slaLabel } from '../model/deliveryOrderLabels';
+import { CreateShipmentFromDoModal } from './CreateShipmentFromDoModal';
 import { DocumentUploadPanel } from './DocumentUploadPanel';
 import { Gd1QuotationBiddingPanel } from './QuotationBiddingPanel';
 import { OperationalGateSummary } from './OperationalGateSummary';
@@ -47,6 +54,8 @@ import { OperationalGateSummary } from './OperationalGateSummary';
 export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: DeliveryOrder; onClose: () => void }) {
   const queryClient = useQueryClient();
   const { documentLabel, t, taskRoleLabel } = useI18n();
+  const [createShipmentOpen, setCreateShipmentOpen] = useState(false);
+  const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
   const gates = getOperationalGates(deliveryOrder);
   const risks = getDeliveryOrderRisks(deliveryOrder);
   const allocationWeightKg = getAllocationWeightKg(deliveryOrder);
@@ -65,6 +74,14 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
     deliveryOrder.task_summary.total_tasks > 0
       ? Math.round((deliveryOrder.task_summary.completed_tasks / deliveryOrder.task_summary.total_tasks) * 100)
       : 0;
+  const passedGateCount = gates.filter((gate) => gate.passed).length;
+  const blockedGateCount = gates.length - passedGateCount;
+  const orderedRisks = [...risks].sort((left, right) => {
+    const severityScore = { high: 3, medium: 2, low: 1 };
+    return severityScore[right.severity] - severityScore[left.severity];
+  });
+  const primaryRisk = orderedRisks[0] ?? null;
+  const delayDays = delay.isLate ? delay.days : 0;
   const actionMutation = useMutation({
     mutationFn: (action: 'cancel' | 'close' | 'ready-for-quotation') => {
       if (action === 'ready-for-quotation') return markDeliveryOrderReadyForQuotation(deliveryOrder.id);
@@ -87,6 +104,14 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
         ? { action: 'close' as const, label: 'Close DO' }
         : null;
   const canCancel = ['DRAFT', 'READY_FOR_QUOTATION', 'QUOTATION_CONFIRMED'].includes(deliveryOrder.order_info.status);
+  const isQuotationConfirmed = deliveryOrder.order_info.status === 'QUOTATION_CONFIRMED';
+  const closureChecklist = [
+    { ok: Boolean(deliveryOrder.linked_shipment_number), label: 'Linked to a shipment' },
+    { ok: deliveryOrder.logistics_shipping.missing_documents.length === 0, label: 'No missing documents' },
+    { ok: deliveryOrder.task_summary.blocked_tasks === 0, label: 'No blocked tasks' },
+    { ok: deliveryOrder.task_summary.required_tasks_remaining === 0, label: 'Required closure tasks completed' },
+    { ok: Boolean(deliveryOrder.warehouse_tracking.actual_entry_date), label: 'Warehouse entry / POD recorded' },
+  ];
 
   return (
     <Stack gap="lg">
@@ -106,11 +131,24 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
           <Stack gap="xs" align="flex-end">
             <Text size="xs" c="dimmed" className="tabular-nums">{taskProgress}% {t('tasks.progress')}</Text>
             <Group gap="xs" justify="flex-end">
+              {isQuotationConfirmed ? (
+                <Button
+                  size="xs"
+                  leftSection={<IconAnchor size={14} />}
+                  onClick={() => setCreateShipmentOpen(true)}
+                >
+                  Create Shipment
+                </Button>
+              ) : null}
               {primaryAction ? (
                 <Button
                   size="xs"
                   loading={actionMutation.isPending}
-                  onClick={() => actionMutation.mutate(primaryAction.action)}
+                  onClick={() =>
+                    primaryAction.action === 'close'
+                      ? setCloseConfirmOpen(true)
+                      : actionMutation.mutate(primaryAction.action)
+                  }
                 >
                   {primaryAction.label}
                 </Button>
@@ -356,6 +394,29 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
                 </Stack>
               </SimpleGrid>
             </Paper>
+
+            {deliveryOrder.order_info.notes || deliveryOrder.order_info.xnk_notes ? (
+              <Paper withBorder p="md">
+                <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
+                  {deliveryOrder.order_info.notes ? (
+                    <Stack gap={4}>
+                      <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
+                        {t('common.notes')}
+                      </Text>
+                      <Text size="sm">{deliveryOrder.order_info.notes}</Text>
+                    </Stack>
+                  ) : null}
+                  {deliveryOrder.order_info.xnk_notes ? (
+                    <Stack gap={4}>
+                      <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
+                        {t('deliveryOrders.xnkNotes')}
+                      </Text>
+                      <Text size="sm">{deliveryOrder.order_info.xnk_notes}</Text>
+                    </Stack>
+                  ) : null}
+                </SimpleGrid>
+              </Paper>
+            ) : null}
           </Stack>
         </Tabs.Panel>
 
@@ -369,45 +430,118 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
         </Tabs.Panel>
 
         <Tabs.Panel value="ops" pt="md">
-          <Stack gap="md">
-            <SimpleGrid cols={{ base: 1, sm: 2 }}>
-              {gates.map((gate) => (
-                <Paper key={gate.id} withBorder p="md" className={gate.passed ? undefined : 'risk-panel'}>
-                  <Group justify="space-between" align="flex-start" gap="xs" wrap="nowrap">
-                    <div>
-                      <Text fw={700}>{gateLabel(gate.id, t)}</Text>
-                      <Text size="sm" c="dimmed">
-                        {gateDetail(gate, t) || '-'}
-                      </Text>
-                    </div>
-                    <Badge color={gate.passed ? 'teal' : 'orange'} variant="light">
-                      {gate.passed ? t('deliveryOrders.gatePassed') : t('deliveryOrders.gateBlocked')}
+          <Stack gap="md" className="delivery-order-ops-layout">
+            <Paper
+              withBorder
+              p="lg"
+              className={`delivery-order-ops-hero ${primaryRisk ? 'delivery-order-ops-hero-risk' : 'delivery-order-ops-hero-clear'}`}
+            >
+              <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="lg">
+                <Stack gap="xs" className="delivery-order-ops-hero-copy">
+                  <Group gap="xs" wrap="wrap">
+                    <Badge color={primaryRisk ? getRiskColor(primaryRisk.severity) : 'teal'} variant="light">
+                      {primaryRisk ? t('common.atRisk') : t('deliveryOrders.readyForClosure')}
+                    </Badge>
+                    <Badge variant="outline" color={primaryRisk ? getRiskColor(primaryRisk.severity) : 'gray'}>
+                      {passedGateCount}/{gates.length} {t('deliveryOrders.opsGateScore')}
                     </Badge>
                   </Group>
-                  <Text size="xs" c="dimmed" mt="xs">
-                    {t('common.owner')}: {taskRoleLabel(gate.owner)}
+                  <Title order={3}>
+                    {primaryRisk ? riskLabel(primaryRisk.code, t) : t('deliveryOrders.readyForClosure')}
+                  </Title>
+                  <Text size="sm" c="dimmed">
+                    {primaryRisk ? riskDetail(primaryRisk, t) : t('deliveryOrders.noOpsRisk')}
                   </Text>
+                  <Text size="sm" c="dimmed">
+                    {primaryRisk
+                      ? `${taskRoleLabel(primaryRisk.owner)} | ${t('deliveryOrders.sla', { sla: slaLabel(primaryRisk.sla, t) })}`
+                      : t('deliveryOrders.nextActionsDescription')}
+                  </Text>
+                </Stack>
+
+                <SimpleGrid cols={{ base: 1, xs: 3 }} spacing="sm" className="delivery-order-ops-kpi-grid">
+                  <div className="delivery-order-ops-kpi">
+                    <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
+                      {t('deliveryOrders.opsGateScore')}
+                    </Text>
+                    <Text fw={900} size="xl" className="tabular-nums">
+                      {passedGateCount}/{gates.length}
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      {t('deliveryOrders.opsGateScoreDescription')}
+                    </Text>
+                  </div>
+                  <div className={`delivery-order-ops-kpi ${delay.isLate ? 'is-alert' : 'is-good'}`}>
+                    <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
+                      {t('common.delay')}
+                    </Text>
+                    <Text fw={900} size="xl" c={delay.isLate ? 'red' : 'teal'} className="tabular-nums">
+                      {delayDays}d
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      {deliveryOrder.warehouse_tracking.warehouse_deadline}
+                    </Text>
+                  </div>
+                  <div className={`delivery-order-ops-kpi ${blockedGateCount > 0 ? 'is-alert' : 'is-good'}`}>
+                    <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
+                      {t('deliveryOrders.nextActions')}
+                    </Text>
+                    <Text fw={900} size="xl" className="tabular-nums">
+                      {blockedGateCount}
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      {blockedGateCount > 0 ? t('deliveryOrders.gateBlocked') : t('deliveryOrders.gatePassed')}
+                    </Text>
+                  </div>
+                </SimpleGrid>
+              </SimpleGrid>
+            </Paper>
+
+            <SimpleGrid cols={{ base: 1, sm: 2 }} className="delivery-order-ops-gate-grid">
+              {gates.map((gate) => (
+                <Paper key={gate.id} withBorder p="md" className={`delivery-order-ops-gate-card ${gate.passed ? 'is-passed' : 'is-blocked'}`}>
+                  <Stack gap="sm">
+                    <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
+                      <div className="delivery-order-ops-gate-copy">
+                        <Text fw={800}>{gateLabel(gate.id, t)}</Text>
+                        <Text size="sm" c="dimmed">
+                          {gateDetail(gate, t) || '-'}
+                        </Text>
+                      </div>
+                      <Badge color={gate.passed ? 'teal' : 'orange'} variant="light">
+                        {gate.passed ? t('deliveryOrders.gatePassed') : t('deliveryOrders.gateBlocked')}
+                      </Badge>
+                    </Group>
+                    <Group justify="space-between" gap="xs" wrap="wrap">
+                      <Text size="xs" c="dimmed">
+                        {t('common.owner')}
+                      </Text>
+                      <Text size="sm" c="dimmed">
+                        {taskRoleLabel(gate.owner)}
+                      </Text>
+                    </Group>
+                  </Stack>
                 </Paper>
               ))}
             </SimpleGrid>
 
-            <Paper withBorder p="md">
-              <Group justify="space-between" align="flex-start" mb="sm">
-                <div>
+            <Paper withBorder p="md" className="delivery-order-ops-risk-panel">
+              <Group justify="space-between" align="flex-start" gap="sm" mb="sm" className="delivery-order-ops-risk-header">
+                <div className="delivery-order-ops-risk-copy">
                   <Text fw={700}>{t('deliveryOrders.nextActions')}</Text>
                   <Text size="sm" c="dimmed">
                     {t('deliveryOrders.nextActionsDescription')}
                   </Text>
                 </div>
-                <Badge color={risks.length > 0 ? 'red' : 'teal'} variant="light">
-                  {risks.length > 0 ? t('common.atRisk') : t('deliveryOrders.readyForClosure')}
+                <Badge color={orderedRisks.length > 0 ? 'red' : 'teal'} variant="light">
+                  {orderedRisks.length > 0 ? t('common.atRisk') : t('deliveryOrders.readyForClosure')}
                 </Badge>
               </Group>
-              <Stack gap="xs">
-                {risks.length > 0 ? (
-                  risks.map((risk) => (
-                    <Group key={risk.code} justify="space-between" gap="sm">
-                      <Group gap="xs">
+              <Stack gap="sm">
+                {orderedRisks.length > 0 ? (
+                  orderedRisks.map((risk) => (
+                    <Group key={risk.code} justify="space-between" align="flex-start" gap="sm" className={`delivery-order-ops-risk-row severity-${risk.severity}`}>
+                      <Group gap="xs" className="delivery-order-ops-risk-row-copy">
                         <Badge color={getRiskColor(risk.severity)} variant="light">
                           {riskLabel(risk.code, t)}
                         </Badge>
@@ -426,7 +560,7 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
               </Stack>
             </Paper>
 
-            <SimpleGrid cols={{ base: 1, md: 3 }}>
+            <SimpleGrid cols={{ base: 1, md: 3 }} className="delivery-order-ops-facts">
               <InfoField label={t('deliveryOrders.efmsBooking')} value={deliveryOrder.order_info.tracking_number ?? deliveryOrder.order_info.order_number} />
               <InfoField label={t('deliveryOrders.mblVessel')} value={`${deliveryOrder.logistics_shipping.shipping_line ?? '-'} / ${deliveryOrder.logistics_shipping.vessel_code ?? '-'}`} />
               <InfoField
@@ -467,6 +601,51 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
           <SourceLineTable lines={deliveryOrder.source_lines} />
         </Tabs.Panel>
       </Tabs>
+
+      <CreateShipmentFromDoModal
+        deliveryOrder={deliveryOrder}
+        opened={createShipmentOpen}
+        onClose={() => setCreateShipmentOpen(false)}
+      />
+
+      <Modal opened={closeConfirmOpen} onClose={() => setCloseConfirmOpen(false)} title="Close delivery order" centered>
+        <Stack gap="md">
+          <Alert color="orange" icon={<IconAlertTriangle size={18} />}>
+            Closing a DO is final. Confirm the shipment is delivered, customs cleared, and POD is on file before closing.
+          </Alert>
+          <List spacing="xs" size="sm" center>
+            {closureChecklist.map((item) => (
+              <List.Item
+                key={item.label}
+                icon={
+                  item.ok ? (
+                    <IconCircleCheck size={18} color="var(--mantine-color-teal-6)" />
+                  ) : (
+                    <IconCircleX size={18} color="var(--mantine-color-gray-5)" />
+                  )
+                }
+              >
+                {item.label}
+              </List.Item>
+            ))}
+          </List>
+          <Group justify="flex-end" gap="xs">
+            <Button variant="subtle" onClick={() => setCloseConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              color="teal"
+              loading={actionMutation.isPending}
+              onClick={() => {
+                actionMutation.mutate('close');
+                setCloseConfirmOpen(false);
+              }}
+            >
+              Close DO
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Stack>
   );
 }

@@ -7,18 +7,17 @@ import {
   NumberFormatter,
   NumberInput,
   Paper,
-  ScrollArea,
   Select,
   SimpleGrid,
   Stack,
-  Table,
   Text,
   Textarea,
   TextInput,
+  UnstyledButton,
 } from '@mantine/core';
 import { IconAlertTriangle, IconDeviceFloppy, IconLink, IconPlus, IconTrash, IconX } from '@tabler/icons-react';
 import { useMutation } from '@tanstack/react-query';
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 
 import {
   createPurchaseOrder,
@@ -55,13 +54,22 @@ export function PurchaseOrderForm({
   onSaved: (order: PurchaseOrderV1) => void;
   order?: PurchaseOrderV1;
 }) {
-  const [draft, setDraft] = useState(() => createInitialPoDraft(order));
+  const initialDraft = createInitialPoDraft(order);
+  const [draft, setDraft] = useState(initialDraft);
+  const [activeLineId, setActiveLineId] = useState<string | null>(() => initialDraft.lines[0]?.clientId ?? null);
   const [contractAutoSync, setContractAutoSync] = useState(() => !order?.contract_no);
   const invalidatePo = usePoInvalidation(order?.id);
   const masterData = usePoMasterData();
+  const itemInputRef = useRef<HTMLInputElement>(null);
+  const railListRef = useRef<HTMLDivElement>(null);
+  // When a line is added we want to jump straight into editing it: remember its
+  // id so an effect can focus the Item field and scroll the rail entry into view.
+  const [focusLineId, setFocusLineId] = useState<string | null>(null);
 
   useEffect(() => {
-    setDraft(createInitialPoDraft(order));
+    const nextDraft = createInitialPoDraft(order);
+    setDraft(nextDraft);
+    setActiveLineId(nextDraft.lines[0]?.clientId ?? null);
     setContractAutoSync(!order?.contract_no);
   }, [order]);
 
@@ -87,7 +95,27 @@ export function PurchaseOrderForm({
   const selectedCurrency = masterData.currencies.find((currency) => currency.id === draft.currency_id);
   const selectedTransportMode = masterData.transportModes.find((transportMode) => transportMode.id === draft.transport_mode_id);
   const poTotal = totalPoAmount(draft.lines);
-  const canSubmit = Boolean(draft.po_no.trim() && draft.supplier_id && draft.incoterm_id);
+  // A line is only saved if it has an item and a positive quantity (buildPoPayload
+  // drops the rest). Surface that here so incomplete lines aren't silently lost.
+  const lineIsComplete = (line: PoLineDraft) => Boolean(line.item_id) && toNumber(line.qty_ordered) > 0;
+  const validLineCount = draft.lines.filter(lineIsComplete).length;
+  const incompleteLineCount = draft.lines.length - validLineCount;
+  const canSubmit =
+    Boolean(draft.po_no.trim() && draft.supplier_id && draft.incoterm_id) && (mode === 'edit' || validLineCount > 0);
+  const activeLine = draft.lines.find((line) => line.clientId === activeLineId) ?? draft.lines[0] ?? null;
+  const activeLineIndex = activeLine ? draft.lines.findIndex((line) => line.clientId === activeLine.clientId) : -1;
+  const activeLineItem = masterData.items.find((candidate) => candidate.id === activeLine?.item_id);
+  const activeCustomsOptions = buildCustomsOptions(activeLineItem);
+  const activeLineAmount = activeLine ? toNumber(activeLine.qty_ordered) * toNumber(activeLine.unit_price) : 0;
+
+  useEffect(() => {
+    if (!focusLineId || activeLine?.clientId !== focusLineId) return;
+    itemInputRef.current?.focus();
+    railListRef.current
+      ?.querySelector<HTMLElement>(`[data-line-id="${focusLineId}"]`)
+      ?.scrollIntoView({ block: 'nearest' });
+    setFocusLineId(null);
+  }, [focusLineId, activeLine]);
 
   const updateLine = (clientId: string, patch: Partial<PoLineDraft>) => {
     setDraft((current) => ({
@@ -97,6 +125,7 @@ export function PurchaseOrderForm({
   };
 
   const removeLine = (clientId: string) => {
+    const remainingLineIds = draft.lines.filter((line) => line.clientId !== clientId).map((line) => line.clientId);
     setDraft((current) => ({
       ...current,
       lines:
@@ -104,13 +133,17 @@ export function PurchaseOrderForm({
           ? current.lines
           : current.lines.filter((line) => line.clientId !== clientId).map((line, index) => ({ ...line, line_no: index + 1 })),
     }));
+    setActiveLineId((current) => (current === clientId ? remainingLineIds[0] ?? null : current));
   };
 
   const addLine = () => {
+    const nextLine = newLineDraft(draft.lines.length);
     setDraft((current) => ({
       ...current,
-      lines: [...current.lines, newLineDraft(current.lines.length)],
+      lines: [...current.lines, nextLine],
     }));
+    setActiveLineId(nextLine.clientId);
+    setFocusLineId(nextLine.clientId);
   };
 
   const handleSubmit = (event: FormEvent) => {
@@ -348,140 +381,222 @@ export function PurchaseOrderForm({
               <Stack gap={2}>
                 <Text fw={700}>PO lines</Text>
                 <Text size="sm" c="dimmed">
-                  Add item, customs profile, weight, ETA, and supplier notes for each line.
+                  Use the line rail to move quickly, then edit one selected line at a time.
                 </Text>
               </Stack>
               <Badge variant="light">{draft.lines.length} lines</Badge>
             </Group>
-            <ScrollArea type="always" offsetScrollbars scrollbarSize={8}>
-              <Table miw={1580} verticalSpacing="xs" className="purchase-order-lines-table">
-                <Table.Thead>
-                  <Table.Tr>
-                    <Table.Th style={{ width: 72 }}>Line</Table.Th>
-                    <Table.Th>Item</Table.Th>
-                    <Table.Th>HS code</Table.Th>
-                    <Table.Th style={{ width: 130 }}>Qty</Table.Th>
-                    <Table.Th style={{ width: 110 }}>Unit</Table.Th>
-                    <Table.Th style={{ width: 135 }}>Unit price</Table.Th>
-                    <Table.Th style={{ width: 145 }}>Line amount</Table.Th>
-                    <Table.Th style={{ width: 135 }}>Gross kg</Table.Th>
-                    <Table.Th style={{ width: 155 }}>Line ETA</Table.Th>
-                    <Table.Th style={{ width: 220 }}>Line note</Table.Th>
-                    <Table.Th style={{ width: 44 }} />
-                  </Table.Tr>
-                </Table.Thead>
-                <Table.Tbody>
+            {validLineCount === 0 ? (
+              <Group gap={6} className="purchase-order-line-notice is-error">
+                <IconAlertTriangle size={15} />
+                <Text size="xs">Add at least one line with an item and a quantity before creating the PO.</Text>
+              </Group>
+            ) : incompleteLineCount > 0 ? (
+              <Group gap={6} className="purchase-order-line-notice is-warning">
+                <IconAlertTriangle size={15} />
+                <Text size="xs">
+                  {incompleteLineCount} incomplete line{incompleteLineCount > 1 ? 's' : ''} (missing item or quantity) won’t be
+                  saved.
+                </Text>
+              </Group>
+            ) : null}
+            <div className="purchase-order-line-workspace">
+              <div className="purchase-order-line-rail">
+                <div className="purchase-order-line-rail-list" ref={railListRef}>
                   {draft.lines.map((line, index) => {
                     const item = masterData.items.find((candidate) => candidate.id === line.item_id);
-                    const customsOptions = buildCustomsOptions(item);
+                    const selectedCustoms = buildCustomsOptions(item).find((option) => option.value === line.item_customs_profile_id);
                     const lineAmount = toNumber(line.qty_ordered) * toNumber(line.unit_price);
+                    const isActive = activeLine?.clientId === line.clientId;
+                    const isComplete = lineIsComplete(line);
+
                     return (
-                      <Table.Tr key={line.clientId} className="purchase-order-form-line-row">
-                        <Table.Td className="purchase-order-form-line-number-cell">
-                          <Text fw={700} size="sm">
+                      <UnstyledButton
+                        key={line.clientId}
+                        type="button"
+                        data-line-id={line.clientId}
+                        onClick={() => setActiveLineId(line.clientId)}
+                        className={`purchase-order-line-rail-item${isActive ? ' is-active' : ''}${isComplete ? '' : ' is-incomplete'}`}
+                      >
+                        <div className="purchase-order-line-rail-item-main">
+                          <div className="purchase-order-line-rail-index">
                             #{index + 1}
-                          </Text>
-                        </Table.Td>
-                        <Table.Td>
-                          <Select
-                            data={masterData.itemOptions}
-                            value={line.item_id}
-                            placeholder="Choose item"
-                            onChange={(value) => {
-                              const selectedItem = masterData.items.find((candidate) => candidate.id === value);
-                              updateLine(line.clientId, {
-                                item_id: value ?? '',
-                                item_customs_profile_id:
-                                  selectedItem?.customs_profiles?.find((profile) => profile.is_default)?.id ??
-                                  selectedItem?.customs_profiles?.[0]?.id ??
-                                  '',
-                                item_description: selectedItem?.item_description ?? selectedItem?.item_name ?? '',
-                                unit: selectedItem?.base_uom ?? line.unit,
-                              });
-                            }}
-                            searchable
-                            required
-                          />
-                        </Table.Td>
-                        <Table.Td>
-                          <Select
-                            data={customsOptions}
-                            value={line.item_customs_profile_id}
-                            onChange={(value) => updateLine(line.clientId, { item_customs_profile_id: value ?? '' })}
-                            placeholder="HS code"
-                            searchable
-                            clearable
-                          />
-                        </Table.Td>
-                        <Table.Td>
-                          <NumberInput
-                            min={0.0001}
-                            value={line.qty_ordered}
-                            thousandSeparator=","
-                            decimalScale={4}
-                            onChange={(value) => updateLine(line.clientId, { qty_ordered: toNumber(value, 1) })}
-                          />
-                        </Table.Td>
-                        <Table.Td>
-                          <TextInput
-                            value={line.unit}
-                            onChange={(event) => updateLine(line.clientId, { unit: event.currentTarget.value })}
-                          />
-                        </Table.Td>
-                        <Table.Td>
-                          <NumberInput
-                            min={0}
-                            value={line.unit_price}
-                            thousandSeparator=","
-                            decimalScale={2}
-                            onChange={(value) => updateLine(line.clientId, { unit_price: toNumber(value) })}
-                          />
-                        </Table.Td>
-                        <Table.Td>
-                          <Text fw={700} size="sm" className="tabular-nums">
+                            {isComplete ? null : (
+                              <span
+                                className="purchase-order-line-rail-dot"
+                                title="Missing item or quantity — this line won’t be saved"
+                                aria-label="Incomplete line"
+                              />
+                            )}
+                          </div>
+                          <div className="purchase-order-line-rail-copy">
+                            <Text fw={700} size="sm" lineClamp={1}>
+                              {item?.item_code ?? line.item_description ?? 'Choose item'}
+                            </Text>
+                            <Text size="xs" c="dimmed" lineClamp={1}>
+                              {item?.item_name ?? line.item_description ?? 'Item not selected'}
+                            </Text>
+                          </div>
+                        </div>
+                        <div className="purchase-order-line-rail-side">
+                          <Text fw={800} size="sm" className="tabular-nums">
                             <NumberFormatter value={lineAmount} thousandSeparator decimalScale={2} />
                           </Text>
-                        </Table.Td>
-                        <Table.Td>
-                          <NumberInput
-                            min={0}
-                            value={line.gross_weight_kg}
-                            thousandSeparator=","
-                            decimalScale={3}
-                            onChange={(value) => updateLine(line.clientId, { gross_weight_kg: toNumber(value) })}
-                          />
-                        </Table.Td>
-                        <Table.Td>
-                          <TextInput
-                            type="date"
-                            value={line.expected_eta_line}
-                            onChange={(event) => updateLine(line.clientId, { expected_eta_line: event.currentTarget.value })}
-                          />
-                        </Table.Td>
-                        <Table.Td>
-                          <TextInput
-                            value={line.notes}
-                            placeholder="Packing, QC, or supplier note"
-                            onChange={(event) => updateLine(line.clientId, { notes: event.currentTarget.value })}
-                          />
-                        </Table.Td>
-                        <Table.Td>
-                          <ActionIcon
-                            variant="subtle"
-                            color="red"
-                            aria-label="Remove line"
-                            disabled={draft.lines.length === 1}
-                            onClick={() => removeLine(line.clientId)}
-                          >
-                            <IconTrash size={16} />
-                          </ActionIcon>
-                        </Table.Td>
-                      </Table.Tr>
+                          <Text size="xs" c="dimmed">
+                            {line.expected_eta_line ? `ETA ${line.expected_eta_line}` : 'ETA pending'}
+                          </Text>
+                        </div>
+                        <Text size="xs" c="dimmed" className="purchase-order-line-rail-meta" lineClamp={1}>
+                          <NumberFormatter value={line.qty_ordered} thousandSeparator decimalScale={4} /> {line.unit ?? ''} |{' '}
+                          {selectedCustoms?.label ?? 'HS code pending'}
+                        </Text>
+                      </UnstyledButton>
                     );
                   })}
-                </Table.Tbody>
-              </Table>
-            </ScrollArea>
+                </div>
+              </div>
+
+              <div className="purchase-order-line-detail">
+                {activeLine ? (
+                  <Stack gap="md">
+                    <Group justify="space-between" align="flex-start" gap="md" className="purchase-order-line-detail-header">
+                      <Stack gap={4}>
+                        <Group gap="xs" wrap="wrap">
+                          <Text fw={700}>Editing line #{activeLineIndex + 1}</Text>
+                          <Badge variant="light" size="sm">
+                            {activeLineItem?.item_code ?? 'Item pending'}
+                          </Badge>
+                        </Group>
+                        <Text size="sm" c="dimmed">
+                          {activeLineItem?.item_name ?? activeLine.item_description ?? 'Select an item, then complete quantity, pricing, ETA, and notes.'}
+                        </Text>
+                      </Stack>
+                      <ActionIcon
+                        variant="subtle"
+                        color="red"
+                        aria-label="Remove line"
+                        disabled={draft.lines.length === 1}
+                        onClick={() => removeLine(activeLine.clientId)}
+                      >
+                        <IconTrash size={16} />
+                      </ActionIcon>
+                    </Group>
+
+                    <SummaryTile
+                      label="Line amount (qty × unit price)"
+                      tone="accent"
+                      value={
+                        <>
+                          <NumberFormatter value={activeLineAmount} thousandSeparator decimalScale={2} />
+                          {selectedCurrency?.currency_code ? ` ${selectedCurrency.currency_code}` : ''}
+                        </>
+                      }
+                    />
+
+                    <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="md">
+                      <Select
+                        ref={itemInputRef}
+                        label="Item"
+                        data={masterData.itemOptions}
+                        value={activeLine.item_id}
+                        placeholder="Choose item"
+                        onChange={(value) => {
+                          const selectedItem = masterData.items.find((candidate) => candidate.id === value);
+                          updateLine(activeLine.clientId, {
+                            item_id: value ?? '',
+                            item_customs_profile_id:
+                              selectedItem?.customs_profiles?.find((profile) => profile.is_default)?.id ??
+                              selectedItem?.customs_profiles?.[0]?.id ??
+                              '',
+                            item_description: selectedItem?.item_description ?? selectedItem?.item_name ?? '',
+                            unit: selectedItem?.base_uom ?? activeLine.unit,
+                          });
+                        }}
+                        searchable
+                        required
+                      />
+                      <Select
+                        label="HS code"
+                        data={activeCustomsOptions}
+                        value={activeLine.item_customs_profile_id}
+                        onChange={(value) => updateLine(activeLine.clientId, { item_customs_profile_id: value ?? '' })}
+                        placeholder="Choose customs profile"
+                        searchable
+                        clearable
+                      />
+                    </SimpleGrid>
+
+                    <SimpleGrid cols={{ base: 1, xs: 2, lg: 4 }} spacing="md">
+                      <NumberInput
+                        label="Qty"
+                        min={0.0001}
+                        value={activeLine.qty_ordered}
+                        thousandSeparator=","
+                        decimalScale={4}
+                        onChange={(value) => updateLine(activeLine.clientId, { qty_ordered: toNumber(value, 1) })}
+                      />
+                      <TextInput
+                        label="Unit"
+                        value={activeLine.unit}
+                        onChange={(event) => updateLine(activeLine.clientId, { unit: event.currentTarget.value })}
+                      />
+                      <NumberInput
+                        label="Gross kg"
+                        min={0}
+                        value={activeLine.gross_weight_kg}
+                        thousandSeparator=","
+                        decimalScale={3}
+                        onChange={(value) => updateLine(activeLine.clientId, { gross_weight_kg: toNumber(value) })}
+                      />
+                      <TextInput
+                        label="Line ETA"
+                        type="date"
+                        value={activeLine.expected_eta_line}
+                        onChange={(event) => updateLine(activeLine.clientId, { expected_eta_line: event.currentTarget.value })}
+                      />
+                    </SimpleGrid>
+
+                    <SimpleGrid cols={{ base: 1, xs: 2, lg: 3 }} spacing="md">
+                      <NumberInput
+                        label="Unit price"
+                        min={0}
+                        value={activeLine.unit_price}
+                        thousandSeparator=","
+                        decimalScale={2}
+                        onChange={(value) => updateLine(activeLine.clientId, { unit_price: toNumber(value) })}
+                      />
+                      <NumberInput
+                        label="Tax %"
+                        min={0}
+                        max={100}
+                        suffix="%"
+                        value={activeLine.tax_rate}
+                        decimalScale={2}
+                        onChange={(value) => updateLine(activeLine.clientId, { tax_rate: toNumber(value) })}
+                      />
+                      <NumberInput
+                        label="Disc %"
+                        min={0}
+                        max={100}
+                        suffix="%"
+                        value={activeLine.discount_pct}
+                        decimalScale={2}
+                        onChange={(value) => updateLine(activeLine.clientId, { discount_pct: toNumber(value) })}
+                      />
+                    </SimpleGrid>
+
+                    <Textarea
+                      label="Line note"
+                      value={activeLine.notes}
+                      placeholder="Packing, QC, or supplier note"
+                      onChange={(event) => updateLine(activeLine.clientId, { notes: event.currentTarget.value })}
+                      autosize
+                      minRows={3}
+                    />
+                  </Stack>
+                ) : null}
+              </div>
+            </div>
             <Group justify="space-between" className="purchase-order-line-footer">
               <Button variant="light" size="sm" leftSection={<IconPlus size={14} />} onClick={addLine}>
                 Add line

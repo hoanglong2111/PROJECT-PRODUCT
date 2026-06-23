@@ -1,5 +1,5 @@
 import { Badge, Group, Paper, Text } from '@mantine/core';
-import { IconCalendarStats, IconCoins, IconFileInvoice, IconPlaneDeparture, IconShip, IconTruckDelivery } from '@tabler/icons-react';
+import { IconBuildingWarehouse, IconCalendarStats, IconCoins, IconFileInvoice, IconPlaneDeparture, IconShip, IconTruckDelivery } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 
 import type { PurchaseOrderLineV1, PurchaseOrderV1 } from '@shared/api/purchaseOrders';
@@ -9,10 +9,13 @@ import { dateOnly, getDateDelayDays, totalPoAmount } from '../model/purchaseOrde
 export function PurchaseOrderDetailInfo({ lines, order }: { lines: PurchaseOrderLineV1[]; order: PurchaseOrderV1 }) {
   const loadingPort = order.logistics_timeline?.loading_port;
   const unloadingPort = order.logistics_timeline?.unloading_port;
+  const warehouse = order.logistics_timeline?.warehouse;
   const plannedEtd = loadingPort?.etd ?? order.expected_etd;
   const actualAtd = loadingPort?.atd;
   const plannedEta = unloadingPort?.eta ?? order.expected_eta;
   const actualAta = unloadingPort?.ata;
+  const plannedWarehouseEta = warehouse?.eta ?? order.expected_warehouse_eta;
+  const actualWarehouseAta = warehouse?.ata ?? order.actual_warehouse_ata;
   const etdDelayDays = getDateDelayDays(plannedEtd, actualAtd);
   const etaDelayDays = getDateDelayDays(plannedEta, actualAta);
   const currencyCode = order.currency?.currency_code ?? '-';
@@ -72,11 +75,22 @@ export function PurchaseOrderDetailInfo({ lines, order }: { lines: PurchaseOrder
           actualAta={dateOnly(actualAta)}
           plannedEtd={dateOnly(plannedEtd)}
           plannedEta={dateOnly(plannedEta)}
+          plannedWarehouseEta={dateOnly(plannedWarehouseEta)}
+          actualWarehouseAta={dateOnly(actualWarehouseAta)}
           statusColor={routeStatus.color}
           statusLabel={routeStatus.label}
           transportMode={transportMode}
         />
       </div>
+
+      {order.notes ? (
+        <div className="purchase-order-detail-notes">
+          <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
+            Notes
+          </Text>
+          <Text size="sm">{order.notes}</Text>
+        </div>
+      ) : null}
     </Paper>
   );
 }
@@ -105,22 +119,27 @@ function InfoCard({ icon, label, meta, value }: { icon: ReactNode; label: string
 function LogisticsRouteTimeline({
   actualAta,
   actualAtd,
+  actualWarehouseAta,
   plannedEta,
   plannedEtd,
+  plannedWarehouseEta,
   statusColor,
   statusLabel,
   transportMode,
 }: {
   actualAta: string;
   actualAtd: string;
+  actualWarehouseAta: string;
   plannedEta: string;
   plannedEtd: string;
+  plannedWarehouseEta: string;
   statusColor: string;
   statusLabel: string;
   transportMode: string;
 }) {
   const isAir = transportMode.toLowerCase().includes('air');
   const TransportIcon = isAir ? IconPlaneDeparture : IconShip;
+  const hasWarehouseLeg = Boolean(plannedWarehouseEta || actualWarehouseAta);
 
   return (
     <div className="purchase-order-logistics-panel">
@@ -133,7 +152,7 @@ function LogisticsRouteTimeline({
             Logistics timeline
           </Text>
           <Text fw={800} size="sm">
-            Loading port to unloading port
+            Loading port to unloading port{hasWarehouseLeg ? ' to warehouse' : ''}
           </Text>
         </div>
       </Group>
@@ -163,6 +182,21 @@ function LogisticsRouteTimeline({
           secondaryValue={actualAta}
         />
       </div>
+
+      {hasWarehouseLeg ? (
+        <div className="purchase-order-warehouse-leg">
+          <Group gap="xs" wrap="nowrap">
+            <div className="purchase-order-info-icon">
+              <IconBuildingWarehouse size={16} />
+            </div>
+            <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
+              Warehouse / Kho
+            </Text>
+          </Group>
+          <DateValue label="ETA" value={plannedWarehouseEta} />
+          <DateValue label="ATA" value={actualWarehouseAta} muted />
+        </div>
+      ) : null}
     </div>
   );
 }

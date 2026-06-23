@@ -43,13 +43,12 @@
   Gd1MilestoneCode,
   ShipmentMilestone,
   ShipmentDocument,
+  ShipmentCost,
   ShipmentPoTask,
   ShipmentStatus,
   ShipmentRecord,
 } from '@shared/model/logistics';
 import {
-  fetchDeliveryOrderLines,
-  fetchDeliveryOrderLots,
   fetchDeliveryOrdersV1,
   updateDeliveryOrderV1,
   type DeliveryOrderLotV1,
@@ -85,6 +84,7 @@ import {
   markShipmentMilestoneDone,
   updateShipmentV1,
   type CreateShipmentFromDeliveryOrderPayload,
+  type ShipmentCostV1,
   type ShipmentDocumentStatusV1,
   type ShipmentDocumentV1,
   type ShipmentMilestoneCodeV1,
@@ -94,6 +94,7 @@ import {
 } from './shipments';
 import { fetchCurrencies, fetchSuppliers } from './tradeMasterData';
 import { apiClient } from './axiosConfig';
+import { parseContract, deliveryOrderScreenListSchema, shipmentRecordListSchema } from './contracts';
 
 export type {
   BusinessFlowTag,
@@ -139,6 +140,7 @@ export type {
   Gd1MilestoneCode,
   ShipmentMilestone,
   ShipmentDocument,
+  ShipmentCost,
   ShipmentPoTask,
   ShipmentStatus,
   ShipmentRecord,
@@ -421,7 +423,7 @@ export type CreateQuotationPayload = {
 };
 
 export type CreateShipmentPayload = {
-  shipmentNumber: string;
+  shipmentNumber?: string;
   deliveryOrderId?: string;
   doNumber: string;
   poNumber?: string;
@@ -1162,6 +1164,20 @@ function mapV1ShipmentDocument(document: ShipmentDocumentV1): ShipmentDocument {
   };
 }
 
+function mapV1ShipmentCost(cost: ShipmentCostV1): ShipmentCost {
+  return {
+    id: cost.id,
+    cost_type: cost.cost_type,
+    description: cost.description ?? null,
+    amount: toNumber(cost.amount),
+    currency_code: cost.currency_code,
+    exchange_rate: toNumber(cost.exchange_rate, 1),
+    alloc_method: cost.alloc_method,
+    invoice_ref: cost.invoice_ref ?? null,
+    notes: cost.notes ?? null,
+  };
+}
+
 function mapV1Shipment(shipment: ShipmentV1): ShipmentRecord {
   const deliveryOrder = shipment.delivery_order;
   const purchaseOrder = deliveryOrder?.purchase_order;
@@ -1179,8 +1195,12 @@ function mapV1Shipment(shipment: ShipmentV1): ShipmentRecord {
     dest_port: shipment.pod ?? deliveryOrder?.destination_address ?? '',
     do_number: deliveryOrder ? deliveryOrderNo(deliveryOrder) : shipment.delivery_order_id,
     documents: (shipment.documents ?? []).map(mapV1ShipmentDocument),
+    costs: (shipment.costs ?? []).map(mapV1ShipmentCost),
     etd: dateOnly(shipment.etd),
     eta: dateOnly(shipment.eta),
+    atd: dateOnly(shipment.atd),
+    ata: dateOnly(shipment.ata),
+    bl_awb_no: shipment.bl_awb_no ?? '',
     id: shipment.id,
     milestones: (shipment.milestones ?? []).map(mapV1ShipmentMilestone),
     origin_port: shipment.pol ?? deliveryOrder?.origin_address ?? '',
@@ -1218,12 +1238,16 @@ function buildUiShipment(payload: {
     dest_port: payload.destPort || '',
     etd: payload.etd || '',
     eta: payload.eta || '',
+    atd: '',
+    ata: '',
+    bl_awb_no: '',
     customs: {
       stream: 'GREEN',
       lane_status: '',
     },
     milestones: [],
     documents: [],
+    costs: [],
     po_tasks: [],
   };
 }
@@ -1340,7 +1364,9 @@ export async function fetchShipments() {
       }
     }),
   );
-  return details.map(mapV1Shipment);
+  const shipments = details.map(mapV1Shipment);
+  parseContract(shipmentRecordListSchema, shipments, 'fetchShipments');
+  return shipments;
 }
 
 export async function createShipment(payload: CreateShipmentPayload) {
@@ -1424,26 +1450,13 @@ export async function fetchPurchaseOrders() {
   );
 }
 
-export async function fetchDeliveryOrders() {
-  const response = await fetchDeliveryOrdersV1({ page: 1, limit: 100 });
-  const detailed = await Promise.all(
-    response.data.map(async (deliveryOrder) => {
-      try {
-        const [lots, lines] = await Promise.all([
-          fetchDeliveryOrderLots(deliveryOrder.id),
-          fetchDeliveryOrderLines(deliveryOrder.id),
-        ]);
-        return {
-          ...deliveryOrder,
-          lots,
-          lines,
-        };
-      } catch {
-        return deliveryOrder;
-      }
-    }),
-  );
-  return detailed.map(mapV1DeliveryOrder);
+export async function fetchDeliveryOrders(): Promise<DeliveryOrder[]> {
+  // The backend owns the DO screen-DTO (real task_summary / missing_documents /
+  // warehouse), so the frontend no longer joins lots/lines or synthesizes fields.
+  const response = await apiClient.get<{ data: DeliveryOrder[] }>('/v1/delivery-orders/screen');
+  const deliveryOrders = response.data.data ?? [];
+  parseContract(deliveryOrderScreenListSchema, deliveryOrders, 'fetchDeliveryOrders');
+  return deliveryOrders;
 }
 
 export async function fetchLogisticsTasks() {

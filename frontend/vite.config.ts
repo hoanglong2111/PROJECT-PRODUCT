@@ -47,7 +47,7 @@ export default defineConfig({
       ignored: [
         '**/node_modules/**',
         '**/dist/**',
-        '**/.agents/**',
+        '**/.claude/**',
       ],
     },
   },

@@ -1,0 +1,101 @@
+/* tasks.css - task queue and triage UI. Global classes; keep names stable. */
+
+.tasks-filter-panel {
+  overflow: hidden;
+  border-color: var(--kbfe-border-primary) !important;
+  background:
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--kbfe-primary-color) 7%, transparent), transparent 34%),
+    var(--mantine-color-white);
+  box-shadow: var(--kbfe-shadow-xs);
+}
+
+.tasks-filter-primary {
+  min-width: 0;
+}
+
+.tasks-filter-search {
+  flex: 1 1 28rem;
+  min-width: min(100%, 18rem);
+}
+
+.tasks-filter-panel .mantine-Input-input,
+.tasks-filter-panel .mantine-Select-input {
+  background: var(--mantine-color-white);
+}
+
+.tasks-filter-actions {
+  flex: 0 0 auto;
+  min-height: 2.25rem;
+}
+
+.tasks-filter-count {
+  min-width: max-content;
+  font-variant-numeric: tabular-nums;
+}
+
+.tasks-status-scroll {
+  margin-inline: calc(var(--mantine-spacing-xs) * -1);
+  padding-inline: var(--mantine-spacing-xs);
+}
+
+.tasks-status-strip {
+  width: max-content;
+  min-width: 100%;
+  padding-block: 0.125rem;
+}
+
+.tasks-status-pill {
+  border: 1px solid transparent;
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    transform 180ms ease;
+}
+
+.tasks-status-pill:hover {
+  transform: translateY(-1px);
+}
+
+.tasks-status-pill:active {
+  transform: translateY(0);
+}
+
+.tasks-status-pill.is-active {
+  border-color: color-mix(in srgb, var(--kbfe-primary-color) 36%, var(--kbfe-border-primary));
+  box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--kbfe-primary-color) 74%, transparent);
+}
+
+.tasks-filter-secondary {
+  align-items: end;
+}
+
+.tasks-filter-toggles {
+  align-self: end;
+  min-width: 0;
+}
+
+.tasks-filter-toggle {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.tasks-filter-toggle .mantine-Button-label,
+.tasks-status-pill .mantine-Button-label,
+.tasks-filter-actions .mantine-Button-label {
+  white-space: nowrap;
+}
+
+@media (max-width: 48em) {
+  .tasks-filter-primary {
+    align-items: stretch;
+  }
+
+  .tasks-filter-actions {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .tasks-filter-toggles {
+    align-self: stretch;
+  }
+}

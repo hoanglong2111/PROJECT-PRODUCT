@@ -234,7 +234,7 @@ export function PurchaseOrderListView({
                   <Table.Th>Lines</Table.Th>
                   <Table.Th>Amount</Table.Th>
                   <Table.Th>Delayed</Table.Th>
-                  <Table.Th>Status</Table.Th>
+                  <Table.Th>Stage</Table.Th>
                   <Table.Th />
                 </Table.Tr>
               </Table.Thead>

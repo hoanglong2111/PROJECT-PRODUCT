@@ -5,6 +5,10 @@
 > **Mục tiêu:** test xuyên suốt để hiểu luồng **PO → DO → Quotation → Shipment → Customs
 > → Carrier DO → DTO → Task**. (Các module nền Auth / Dashboard / Master Data / Profile /
 > Settings không nằm trong phạm vi tài liệu này.)
+>
+> **Lưu ý môi trường:** kịch bản chạy trên *dev backend hiện tại (mock API)*. Các seed ID
+> (vd `do_006`/`do_003`) và lệnh `mock:seed` là **đặc thù mock-data**, sẽ khác khi đổi
+> sang backend thật — bản thân luồng nghiệp vụ thì không phụ thuộc backend.
 
 ---
 

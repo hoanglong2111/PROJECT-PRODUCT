@@ -119,7 +119,10 @@ export function DomesticTransportOrderDetail({
             <Button size="xs" color="teal" disabled={isClosed || order.status !== 'IN_TRANSIT'} loading={actionPending} onClick={() => onAction('deliver')}>
               Deliver
             </Button>
-            <Button size="xs" color="teal" variant="light" disabled={isClosed || !['DELIVERED', 'POD_RECEIVED'].includes(order.status)} loading={actionPending} onClick={() => onAction('close')}>
+            <Button size="xs" color="teal" variant="light" disabled={isClosed || order.status !== 'DELIVERED'} loading={actionPending} onClick={() => onAction('pod-received')}>
+              Mark POD received
+            </Button>
+            <Button size="xs" color="teal" variant="outline" disabled={isClosed || !['DELIVERED', 'POD_RECEIVED'].includes(order.status)} loading={actionPending} onClick={() => onAction('close')}>
               Close
             </Button>
             <Button size="xs" color="red" variant="light" disabled={isClosed} loading={actionPending} onClick={() => onAction('cancel')}>
@@ -161,6 +164,10 @@ export function DomesticTransportOrderDetail({
             <InfoField label="Total qty" value={formatNumber(order.total_qty)} />
             <InfoField label="Gross weight kg" value={formatNumber(order.total_gross_weight_kg)} />
             <InfoField label="POD" value={order.pod_document_ref ?? '-'} />
+            <InfoField
+              label="Quote amount"
+              value={order.quote_amount != null ? `${formatNumber(order.quote_amount)} ${order.quote_currency ?? ''}`.trim() : '-'}
+            />
           </SimpleGrid>
         </Tabs.Panel>
 
@@ -185,6 +192,8 @@ export function DomesticTransportOrderDetail({
                 <TextInput label="Driver" value={form.driverName} disabled={isClosed} onChange={(event) => onChange({ ...form, driverName: event.currentTarget.value })} />
                 <TextInput label="Driver phone" value={form.driverPhone} disabled={isClosed} onChange={(event) => onChange({ ...form, driverPhone: event.currentTarget.value })} />
                 <TextInput label="POD document" value={form.podDocumentRef} disabled={isClosed} onChange={(event) => onChange({ ...form, podDocumentRef: event.currentTarget.value })} />
+                <TextInput label="Quote amount" type="number" value={form.quoteAmount} disabled={isClosed} onChange={(event) => onChange({ ...form, quoteAmount: event.currentTarget.value })} />
+                <Select label="Quote currency" data={[{ label: 'VND', value: 'VND' }, { label: 'USD', value: 'USD' }]} value={form.quoteCurrency || null} disabled={isClosed} clearable onChange={(value) => onChange({ ...form, quoteCurrency: value ?? '' })} />
                 <TextInput label="Origin" value={form.origin} disabled={isClosed} onChange={(event) => onChange({ ...form, origin: event.currentTarget.value })} />
                 <TextInput label="Destination" value={form.destination} disabled={isClosed} onChange={(event) => onChange({ ...form, destination: event.currentTarget.value })} />
                 <TextInput label={<HeaderLabel label="Warehouse" hint={t('glossary.warehouse')} />} value={form.warehouse} disabled={isClosed} onChange={(event) => onChange({ ...form, warehouse: event.currentTarget.value })} />

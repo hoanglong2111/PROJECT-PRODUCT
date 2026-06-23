@@ -15,7 +15,7 @@ import {
 import type { ReactNode } from 'react';
 
 import type { ShipmentRecord } from '@shared/api/logistics';
-import type { ShipmentDocumentPayload, ShipmentMilestoneCodeV1 } from '@shared/api/shipments';
+import type { ShipmentCostPayload, ShipmentDocumentPayload, ShipmentMilestoneCodeV1 } from '@shared/api/shipments';
 import { EntityLink } from '@entities/logistics';
 import { StatusBadge } from '@shared/components/StatusBadge';
 
@@ -36,18 +36,26 @@ const CHANNEL_LABEL_KEY: Record<'GREEN' | 'YELLOW' | 'RED', string> = {
 };
 
 export function ShipmentDetailView({
+  isCostSaving,
   isDocumentSaving,
   isMilestoneSaving,
+  onCreateCost,
   onCreateDocument,
+  onDeleteCost,
   onMarkMilestone,
+  onUpdateCost,
   onUpdateDocument,
   shipment,
   t,
 }: {
+  isCostSaving: boolean;
   isDocumentSaving: boolean;
   isMilestoneSaving: boolean;
+  onCreateCost: (payload: ShipmentCostPayload) => void;
   onCreateDocument: (payload: ShipmentDocumentPayload) => void;
+  onDeleteCost: (costId: string) => void;
   onMarkMilestone: (milestoneCode: ShipmentMilestoneCodeV1, payload: { actualAt: string; notes?: string | null }) => void;
+  onUpdateCost: (costId: string, payload: Partial<ShipmentCostPayload>) => void;
   onUpdateDocument: (documentId: string, payload: Partial<ShipmentDocumentPayload>) => void;
   shipment: ShipmentRecord;
   t: (key: string) => string;
@@ -136,7 +144,14 @@ export function ShipmentDetailView({
         </Tabs.Panel>
 
         <Tabs.Panel value="costs" pt="md">
-          <ShipmentCostsPanel shippingMode={shipment.shipping_mode} />
+          <ShipmentCostsPanel
+            shipment={shipment}
+            isSaving={isCostSaving}
+            onCreateCost={onCreateCost}
+            onUpdateCost={onUpdateCost}
+            onDeleteCost={onDeleteCost}
+            t={t}
+          />
         </Tabs.Panel>
 
         <Tabs.Panel value="tasks" pt="md">
@@ -213,7 +228,14 @@ function ShipmentOverviewCard({ shipment, t }: { shipment: ShipmentRecord; t: (k
           </Group>
 
           <div className="shipment-route">
-            <ShipmentRouteNode label="POL" port={shipment.origin_port} dateLabel={t('shipments.etd')} dateValue={shipment.etd} />
+            <ShipmentRouteNode
+              label="POL"
+              port={shipment.origin_port}
+              dateLabel={t('shipments.etd')}
+              dateValue={shipment.etd}
+              actualLabel={t('shipments.atd')}
+              actualValue={shipment.atd}
+            />
             <div className="shipment-route-line" aria-hidden="true">
               <span className="shipment-route-dot" />
               <div className="shipment-route-middle">
@@ -226,7 +248,15 @@ function ShipmentOverviewCard({ shipment, t }: { shipment: ShipmentRecord; t: (k
               </div>
               <span className="shipment-route-dot" />
             </div>
-            <ShipmentRouteNode align="right" label="POD" port={shipment.dest_port} dateLabel={t('shipments.eta')} dateValue={shipment.eta} />
+            <ShipmentRouteNode
+              align="right"
+              label="POD"
+              port={shipment.dest_port}
+              dateLabel={t('shipments.eta')}
+              dateValue={shipment.eta}
+              actualLabel={t('shipments.ata')}
+              actualValue={shipment.ata}
+            />
           </div>
         </div>
 
@@ -259,10 +289,10 @@ function ShipmentOverviewCard({ shipment, t }: { shipment: ShipmentRecord; t: (k
             meta={shipment.customs.lane_status || shipment.customs.declaration_no || '-'}
           />
           <ShipmentCommandItem
-            icon={<IconTruck size={18} />}
-            label={t('shipments.shipmentMode')}
-            value={shipment.shipping_mode}
-            meta={`${t('shipments.port')}: ${shipment.dest_port || '-'}`}
+            icon={<IconFileInvoice size={18} />}
+            label={t('shipments.blAwb')}
+            value={shipment.bl_awb_no || '-'}
+            meta={`${shipment.shipping_mode} · ${t('shipments.port')}: ${shipment.dest_port || '-'}`}
           />
         </div>
       </div>
@@ -371,12 +401,16 @@ function ShipmentProgressTile({
 }
 
 function ShipmentRouteNode({
+  actualLabel,
+  actualValue,
   align = 'left',
   dateLabel,
   dateValue,
   label,
   port,
 }: {
+  actualLabel?: string;
+  actualValue?: string;
   align?: 'left' | 'right';
   dateLabel: string;
   dateValue: string;
@@ -394,6 +428,11 @@ function ShipmentRouteNode({
       <Text size="sm" fw={700} c="dimmed" className="tabular-nums">
         {dateLabel}: {dateValue || '-'}
       </Text>
+      {actualLabel ? (
+        <Text size="xs" fw={600} c={actualValue ? 'teal' : 'dimmed'} className="tabular-nums">
+          {actualLabel}: {actualValue || '-'}
+        </Text>
+      ) : null}
     </div>
   );
 }

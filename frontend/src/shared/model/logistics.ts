@@ -835,6 +835,18 @@ export type ShipmentDocument = {
   uploaded_at?: string;
 };
 
+export type ShipmentCost = {
+  id: string;
+  cost_type: Gd1CostType;
+  description: string | null;
+  amount: number;
+  currency_code: string;
+  exchange_rate: number;
+  alloc_method: Gd1AllocMethod;
+  invoice_ref: string | null;
+  notes: string | null;
+};
+
 export type ShipmentPoTask = {
   id: string;
   task_name: string;
@@ -872,6 +884,9 @@ export type ShipmentRecord = {
   dest_port: string;
   etd: string;
   eta: string;
+  atd?: string;
+  ata?: string;
+  bl_awb_no?: string;
   customs: {
     stream: Gd1CustomsStream;
     declaration_no?: string;
@@ -880,6 +895,7 @@ export type ShipmentRecord = {
   };
   milestones: ShipmentMilestone[];
   documents: ShipmentDocument[];
+  costs: ShipmentCost[];
   po_tasks: ShipmentPoTask[];
 };
 

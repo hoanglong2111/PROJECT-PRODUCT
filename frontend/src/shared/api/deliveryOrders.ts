@@ -273,3 +273,74 @@ export async function fetchDeliveryOrderLines(id: string) {
   const response = await apiClient.get<V1Response<DeliveryOrderLineV1[]>>(`/v1/delivery-orders/${id}/lines`);
   return unwrapV1Data(response);
 }
+
+export type DeliveryOrderDocumentStatusV1 =
+  | 'DRAFT'
+  | 'RECEIVED'
+  | 'WAITING_REVIEW'
+  | 'APPROVED'
+  | 'VERIFIED'
+  | 'REJECTED'
+  | 'CANCELLED';
+
+export type DeliveryOrderDocumentV1 = {
+  id: string;
+  delivery_order_id: string;
+  document_type: string;
+  document_no: string | null;
+  file_url: string | null;
+  file_name: string | null;
+  mime_type: string | null;
+  received_at: string | null;
+  status: DeliveryOrderDocumentStatusV1;
+  is_required: boolean;
+  notes: string | null;
+  create_at?: string;
+  update_at?: string;
+  delete_at?: string | null;
+  is_delete?: boolean;
+};
+
+export type DeliveryOrderDocumentPayload = {
+  document_type: string;
+  document_no?: string | null;
+  file_url?: string | null;
+  file_name?: string | null;
+  mime_type?: string | null;
+  received_at?: string | null;
+  status?: DeliveryOrderDocumentStatusV1;
+  notes?: string | null;
+};
+
+export async function fetchDeliveryOrderDocuments(id: string) {
+  const response = await apiClient.get<V1Response<DeliveryOrderDocumentV1[], { total: number }>>(
+    `/v1/delivery-orders/${id}/documents`,
+  );
+  return unwrapV1Data(response);
+}
+
+export async function createDeliveryOrderDocument(id: string, payload: DeliveryOrderDocumentPayload) {
+  const response = await apiClient.post<V1Response<DeliveryOrderDocumentV1>>(
+    `/v1/delivery-orders/${id}/documents`,
+    payload,
+  );
+  return unwrapV1Data(response);
+}
+
+export async function updateDeliveryOrderDocument(
+  documentId: string,
+  payload: Partial<DeliveryOrderDocumentPayload>,
+) {
+  const response = await apiClient.patch<V1Response<DeliveryOrderDocumentV1>>(
+    `/v1/delivery-order-documents/${documentId}`,
+    payload,
+  );
+  return unwrapV1Data(response);
+}
+
+export async function deleteDeliveryOrderDocument(documentId: string) {
+  const response = await apiClient.delete<V1Response<DeliveryOrderDocumentV1>>(
+    `/v1/delivery-order-documents/${documentId}`,
+  );
+  return unwrapV1Data(response);
+}

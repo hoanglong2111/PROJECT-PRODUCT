@@ -6,8 +6,9 @@ import type { ShippingMode } from '@shared/model/logistics';
  * Incoterms-aware quotation charge catalog.
  *
  * The set of fees a KBI customer owes depends on the Incoterms group of the
- * originating PO and the shipping mode of the quote. See
- * `kbi-mock-api/docs/quotation/quotation_Incoterms.md` for the source rules.
+ * originating PO and the shipping mode of the quote. See `docs/FE_rule.md`
+ * (section 9, Quotation) for the business rules; this catalog is the frontend's
+ * own source of truth for the fee groups.
  */
 
 export type QuotationIncotermGroup = 'EXW_FCA' | 'FOB' | 'CFR' | 'PREPAID' | 'UNKNOWN';

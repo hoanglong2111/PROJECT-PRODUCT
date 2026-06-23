@@ -2,6 +2,7 @@ import type { Item } from './items';
 import type { ApiDecimal, PaginationMeta, PoLot, PurchaseOrderLineV1, V1ApiError, V1Response } from './purchaseOrders';
 import type { ShipmentLineV1, ShipmentV1 } from './shipments';
 import { apiClient } from './axiosConfig';
+import { parseContract, domesticTransportOrderListSchema } from './contracts';
 import type { Supplier } from './tradeMasterData';
 
 export type DomesticTransportOrderStatusV1 =
@@ -75,6 +76,8 @@ export type DomesticTransportOrderV1 = {
   scheduled_delivery_at: string | null;
   actual_delivery_at: string | null;
   pod_document_ref: string | null;
+  quote_amount: ApiDecimal | null;
+  quote_currency: string | null;
   status: DomesticTransportOrderStatusV1;
   note: string | null;
   delayed_days?: number | null;
@@ -136,6 +139,8 @@ export type UpdateDomesticTransportOrderPayload = Partial<
     | 'note'
     | 'origin'
     | 'pod_document_ref'
+    | 'quote_amount'
+    | 'quote_currency'
     | 'scheduled_delivery_at'
     | 'scheduled_pickup_at'
     | 'status'
@@ -152,6 +157,7 @@ export type DomesticTransportOrderAction =
   | 'dispatch'
   | 'start-transit'
   | 'deliver'
+  | 'pod-received'
   | 'close'
   | 'cancel';
 
@@ -181,7 +187,9 @@ export async function fetchDomesticTransportOrders(params: ListDomesticTransport
     '/v1/domestic-transport-orders',
     { params },
   );
-  return unwrapV1List(response);
+  const result = unwrapV1List(response);
+  parseContract(domesticTransportOrderListSchema, result.data, 'fetchDomesticTransportOrders');
+  return result;
 }
 
 export async function fetchDomesticTransportOrder(id: string) {
@@ -245,6 +253,25 @@ export async function linkDtoToShipment(shipmentId: string, dtoId: string) {
 export async function unlinkDtoFromShipment(shipmentId: string, dtoId: string) {
   const response = await apiClient.delete<V1Response<DomesticTransportOrderV1>>(
     `/v1/shipments/${shipmentId}/domestic-transport-orders/${dtoId}/unlink`,
+  );
+  return unwrapV1Data(response);
+}
+
+export type ConsolidateDomesticTransportOrderPayload = {
+  shipment_ids: string[];
+  primary_shipment_id?: string;
+  container_ids?: string[];
+  truck_vendor_id?: string;
+  warehouse?: string;
+  scheduled_pickup_at?: string;
+  note?: string;
+};
+
+/** Atomically create one DTO that serves multiple customs-cleared shipments sharing a POD. */
+export async function consolidateDomesticTransportOrder(payload: ConsolidateDomesticTransportOrderPayload) {
+  const response = await apiClient.post<V1Response<DomesticTransportOrderV1>>(
+    '/v1/domestic-transport-orders/consolidate',
+    payload,
   );
   return unwrapV1Data(response);
 }

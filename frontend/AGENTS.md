@@ -8,12 +8,17 @@ This file applies only to the `frontend/` package. Keep it lean: it is a practic
 
 This is a standalone React/Vite frontend for KBFE GD1: Procurement & Import Tracking.
 
-Business source of truth lives outside this package:
+It is **backend-agnostic**: it consumes the backend only through the **API contract**
+in [`docs/API_CONTRACT.md`](./docs/API_CONTRACT.md) (endpoints, envelope, screen-DTO
+rule). A mock backend implements that contract today and is a replaceable detail —
+frontend code must depend on the contract, never on a backend's internals (mock JSON,
+seed data, DB schema). Dev-only mock scaffolding stays inside `src/shared/api`.
 
-- `../docs/offical/SOP.md`
-- `../docs/offical/TRD.md`
-- `../docs/context/PROJECT_CONTEXT.md`
-- `../docs/context/OPERATING_MODEL.md`
+In-package business references: [`docs/FE_rule.md`](./docs/FE_rule.md) (canonical
+frontend rules) and [`docs/API_CONTRACT.md`](./docs/API_CONTRACT.md) (the API
+interface). Higher-level SOP/TRD/operating-model material is external context kept
+outside this package; it is not required to build a screen and is not bundled with the
+frontend.
 
 Current canonical GD1 flow:
 
@@ -177,7 +182,7 @@ list, per-screen flow, LOT/DO/Quotation/Shipment/Customs/Carrier DO/DTO UI rules
 Read it before building or changing a screen, and update it when a rule changes;
 the bullets below are orientation only and `FE_rule.md` wins on any conflict.
 
-- PO/DO/Shipment/DTO behavior should match `../docs/context/PROJECT_CONTEXT.md` and `../docs/context/OPERATING_MODEL.md`.
+- PO/DO/Shipment/DTO behavior should match the canonical rules in [`docs/FE_rule.md`](./docs/FE_rule.md).
 - Do not add PR flows unless the product owner explicitly reintroduces PR scope.
 - DO is a separate business entity between PO and Shipment: `PO 1-n DO`, `DO 1-1 Shipment`.
 - DTO is Domestic Transport Order for inland trucking and must not be merged with DO.

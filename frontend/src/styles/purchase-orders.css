@@ -147,6 +147,134 @@
   gap: 1rem;
 }
 
+.purchase-order-line-workspace {
+  display: grid;
+  grid-template-columns: minmax(19rem, 22rem) minmax(0, 1fr);
+  gap: 1rem;
+  min-width: 0;
+}
+
+.purchase-order-line-rail,
+.purchase-order-line-detail {
+  min-width: 0;
+  border: 1px solid var(--kbfe-border-primary);
+  border-radius: 0.875rem;
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 94%, var(--kbfe-surface-subtle) 6%);
+}
+
+.purchase-order-line-rail {
+  overflow: hidden;
+}
+
+.purchase-order-line-rail-list {
+  max-height: 34rem;
+  overflow: auto;
+}
+
+.purchase-order-line-rail-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.35rem 0.875rem;
+  width: 100%;
+  padding: 0.75rem 0.875rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 84%, transparent);
+  text-align: left;
+  transition:
+    background-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.purchase-order-line-rail-item:last-child {
+  border-bottom: 0;
+}
+
+.purchase-order-line-rail-item:hover {
+  background: color-mix(in srgb, var(--kbfe-primary-color) 4%, transparent);
+}
+
+.purchase-order-line-rail-item.is-active {
+  background: color-mix(in srgb, var(--kbfe-primary-color) 7%, var(--kbfe-surface-elevated));
+  box-shadow: inset 0.2rem 0 0 var(--kbfe-primary-color);
+}
+
+.purchase-order-line-rail-item-main,
+.purchase-order-line-rail-copy,
+.purchase-order-line-detail-header {
+  min-width: 0;
+}
+
+.purchase-order-line-rail-item-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.purchase-order-line-rail-index {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 2.25rem;
+  color: var(--kbfe-text-secondary, var(--kbfe-text-primary));
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.purchase-order-line-rail-dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: var(--mantine-color-orange-5);
+}
+
+.purchase-order-line-notice {
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  padding: 0.5rem 0.625rem;
+  border-radius: 0.5rem;
+}
+
+.purchase-order-line-notice.is-error {
+  color: var(--mantine-color-red-8);
+  background: color-mix(in srgb, var(--mantine-color-red-5) 12%, var(--kbfe-surface-elevated));
+}
+
+.purchase-order-line-notice.is-warning {
+  color: var(--mantine-color-orange-8);
+  background: color-mix(in srgb, var(--mantine-color-orange-5) 14%, var(--kbfe-surface-elevated));
+}
+
+.purchase-order-line-rail-copy {
+  flex: 1 1 auto;
+}
+
+.purchase-order-line-rail-side {
+  text-align: right;
+}
+
+.purchase-order-line-rail-meta {
+  grid-column: 1 / -1;
+}
+
+.purchase-order-line-detail {
+  padding: 1rem;
+  box-shadow: var(--kbfe-shadow-xs);
+}
+
+.purchase-order-line-detail-header {
+  padding-bottom: 0.875rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 84%, transparent);
+}
+
+.purchase-order-line-detail-summary .purchase-order-form-summary-tile {
+  height: 100%;
+}
+
+.purchase-order-line-detail .mantine-Input-input,
+.purchase-order-line-detail .mantine-Textarea-input {
+  background: var(--kbfe-surface-elevated);
+}
+
 .purchase-order-lines-table {
   border-collapse: separate;
   border-spacing: 0;
@@ -329,7 +457,40 @@
 }
 
 .po-stage-cell {
-  min-width: 9.5rem;
+  min-width: 10rem;
+}
+
+/* Linear pipeline progress shown in the PO list Stage column. */
+.po-stage-steps {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.po-stage-step {
+  width: 1.1rem;
+  height: 0.3rem;
+  border-radius: 999px;
+  background: var(--kbfe-border-primary);
+  flex-shrink: 0;
+}
+
+.po-stage-step.is-done {
+  background: color-mix(in srgb, var(--stage-color) 55%, transparent);
+}
+
+.po-stage-step.is-current {
+  background: var(--stage-color);
+}
+
+.po-stage-step.is-cancelled {
+  background: color-mix(in srgb, var(--mantine-color-gray-5) 55%, transparent);
+}
+
+.po-stage-position {
+  margin-left: 0.35rem;
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .purchase-order-list-table,
@@ -515,30 +676,334 @@
     box-shadow 120ms ease;
 }
 
-.po-line-row-full {
-  background: color-mix(in srgb, var(--kbfe-surface-elevated) 90%, var(--mantine-color-teal-1) 10%);
+.purchase-order-po-lines-compact-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
-.po-line-row-partial {
-  background: color-mix(in srgb, var(--kbfe-surface-elevated) 88%, var(--mantine-color-orange-1) 12%);
+.purchase-order-po-lines-compact-table th {
+  padding: 0.55rem 0.625rem;
+  color: var(--kbfe-text-secondary, var(--kbfe-text-primary));
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--kbfe-surface-subtle) 78%, var(--kbfe-surface-elevated) 22%);
 }
 
-.po-line-row-needs-lot {
-  background: color-mix(in srgb, var(--kbfe-surface-elevated) 88%, var(--mantine-color-red-1) 12%);
+.purchase-order-po-lines-compact-table td {
+  padding: 0.5rem 0.625rem;
+  vertical-align: middle;
+  border-top: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 82%, transparent);
 }
 
-.po-line-row-full td:first-child,
-.po-line-row-partial td:first-child,
-.po-line-row-needs-lot td:first-child {
-  box-shadow: inset 0.25rem 0 0 var(--mantine-color-teal-5);
+/* ---- PO line pipeline cards ---- */
+
+.po-line-card-search {
+  max-width: 22rem;
 }
 
-.po-line-row-partial td:first-child {
-  box-shadow: inset 0.25rem 0 0 var(--mantine-color-orange-5);
+.po-line-filter-badge {
+  border-radius: 999px;
 }
 
-.po-line-row-needs-lot td:first-child {
-  box-shadow: inset 0.25rem 0 0 var(--mantine-color-red-5);
+.po-line-filter-badge .mantine-Badge-root {
+  cursor: pointer;
+  transition: filter 120ms ease, box-shadow 120ms ease;
+}
+
+.po-line-filter-badge:hover .mantine-Badge-root {
+  filter: brightness(0.96);
+}
+
+.po-lines-table-wrap {
+  padding: 0 0.75rem 0.6rem;
+  min-width: 0;
+}
+
+/* table-layout: fixed makes the columns honour the widths below and truncate
+   their content instead of forcing the table wider than the panel — that is what
+   keeps the grid from ever scrolling horizontally. */
+.po-lines-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.po-lines-table thead th {
+  padding: 0.35rem 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  text-align: left;
+  white-space: nowrap;
+  color: var(--kbfe-text-secondary, var(--kbfe-text-primary));
+  border-bottom: 1px solid var(--kbfe-border-primary);
+}
+
+.po-lines-table .num {
+  text-align: right;
+}
+
+/* Column widths as percentages summing to 100% so the row fills the panel width
+   exactly — no single flexible column hoarding the slack into a big middle gap.
+   table-layout: fixed reads these from the header row; the Item column truncates. */
+.po-lines-table .col-toggle { width: 3.5%; }
+.po-lines-table .col-no { width: 4%; }
+.po-lines-table .col-item { width: 30%; }
+.po-lines-table .col-qty { width: 8%; }
+.po-lines-table .col-status { width: 9.5%; }
+.po-lines-table .col-amount { width: 13%; }
+
+.po-line-row {
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.po-line-row > td {
+  padding: 0.4rem 0.5rem;
+  vertical-align: top;
+  border-bottom: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 55%, transparent);
+}
+
+.po-line-row:hover > td {
+  background: color-mix(in srgb, var(--kbfe-primary-color) 5%, var(--kbfe-surface-elevated));
+}
+
+.po-line-row.is-open > td {
+  background: color-mix(in srgb, var(--kbfe-primary-color) 7%, var(--kbfe-surface-elevated));
+  border-bottom-color: transparent;
+}
+
+/* Lot-state rail on the left edge of every row — so status reads at a glance
+   even on narrow screens where the Status column is hidden. */
+.po-line-row > td.col-toggle {
+  position: relative;
+}
+
+.po-line-row > td.col-toggle::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0.2rem;
+  background: var(--mantine-color-gray-4);
+}
+
+.po-line-row.is-full > td.col-toggle::before { background: var(--mantine-color-teal-5); }
+.po-line-row.is-partial > td.col-toggle::before { background: var(--mantine-color-orange-5); }
+.po-line-row.is-needs-lot > td.col-toggle::before { background: var(--mantine-color-red-5); }
+
+.po-line-row-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--mantine-color-gray-6);
+  cursor: pointer;
+  transition: transform 160ms ease;
+}
+
+.po-line-row-toggle.is-open {
+  transform: rotate(180deg);
+}
+
+.po-line-row-toggle:focus-visible {
+  outline: 2px solid var(--kbfe-primary-color);
+  outline-offset: 2px;
+  border-radius: var(--mantine-radius-sm);
+}
+
+.po-line-row .col-no {
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--kbfe-text-secondary, var(--kbfe-text-primary));
+}
+
+.po-line-item-code,
+.po-line-item-name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.po-line-item-code {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--kbfe-text-primary);
+}
+
+.po-line-item-name {
+  font-size: 0.75rem;
+  color: var(--kbfe-text-secondary, var(--mantine-color-gray-6));
+}
+
+.po-qty-value {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--kbfe-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.po-qty-unit {
+  font-size: 0.6875rem;
+  font-weight: 400;
+  color: var(--kbfe-text-secondary, var(--mantine-color-gray-6));
+}
+
+.po-qty-delta {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--mantine-color-orange-7);
+}
+
+/* Confirmed and Lotted are the two checkpoints that matter most, so their value
+   gets a small highlight pill (brand tint for Confirmed, lot-state tint for
+   Lotted) to draw the eye without shouting. */
+.po-qty-cell.is-emphasis .po-qty-value,
+.po-qty-cell.is-lot .po-qty-value {
+  display: inline-block;
+  max-width: 100%;
+  padding: 0.02rem 0.34rem;
+  border-radius: 0.45rem;
+  font-weight: 700;
+}
+
+.po-qty-cell.is-emphasis .po-qty-value {
+  color: color-mix(in srgb, var(--kbfe-primary-color) 80%, var(--kbfe-text-primary));
+  background: color-mix(in srgb, var(--kbfe-primary-color) 12%, transparent);
+}
+
+/* Lotted — neutral pill by default; its colour encodes the lot state so the
+   confirmed → lotted gap is obvious without reading the numbers. */
+.po-qty-cell.is-lot .po-qty-value {
+  background: color-mix(in srgb, var(--kbfe-text-secondary, var(--mantine-color-gray-6)) 12%, transparent);
+}
+
+.po-qty-cell.tone-full .po-qty-value {
+  color: var(--mantine-color-teal-8);
+  background: color-mix(in srgb, var(--mantine-color-teal-5) 18%, transparent);
+}
+
+.po-qty-cell.tone-partial .po-qty-value {
+  color: var(--mantine-color-orange-8);
+  background: color-mix(in srgb, var(--mantine-color-orange-5) 18%, transparent);
+}
+
+.po-qty-cell.tone-needs-lot .po-qty-value {
+  color: var(--mantine-color-red-8);
+  background: color-mix(in srgb, var(--mantine-color-red-5) 18%, transparent);
+}
+
+.po-line-amount {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--kbfe-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Expanded detail row — customs/pricing plus the full pipeline fallback. */
+.po-line-detail-row > td {
+  padding: 0;
+}
+
+.po-line-detail-cell {
+  position: relative;
+}
+
+.po-line-detail-row.is-open > td {
+  border-bottom: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 55%, transparent);
+  background: color-mix(in srgb, var(--kbfe-primary-color) 4%, var(--kbfe-surface-elevated));
+}
+
+.po-line-detail-row.is-open.is-full > td::before,
+.po-line-detail-row.is-open.is-partial > td::before,
+.po-line-detail-row.is-open.is-needs-lot > td::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0.2rem;
+  background: var(--mantine-color-gray-4);
+}
+
+.po-line-detail-row.is-open.is-full > td::before { background: var(--mantine-color-teal-5); }
+.po-line-detail-row.is-open.is-partial > td::before { background: var(--mantine-color-orange-5); }
+.po-line-detail-row.is-open.is-needs-lot > td::before { background: var(--mantine-color-red-5); }
+
+.po-line-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  /* Left padding clears the rail and lines the fields up just inside the table's
+     content edge, so the panel reads as a continuation of the row above. */
+  padding: 0.5rem 0.5rem 0.8rem 0.85rem;
+}
+
+/* Pipeline fallback and customs/pricing share one even grid so every field lines
+   up in the same columns — a light left gridline on each field echoes the table
+   columns above. Hidden on wide screens (pipeline already shown as columns). */
+.po-line-detail-pipeline,
+.po-line-card-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+  gap: 0.4rem 0;
+}
+
+.po-line-detail-pipeline {
+  display: none;
+}
+
+.po-line-detail-stage,
+.po-line-meta-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  min-width: 0;
+  padding: 0 0.7rem;
+  border-left: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 45%, transparent);
+}
+
+.po-line-meta-cell.is-wide {
+  grid-column: 1 / -1;
+}
+
+.po-line-meta-label,
+.po-line-detail-stage .po-line-meta-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--kbfe-text-secondary, var(--kbfe-text-primary));
+}
+
+.po-line-meta-value {
+  font-size: 0.8125rem;
+  color: var(--kbfe-text-primary);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .purchase-order-detail-card {
@@ -602,6 +1067,23 @@
 
 .purchase-order-logistics-title {
   margin-bottom: 1.125rem;
+}
+
+.purchase-order-warehouse-leg {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.5rem;
+  margin-top: 1rem;
+  padding-top: 0.875rem;
+  border-top: 1px dashed var(--kbfe-border-primary);
+}
+
+.purchase-order-detail-notes {
+  display: grid;
+  gap: 0.25rem;
+  padding: 1rem;
+  border-top: 1px solid var(--kbfe-border-primary);
 }
 
 .purchase-order-route {
@@ -728,6 +1210,40 @@
     justify-content: flex-start;
     flex-wrap: wrap;
   }
+
+  .purchase-order-line-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .purchase-order-line-rail-list {
+    max-height: 16rem;
+  }
+
+  .po-line-card-search {
+    max-width: 100%;
+  }
+
+  /* Below this width the trailing pipeline columns collapse into the expand row,
+     where the full pipeline is shown — keeps the table inside the panel width.
+     Remaining columns are re-proportioned to keep filling 100% with no gap. */
+  .po-lines-table .col-shipped,
+  .po-lines-table .col-received {
+    display: none;
+  }
+
+  .po-lines-table .col-item { width: 33%; }
+  .po-lines-table .col-qty { width: 9%; }
+  .po-lines-table .col-status { width: 11.5%; }
+  .po-lines-table .col-amount { width: 21%; }
+
+  .po-line-detail-pipeline {
+    display: grid;
+  }
+
+  .po-line-detail-pipeline + .po-line-card-meta {
+    padding-top: 0.6rem;
+    border-top: 1px dashed color-mix(in srgb, var(--kbfe-border-primary) 70%, transparent);
+  }
 }
 
 @media (max-width: 48em) {
@@ -792,6 +1308,28 @@
   .purchase-order-po-lines-badges {
     width: 100%;
   }
+
+  .purchase-order-line-rail-item {
+    grid-template-columns: 1fr;
+  }
+
+  .purchase-order-line-rail-side {
+    text-align: left;
+  }
+
+  /* Phones: keep only the headline pair (Ordered, Lotted) plus item + amount.
+     Confirmed/Shipped/Received and the Status text live in the expand row; the
+     lot state still reads from the coloured left rail. */
+  .po-lines-table .col-confirmed,
+  .po-lines-table .col-status {
+    display: none;
+  }
+
+  .po-lines-table .col-toggle { width: 4%; }
+  .po-lines-table .col-no { width: 5%; }
+  .po-lines-table .col-item { width: 38%; }
+  .po-lines-table .col-qty { width: 13%; }
+  .po-lines-table .col-amount { width: 27%; }
 
   .purchase-order-form-actions {
     width: 100%;

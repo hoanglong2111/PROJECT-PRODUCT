@@ -2,8 +2,9 @@ import { Alert, Badge, Button, FileInput, Group, Paper, Select, SimpleGrid, Stac
 import { IconHourglassHigh, IconPlus } from '@tabler/icons-react';
 import { useState } from 'react';
 
-import type { ShipmentDocument, ShipmentRecord } from '@shared/api/logistics';
+import type { ShipmentRecord } from '@shared/api/logistics';
 import type { ShipmentDocumentPayload } from '@shared/api/shipments';
+import { DocumentCard, DocumentStatusBadge } from '@shared/components/documents';
 
 export function ShipmentDocumentsPanel({
   isSaving,
@@ -38,18 +39,6 @@ export function ShipmentDocumentsPanel({
     { label: 'POD', value: 'POD' },
     { label: 'Other', value: 'OTHER' },
   ];
-
-  const getStatusColor = (status: ShipmentDocument['status']) => {
-    switch (status) {
-      case 'APPROVED':
-      case 'VERIFIED': return 'green';
-      case 'RECEIVED':
-      case 'WAITING_REVIEW': return 'orange';
-      case 'REJECTED': return 'red';
-      case 'CANCELLED': return 'gray';
-      default: return 'gray';
-    }
-  };
 
   const handleDocumentApprove = (docId: string) => {
     onUpdateDocument(docId, { status: 'VERIFIED' });
@@ -118,15 +107,11 @@ export function ShipmentDocumentsPanel({
           const hasFile = !!doc.file_name;
 
           return (
-            <Paper key={doc.id} withBorder p="md">
-              <Stack gap="xs">
-                <Group justify="space-between">
-                  <Text fw={700} size="sm">
-                    {doc.document_type}
-                  </Text>
-                  <Badge color={getStatusColor(doc.status)}>{doc.status}</Badge>
-                </Group>
-
+            <DocumentCard
+              key={doc.id}
+              title={doc.document_type}
+              badge={<DocumentStatusBadge status={doc.status} />}
+            >
                 {hasFile ? (
                   <Text size="xs" c="blue" style={{ textDecoration: 'underline', cursor: 'pointer' }}>
                     {doc.file_name}
@@ -198,8 +183,7 @@ export function ShipmentDocumentsPanel({
                     </Stack>
                   </Paper>
                 )}
-              </Stack>
-            </Paper>
+            </DocumentCard>
           );
         })}
       </SimpleGrid>

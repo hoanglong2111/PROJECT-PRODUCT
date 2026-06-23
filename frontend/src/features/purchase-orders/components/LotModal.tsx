@@ -1,11 +1,11 @@
-import { Alert, Button, Group, Modal, NumberInput, Select, SimpleGrid, Stack, Textarea, TextInput } from '@mantine/core';
+import { Alert, Button, Group, Modal, Select, SimpleGrid, Stack, Textarea, TextInput } from '@mantine/core';
 import { IconAlertTriangle } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 
 import type { PoLotStatus } from '@shared/api/purchaseOrders';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
-import { lotStatusOptions, toNumber, type LotDraft } from '../model/purchaseOrderModel';
+import { lotStatusOptions, type LotDraft } from '../model/purchaseOrderModel';
 
 export function LotModal({
   draft,
@@ -78,13 +78,6 @@ export function LotModal({
               type="date"
               value={localDraft.planned_eta}
               onChange={(event) => setLocalDraft({ ...localDraft, planned_eta: event.currentTarget.value })}
-            />
-            <NumberInput
-              label="Sort order"
-              min={1}
-              value={localDraft.sort_order}
-              thousandSeparator=","
-              onChange={(value) => setLocalDraft({ ...localDraft, sort_order: toNumber(value, 1) })}
             />
           </SimpleGrid>
           <Textarea

@@ -17,13 +17,12 @@ import { useMutation, useQueries, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 
 import {
+  consolidateDomesticTransportOrder,
   createDomesticTransportOrderFromShipment,
-  linkDtoToShipment,
 } from '@shared/api/domesticTransportOrders';
 import type { ShipmentRecord } from '@shared/api/logistics';
 import {
   fetchShipmentContainers,
-  updateShipmentContainer,
   type ShipmentContainerV1,
 } from '@shared/api/shipmentContainers';
 import { fetchSuppliers } from '@shared/api/tradeMasterData';
@@ -75,12 +74,6 @@ export function CreateDtoFromShipmentModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shipments, containerQueries.map((query) => query.dataUpdatedAt).join(',')]);
 
-  const containerShipmentMap = useMemo(() => {
-    const map = new Map<string, string>();
-    containerRows.forEach((container) => map.set(container.id, container.shipment_id));
-    return map;
-  }, [containerRows]);
-
   const truckVendorsQuery = useQueries({
     queries: [
       {
@@ -112,30 +105,30 @@ export function CreateDtoFromShipmentModal({
         throw new Error('Selected shipments must share the same discharge port (POD) to consolidate into one DTO.');
       }
 
-      const containerIdsByShipment = new Map<string, string[]>();
-      selectedContainerIds.forEach((containerId) => {
-        const shipmentId = containerShipmentMap.get(containerId);
-        if (!shipmentId) return;
-        containerIdsByShipment.set(shipmentId, [...(containerIdsByShipment.get(shipmentId) ?? []), containerId]);
-      });
-
       const [primary, ...others] = shipments;
-      const dto = await createDomesticTransportOrderFromShipment(primary.id, {
-        container_ids: containerIdsByShipment.get(primary.id),
+      const containerIds = selectedContainerIds.length ? selectedContainerIds : undefined;
+
+      // Single shipment: existing one-shot create endpoint.
+      if (others.length === 0) {
+        return createDomesticTransportOrderFromShipment(primary.id, {
+          container_ids: containerIds,
+          truck_vendor_id: truckVendorId || undefined,
+          warehouse: warehouse || undefined,
+          scheduled_pickup_at: pickupDate ? `${pickupDate}T01:00:00.000Z` : undefined,
+          note: note || undefined,
+        });
+      }
+
+      // Multiple shipments: one atomic consolidate endpoint (server handles link + container reassign).
+      return consolidateDomesticTransportOrder({
+        shipment_ids: shipments.map((shipment) => shipment.id),
+        primary_shipment_id: primary.id,
+        container_ids: containerIds,
         truck_vendor_id: truckVendorId || undefined,
         warehouse: warehouse || undefined,
         scheduled_pickup_at: pickupDate ? `${pickupDate}T01:00:00.000Z` : undefined,
         note: note || undefined,
       });
-
-      for (const other of others) {
-        await linkDtoToShipment(other.id, dto.id);
-        for (const containerId of containerIdsByShipment.get(other.id) ?? []) {
-          await updateShipmentContainer(containerId, { dto_id: dto.id });
-        }
-      }
-
-      return dto;
     },
     onSuccess: () => {
       shipments.forEach((shipment) => {
