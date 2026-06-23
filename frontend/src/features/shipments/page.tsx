@@ -18,9 +18,13 @@ import { PageError, PageLoading } from '@shared/components/PageFeedback';
 import { fetchShipments, createShipment } from '@shared/api/logistics';
 import { fetchDeliveryOrdersV1 } from '@shared/api/deliveryOrders';
 import {
+  createShipmentCost,
   createShipmentDocument,
+  deleteShipmentCost,
   markShipmentMilestoneDone,
+  updateShipmentCost,
   updateShipmentDocument,
+  type ShipmentCostPayload,
   type ShipmentDocumentPayload,
   type ShipmentMilestoneCodeV1,
   type ShipmentModeV1,
@@ -231,6 +235,29 @@ export function Shipments() {
     },
   });
 
+  const createCostMutation = useMutation({
+    mutationFn: ({ payload, shipmentId }: { payload: ShipmentCostPayload; shipmentId: string }) =>
+      createShipmentCost(shipmentId, payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
+    },
+  });
+
+  const updateCostMutation = useMutation({
+    mutationFn: ({ costId, payload }: { costId: string; payload: Partial<ShipmentCostPayload> }) =>
+      updateShipmentCost(costId, payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
+    },
+  });
+
+  const deleteCostMutation = useMutation({
+    mutationFn: (costId: string) => deleteShipmentCost(costId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
+    },
+  });
+
   const handleDeliveryOrderChange = (value: string | null) => {
     const deliveryOrderId = value ?? '';
     const deliveryOrder = availableDeliveryOrders.find((item) => item.id === deliveryOrderId);
@@ -245,14 +272,14 @@ export function Shipments() {
   };
 
   const handleCreateShipment = () => {
-    if (!newShpNumber || !newDeliveryOrderId) return;
+    if (!newDeliveryOrderId) return;
     createMutation.mutate({
       blAwbNo: newBlAwbNo || undefined,
       deliveryOrderId: newDeliveryOrderId,
       destPort: newDestPort || undefined,
       eta: newEta || undefined,
       etd: newEtd || undefined,
-      shipmentNumber: newShpNumber,
+      shipmentNumber: newShpNumber || undefined,
       doNumber: newDoNumber,
       poNumber: newPoNumber,
       shippingMode: newMode,
@@ -369,7 +396,7 @@ export function Shipments() {
                 <Button
                   onClick={handleCreateShipment}
                   leftSection={<IconAnchor size={16} />}
-                  disabled={!newShpNumber || !newDeliveryOrderId}
+                  disabled={!newDeliveryOrderId}
                   loading={createMutation.isPending}
                 >
                   {t('shipments.create')}
@@ -380,10 +407,10 @@ export function Shipments() {
             <SimpleGrid cols={{ base: 1, md: 3 }}>
               <TextInput
                 label={t('shipments.shipmentNumber')}
-                placeholder="VD: SHP-2026-0001"
+                description="Leave blank to auto-generate"
+                placeholder="Auto-generated if blank"
                 value={newShpNumber}
                 onChange={(e) => setNewShpNumber(e.currentTarget.value)}
-                required
               />
               <Select
                 label={t('shipments.linkedDo')}
@@ -482,6 +509,16 @@ export function Shipments() {
           }}
           onUpdateDocument={(documentId, payload) => {
             updateDocumentMutation.mutate({ documentId, payload });
+          }}
+          isCostSaving={createCostMutation.isPending || updateCostMutation.isPending || deleteCostMutation.isPending}
+          onCreateCost={(payload) => {
+            createCostMutation.mutate({ payload, shipmentId: selectedShipment.id });
+          }}
+          onUpdateCost={(costId, payload) => {
+            updateCostMutation.mutate({ costId, payload });
+          }}
+          onDeleteCost={(costId) => {
+            deleteCostMutation.mutate(costId);
           }}
           t={t}
         />

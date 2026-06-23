@@ -11,7 +11,6 @@ import {
   Select,
   SimpleGrid,
   Stack,
-  Switch,
   Table,
   Text,
   TextInput,
@@ -169,6 +168,54 @@ export function Tasks() {
   const blockedCount = tasks.filter((task) => task.status === 'BLOCKED').length;
   const overdueCount = tasks.filter(isOverdue).length;
   const completionRate = tasks.length > 0 ? Math.round((tasks.filter((task) => task.status === 'COMPLETED').length / tasks.length) * 100) : 0;
+  const hasActiveFilters =
+    search.trim().length > 0 ||
+    statusFilter !== 'all' ||
+    roleFilter !== 'all' ||
+    priorityFilter !== 'all' ||
+    milestoneFilter !== 'all' ||
+    requiredOnly ||
+    overdueOnly;
+  const statusOptions: Array<{ label: string; value: TaskStatus | 'all' }> = [
+    { label: t('common.allStatuses'), value: 'all' },
+    { label: statusLabel('PENDING'), value: 'PENDING' },
+    { label: statusLabel('TODO'), value: 'TODO' },
+    { label: statusLabel('IN_PROGRESS'), value: 'IN_PROGRESS' },
+    { label: statusLabel('WAITING'), value: 'WAITING' },
+    { label: statusLabel('BLOCKED'), value: 'BLOCKED' },
+    { label: statusLabel('COMPLETED'), value: 'COMPLETED' },
+    { label: statusLabel('CANCELLED'), value: 'CANCELLED' },
+  ];
+  const roleOptions: Array<{ label: string; value: TaskRole | 'all' }> = [
+    { label: t('common.allRoles'), value: 'all' },
+    { label: taskRoleLabel('BUYER'), value: 'BUYER' },
+    { label: taskRoleLabel('LOGISTICS_PLANNER'), value: 'LOGISTICS_PLANNER' },
+    { label: taskRoleLabel('PIC_MANAGER'), value: 'PIC_MANAGER' },
+    { label: taskRoleLabel('PORT_OFFICER'), value: 'PORT_OFFICER' },
+    { label: taskRoleLabel('CUSTOMS_OFFICER'), value: 'CUSTOMS_OFFICER' },
+    { label: taskRoleLabel('WAREHOUSE_STAFF'), value: 'WAREHOUSE_STAFF' },
+    { label: taskRoleLabel('PIC Manager'), value: 'PIC Manager' },
+    { label: taskRoleLabel('Sale Staff'), value: 'Sale Staff' },
+    { label: taskRoleLabel('Port Officer'), value: 'Port Officer' },
+    { label: taskRoleLabel('Customs Officer'), value: 'Customs Officer' },
+    { label: taskRoleLabel('Finance Officer'), value: 'Finance Officer' },
+    { label: taskRoleLabel('Warehouse Staff'), value: 'Warehouse Staff' },
+  ];
+  const priorityOptions: Array<{ label: string; value: Priority | 'all' }> = [
+    { label: t('tasks.allPriorities'), value: 'all' },
+    { label: priorityLabel('URGENT'), value: 'URGENT' },
+    { label: priorityLabel('HIGH'), value: 'HIGH' },
+    { label: priorityLabel('MEDIUM'), value: 'MEDIUM' },
+    { label: priorityLabel('LOW'), value: 'LOW' },
+  ];
+  const milestoneOptions = [
+    { label: t('common.all'), value: 'all' },
+    ...Object.entries(MILESTONE_CODES).map(([value, label]) => ({ label, value })),
+  ];
+  const statusCounts = statusOptions.reduce<Record<string, number>>((acc, option) => {
+    acc[option.value] = option.value === 'all' ? tasks.length : tasks.filter((task) => task.status === option.value).length;
+    return acc;
+  }, {});
 
   const openTask = (task: LogisticsTask) => {
     setSelectedTask(task);
@@ -253,93 +300,98 @@ export function Tasks() {
               <Metric label={t('tasks.overdue')} value={overdueCount} color="orange" icon={<IconClock size={22} />} />
             </SimpleGrid>
 
-            <Paper withBorder p="md">
-              <SimpleGrid cols={{ base: 1, md: 4 }}>
-                <TextInput
-                  label={t('common.search')}
-                  placeholder={t('tasks.searchPlaceholder')}
-                  leftSection={<IconSearch size={16} />}
-                  value={search}
-                  onChange={(event) => setSearch(event.currentTarget.value)}
-                />
-                <Select
-                  label={t('common.status')}
-                  value={statusFilter}
-                  onChange={(value) => setStatusFilter((value ?? 'all') as TaskStatus | 'all')}
-                  data={[
-                    { label: t('common.allStatuses'), value: 'all' },
-                    { label: statusLabel('PENDING'), value: 'PENDING' },
-                    { label: statusLabel('TODO'), value: 'TODO' },
-                    { label: statusLabel('IN_PROGRESS'), value: 'IN_PROGRESS' },
-                    { label: statusLabel('WAITING'), value: 'WAITING' },
-                    { label: statusLabel('BLOCKED'), value: 'BLOCKED' },
-                    { label: statusLabel('COMPLETED'), value: 'COMPLETED' },
-                    { label: statusLabel('CANCELLED'), value: 'CANCELLED' },
-                  ]}
-                />
-                <Select
-                  label={t('common.role')}
-                  value={roleFilter}
-                  onChange={(value) => setRoleFilter((value ?? 'all') as TaskRole | 'all')}
-                  data={[
-                    { label: t('common.allRoles'), value: 'all' },
-                    { label: taskRoleLabel('BUYER'), value: 'BUYER' },
-                    { label: taskRoleLabel('LOGISTICS_PLANNER'), value: 'LOGISTICS_PLANNER' },
-                    { label: taskRoleLabel('PIC_MANAGER'), value: 'PIC_MANAGER' },
-                    { label: taskRoleLabel('PORT_OFFICER'), value: 'PORT_OFFICER' },
-                    { label: taskRoleLabel('CUSTOMS_OFFICER'), value: 'CUSTOMS_OFFICER' },
-                    { label: taskRoleLabel('WAREHOUSE_STAFF'), value: 'WAREHOUSE_STAFF' },
-                    { label: taskRoleLabel('PIC Manager'), value: 'PIC Manager' },
-                    { label: taskRoleLabel('Sale Staff'), value: 'Sale Staff' },
-                    { label: taskRoleLabel('Port Officer'), value: 'Port Officer' },
-                    { label: taskRoleLabel('Customs Officer'), value: 'Customs Officer' },
-                    { label: taskRoleLabel('Finance Officer'), value: 'Finance Officer' },
-                    { label: taskRoleLabel('Warehouse Staff'), value: 'Warehouse Staff' },
-                  ]}
-                />
-                <Select
-                  label={t('forms.priority')}
-                  value={priorityFilter}
-                  onChange={(value) => setPriorityFilter((value ?? 'all') as Priority | 'all')}
-                  data={[
-                    { label: t('tasks.allPriorities'), value: 'all' },
-                    { label: priorityLabel('URGENT'), value: 'URGENT' },
-                    { label: priorityLabel('HIGH'), value: 'HIGH' },
-                    { label: priorityLabel('MEDIUM'), value: 'MEDIUM' },
-                    { label: priorityLabel('LOW'), value: 'LOW' },
-                  ]}
-                />
-                <Select
-                  label={t('tasks.milestone')}
-                  value={milestoneFilter}
-                  onChange={(value) => setMilestoneFilter(value ?? 'all')}
-                  data={[
-                    { label: t('common.all'), value: 'all' },
-                    ...Object.entries(MILESTONE_CODES).map(([value, label]) => ({ label, value })),
-                  ]}
-                />
-                <Switch
-                  className="filter-switch"
-                  checked={requiredOnly}
-                  onChange={(event) => setRequiredOnly(event.currentTarget.checked)}
-                  label={t('tasks.filterRequiredOnly')}
-                />
-                <Switch
-                  className="filter-switch"
-                  checked={overdueOnly}
-                  onChange={(event) => setOverdueOnly(event.currentTarget.checked)}
-                  label={t('tasks.filterOverdueOnly')}
-                />
-                <Group className="filter-actions" gap="xs">
-                  <Button variant="subtle" size="compact-sm" leftSection={<IconX size={16} />} onClick={clearFilters}>
-                    {t('common.clear')}
-                  </Button>
-                  {isFetching ? <Loader size="sm" /> : null}
-                  <Text size="sm" c="dimmed">
-                    {t('common.shown', { count: filteredTasks.length })}
-                  </Text>
+            <Paper withBorder p="md" className="tasks-filter-panel">
+              <Stack gap="md">
+                <Group className="tasks-filter-primary" justify="space-between" align="flex-end" gap="md">
+                  <TextInput
+                    className="tasks-filter-search"
+                    label={t('common.search')}
+                    placeholder={t('tasks.searchPlaceholder')}
+                    leftSection={<IconSearch size={16} />}
+                    value={search}
+                    onChange={(event) => setSearch(event.currentTarget.value)}
+                  />
+                  <Group className="tasks-filter-actions" gap="xs" wrap="nowrap">
+                    {isFetching ? <Loader size="sm" /> : null}
+                    <Text className="tasks-filter-count" size="sm" c="dimmed">
+                      {t('common.shown', { count: filteredTasks.length })}
+                    </Text>
+                    <Button
+                      variant={hasActiveFilters ? 'light' : 'subtle'}
+                      size="compact-sm"
+                      leftSection={<IconX size={16} />}
+                      onClick={clearFilters}
+                      disabled={!hasActiveFilters}
+                    >
+                      {t('common.clear')}
+                    </Button>
+                  </Group>
                 </Group>
-              </SimpleGrid>
+
+                <ScrollArea className="tasks-status-scroll" type="never" offsetScrollbars scrollbarSize={6}>
+                  <Group className="tasks-status-strip" gap="xs" wrap="nowrap">
+                    {statusOptions.map((option) => (
+                      <Button
+                        key={option.value}
+                        className={`tasks-status-pill ${statusFilter === option.value ? 'is-active' : ''}`}
+                        variant={statusFilter === option.value ? 'light' : 'subtle'}
+                        color={option.value === 'BLOCKED' ? 'red' : option.value === 'COMPLETED' ? 'teal' : undefined}
+                        size="compact-sm"
+                        onClick={() => setStatusFilter(option.value)}
+                        aria-pressed={statusFilter === option.value}
+                        rightSection={
+                          <Badge size="xs" variant={statusFilter === option.value ? 'filled' : 'light'}>
+                            {statusCounts[option.value]}
+                          </Badge>
+                        }
+                      >
+                        {option.label}
+                      </Button>
+                    ))}
+                  </Group>
+                </ScrollArea>
+
+                <SimpleGrid className="tasks-filter-secondary" cols={{ base: 1, sm: 2, lg: 4 }}>
+                  <Select
+                    label={t('common.role')}
+                    value={roleFilter}
+                    onChange={(value) => setRoleFilter((value ?? 'all') as TaskRole | 'all')}
+                    data={roleOptions}
+                  />
+                  <Select
+                    label={t('forms.priority')}
+                    value={priorityFilter}
+                    onChange={(value) => setPriorityFilter((value ?? 'all') as Priority | 'all')}
+                    data={priorityOptions}
+                  />
+                  <Select
+                    label={t('tasks.milestone')}
+                    value={milestoneFilter}
+                    onChange={(value) => setMilestoneFilter(value ?? 'all')}
+                    data={milestoneOptions}
+                  />
+                  <Group className="tasks-filter-toggles" gap="xs" wrap="nowrap">
+                    <Button
+                      className="tasks-filter-toggle"
+                      variant={requiredOnly ? 'light' : 'subtle'}
+                      color={requiredOnly ? 'blue' : 'gray'}
+                      onClick={() => setRequiredOnly(!requiredOnly)}
+                      aria-pressed={requiredOnly}
+                    >
+                      {t('tasks.filterRequiredOnly')}
+                    </Button>
+                    <Button
+                      className="tasks-filter-toggle"
+                      variant={overdueOnly ? 'light' : 'subtle'}
+                      color={overdueOnly ? 'orange' : 'gray'}
+                      onClick={() => setOverdueOnly(!overdueOnly)}
+                      aria-pressed={overdueOnly}
+                    >
+                      {t('tasks.filterOverdueOnly')}
+                    </Button>
+                  </Group>
+                </SimpleGrid>
+              </Stack>
             </Paper>
 
             <Paper withBorder p={0}>

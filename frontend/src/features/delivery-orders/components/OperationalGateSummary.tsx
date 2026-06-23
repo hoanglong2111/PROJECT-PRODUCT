@@ -56,7 +56,7 @@ export function OperationalGateSummary({
           <Title order={4}>{risks[0] ? riskLabel(risks[0].code, t) : t('deliveryOrders.readyForClosure')}</Title>
           <Text size="sm" c="dimmed">
             {risks[0]
-              ? `${taskRoleLabel(risks[0].owner)} · ${t('deliveryOrders.sla', { sla: slaLabel(risks[0].sla, t) })}`
+              ? `${taskRoleLabel(risks[0].owner)} | ${t('deliveryOrders.sla', { sla: slaLabel(risks[0].sla, t) })}`
               : t('deliveryOrders.noOpsRisk')}
           </Text>
         </div>

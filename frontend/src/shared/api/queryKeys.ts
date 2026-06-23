@@ -1,6 +1,7 @@
 export const queryKeys = {
   dashboardStats: ['dashboard-stats'] as const,
   deliveryOrderAttachments: (orderNumber: string) => ['delivery-order-attachments', orderNumber] as const,
+  deliveryOrderDocuments: (id: string) => ['delivery-orders', id, 'documents'] as const,
   deliveryOrderDetail: (id: string) => ['delivery-orders', 'detail', id] as const,
   deliveryOrderLines: (id: string) => ['delivery-orders', id, 'lines'] as const,
   deliveryOrderLists: ['delivery-orders', 'list'] as const,
@@ -44,6 +45,7 @@ export const queryKeys = {
   masterData: ['master-data'] as const,
   masterDataOptionLists: ['master-data-options'] as const,
   masterDataOptions: (params: Record<string, unknown>) => ['master-data-options', params] as const,
+  purchaseOrderConfirmations: (id: string) => ['purchase-orders', id, 'confirmations'] as const,
   purchaseOrderDetail: (id: string) => ['purchase-orders', 'detail', id] as const,
   purchaseOrderDeliveryOrders: (id: string) => ['purchase-orders', id, 'delivery-orders'] as const,
   purchaseOrderLines: (id: string) => ['purchase-orders', id, 'lines'] as const,

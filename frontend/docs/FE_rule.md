@@ -1,6 +1,32 @@
 # FRONTEND BUSINESS LOGIC RULES
 
-> Purpose: This document defines business rules for AI/Codex when modifying the frontend UI of the eFMS Mock API project.
+> Purpose: This document defines business rules for AI agents (Claude Code) when
+> modifying the frontend UI of the KBFE GD1 Procurement & Import Tracking app.
+>
+> The frontend is **backend-agnostic**: it depends on the **API contract**
+> (`docs/API_CONTRACT.md`), not on any specific backend. A mock backend implements
+> that contract today and is a replaceable detail; these rules must never assume how
+> the backend stores data.
+
+## Contents
+
+- [1. Current Project Direction](#1-current-project-direction)
+- [2. Core Flow](#2-core-flow)
+- [3. API Usage Rule](#3-api-usage-rule)
+- [4. Standard API Response](#4-standard-api-response)
+- [5. Screen-first UI Rule](#5-screen-first-ui-rule)
+- [6. Main Screens](#6-main-screens)
+- [7. LOT Planning Rules](#7-lot-planning-rules)
+- [8. Internal DO UI Rules](#8-internal-do-ui-rules)
+- [9. Quotation UI Rules](#9-quotation-ui-rules)
+- [10. Shipment UI Rules](#10-shipment-ui-rules)
+- [11. Customs UI Rules](#11-customs-ui-rules)
+- [12. Carrier DO UI Rules](#12-carrier-do-ui-rules)
+- [13. DTO UI Rules](#13-dto-ui-rules)
+- [14. Frontend Do / Don't](#14-frontend-do--dont)
+- [15. Acceptance Criteria](#15-acceptance-criteria)
+- [16. Master Data Rules](#16-master-data-rules)
+- [17. Task Template ↔ Runtime Task Rules](#17-task-template--runtime-task-rules)
 
 ---
 
@@ -11,14 +37,14 @@ The project is now following:
 ```txt
 UI-first
 → screen data shape
-→ mock API response
-→ backend mock JSON
-→ database later
+→ screen DTO (API contract)
+→ backend implementation (mock today, real DB later)
 ```
 
 Frontend must not be designed around database tables directly.
 
-Frontend must be designed around **screen DTOs** returned by REST API endpoints.
+Frontend must be designed around **screen DTOs** defined by the API contract and
+returned by REST API endpoints (`docs/API_CONTRACT.md`).
 
 ---
 
@@ -54,16 +80,17 @@ RBAC/users
 
 ## 3. API Usage Rule
 
-Frontend must call real REST endpoints.
+Frontend must call real REST endpoints defined by the API contract
+(`docs/API_CONTRACT.md`).
 
-Do not import mock JSON directly inside React components unless explicitly requested.
+Do not import backend data files (e.g. mock JSON) directly inside React components.
 
 Correct:
 
 ```txt
 React component
 → API client
-→ backend mock API endpoint
+→ backend API endpoint (per API contract)
 → screen DTO response
 ```
 
@@ -568,10 +595,11 @@ In the modal:
 - Other      : truck vendor, warehouse (default "KBI Main Warehouse"), scheduled pickup, note.
 ```
 
-API: `POST /api/v1/shipments/:shipmentId/domestic-transport-orders` (the primary shipment).
-The backend auto-creates the junction record linking the new DTO to the primary shipment. For
-consolidation the modal additionally calls `.../domestic-transport-orders/link` for each other
-shipment and reassigns their selected containers to the new DTO.
+API (single shipment): `POST /api/v1/shipments/:shipmentId/domestic-transport-orders` — the backend
+auto-creates the junction record. **Consolidation (2+ shipments) uses one atomic call**:
+`POST /api/v1/domestic-transport-orders/consolidate` with `{ shipment_ids, primary_shipment_id,
+container_ids?, ... }`. The backend creates the DTO, links the other shipments, and reassigns their
+containers server-side (the frontend no longer loops link + container updates).
 
 ## 13.5 DTO status flow
 
@@ -593,6 +621,10 @@ Frontend must not allow Dispatch if DTO is not:
 QUOTE_CONFIRMED
 ```
 
+`POD_RECEIVED` is reached via the **Mark POD received** action (`POST .../:id/pod-received`, enabled
+when status = `DELIVERED`). `Close` is enabled at `DELIVERED` or `POD_RECEIVED`. Inland freight quote
+fields (`quote_amount` / `quote_currency`) are saved via `PATCH /api/v1/domestic-transport-orders/:id`.
+
 ---
 
 # 14. Frontend Do / Don't
@@ -600,12 +632,18 @@ QUOTE_CONFIRMED
 ## Do
 
 ```txt
-- Use screen-level DTO responses.
+- Use screen-level DTO responses. The DO list/detail comes from the backend screen-DTO
+  endpoints (GET /api/v1/delivery-orders/screen and /:id/screen); do NOT synthesize
+  task_summary / missing_documents / warehouse on the frontend.
+- Validate critical responses at the API boundary with the dev-only zod guard
+  (src/shared/api/contracts, parseContract) — it warns on contract drift, never throws.
 - Keep UI state simple.
 - Refetch or replace board after mutations.
 - Disable invalid actions based on status.
 - Keep LOT Planning free of Slot.
-- Use deterministic mock IDs for development.
+- Depend on the API contract (`docs/API_CONTRACT.md`), not on the backend
+  implementation. Dev-only mock scaffolding (deterministic IDs, `/v1/mock/:collection`,
+  seed data) must stay inside `src/shared/api` adapters and never leak into features.
 ```
 
 ## Don't
@@ -626,7 +664,8 @@ QUOTE_CONFIRMED
 Frontend implementation is correct when:
 
 ```txt
-- App can run against mock backend without PostgreSQL.
+- App runs against any backend that honours docs/API_CONTRACT.md (today the mock
+  backend), with no assumption about the backend's storage (no DB/PostgreSQL coupling).
 - PO List renders.
 - PO Detail renders.
 - LOT Planning Board renders without Slot.

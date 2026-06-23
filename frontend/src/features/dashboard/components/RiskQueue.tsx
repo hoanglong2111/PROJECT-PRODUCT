@@ -26,7 +26,7 @@ export function RiskQueue({ riskRows }: { riskRows: DashboardRiskRow[] }) {
         <Stack gap="xs">
           {riskRows.map(({ deliveryOrder, primaryRisk, risks }) => (
             <div key={deliveryOrder.id} className="dashboard-risk-row">
-              <Group justify="space-between" gap="md" align="flex-start" wrap="nowrap">
+              <div className="dashboard-risk-grid">
                 <div className="dashboard-risk-identity">
                   <Text fw={900}>{deliveryOrder.order_info.order_number}</Text>
                   <Text size="xs" c="dimmed">
@@ -67,7 +67,7 @@ export function RiskQueue({ riskRows }: { riskRows: DashboardRiskRow[] }) {
                     {primaryRisk.sla}
                   </Badge>
                 </div>
-              </Group>
+              </div>
 
               <Group gap={6} mt="sm">
                 {risks.map((risk) => (

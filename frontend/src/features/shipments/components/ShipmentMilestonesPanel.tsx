@@ -84,6 +84,10 @@ export function ShipmentMilestonesPanel({
   const milestoneByCode = useMemo(() => {
     return new Map(renderedMilestones.map((milestone, index) => [milestone.milestone_code, { milestone, index }]));
   }, [renderedMilestones]);
+  const milestoneColumns = useMemo(() => {
+    const midpoint = Math.ceil(renderedMilestones.length / 2);
+    return [renderedMilestones.slice(0, midpoint), renderedMilestones.slice(midpoint)];
+  }, [renderedMilestones]);
 
   const completedCount = renderedMilestones.filter((milestone) => milestone.actual_date).length;
   const progressValue = Math.round((completedCount / renderedMilestones.length) * 100);
@@ -230,90 +234,99 @@ export function ShipmentMilestonesPanel({
 
       <div className="shipment-milestone-body">
         <div className="shipment-milestone-timeline">
-          {renderedMilestones.map((milestone, index) => {
-            const state = getMilestoneState(milestone.id, milestone.actual_date);
-            const isEditing = editingMilestoneId === milestone.id;
-            const color = getStatusColor(state);
-            const label = MILESTONE_LABELS[milestone.milestone_code as ShipmentMilestoneCodeV1];
+          {milestoneColumns.map((column, columnIndex) => {
+            const columnOffset = columnIndex * Math.ceil(renderedMilestones.length / 2);
 
             return (
-              <div key={milestone.id} className={`shipment-milestone-row is-${state} ${isEditing ? 'is-editing' : ''}`}>
-                <div className="shipment-milestone-marker">
-                  <ThemeIcon size={30} radius="xl" color={color} variant={state === 'waiting' ? 'light' : 'filled'}>
-                    {state === 'completed' ? (
-                      <IconCircleCheckFilled size={17} />
-                    ) : state === 'current' ? (
-                      <IconCircleDot size={17} />
-                    ) : (
-                      <IconClockHour4 size={16} />
-                    )}
-                  </ThemeIcon>
-                </div>
+              <div key={`column-${columnIndex}`} className="shipment-milestone-column">
+                {column.map((milestone, index) => {
+                  const state = getMilestoneState(milestone.id, milestone.actual_date);
+                  const isEditing = editingMilestoneId === milestone.id;
+                  const color = getStatusColor(state);
+                  const label = MILESTONE_LABELS[milestone.milestone_code as ShipmentMilestoneCodeV1];
+                  const displayIndex = columnOffset + index + 1;
 
-                <div className="shipment-milestone-content">
-                  <div className="shipment-milestone-card-head">
-                    <div className="shipment-milestone-copy">
-                      <Group gap={6} wrap="wrap">
-                        <Text fw={800} size="sm" lineClamp={1} c={state === 'current' ? 'blue' : undefined}>
-                          {index + 1}. {label}
-                        </Text>
-                        {state === 'current' ? (
-                          <Badge size="xs" color="blue" variant="filled">
-                            Now
-                          </Badge>
+                  return (
+                    <div key={milestone.id} className={`shipment-milestone-row is-${state} ${isEditing ? 'is-editing' : ''}`}>
+                      <div className="shipment-milestone-marker">
+                        <ThemeIcon size={30} radius="xl" color={color} variant={state === 'waiting' ? 'light' : 'filled'}>
+                          {state === 'completed' ? (
+                            <IconCircleCheckFilled size={17} />
+                          ) : state === 'current' ? (
+                            <IconCircleDot size={17} />
+                          ) : (
+                            <IconClockHour4 size={16} />
+                          )}
+                        </ThemeIcon>
+                      </div>
+
+                      <div className="shipment-milestone-content">
+                        <div className="shipment-milestone-card-head">
+                          <div className="shipment-milestone-copy">
+                            <Group gap={6} wrap="wrap">
+                              <Text fw={800} size="sm" lineClamp={1} c={state === 'current' ? 'blue' : undefined}>
+                                {displayIndex}. {label}
+                              </Text>
+                              {state === 'current' ? (
+                                <Badge size="xs" color="blue" variant="filled">
+                                  Now
+                                </Badge>
+                              ) : null}
+                            </Group>
+                            <Text size="xs" c={state === 'completed' ? 'teal' : 'dimmed'} lineClamp={1}>
+                              {state === 'completed'
+                                ? `Done ${formatMilestoneDate(milestone.actual_date)} - ${milestone.source}`
+                                : `Planned ${formatMilestoneDate(milestone.planned_date)}`}
+                            </Text>
+                          </div>
+                          <div className="shipment-milestone-action">
+                            <Button
+                              size="compact-xs"
+                              variant={state === 'current' ? 'filled' : 'light'}
+                              color={state === 'completed' ? 'teal' : 'blue'}
+                              loading={isSaving && isEditing}
+                              onClick={() => openEditor(milestone.id, milestone.actual_date, milestone.note)}
+                            >
+                              {state === 'completed' ? 'Update' : state === 'current' ? 'Done' : 'Set date'}
+                            </Button>
+                          </div>
+                        </div>
+
+                        {milestone.note ? (
+                          <Text size="xs" c="dimmed" lineClamp={2}>
+                            {milestone.note}
+                          </Text>
                         ) : null}
-                      </Group>
-                      <Text size="xs" c={state === 'completed' ? 'teal' : 'dimmed'} lineClamp={1}>
-                        {state === 'completed'
-                          ? `Done ${formatMilestoneDate(milestone.actual_date)} - ${milestone.source}`
-                          : `Planned ${formatMilestoneDate(milestone.planned_date)}`}
-                      </Text>
-                    </div>
-                    <div className="shipment-milestone-action">
-                      <Button
-                        size="compact-xs"
-                        variant={state === 'current' ? 'filled' : 'light'}
-                        color={state === 'completed' ? 'teal' : 'blue'}
-                        loading={isSaving && isEditing}
-                        onClick={() => openEditor(milestone.id, milestone.actual_date, milestone.note)}
-                      >
-                        {state === 'completed' ? 'Update' : state === 'current' ? 'Done' : 'Set date'}
-                      </Button>
-                    </div>
-                  </div>
 
-                  {milestone.note ? (
-                    <Text size="xs" c="dimmed" lineClamp={2}>
-                      {milestone.note}
-                    </Text>
-                  ) : null}
-
-                  {isEditing ? (
-                    <Stack gap="xs" className="shipment-milestone-editor">
-                      <TextInput
-                        label={t('shipments.actualDate')}
-                        type="date"
-                        value={milestoneDate}
-                        onChange={(event) => setMilestoneDate(event.currentTarget.value)}
-                        size="xs"
-                      />
-                      <TextInput
-                        label={t('shipments.note')}
-                        value={milestoneNote}
-                        onChange={(event) => setMilestoneNote(event.currentTarget.value)}
-                        size="xs"
-                      />
-                      <Group justify="flex-end" gap="xs">
-                        <Button size="xs" variant="subtle" onClick={() => setEditingMilestoneId(null)}>
-                          {t('common.cancel')}
-                        </Button>
-                        <Button size="xs" color="blue" onClick={() => handleUpdateMilestone(milestone.id)}>
-                          {t('common.save')}
-                        </Button>
-                      </Group>
-                    </Stack>
-                  ) : null}
-                </div>
+                        {isEditing ? (
+                          <Stack gap="xs" className="shipment-milestone-editor">
+                            <TextInput
+                              label={t('shipments.actualDate')}
+                              type="date"
+                              value={milestoneDate}
+                              onChange={(event) => setMilestoneDate(event.currentTarget.value)}
+                              size="xs"
+                            />
+                            <TextInput
+                              label={t('shipments.note')}
+                              value={milestoneNote}
+                              onChange={(event) => setMilestoneNote(event.currentTarget.value)}
+                              size="xs"
+                            />
+                            <Group justify="flex-end" gap="xs">
+                              <Button size="xs" variant="subtle" onClick={() => setEditingMilestoneId(null)}>
+                                {t('common.cancel')}
+                              </Button>
+                              <Button size="xs" color="blue" onClick={() => handleUpdateMilestone(milestone.id)}>
+                                {t('common.save')}
+                              </Button>
+                            </Group>
+                          </Stack>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             );
           })}

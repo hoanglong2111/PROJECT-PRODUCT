@@ -76,6 +76,104 @@
   }
 }
 
+.delivery-order-ops-layout,
+.delivery-order-ops-hero-copy,
+.delivery-order-ops-risk-copy,
+.delivery-order-ops-risk-row-copy,
+.delivery-order-ops-gate-copy,
+.delivery-order-ops-facts > * {
+  min-width: 0;
+}
+
+.delivery-order-ops-hero {
+  background:
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--kbfe-primary-color) 10%, transparent), transparent 34%),
+    var(--kbfe-surface-elevated);
+  border-color: var(--kbfe-border-primary) !important;
+  box-shadow: var(--kbfe-shadow-xs);
+}
+
+.delivery-order-ops-hero-risk {
+  background:
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--mantine-color-red-4) 12%, transparent), transparent 34%),
+    color-mix(in srgb, var(--kbfe-surface-elevated) 94%, var(--mantine-color-red-0) 6%);
+}
+
+.delivery-order-ops-hero-clear {
+  background:
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--mantine-color-teal-4) 12%, transparent), transparent 34%),
+    color-mix(in srgb, var(--kbfe-surface-elevated) 95%, var(--mantine-color-teal-0) 5%);
+}
+
+.delivery-order-ops-kpi-grid,
+.delivery-order-ops-gate-grid {
+  align-items: stretch;
+}
+
+.delivery-order-ops-kpi,
+.delivery-order-ops-risk-row,
+.delivery-order-ops-gate-card {
+  min-width: 0;
+  padding: 0.875rem;
+  border: 1px solid var(--kbfe-border-primary);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 95%, var(--kbfe-surface-subtle) 5%);
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease;
+}
+
+.delivery-order-ops-kpi,
+.delivery-order-ops-gate-card {
+  display: grid;
+  align-content: start;
+  gap: 0.5rem;
+}
+
+.delivery-order-ops-kpi:hover,
+.delivery-order-ops-risk-row:hover,
+.delivery-order-ops-gate-card:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--kbfe-primary-color) 32%, var(--kbfe-border-primary));
+  box-shadow: 0 10px 18px -12px color-mix(in srgb, var(--kbfe-primary-color) 20%, rgba(0, 0, 0, 0.16));
+}
+
+.delivery-order-ops-kpi.is-good,
+.delivery-order-ops-gate-card.is-passed {
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 90%, var(--mantine-color-teal-0) 10%);
+  box-shadow: inset 0.1875rem 0 0 var(--mantine-color-teal-5);
+}
+
+.delivery-order-ops-kpi.is-alert,
+.delivery-order-ops-gate-card.is-blocked,
+.delivery-order-ops-risk-row.severity-high {
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 90%, var(--mantine-color-orange-0) 10%);
+  box-shadow: inset 0.1875rem 0 0 var(--mantine-color-orange-5);
+}
+
+.delivery-order-ops-risk-row.severity-medium {
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 92%, var(--mantine-color-yellow-0) 8%);
+  box-shadow: inset 0.1875rem 0 0 var(--mantine-color-yellow-5);
+}
+
+.delivery-order-ops-risk-row.severity-low {
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 96%, var(--kbfe-surface-subtle) 4%);
+}
+
+.delivery-order-ops-risk-panel {
+  border-color: var(--kbfe-border-primary) !important;
+  background: var(--kbfe-surface-elevated);
+  box-shadow: var(--kbfe-shadow-xs);
+}
+
+.delivery-order-ops-risk-header,
+.delivery-order-ops-risk-panel span,
+.delivery-order-ops-risk-panel .mantine-Text-root {
+  min-width: 0;
+}
+
 
 
 .quotation-bidding-panel {
@@ -247,6 +345,16 @@
   .delivery-order-risk-filter,
   .delivery-order-filter-clear {
     width: 100%;
+  }
+
+  .delivery-order-ops-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .delivery-order-ops-kpi,
+  .delivery-order-ops-risk-row,
+  .delivery-order-ops-gate-card {
+    padding: 0.75rem;
   }
 
   .quotation-bidding-actions,

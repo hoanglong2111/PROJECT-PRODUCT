@@ -9,6 +9,8 @@ export type FormState = {
   note: string;
   origin: string;
   podDocumentRef: string;
+  quoteAmount: string;
+  quoteCurrency: string;
   scheduledDeliveryAt: string;
   scheduledPickupAt: string;
   truckVendorId: string | null;
@@ -42,6 +44,8 @@ export const initialForm: FormState = {
   note: '',
   origin: '',
   podDocumentRef: '',
+  quoteAmount: '',
+  quoteCurrency: '',
   scheduledDeliveryAt: '',
   scheduledPickupAt: '',
   truckVendorId: null,

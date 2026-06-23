@@ -1,0 +1,143 @@
+import { Alert, Button, Group, Modal, Select, SimpleGrid, Stack, Text, TextInput } from '@mantine/core';
+import { IconAlertTriangle, IconAnchor } from '@tabler/icons-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+import type { DeliveryOrder } from '@shared/api/logistics';
+import { createShipment } from '@shared/api/logistics';
+import type { ShipmentModeV1 } from '@shared/api/shipments';
+import { queryKeys } from '@shared/api/queryKeys';
+import { getApiErrorMessage } from '@shared/lib/errors';
+
+const SHIPMENT_MODE_OPTIONS: Array<{ label: string; value: ShipmentModeV1 }> = [
+  { label: 'Sea', value: 'SEA' },
+  { label: 'Air', value: 'AIR' },
+  { label: 'Road', value: 'ROAD' },
+  { label: 'Rail', value: 'RAIL' },
+  { label: 'Multimodal', value: 'MULTIMODAL' },
+  { label: 'Trucking', value: 'TRUCKING' },
+  { label: 'Other', value: 'OTHER' },
+];
+
+function inferMode(shippingMethod: DeliveryOrder['logistics_shipping']['shipping_method']): ShipmentModeV1 {
+  if (shippingMethod === 'AIR') return 'AIR';
+  if (shippingMethod === 'ROAD') return 'ROAD';
+  return 'SEA';
+}
+
+export function CreateShipmentFromDoModal({
+  deliveryOrder,
+  onClose,
+  opened,
+}: {
+  deliveryOrder: DeliveryOrder;
+  onClose: () => void;
+  opened: boolean;
+}) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const shipping = deliveryOrder.logistics_shipping;
+  const doNumber = deliveryOrder.order_info.order_number;
+  const poNumber = deliveryOrder.source_po_number ?? deliveryOrder.sap_integration.po_number ?? '';
+
+  const [shipmentNumber, setShipmentNumber] = useState('');
+  const [mode, setMode] = useState<ShipmentModeV1>(inferMode(shipping.shipping_method));
+  const [carrier, setCarrier] = useState('');
+  const [vesselVoyage, setVesselVoyage] = useState('');
+  const [blAwbNo, setBlAwbNo] = useState('');
+  const [originPort, setOriginPort] = useState(shipping.port_of_departure ?? '');
+  const [destPort, setDestPort] = useState(shipping.port_of_destination ?? '');
+  const [etd, setEtd] = useState(shipping.etd_planned ?? '');
+  const [eta, setEta] = useState(shipping.eta_planned ?? '');
+
+  // Re-seed the form from the DO every time the modal opens so prefilled
+  // route/date values follow the currently selected delivery order.
+  useEffect(() => {
+    if (!opened) return;
+    setShipmentNumber('');
+    setMode(inferMode(shipping.shipping_method));
+    setCarrier('');
+    setVesselVoyage('');
+    setBlAwbNo('');
+    setOriginPort(shipping.port_of_departure ?? '');
+    setDestPort(shipping.port_of_destination ?? '');
+    setEtd(shipping.etd_planned ?? '');
+    setEta(shipping.eta_planned ?? '');
+  }, [opened, shipping]);
+
+  const createMutation = useMutation({
+    mutationFn: () =>
+      createShipment({
+        deliveryOrderId: deliveryOrder.id,
+        doNumber,
+        poNumber: poNumber || undefined,
+        shipmentNumber: shipmentNumber.trim() || undefined,
+        shippingMode: mode,
+        carrierName: carrier.trim() || undefined,
+        vesselVoyage: vesselVoyage.trim() || undefined,
+        blAwbNo: blAwbNo.trim() || undefined,
+        originPort: originPort.trim() || undefined,
+        destPort: destPort.trim() || undefined,
+        etd: etd || undefined,
+        eta: eta || undefined,
+      }),
+    onSuccess: (shipment) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.shipmentLists });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.deliveryOrders });
+      onClose();
+      navigate(`/shipments?shp=${encodeURIComponent(shipment.shipment_number)}`);
+    },
+  });
+
+  return (
+    <Modal opened={opened} onClose={onClose} title={`Create shipment from ${doNumber}`} size="lg">
+      <Stack gap="md">
+        <Text size="sm" c="dimmed">
+          A shipment will be created from this delivery order and {poNumber || 'its PO'}. Route and dates
+          are prefilled from the DO; adjust them if needed.
+        </Text>
+
+        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
+          <TextInput
+            label="Shipment number"
+            description="Leave blank to auto-generate"
+            placeholder="Auto-generated if blank"
+            value={shipmentNumber}
+            onChange={(event) => setShipmentNumber(event.currentTarget.value)}
+          />
+          <Select
+            label="Shipment mode"
+            data={SHIPMENT_MODE_OPTIONS}
+            value={mode}
+            onChange={(value) => setMode((value as ShipmentModeV1 | null) ?? 'SEA')}
+          />
+          <TextInput label="Carrier" placeholder="Hapag Lloyd, Maersk..." value={carrier} onChange={(event) => setCarrier(event.currentTarget.value)} />
+          <TextInput label="Vessel / voyage" value={vesselVoyage} onChange={(event) => setVesselVoyage(event.currentTarget.value)} />
+          <TextInput label="BL / AWB" value={blAwbNo} onChange={(event) => setBlAwbNo(event.currentTarget.value)} />
+          <TextInput label="POL" placeholder="Port of loading" value={originPort} onChange={(event) => setOriginPort(event.currentTarget.value)} />
+          <TextInput label="POD" placeholder="Port of discharge" value={destPort} onChange={(event) => setDestPort(event.currentTarget.value)} />
+          <TextInput label="ETD" type="date" value={etd} onChange={(event) => setEtd(event.currentTarget.value)} />
+          <TextInput label="ETA" type="date" value={eta} onChange={(event) => setEta(event.currentTarget.value)} />
+        </SimpleGrid>
+
+        {createMutation.isError ? (
+          <Alert color="red" icon={<IconAlertTriangle size={16} />}>
+            {getApiErrorMessage(createMutation.error)}
+          </Alert>
+        ) : null}
+
+        <Group justify="flex-end" gap="xs">
+          <Button variant="subtle" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button leftSection={<IconAnchor size={16} />} loading={createMutation.isPending} onClick={() => createMutation.mutate()}>
+            Create shipment
+          </Button>
+        </Group>
+      </Stack>
+    </Modal>
+  );
+}

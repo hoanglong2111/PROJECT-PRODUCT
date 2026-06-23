@@ -1,4 +1,4 @@
-import type { ShipmentRecord } from '@shared/api/logistics';
+import type { ShipmentCost, ShipmentRecord } from '@shared/api/logistics';
 import type { ShipmentModeV1 } from '@shared/api/shipments';
 import type { DeliveryOrderV1 } from '@shared/api/deliveryOrders';
 import type { CustomsDeclarationChannelV1 } from '@shared/api/customsDeclarations';
@@ -25,6 +25,11 @@ export const customsStatuses = new Set<ShipmentRecord['status']>([
   'CUSTOMS_CLEARED',
   'CUSTOMS_PROCESSING',
 ]);
+
+/** Total landed cost normalized to the base currency (VND) via each line's exchange_rate. */
+export function landedCostTotal(costs: ShipmentCost[]): number {
+  return costs.reduce((sum, cost) => sum + cost.amount * cost.exchange_rate, 0);
+}
 
 export const shipmentModeOptions: Array<{ label: string; value: ShipmentModeV1 }> = [
   { label: 'Sea', value: 'SEA' },

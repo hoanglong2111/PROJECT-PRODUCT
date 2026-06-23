@@ -312,10 +312,17 @@
   display: grid;
   align-content: start;
   grid-template-columns: repeat(2, minmax(18rem, 1fr));
-  gap: 0.75rem 1rem;
+  gap: 1rem;
   min-width: 0;
   padding: 1rem;
   background: color-mix(in srgb, var(--kbfe-surface-elevated) 92%, var(--kbfe-surface-subtle) 8%);
+}
+
+.shipment-milestone-column {
+  display: grid;
+  align-content: start;
+  gap: 0.75rem;
+  min-width: 0;
 }
 
 .shipment-milestone-row {

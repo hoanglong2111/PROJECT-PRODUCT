@@ -16,6 +16,7 @@ import { getApiErrorMessage } from '@shared/lib/errors';
 import { usePoInvalidation } from '../hooks/usePoInvalidation';
 import { LotPlanningBoard } from './LotPlanningBoard';
 import { PoLinesTable } from './PoLinesTable';
+import { PurchaseOrderConfirmationsPanel } from './PurchaseOrderConfirmationsPanel';
 import { PurchaseOrderDetailInfo } from './PurchaseOrderDetailInfo';
 import { PurchaseOrderForm } from './PurchaseOrderForm';
 import { SupplierConfirmationModal } from './SupplierConfirmationModal';
@@ -137,6 +138,8 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
       <PurchaseOrderDetailInfo order={order} lines={lines} />
 
       <PoLinesTable lines={lines} currencyCode={order.currency?.currency_code ?? ''} />
+
+      <PurchaseOrderConfirmationsPanel purchaseOrderId={id} />
 
       {planningQuery.isLoading ? (
         <Paper withBorder p="lg">

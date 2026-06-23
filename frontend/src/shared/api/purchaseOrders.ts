@@ -1,4 +1,5 @@
 import { apiClient } from './axiosConfig';
+import { parseContract, purchaseOrderListSchema } from './contracts';
 import type { Currency, Incoterm, Supplier, TransportMode } from './tradeMasterData';
 import type { Item, ItemTaxProfile } from './items';
 
@@ -134,6 +135,7 @@ export type PurchaseOrderConfirmation = {
   confirmed_by: string | null;
   confirmed_at: string;
   supplier_ref_no: string | null;
+  cargo_ready_date: string | null;
   is_full_shipment: boolean;
   allow_partial_shipment: boolean;
   note: string | null;
@@ -329,7 +331,9 @@ export async function fetchPurchaseOrders(params: ListPurchaseOrdersParams = {})
     '/v1/purchase-orders',
     { params },
   );
-  return unwrapV1List(response);
+  const result = unwrapV1List(response);
+  parseContract(purchaseOrderListSchema, result.data, 'fetchPurchaseOrders');
+  return result;
 }
 
 export async function fetchPurchaseOrder(id: string) {
@@ -380,6 +384,13 @@ export async function markPurchaseOrderReadyToShip(id: string) {
   const response = await apiClient.patch<V1Response<PurchaseOrderV1>>(`/v1/mock/purchase_orders/${id}`, {
     status: 'READY_TO_SHIP',
   });
+  return unwrapV1Data(response);
+}
+
+export async function fetchPurchaseOrderConfirmations(id: string) {
+  const response = await apiClient.get<V1Response<PurchaseOrderConfirmation[]>>(
+    `/v1/purchase-orders/${id}/confirmations`,
+  );
   return unwrapV1Data(response);
 }
 
