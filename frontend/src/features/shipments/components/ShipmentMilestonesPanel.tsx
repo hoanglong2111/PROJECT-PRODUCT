@@ -1,4 +1,4 @@
-import { Badge, Button, Group, Paper, Progress, Stack, Text, TextInput, ThemeIcon } from '@mantine/core';
+import { Badge, Button, Group, Paper, Progress, Stack, Text, TextInput, ThemeIcon, Tooltip } from '@mantine/core';
 import { IconCircleCheckFilled, IconCircleDot, IconClockHour4, IconRoute } from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
 
@@ -29,6 +29,19 @@ const MILESTONE_LABELS: Record<ShipmentMilestoneCodeV1, string> = {
   ARRIVAL_NOTICE: 'Arrival Notice',
   CUSTOMS_CLEARED: 'Customs Cleared',
   DELIVERED: 'Delivered',
+};
+
+const MILESTONE_AUTOMATION: Record<ShipmentMilestoneCodeV1, { auto: boolean; trigger?: string }> = {
+  BOOKING_CONFIRMED: { auto: true, trigger: 'tạo shipment' },
+  CARGO_READY: { auto: false },
+  PICKED_UP: { auto: false },
+  BL_ISSUED: { auto: true, trigger: 'upload chứng từ B/L' },
+  GATE_IN_POL: { auto: false },
+  ATD: { auto: false },
+  CUSTOMS_DRAFT: { auto: true, trigger: 'tạo tờ khai hải quan' },
+  ARRIVAL_NOTICE: { auto: true, trigger: 'upload Arrival Notice' },
+  CUSTOMS_CLEARED: { auto: true, trigger: 'thông quan tờ khai' },
+  DELIVERED: { auto: true, trigger: 'DTO nhận POD' },
 };
 
 const MILESTONE_PHASES: Array<{ title: string; codes: ShipmentMilestoneCodeV1[] }> = [
@@ -159,6 +172,10 @@ export function ShipmentMilestonesPanel({
             );
           })}
         </div>
+        <Group gap="md" mt="xs">
+          <Group gap={4}><Badge size="xs" variant="light" color="teal">Auto</Badge><Text size="xs" c="dimmed">hệ thống tự đánh dấu khi có sự kiện</Text></Group>
+          <Group gap={4}><Badge size="xs" variant="light" color="gray">Manual</Badge><Text size="xs" c="dimmed">nhập tay</Text></Group>
+        </Group>
       </div>
 
       <div className="shipment-milestone-summary">
@@ -273,11 +290,25 @@ export function ShipmentMilestonesPanel({
                                 </Badge>
                               ) : null}
                             </Group>
-                            <Text size="xs" c={state === 'completed' ? 'teal' : 'dimmed'} lineClamp={1}>
-                              {state === 'completed'
-                                ? `Done ${formatMilestoneDate(milestone.actual_date)} - ${milestone.source}`
-                                : `Planned ${formatMilestoneDate(milestone.planned_date)}`}
-                            </Text>
+                            <Group gap={6} wrap="nowrap">
+                              <Text size="xs" c={state === 'completed' ? 'teal' : 'dimmed'} lineClamp={1}>
+                                {state === 'completed'
+                                  ? `Done ${formatMilestoneDate(milestone.actual_date)}`
+                                  : `Planned ${formatMilestoneDate(milestone.planned_date)}`}
+                              </Text>
+                              {state === 'completed' ? (
+                                <Badge size="xs" variant="light" color={milestone.source === 'MANUAL' ? 'gray' : 'teal'}>
+                                  {milestone.source === 'MANUAL' ? 'Manual' : 'Auto'}
+                                </Badge>
+                              ) : MILESTONE_AUTOMATION[milestone.milestone_code as ShipmentMilestoneCodeV1].auto ? (
+                                <Tooltip
+                                  withArrow
+                                  label={`Sẽ tự đánh dấu khi: ${MILESTONE_AUTOMATION[milestone.milestone_code as ShipmentMilestoneCodeV1].trigger}`}
+                                >
+                                  <Badge size="xs" variant="outline" color="gray">Auto</Badge>
+                                </Tooltip>
+                              ) : null}
+                            </Group>
                           </div>
                           <div className="shipment-milestone-action">
                             <Button
