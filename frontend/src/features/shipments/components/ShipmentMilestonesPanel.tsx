@@ -297,8 +297,8 @@ export function ShipmentMilestonesPanel({
                                   : `Planned ${formatMilestoneDate(milestone.planned_date)}`}
                               </Text>
                               {state === 'completed' ? (
-                                <Badge size="xs" variant="light" color={milestone.source === 'MANUAL' ? 'gray' : 'teal'}>
-                                  {milestone.source === 'MANUAL' ? 'Manual' : 'Auto'}
+                                <Badge size="xs" variant="light" color={milestone.source && milestone.source !== 'MANUAL' ? 'teal' : 'gray'}>
+                                  {milestone.source && milestone.source !== 'MANUAL' ? 'Auto' : 'Manual'}
                                 </Badge>
                               ) : MILESTONE_AUTOMATION[milestone.milestone_code as ShipmentMilestoneCodeV1].auto ? (
                                 <Tooltip
