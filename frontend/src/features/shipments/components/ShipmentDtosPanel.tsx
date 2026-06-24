@@ -1,10 +1,13 @@
 import {
   ActionIcon,
   Alert,
+  Badge,
   Group,
   Loader,
   Paper,
+  Progress,
   ScrollArea,
+  SimpleGrid,
   Stack,
   Table,
   Text,
@@ -25,6 +28,16 @@ import { StatusBadge } from '@shared/components/StatusBadge';
 import { useI18n } from '@shared/i18n';
 import { formatDate } from '@shared/utils/date';
 
+import { fetchShipmentContainers } from '@shared/api/shipmentContainers';
+import { resolveShipmentDelivery, type ShipmentDeliveryState } from '../model/deliveryReconciliation';
+
+const DELIVERY_STATE_META: Record<ShipmentDeliveryState, { label: string; color: string }> = {
+  NO_CONTAINERS: { label: 'Theo DTO (không có container)', color: 'gray' },
+  UNALLOCATED: { label: 'Chưa phân bổ đủ container', color: 'orange' },
+  IN_PROGRESS: { label: 'Đang giao', color: 'blue' },
+  COMPLETE: { label: 'Đã giao đủ', color: 'teal' },
+};
+
 export function ShipmentDtosPanel({ shipment }: { shipment: ShipmentRecord }) {
   const queryClient = useQueryClient();
   const { t } = useI18n();
@@ -34,6 +47,12 @@ export function ShipmentDtosPanel({ shipment }: { shipment: ShipmentRecord }) {
     queryFn: () => fetchShipmentDomesticTransportOrders(shipment.id),
   });
   const dtos: DomesticTransportOrderV1[] = dtosQuery.data?.data ?? [];
+
+  const containersQuery = useQuery({
+    queryKey: queryKeys.shipmentContainers(shipment.id),
+    queryFn: () => fetchShipmentContainers(shipment.id),
+  });
+  const summary = resolveShipmentDelivery(containersQuery.data ?? [], dtos);
 
   const unlinkMutation = useMutation({
     mutationFn: (dtoId: string) => unlinkDtoFromShipment(shipment.id, dtoId),
@@ -47,6 +66,36 @@ export function ShipmentDtosPanel({ shipment }: { shipment: ShipmentRecord }) {
       <Alert color="teal" icon={<IconTruck size={18} />}>
         {t('shipments.dtosPanel.info')}
       </Alert>
+
+      <Paper withBorder p="md">
+        <Group justify="space-between" align="flex-start" mb="sm">
+          <div>
+            <Text fw={700}>Đối soát giao hàng</Text>
+            <Text size="sm" c="dimmed">
+              {summary.state === 'NO_CONTAINERS'
+                ? `Đã giao ${summary.deliveredDtoCount}/${summary.totalDtoCount} DTO · số lượng từng phần không theo dõi (LCL)`
+                : `Đã giao ${summary.delivered}/${summary.totalContainers} container`}
+            </Text>
+          </div>
+          <Badge color={DELIVERY_STATE_META[summary.state].color} variant="light" size="lg">
+            {DELIVERY_STATE_META[summary.state].label}
+          </Badge>
+        </Group>
+        {summary.totalContainers > 0 ? (
+          <Progress
+            value={Math.round((summary.delivered / summary.totalContainers) * 100)}
+            color={DELIVERY_STATE_META[summary.state].color}
+            radius="xl"
+            size="sm"
+          />
+        ) : null}
+        <SimpleGrid cols={{ base: 2, sm: 4 }} mt="sm">
+          <div><Text size="xs" c="dimmed">Container</Text><Text fw={700} className="tabular-nums">{summary.totalContainers}</Text></div>
+          <div><Text size="xs" c="dimmed">Đã phân bổ</Text><Text fw={700} className="tabular-nums">{summary.allocated}</Text></div>
+          <div><Text size="xs" c="dimmed">Đã giao</Text><Text fw={700} className="tabular-nums">{summary.delivered}</Text></div>
+          <div><Text size="xs" c="dimmed">POD muộn nhất</Text><Text fw={700}>{summary.latestPodAt ? formatDate(summary.latestPodAt) : '-'}</Text></div>
+        </SimpleGrid>
+      </Paper>
 
       {dtosQuery.isLoading ? (
         <Group gap="xs"><Loader size="sm" /><Text size="sm" c="dimmed">{t('shipments.dtosPanel.loading')}</Text></Group>
