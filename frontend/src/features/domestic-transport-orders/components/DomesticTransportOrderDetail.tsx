@@ -164,6 +164,20 @@ export function DomesticTransportOrderDetail({
             <InfoField label="Total qty" value={formatNumber(order.total_qty)} />
             <InfoField label="Gross weight kg" value={formatNumber(order.total_gross_weight_kg)} />
             <InfoField label="POD" value={order.pod_document_ref ?? '-'} />
+            <Paper withBorder p="sm">
+              <Text className="metric-label" size="xs" fw={700} tt="uppercase">Delivery</Text>
+              <Text fw={700} mt={4}>{order.actual_delivery_at ? formatDateTime(order.actual_delivery_at) : 'Chưa giao'}</Text>
+              <Text size="xs" c="dimmed">Kế hoạch: {formatDateTime(order.scheduled_delivery_at)}</Text>
+            </Paper>
+            <Paper withBorder p="sm">
+              <Text className="metric-label" size="xs" fw={700} tt="uppercase">Containers</Text>
+              <Group gap="xs" mt={4} wrap="wrap">
+                {(() => {
+                  const list = Array.isArray(order.container_no) ? order.container_no : order.container_no ? [order.container_no] : [];
+                  return list.length ? list.map((no) => <Badge key={no} variant="light">{no}</Badge>) : <Text size="sm" c="dimmed">-</Text>;
+                })()}
+              </Group>
+            </Paper>
             <InfoField
               label="Quote amount"
               value={order.quote_amount != null ? `${formatNumber(order.quote_amount)} ${order.quote_currency ?? ''}`.trim() : '-'}
@@ -216,6 +230,9 @@ export function DomesticTransportOrderDetail({
                     <HeaderLabel label="DTO lines" hint={t('glossary.dto')} />
                   </Text>
                   <Text size="sm" c="dimmed">Lines are copied from shipment lines and enriched by item, PO line, LOT, HS code, and weight.</Text>
+                  {order.shipments && order.shipments.length > 1 ? (
+                    <Text size="xs" c="orange">1 trong {order.shipments.length} shipment được gom vào chuyến này</Text>
+                  ) : null}
                 </div>
                 <Badge variant="light" className="dto-line-count">{order.lines?.length ?? 0} lines</Badge>
               </Group>
@@ -231,7 +248,7 @@ export function DomesticTransportOrderDetail({
                         <HeaderLabel label="HS" hint={t('glossary.hsCode')} />
                       </Table.Th>
                       <Table.Th style={{ textAlign: 'right' }}>
-                        <HeaderLabel label="DTO qty" hint={t('glossary.dto')} />
+                        <HeaderLabel label="DTO qty" hint="Toàn bộ qty của shipment line cho chặng nội địa — không phải phần chia nhỏ" />
                       </Table.Th>
                       <Table.Th style={{ textAlign: 'right' }}>
                         <HeaderLabel label="PO qty" hint={t('glossary.po')} />
