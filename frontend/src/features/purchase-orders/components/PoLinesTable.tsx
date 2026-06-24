@@ -1,11 +1,11 @@
-import { Badge, Collapse, Group, NumberFormatter, Paper, Stack, Text, TextInput, UnstyledButton } from '@mantine/core';
+import { Badge, Collapse, Group, NumberFormatter, Paper, Stack, Text, TextInput, Tooltip, UnstyledButton } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { IconChevronDown, IconSearch } from '@tabler/icons-react';
 import { useMemo, useState, type ReactNode } from 'react';
 
 import type { PurchaseOrderLineV1 } from '@shared/api/purchaseOrders';
 
-import { dateOnly, formatWeightKg, getPoLineLotState, toNumber } from '../model/purchaseOrderModel';
+import { dateOnly, formatWeightKg, getPoLineLotState, getPoLineReceiptState, toNumber } from '../model/purchaseOrderModel';
 
 type LotState = ReturnType<typeof getPoLineLotState>;
 type LineFilter = 'all' | 'full' | 'partial' | 'needs-lot';
@@ -15,6 +15,13 @@ const LOT_CONFIG: Record<LotState, { label: string; color: string }> = {
   partial: { label: 'Partial', color: 'orange' },
   'needs-lot': { label: 'Needs LOT', color: 'red' },
   none: { label: 'No LOT', color: 'gray' },
+};
+
+const RECEIPT_CONFIG: Record<ReturnType<typeof getPoLineReceiptState>['state'], { color: string }> = {
+  full: { color: 'teal' },
+  short: { color: 'orange' },
+  pending: { color: 'gray' },
+  none: { color: 'gray' },
 };
 
 export function PoLinesTable({ currencyCode, lines }: { currencyCode: string; lines: PurchaseOrderLineV1[] }) {
@@ -33,6 +40,11 @@ export function PoLinesTable({ currencyCode, lines }: { currencyCode: string; li
         },
         { full: 0, partial: 0, needsLot: 0 },
       ),
+    [lines],
+  );
+
+  const fullyReceived = useMemo(
+    () => lines.filter((line) => getPoLineReceiptState(line).state === 'full').length,
     [lines],
   );
 
@@ -65,6 +77,11 @@ export function PoLinesTable({ currencyCode, lines }: { currencyCode: string; li
           </Stack>
           <Group gap={6} wrap="nowrap" className="purchase-order-po-lines-badges">
             <FilterBadge label={`${lines.length} lines`} active={filter === 'all'} onClick={() => setFilter('all')} />
+            {lines.some((line) => toNumber(line.qty_shipped) > 0) ? (
+              <Badge color="teal" variant="light" className="purchase-order-nowrap-badge">
+                {fullyReceived}/{lines.length} đã nhận đủ
+              </Badge>
+            ) : null}
             {lotMetrics.full > 0 ? (
               <FilterBadge color="teal" label={`${lotMetrics.full} lotted`} active={filter === 'full'} onClick={() => setFilter(filter === 'full' ? 'all' : 'full')} />
             ) : null}
@@ -109,8 +126,12 @@ export function PoLinesTable({ currencyCode, lines }: { currencyCode: string; li
                 <th className="col-qty num">Ordered</th>
                 <th className="col-qty num col-confirmed">Confirmed</th>
                 <th className="col-qty num col-lotted">Lotted</th>
-                <th className="col-qty num col-shipped">Shipped</th>
-                <th className="col-qty num col-received">Received</th>
+                <th className="col-qty num col-shipped">
+                  <Tooltip label="Đã đưa lên lô vận chuyển quốc tế" withArrow><span>Shipped</span></Tooltip>
+                </th>
+                <th className="col-qty num col-received">
+                  <Tooltip label="Đã nhận đủ so với Shipped (cấp shipment, sau thông quan)" withArrow><span>Received</span></Tooltip>
+                </th>
                 <th className="col-status">Status</th>
                 <th className="col-amount num">{currencyCode ? `Amount · ${currencyCode}` : 'Amount'}</th>
               </tr>
@@ -140,6 +161,7 @@ function PoLineRow({ line, currencyCode }: { line: PurchaseOrderLineV1; currency
   const lotted = toNumber(line.qty_lotted);
   const shipped = toNumber(line.qty_shipped);
   const received = toNumber(line.qty_received);
+  const receipt = getPoLineReceiptState(line);
   const unit = line.unit ?? '';
   const lineAmount = ordered * toNumber(line.unit_price);
 
@@ -181,7 +203,16 @@ function PoLineRow({ line, currencyCode }: { line: PurchaseOrderLineV1; currency
         <QtyCell value={confirmed} className="col-qty col-confirmed" emphasis="primary" />
         <QtyCell value={lotted} className="col-qty col-lotted" emphasis="lot" tone={lotState} />
         <QtyCell value={shipped} className="col-qty col-shipped" />
-        <QtyCell value={received} className="col-qty col-received" />
+        <td className="po-qty-cell num col-qty col-received">
+          <span className="po-qty-value tabular-nums" title={`${received.toLocaleString()}${unit ? ` ${unit}` : ''}`}>
+            {compactNumber(received)}
+          </span>
+          {shipped > 0 ? (
+            <Badge size="xs" mt={2} color={RECEIPT_CONFIG[receipt.state].color} variant={receipt.state === 'full' ? 'light' : 'outline'}>
+              {receipt.state === 'full' ? 'Đủ' : receipt.state === 'pending' ? 'Chưa nhận' : `Thiếu ${receipt.shortfall.toLocaleString()}`}
+            </Badge>
+          ) : null}
+        </td>
         <td className="col-status">
           <Badge size="sm" color={lot.color} variant={lotState === 'none' ? 'outline' : 'light'} className="purchase-order-nowrap-badge">
             {lot.label}
