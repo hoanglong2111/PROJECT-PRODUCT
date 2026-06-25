@@ -1,15 +1,17 @@
 import { Suspense } from 'react';
 
-import { PageLoading } from '@shared/components/PageFeedback';
+import { AppErrorBoundary, PageLoading } from '@shared/components/PageFeedback';
 import { useI18n } from '@shared/i18n';
 
 import { AppRoutes } from './routes';
 
 export default function App() {
   return (
-    <Suspense fallback={<RouteFallback />}>
-      <AppRoutes />
-    </Suspense>
+    <AppErrorBoundary>
+      <Suspense fallback={<RouteFallback />}>
+        <AppRoutes />
+      </Suspense>
+    </AppErrorBoundary>
   );
 }
 

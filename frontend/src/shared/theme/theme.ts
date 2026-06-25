@@ -7,10 +7,12 @@ import type { EventThemeId } from './eventThemes';
 
 const baseThemeOptions = {
   fontFamily:
-    '"Geist", "Inter", ui-sans-serif, system-ui, sans-serif',
+    '"Geist Variable", ui-sans-serif, system-ui, sans-serif',
+  fontFamilyMonospace:
+    '"Geist Mono Variable", ui-monospace, SFMono-Regular, monospace',
   headings: {
     fontFamily:
-      '"Geist", "Inter", ui-sans-serif, system-ui, sans-serif',
+      '"Geist Variable", ui-sans-serif, system-ui, sans-serif',
     fontWeight: '600' as const,
   },
   defaultRadius: 'md',

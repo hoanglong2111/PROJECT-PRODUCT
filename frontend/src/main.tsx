@@ -1,5 +1,8 @@
 import '@mantine/core/styles.css';
 import '@mantine/dates/styles.css';
+// Self-hosted variable fonts (no external CDN; bundled for offline/portable use).
+import '@fontsource-variable/geist/wght.css';
+import '@fontsource-variable/geist-mono/wght.css';
 import './theme.css';
 import './styles.css';
 

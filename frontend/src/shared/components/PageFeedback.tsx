@@ -14,10 +14,11 @@ import {
   Title,
 } from '@mantine/core';
 import { IconAlertTriangle, IconRefresh } from '@tabler/icons-react';
-import { Component, type ReactNode } from 'react';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import { useI18n } from '@shared/i18n';
+import { reportRenderError } from '@shared/lib/errors';
 
 type PageLoadingProps = {
   description: string;
@@ -189,6 +190,10 @@ class RouteErrorBoundaryInner extends Component<
     return { error };
   }
 
+  componentDidCatch(error: unknown, info: ErrorInfo) {
+    reportRenderError(error, info);
+  }
+
   componentDidUpdate(previousProps: { resetKey: string }) {
     if (previousProps.resetKey !== this.props.resetKey && this.state.error) {
       this.setState({ error: null });
@@ -221,4 +226,109 @@ function getErrorMessage(error: unknown, fallback: string) {
   }
 
   return fallback;
+}
+
+/**
+ * Full-page fallback used by the app-level boundary (e.g. a lazy chunk failed to
+ * load, or the shell/auth layer threw before any route mounted).
+ */
+export function FullPageError({
+  actionLabel,
+  description,
+  error,
+  onReload,
+  title,
+}: {
+  actionLabel: string;
+  description: string;
+  error?: unknown;
+  onReload: () => void;
+  title: string;
+}) {
+  const { t } = useI18n();
+
+  return (
+    <Center h="100dvh" p="md">
+      <Paper withBorder p="xl" maw={520} w="100%">
+        <Stack gap="md">
+          <Group align="flex-start" gap="sm" wrap="nowrap">
+            <ThemeIcon color="red" variant="light" size={42} radius="md">
+              <IconAlertTriangle size={24} />
+            </ThemeIcon>
+            <div>
+              <Title order={3}>{title}</Title>
+              <Text c="dimmed" size="sm" mt={4}>
+                {description}
+              </Text>
+            </div>
+          </Group>
+
+          {error ? (
+            <Alert color="red" variant="light">
+              {getErrorMessage(error, t('pageFeedback.defaultErrorDetail'))}
+            </Alert>
+          ) : null}
+
+          <Button
+            leftSection={<IconRefresh size={16} />}
+            variant="filled"
+            onClick={onReload}
+            w={{ base: '100%', sm: 200 }}
+          >
+            {actionLabel}
+          </Button>
+        </Stack>
+      </Paper>
+    </Center>
+  );
+}
+
+/**
+ * App-level (root) error boundary. Catches anything the per-route boundary can't:
+ * lazy chunk-load rejections surfaced through Suspense, and throws in the shell,
+ * auth, or public pages. Recovery is a hard reload (safest for a failed chunk).
+ */
+export function AppErrorBoundary({ children }: { children: ReactNode }) {
+  const { t } = useI18n();
+
+  return (
+    <AppErrorBoundaryInner
+      title={t('pageFeedback.appErrorTitle')}
+      description={t('pageFeedback.appErrorDescription')}
+      reloadLabel={t('pageFeedback.reload')}
+    >
+      {children}
+    </AppErrorBoundaryInner>
+  );
+}
+
+class AppErrorBoundaryInner extends Component<
+  { children: ReactNode; description: string; reloadLabel: string; title: string },
+  { error: unknown }
+> {
+  state: { error: unknown } = { error: null };
+
+  static getDerivedStateFromError(error: unknown) {
+    return { error };
+  }
+
+  componentDidCatch(error: unknown, info: ErrorInfo) {
+    reportRenderError(error, info);
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <FullPageError
+          title={this.props.title}
+          description={this.props.description}
+          error={this.state.error}
+          actionLabel={this.props.reloadLabel}
+          onReload={() => window.location.reload()}
+        />
+      );
+    }
+
+    return this.props.children;
+  }
 }
