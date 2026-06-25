@@ -84,7 +84,7 @@ export function DeliveryOrderListView({
     <>
       <SimpleGrid cols={{ base: 1, sm: 3 }}>
         <Metric
-          label="Trễ hạn"
+          label={t('deliveryOrders.metricLate')}
           value={deliveryOrders.filter((deliveryOrder) => deliveryOrder.order_info.status === 'DELAYED' || calcDelay({
             actualEntryDate: deliveryOrder.warehouse_tracking.actual_entry_date,
             plannedEntryDate: deliveryOrder.warehouse_tracking.planned_entry_date,
@@ -94,13 +94,13 @@ export function DeliveryOrderListView({
           icon={<IconAlertTriangle size={22} />}
         />
         <Metric
-          label="Chờ xử lý"
+          label={t('deliveryOrders.metricProcessing')}
           value={tabCounts.processing}
           color="blue"
           icon={<IconTruckDelivery size={22} />}
         />
         <Metric
-          label="Công việc đang chờ xử lý"
+          label={t('deliveryOrders.metricPendingTasks')}
           value={deliveryOrders.reduce((total, deliveryOrder) => total + deliveryOrder.task_summary.required_tasks_remaining, 0)}
           color="orange"
           icon={<IconChecklist size={22} />}
@@ -120,7 +120,7 @@ export function DeliveryOrderListView({
               <Tabs.List className="delivery-order-tabs-list">
                 {deliveryOrderTabItems.map((tab) => (
                   <Tabs.Tab key={tab.value} value={tab.value}>
-                    {tab.label} ({tabCounts[tab.value]})
+                    {t(tab.labelKey)} ({tabCounts[tab.value]})
                   </Tabs.Tab>
                 ))}
               </Tabs.List>
@@ -195,7 +195,7 @@ export function DeliveryOrderListView({
                   <HeaderLabel label={t('deliveryOrders.sourcePoLot')} hint={`${t('glossary.po')} ${t('glossary.lot')}`} />
                 </Table.Th>
                 <Table.Th>
-                  <HeaderLabel label={`${t('common.supplier')} / Allocation`} hint={t('glossary.allocation')} />
+                  <HeaderLabel label={t('deliveryOrders.supplierAllocationHeader')} hint={t('glossary.allocation')} />
                 </Table.Th>
                 <Table.Th>
                   <HeaderLabel label={t('common.route')} hint={t('glossary.route')} />
@@ -243,11 +243,11 @@ export function DeliveryOrderListView({
                         {deliveryOrder.sap_integration.supplier_name ?? t('deliveryOrders.supplierPending')}
                       </Text>
                       <Text size="sm" c="dimmed" lineClamp={1}>
-                        <NumberFormatter value={deliveryOrder.source_lines.length} thousandSeparator /> items -{' '}
+                        <NumberFormatter value={deliveryOrder.source_lines.length} thousandSeparator /> {t('deliveryOrders.overviewItems')} -{' '}
                         <NumberFormatter value={deliveryOrder.product_details.quantity} thousandSeparator />{' '}
                         {deliveryOrder.product_details.unit || 'PCS'} |{' '}
                         <NumberFormatter value={allocationWeightKg} thousandSeparator />kg -{' '}
-                        <NumberFormatter value={containerCount} thousandSeparator /> Conts
+                        <NumberFormatter value={containerCount} thousandSeparator /> {t('deliveryOrders.containersShort')}
                       </Text>
                     </Table.Td>
                     <Table.Td className="table-cell-truncate" style={{ maxWidth: '17rem' }}>
@@ -271,7 +271,7 @@ export function DeliveryOrderListView({
                         <Badge size="xs" color="gray" variant="light">{t('deliveryOrders.noShipment')}</Badge>
                       )}
                       <Text size="xs" c={delay.isLate ? 'red' : 'dimmed'} mt={4}>
-                        ETA {deliveryOrder.logistics_shipping.eta_planned ?? '-'}
+                        {t('deliveryOrders.eta')} {deliveryOrder.logistics_shipping.eta_planned ?? '-'}
                       </Text>
                       <Group gap="xs" mt={6}>
                         <DelayBadge days={delay.days} type={delay.type} />

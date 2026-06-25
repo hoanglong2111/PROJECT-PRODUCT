@@ -2,7 +2,10 @@ import { Badge, Stack, Text } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 
+import { useI18n } from '@shared/i18n';
+
 export function SlaTimer({ dueAt }: { dueAt: string | null | undefined }) {
+  const { t } = useI18n();
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -14,7 +17,7 @@ export function SlaTimer({ dueAt }: { dueAt: string | null | undefined }) {
   const isValid = dueDate.isValid();
   const now = dayjs();
   const isOverdue = isValid && dueDate.isBefore(now);
-  const countdown = isValid ? formatSlaCountdown(dueDate.diff(now)) : '-';
+  const countdown = isValid ? formatSlaCountdown(dueDate.diff(now), t) : '-';
 
   return (
     <Stack gap={2}>
@@ -22,7 +25,9 @@ export function SlaTimer({ dueAt }: { dueAt: string | null | undefined }) {
         {isValid ? dueDate.format('DD/MM/YYYY HH:mm:ss') : '-'}
       </Text>
       <Badge color={isOverdue ? 'red' : 'orange'} variant="light" size="sm">
-        {isValid ? `${isOverdue ? 'Quá hạn' : 'Còn'} ${countdown}` : '-'}
+        {isValid
+          ? t(isOverdue ? 'deliveryOrders.slaOverdue' : 'deliveryOrders.slaRemaining', { countdown })
+          : '-'}
       </Badge>
     </Stack>
   );
@@ -35,7 +40,7 @@ function parseSlaDueAt(value: string | null | undefined) {
   return isDateOnly ? dayjs(rawValue).endOf('day') : dayjs(rawValue);
 }
 
-function formatSlaCountdown(diffMs: number) {
+function formatSlaCountdown(diffMs: number, t: ReturnType<typeof useI18n>['t']) {
   const totalSeconds = Math.max(0, Math.floor(Math.abs(diffMs) / 1_000));
   const days = Math.floor(totalSeconds / 86_400);
   const hours = Math.floor((totalSeconds % 86_400) / 3_600);
@@ -43,5 +48,5 @@ function formatSlaCountdown(diffMs: number) {
   const seconds = totalSeconds % 60;
   const time = [hours, minutes, seconds].map((value) => String(value).padStart(2, '0')).join(':');
 
-  return days > 0 ? `${days} ngày ${time}` : time;
+  return days > 0 ? `${t('deliveryOrders.slaDays', { count: days })} ${time}` : time;
 }

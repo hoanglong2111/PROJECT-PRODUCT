@@ -754,10 +754,42 @@
    table-layout: fixed reads these from the header row; the Item column truncates. */
 .po-lines-table .col-toggle { width: 3.5%; }
 .po-lines-table .col-no { width: 4%; }
-.po-lines-table .col-item { width: 30%; }
-.po-lines-table .col-qty { width: 8%; }
-.po-lines-table .col-status { width: 9.5%; }
-.po-lines-table .col-amount { width: 13%; }
+.po-lines-table .col-item { width: 28%; }
+.po-lines-table .col-qty { width: 8.4%; }
+.po-lines-table .col-status { width: 9%; }
+.po-lines-table .col-amount { width: 13.5%; }
+
+/* The five fulfillment-quantity columns (Ordered → Received) belong together but
+   read as a cramped wall of numbers side by side. A faint tinted band sets the
+   cluster apart from Item / Status / Amount, hairline rules separate each value
+   so the numbers stop blurring, and a touch more inline padding lets them breathe.
+   All of this rides on the persistent .col-qty class, so it adapts automatically
+   when the trailing qty columns collapse on smaller screens. */
+.po-lines-table .col-qty {
+  padding-inline: 0.6rem;
+  background: color-mix(in srgb, var(--kbfe-surface-subtle) 45%, transparent);
+}
+
+.po-lines-table thead th.col-qty {
+  background: color-mix(in srgb, var(--kbfe-surface-subtle) 72%, var(--kbfe-surface-elevated) 28%);
+}
+
+/* Hairline between each value inside the cluster. */
+.po-lines-table .col-confirmed,
+.po-lines-table .col-lotted,
+.po-lines-table .col-shipped,
+.po-lines-table .col-received {
+  border-left: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 26%, transparent);
+}
+
+/* Stronger rules frame the cluster's outer edges against its neighbours. */
+.po-lines-table .col-ordered {
+  border-left: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 60%, transparent);
+}
+
+.po-lines-table .col-received {
+  border-right: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 60%, transparent);
+}
 
 .po-line-row {
   cursor: pointer;

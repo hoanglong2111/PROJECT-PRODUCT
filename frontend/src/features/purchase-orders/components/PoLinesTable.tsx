@@ -123,7 +123,7 @@ export function PoLinesTable({ currencyCode, lines }: { currencyCode: string; li
                 <th className="col-toggle" aria-hidden="true" />
                 <th className="col-no">#</th>
                 <th className="col-item">Item</th>
-                <th className="col-qty num">Ordered</th>
+                <th className="col-qty num col-ordered">Ordered</th>
                 <th className="col-qty num col-confirmed">Confirmed</th>
                 <th className="col-qty num col-lotted">Lotted</th>
                 <th className="col-qty num col-shipped">
@@ -199,7 +199,7 @@ function PoLineRow({ line, currencyCode }: { line: PurchaseOrderLineV1; currency
             {itemName}
           </span>
         </td>
-        <QtyCell value={ordered} unit={unit} className="col-qty" />
+        <QtyCell value={ordered} unit={unit} className="col-qty col-ordered" />
         <QtyCell value={confirmed} className="col-qty col-confirmed" emphasis="primary" />
         <QtyCell value={lotted} className="col-qty col-lotted" emphasis="lot" tone={lotState} />
         <QtyCell value={shipped} className="col-qty col-shipped" />

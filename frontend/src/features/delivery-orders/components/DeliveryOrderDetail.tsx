@@ -53,7 +53,7 @@ import { OperationalGateSummary } from './OperationalGateSummary';
 
 export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: DeliveryOrder; onClose: () => void }) {
   const queryClient = useQueryClient();
-  const { documentLabel, t, taskRoleLabel } = useI18n();
+  const { documentLabel, shippingMethodLabel, t, taskRoleLabel } = useI18n();
   const [createShipmentOpen, setCreateShipmentOpen] = useState(false);
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
   const gates = getOperationalGates(deliveryOrder);
@@ -99,18 +99,18 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
 
   const primaryAction =
     deliveryOrder.order_info.status === 'DRAFT'
-      ? { action: 'ready-for-quotation' as const, label: 'Ready for quotation' }
+      ? { action: 'ready-for-quotation' as const, label: t('deliveryOrders.readyForQuotationAction') }
       : deliveryOrder.order_info.status === 'ASSIGNED_TO_SHIPMENT'
-        ? { action: 'close' as const, label: 'Close DO' }
+        ? { action: 'close' as const, label: t('deliveryOrders.closeDoAction') }
         : null;
   const canCancel = ['DRAFT', 'READY_FOR_QUOTATION', 'QUOTATION_CONFIRMED'].includes(deliveryOrder.order_info.status);
   const isQuotationConfirmed = deliveryOrder.order_info.status === 'QUOTATION_CONFIRMED';
   const closureChecklist = [
-    { ok: Boolean(deliveryOrder.linked_shipment_number), label: 'Linked to a shipment' },
-    { ok: deliveryOrder.logistics_shipping.missing_documents.length === 0, label: 'No missing documents' },
-    { ok: deliveryOrder.task_summary.blocked_tasks === 0, label: 'No blocked tasks' },
-    { ok: deliveryOrder.task_summary.required_tasks_remaining === 0, label: 'Required closure tasks completed' },
-    { ok: Boolean(deliveryOrder.warehouse_tracking.actual_entry_date), label: 'Warehouse entry / POD recorded' },
+    { ok: Boolean(deliveryOrder.linked_shipment_number), label: t('deliveryOrders.checklistLinkedShipment') },
+    { ok: deliveryOrder.logistics_shipping.missing_documents.length === 0, label: t('deliveryOrders.checklistNoMissingDocuments') },
+    { ok: deliveryOrder.task_summary.blocked_tasks === 0, label: t('deliveryOrders.checklistNoBlockedTasks') },
+    { ok: deliveryOrder.task_summary.required_tasks_remaining === 0, label: t('deliveryOrders.checklistRequiredClosureTasks') },
+    { ok: Boolean(deliveryOrder.warehouse_tracking.actual_entry_date), label: t('deliveryOrders.checklistWarehousePodRecorded') },
   ];
 
   return (
@@ -137,7 +137,7 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
                   leftSection={<IconAnchor size={14} />}
                   onClick={() => setCreateShipmentOpen(true)}
                 >
-                  Create Shipment
+                  {t('deliveryOrders.createShipmentAction')}
                 </Button>
               ) : null}
               {primaryAction ? (
@@ -161,7 +161,7 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
                   loading={actionMutation.isPending}
                   onClick={() => actionMutation.mutate('cancel')}
                 >
-                  Cancel
+                  {t('deliveryOrders.cancelDoAction')}
                 </Button>
               ) : null}
             </Group>
@@ -301,7 +301,7 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
                         </Badge>
                       </Group>
                       <Text size="sm" c="dimmed">
-                        {deliveryOrder.logistics_shipping.shipping_method} - {deliveryOrder.logistics_shipping.incoterms || '-'}
+                        {shippingMethodLabel(deliveryOrder.logistics_shipping.shipping_method)} - {deliveryOrder.logistics_shipping.incoterms || '-'}
                       </Text>
                     </Stack>
                   </Group>
@@ -338,7 +338,7 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
                     <DelayBadge days={delay.days} type={delay.type} />
                   </Group>
                   <Text size="sm" c={delay.isLate ? 'red' : 'dimmed'}>
-                    ETA {deliveryOrder.logistics_shipping.eta_planned ?? '-'}
+                    {t('deliveryOrders.eta')} {deliveryOrder.logistics_shipping.eta_planned ?? '-'}
                   </Text>
                 </Stack>
 
@@ -608,10 +608,15 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
         onClose={() => setCreateShipmentOpen(false)}
       />
 
-      <Modal opened={closeConfirmOpen} onClose={() => setCloseConfirmOpen(false)} title="Close delivery order" centered>
+      <Modal
+        opened={closeConfirmOpen}
+        onClose={() => setCloseConfirmOpen(false)}
+        title={t('deliveryOrders.closeConfirmTitle')}
+        centered
+      >
         <Stack gap="md">
           <Alert color="orange" icon={<IconAlertTriangle size={18} />}>
-            Closing a DO is final. Confirm the shipment is delivered, customs cleared, and POD is on file before closing.
+            {t('deliveryOrders.closeConfirmDescription')}
           </Alert>
           <List spacing="xs" size="sm" center>
             {closureChecklist.map((item) => (
@@ -631,7 +636,7 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
           </List>
           <Group justify="flex-end" gap="xs">
             <Button variant="subtle" onClick={() => setCloseConfirmOpen(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               color="teal"
@@ -641,7 +646,7 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
                 setCloseConfirmOpen(false);
               }}
             >
-              Close DO
+              {t('deliveryOrders.closeDoAction')}
             </Button>
           </Group>
         </Stack>

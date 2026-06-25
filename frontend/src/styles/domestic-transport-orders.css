@@ -202,6 +202,10 @@
   font-weight: 700;
   letter-spacing: 0;
   white-space: nowrap;
+  /* Match the body cells' top alignment so every header sits directly above the
+     first line of its column — otherwise headers baseline-align and read as
+     "shifted" against the multi-line data rows below. */
+  vertical-align: top;
   background: color-mix(in srgb, var(--kbfe-surface-subtle) 78%, var(--kbfe-surface-elevated) 22%);
 }
 
@@ -239,12 +243,28 @@
   min-width: 0;
 }
 
-.dto-list-table .dto-route-cell {
-  min-width: 15rem;
+/* table-layout: fixed locks every column to the widths below so the header row
+   and the body rows share one column grid — the header can never drift out of
+   line with its data. The table still honours Mantine's miw on narrow viewports
+   (it scrolls horizontally), but fills 100% of the panel on desktop. */
+.dto-list-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.dto-list-table .dto-col-dto { width: 14%; }
+.dto-list-table .dto-col-shipment { width: 16%; }
+.dto-list-table .dto-col-vendor { width: 19%; }
+.dto-list-table .dto-col-route { width: 31%; }
+.dto-list-table .dto-col-status { width: 12%; }
+.dto-list-table .dto-col-open { width: 8%; }
+
+/* Keep the action column's header and its icon on the same right edge. */
+.dto-list-table .dto-col-open {
+  text-align: right;
 }
 
 .dto-list-table .dto-vendor-cell {
-  max-width: 18rem;
   overflow-wrap: anywhere;
 }
 
@@ -393,25 +413,101 @@
   flex: 0 0 auto;
 }
 
-.dto-line-row td {
-  transition: background-color 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+/* ── DTO lines ────────────────────────────────────────────────────────────
+   Inside the detail drawer each shipment line is a self-contained card instead
+   of a wide, horizontally-scrolling table row: the item is the heading, the LOT
+   sits as a badge, and the four figures (DTO qty / PO qty / Gross kg / HS) read
+   as a small metric grid that wraps to fit the drawer width — no sticky column,
+   no horizontal scroll, no clipped values. */
+.dto-lines-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr));
+  gap: 0.6rem;
 }
 
-.dto-lines-table th:first-child,
-.dto-lines-sticky-cell {
-  position: sticky;
-  left: 0;
-  z-index: 2;
+.dto-line-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 0.7rem;
+  border: 1px solid var(--kbfe-border-primary);
   background: var(--kbfe-surface-elevated);
+  transition: border-color 140ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.dto-lines-table th:first-child {
-  z-index: 3;
-  background: color-mix(in srgb, var(--kbfe-surface-subtle) 78%, var(--kbfe-surface-elevated) 22%);
+.dto-line-card:hover {
+  border-color: color-mix(in srgb, var(--kbfe-primary-color) 35%, var(--kbfe-border-primary));
+  box-shadow: 0 8px 20px -16px rgb(15 23 42 / 0.4);
 }
 
-.dto-line-row:hover .dto-lines-sticky-cell {
-  background: color-mix(in srgb, var(--kbfe-primary-color) 5%, var(--kbfe-surface-elevated));
+.dto-line-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.dto-line-card-item {
+  min-width: 0;
+}
+
+/* LOT is a unique identifier, not a status — render it as a quiet "code chip"
+   (neutral outline + monospace) so it reads as a reference value and never
+   competes with the status accent or the emphasized DTO qty. */
+.dto-line-lot-badge {
+  flex: 0 0 auto;
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 0.7rem;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  color: var(--kbfe-text-secondary, var(--mantine-color-gray-7));
+}
+
+.dto-line-card-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(5rem, 1fr));
+  gap: 0.5rem 0.75rem;
+  margin: 0;
+  padding-top: 0.6rem;
+  border-top: 1px dashed color-mix(in srgb, var(--kbfe-border-primary) 70%, transparent);
+}
+
+.dto-line-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.dto-line-metric-label {
+  margin: 0;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--kbfe-text-secondary, var(--mantine-color-gray-6));
+}
+
+.dto-line-metric-value {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--kbfe-text-primary);
+  overflow-wrap: anywhere;
+}
+
+.dto-line-metric.is-primary .dto-line-metric-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--kbfe-primary-color) 78%, var(--kbfe-text-primary));
+}
+
+.dto-line-metric-unit {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--kbfe-text-secondary, var(--mantine-color-gray-6));
 }
 
 .dto-error-alert {

@@ -1,6 +1,7 @@
 import { IconPlane, IconShip, IconTruckDelivery } from '@tabler/icons-react';
 
 import type { DeliveryOrder, DeliveryOrderStatus } from '@shared/api/logistics';
+import type { MessageKey } from '@shared/i18n';
 
 export const shippingIcon = {
   SEA: IconShip,
@@ -30,16 +31,16 @@ export const deliveryOrderStatusTabs: Record<Exclude<DeliveryOrderTab, 'all'>, D
   issues: ['DELAYED', 'CANCELLED'],
 };
 
-export const deliveryOrderTabItems: Array<{ label: string; value: DeliveryOrderTab }> = [
-  { label: 'Chờ xử lý', value: 'processing' },
-  { label: 'Chờ bàn giao', value: 'handover' },
-  { label: 'Đang vận chuyển quốc tế', value: 'internationalTransit' },
-  { label: 'Đang chờ thông quan', value: 'customsWaiting' },
-  { label: 'Đã thông quan', value: 'customsCleared' },
-  { label: 'Đang giao hàng', value: 'delivering' },
-  { label: 'Hoàn tất', value: 'completed' },
-  { label: 'Sự cố', value: 'issues' },
-  { label: 'Tất cả', value: 'all' },
+export const deliveryOrderTabItems: Array<{ labelKey: MessageKey; value: DeliveryOrderTab }> = [
+  { labelKey: 'deliveryOrders.tabProcessing', value: 'processing' },
+  { labelKey: 'deliveryOrders.tabHandover', value: 'handover' },
+  { labelKey: 'deliveryOrders.tabInternationalTransit', value: 'internationalTransit' },
+  { labelKey: 'deliveryOrders.tabCustomsWaiting', value: 'customsWaiting' },
+  { labelKey: 'deliveryOrders.tabCustomsCleared', value: 'customsCleared' },
+  { labelKey: 'deliveryOrders.tabDelivering', value: 'delivering' },
+  { labelKey: 'deliveryOrders.tabCompleted', value: 'completed' },
+  { labelKey: 'deliveryOrders.tabIssues', value: 'issues' },
+  { labelKey: 'deliveryOrders.tabAll', value: 'all' },
 ];
 
 export function hasOperationalRisk(deliveryOrder: DeliveryOrder) {
