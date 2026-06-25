@@ -5,11 +5,9 @@ import {
   Group,
   Loader,
   Paper,
-  ScrollArea,
   Select,
   SimpleGrid,
   Stack,
-  Table,
   Tabs,
   Text,
   TextInput,
@@ -17,6 +15,7 @@ import {
   Tooltip,
 } from '@mantine/core';
 import { IconCheck, IconClipboardCheck, IconFileCheck, IconTruckDelivery, IconX } from '@tabler/icons-react';
+import type { ReactNode } from 'react';
 
 import type { DomesticTransportOrderAction, DomesticTransportOrderV1 } from '@shared/api/domesticTransportOrders';
 import { EmptyState } from '@shared/components/EmptyState';
@@ -164,6 +163,20 @@ export function DomesticTransportOrderDetail({
             <InfoField label="Total qty" value={formatNumber(order.total_qty)} />
             <InfoField label="Gross weight kg" value={formatNumber(order.total_gross_weight_kg)} />
             <InfoField label="POD" value={order.pod_document_ref ?? '-'} />
+            <Paper withBorder p="sm">
+              <Text className="metric-label" size="xs" fw={700} tt="uppercase">Delivery</Text>
+              <Text fw={700} mt={4}>{order.actual_delivery_at ? formatDateTime(order.actual_delivery_at) : 'Chưa giao'}</Text>
+              <Text size="xs" c="dimmed">Kế hoạch: {formatDateTime(order.scheduled_delivery_at)}</Text>
+            </Paper>
+            <Paper withBorder p="sm">
+              <Text className="metric-label" size="xs" fw={700} tt="uppercase">Containers</Text>
+              <Group gap="xs" mt={4} wrap="wrap">
+                {(() => {
+                  const list = Array.isArray(order.container_no) ? order.container_no : order.container_no ? [order.container_no] : [];
+                  return list.length ? list.map((no) => <Badge key={no} variant="light">{no}</Badge>) : <Text size="sm" c="dimmed">-</Text>;
+                })()}
+              </Group>
+            </Paper>
             <InfoField
               label="Quote amount"
               value={order.quote_amount != null ? `${formatNumber(order.quote_amount)} ${order.quote_currency ?? ''}`.trim() : '-'}
@@ -216,57 +229,77 @@ export function DomesticTransportOrderDetail({
                     <HeaderLabel label="DTO lines" hint={t('glossary.dto')} />
                   </Text>
                   <Text size="sm" c="dimmed">Lines are copied from shipment lines and enriched by item, PO line, LOT, HS code, and weight.</Text>
+                  {order.shipments && order.shipments.length > 1 ? (
+                    <Text size="xs" c="orange">1 trong {order.shipments.length} shipment được gom vào chuyến này</Text>
+                  ) : null}
                 </div>
                 <Badge variant="light" className="dto-line-count">{order.lines?.length ?? 0} lines</Badge>
               </Group>
-              <ScrollArea type="always" offsetScrollbars scrollbarSize={8}>
-                <Table miw={900} verticalSpacing="sm" className="dto-table dto-lines-table">
-                  <Table.Thead>
-                    <Table.Tr>
-                      <Table.Th>Item</Table.Th>
-                      <Table.Th>
-                        <HeaderLabel label="LOT" hint={t('glossary.lot')} />
-                      </Table.Th>
-                      <Table.Th>
-                        <HeaderLabel label="HS" hint={t('glossary.hsCode')} />
-                      </Table.Th>
-                      <Table.Th style={{ textAlign: 'right' }}>
-                        <HeaderLabel label="DTO qty" hint={t('glossary.dto')} />
-                      </Table.Th>
-                      <Table.Th style={{ textAlign: 'right' }}>
-                        <HeaderLabel label="PO qty" hint={t('glossary.po')} />
-                      </Table.Th>
-                      <Table.Th style={{ textAlign: 'right' }}>
-                        <HeaderLabel label="Gross kg" hint={t('glossary.grossWeight')} />
-                      </Table.Th>
-                    </Table.Tr>
-                  </Table.Thead>
-                  <Table.Tbody>
-                    {(order.lines ?? []).map((line) => (
-                      <Table.Tr key={line.id} className="dto-line-row">
-                        <Table.Td className="dto-lines-sticky-cell">
-                          <Text fw={600}>{line.item_name ?? line.item_description ?? line.item_id ?? '-'}</Text>
-                          <Text size="xs" c="dimmed">{line.item_code ?? line.unit ?? '-'}</Text>
-                        </Table.Td>
-                        <Table.Td>{line.lot_no ?? line.po_lot_id ?? '-'}</Table.Td>
-                        <Table.Td>{line.hs_code ?? '-'}</Table.Td>
-                        <Table.Td style={{ textAlign: 'right' }}>
-                          {formatNumber(line.qty)} {line.unit ?? ''}
-                        </Table.Td>
-                        <Table.Td style={{ textAlign: 'right' }}>{formatNumber(line.qty_ordered)}</Table.Td>
-                        <Table.Td style={{ textAlign: 'right' }}>{formatNumber(line.gross_weight_kg)}</Table.Td>
-                      </Table.Tr>
-                    ))}
-                  </Table.Tbody>
-                </Table>
-              </ScrollArea>
               {(order.lines ?? []).length === 0 ? (
                 <EmptyState title="No DTO lines" description="This domestic transport order has no copied shipment lines yet." />
-              ) : null}
+              ) : (
+                <div className="dto-lines-grid">
+                  {(order.lines ?? []).map((line) => {
+                    const itemName = line.item_name ?? line.item_description ?? line.item_id ?? '-';
+                    return (
+                      <article key={line.id} className="dto-line-card">
+                        <div className="dto-line-card-head">
+                          <div className="dto-line-card-item">
+                            <Text fw={600} lineClamp={1} title={itemName}>
+                              {itemName}
+                            </Text>
+                            <Text size="xs" c="dimmed">{line.item_code ?? line.unit ?? '-'}</Text>
+                          </div>
+                          <Badge variant="outline" color="gray" className="dto-line-lot-badge">
+                            {line.lot_no ?? line.po_lot_id ?? '-'}
+                          </Badge>
+                        </div>
+
+                        <dl className="dto-line-card-metrics">
+                          <LineMetric primary label="DTO qty" hint="Toàn bộ qty của shipment line cho chặng nội địa — không phải phần chia nhỏ">
+                            {formatNumber(line.qty)}
+                            {line.unit ? <span className="dto-line-metric-unit"> {line.unit}</span> : null}
+                          </LineMetric>
+                          <LineMetric label="PO qty" hint={t('glossary.po')}>
+                            {formatNumber(line.qty_ordered)}
+                          </LineMetric>
+                          <LineMetric label="Gross kg" hint={t('glossary.grossWeight')}>
+                            {formatNumber(line.gross_weight_kg)}
+                          </LineMetric>
+                          <LineMetric label="HS" hint={t('glossary.hsCode')}>
+                            {line.hs_code ?? '-'}
+                          </LineMetric>
+                        </dl>
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
             </Stack>
           </Paper>
         </Tabs.Panel>
       </Tabs>
     </Stack>
+  );
+}
+
+function LineMetric({
+  label,
+  hint,
+  primary,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  primary?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div className={primary ? 'dto-line-metric is-primary' : 'dto-line-metric'}>
+      <dt className="dto-line-metric-label">
+        <HeaderLabel label={label} hint={hint} />
+      </dt>
+      <dd className="dto-line-metric-value tabular-nums">{children}</dd>
+    </div>
   );
 }

@@ -102,11 +102,12 @@ Use npm only. Do not add pnpm/yarn lockfiles or package-manager config.
 - `npm ci` installs exact dependencies from `package-lock.json`.
 - `npm run dev` starts the Vite development server.
 - `npm run typecheck` runs TypeScript with `--noEmit`.
+- `npm run lint` runs ESLint over `src` (flat config: `typescript-eslint` + `react-hooks` + `jsx-a11y`).
 - `npm run check:boundaries` validates dependency rules with Dependency Cruiser.
 - `npm run test` runs the Vitest suite once.
 - `npm run test:watch` runs Vitest in watch mode.
 - `npm run build` type-checks and creates the production Vite build.
-- `npm run verify` runs boundary checks, type-checking, tests, and build.
+- `npm run verify` runs lint, boundary checks, type-checking, tests, and build.
 
 Node `>=20.19.0` and npm 10 are expected.
 
@@ -123,7 +124,14 @@ Use TypeScript and React function components. Follow existing style:
 
 Keep shared logic under `src/shared`. Keep feature-specific logic inside its feature folder. Do not import from backend/server code.
 
-There is no dedicated lint or formatter script in `package.json`; rely on TypeScript, tests, boundary checks, and existing file style.
+ESLint (`npm run lint`, flat config in `eslint.config.js`) enforces `react-hooks` and `jsx-a11y`
+rules and is part of `npm run verify`. **Keep lint at zero errors** — `rules-of-hooks` and the core
+a11y rules are errors and must stay clean. The existing ~99 *warnings* are a tracked baseline:
+some React-Compiler-oriented rules (`set-state-in-effect`, `preserve-manual-memoization`, `use-memo`)
+and `@typescript-eslint/no-explicit-any` are intentionally **warnings** because fixing them means
+reworking working effects/memoization or API-mapper types — do that as deliberate cleanup, not drive-by.
+Don't add new warnings where avoidable; don't silence rules to dodge a real fix. There is no formatter
+script — match existing file style above.
 
 ## Dependency Boundaries (enforced by `dependency-cruiser.cjs`)
 
@@ -151,7 +159,9 @@ This enforces the one-way layering `app → features → entities → shared` au
 Global CSS is loaded once at app entry (`src/main.tsx`) and is organized one file per domain.
 Follow this so styles never collapse back into one giant file:
 
-- `src/theme.css` — design tokens only (CSS custom properties `--kbfe-*`: colors, spacing, shadows).
+- `src/theme.css` — design tokens only (CSS custom properties `--kbfe-*`: colors, spacing, shadows,
+  typography). Tokens are the single source: define a `--kbfe-*` then map it onto the matching
+  `--mantine-*` var (as spacing/font-size/line-height/heading scale already do) instead of hardcoding.
 - `src/styles.css` — **barrel only**: a list of `@import './styles/<domain>.css'` in cascade order.
   Do **not** add rules here.
 - `src/styles/<domain>.css` — the actual rules, one file per domain: `base`, `app-shell`,
@@ -174,6 +184,24 @@ When adding or changing UI:
   into its own file and add it to the barrel — e.g. `lots.css` was split out of `purchase-orders.css`.
 - Prefer Mantine props / `style` / `styles` for one-off, component-local styling; use a global class
   only for reusable, structural, or cross-component rules.
+
+### Typography & fonts
+
+- **Fonts are self-hosted, not from a CDN.** Geist + Geist Mono ship via `@fontsource-variable/geist`
+  and `@fontsource-variable/geist-mono`, imported once in `src/main.tsx` (`wght.css`, roman only).
+  The bundled family names are `"Geist Variable"` / `"Geist Mono Variable"` — use those exact names,
+  never `"Geist"`/`"Inter"`. This keeps the app offline-ready and portable; do not re-add an external
+  font `<link>` in `index.html`.
+- **Use the typography tokens** in `theme.css` instead of literal sizes/weights/line-heights:
+  `--kbfe-font-size-*`, `--kbfe-font-weight-*` (normal/medium/semibold/bold), `--kbfe-line-height-*`
+  (tight/normal/relaxed), and the heading type-scale `--kbfe-h1..h6-font-size` / `-line-height`.
+  These feed the Mantine `--mantine-*` vars, so `Title`/headings already follow the scale.
+
+### Motion / accessibility
+
+- `prefers-reduced-motion: reduce` is honored **globally** in `base.css` (neutralizes transitions,
+  animations, and smooth scroll). Add new animations freely; they are covered automatically — only add
+  a domain-level override for special cases.
 
 ## Business Rules For Frontend Work
 

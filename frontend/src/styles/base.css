@@ -21,7 +21,7 @@ body {
 
 .tabular-nums {
   font-variant-numeric: tabular-nums;
-  font-family: "Geist Mono", "Geist", monospace;
+  font-family: "Geist Mono Variable", "Geist Variable", ui-monospace, monospace;
 }
 
 .risk-panel {
@@ -113,4 +113,26 @@ h4,
 h5,
 h6 {
   text-wrap: pretty;
+}
+
+/* Honor OS "reduce motion" preference globally: neutralize transitions,
+   animations, and smooth scrolling so the whole UI respects it without each
+   domain file having to opt in. Domain files may still add finer overrides. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .mantine-NavLink-root:hover {
+    transform: none;
+  }
 }

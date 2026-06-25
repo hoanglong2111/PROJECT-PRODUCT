@@ -46,16 +46,16 @@ export function DtoListTable({
         <Table miw={820} verticalSpacing="sm" highlightOnHover className="dto-table dto-list-table">
           <Table.Thead>
             <Table.Tr>
-              <Table.Th>
+              <Table.Th className="dto-col-dto">
                 <HeaderLabel label="DTO" hint={t('glossary.dto')} />
               </Table.Th>
-              <Table.Th>
+              <Table.Th className="dto-col-shipment">
                 <HeaderLabel label="Shipment" hint={t('glossary.shipment')} />
               </Table.Th>
-              <Table.Th>Vendor</Table.Th>
-              <Table.Th>Route</Table.Th>
-              <Table.Th>Status</Table.Th>
-              <Table.Th style={{ textAlign: 'right' }}>Open</Table.Th>
+              <Table.Th className="dto-col-vendor">Vendor</Table.Th>
+              <Table.Th className="dto-col-route">Route</Table.Th>
+              <Table.Th className="dto-col-status">Status</Table.Th>
+              <Table.Th className="dto-col-open">Open</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
@@ -65,11 +65,11 @@ export function DtoListTable({
                 className={order.id === selectedDtoId ? 'dto-list-row is-selected' : 'dto-list-row'}
                 onClick={() => onSelect(order)}
               >
-                <Table.Td className="dto-identity-cell">
+                <Table.Td className="dto-identity-cell dto-col-dto">
                   <Text fw={700}>{order.dto_no}</Text>
                   <Text size="xs" c="dimmed">{order.vehicle_plate ?? order.vehicle_type ?? '-'}</Text>
                 </Table.Td>
-                <Table.Td className="dto-shipment-cell">
+                <Table.Td className="dto-shipment-cell dto-col-shipment">
                   <Text size="sm">
                     {order.shipments && order.shipments.length > 1
                       ? `${order.shipments.length} shipments`
@@ -77,16 +77,16 @@ export function DtoListTable({
                   </Text>
                   <Text size="xs" c="dimmed">{formatContainers(order.shipment?.container_no)}</Text>
                 </Table.Td>
-                <Table.Td className="dto-vendor-cell">{order.truck_vendor?.supplier_name ?? order.truck_vendor_id ?? '-'}</Table.Td>
-                <Table.Td className="dto-route-cell">
+                <Table.Td className="dto-vendor-cell dto-col-vendor">{order.truck_vendor?.supplier_name ?? order.truck_vendor_id ?? '-'}</Table.Td>
+                <Table.Td className="dto-route-cell dto-col-route">
                   <Text size="sm" fw={600} lineClamp={1} title={`${order.origin ?? '-'} -> ${order.destination ?? '-'}`}>
                     {order.origin ?? '-'} {'->'} {order.destination ?? '-'}
                   </Text>
                   <Text size="xs" c="dimmed">Pickup {formatDateTime(order.scheduled_pickup_at)}</Text>
                   <Text size="xs" c="dimmed">Delivery {formatDateTime(order.scheduled_delivery_at)}</Text>
                 </Table.Td>
-                <Table.Td><StatusBadge status={order.status} /></Table.Td>
-                <Table.Td>
+                <Table.Td className="dto-col-status"><StatusBadge status={order.status} /></Table.Td>
+                <Table.Td className="dto-col-open">
                   <Group justify="flex-end">
                     <Tooltip label="Open DTO detail">
                       <ActionIcon

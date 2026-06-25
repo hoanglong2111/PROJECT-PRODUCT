@@ -243,6 +243,20 @@ export function getPoLineLotState(line: PurchaseOrderLineV1) {
   return 'partial';
 }
 
+export type PoLineReceiptState = 'none' | 'full' | 'short' | 'pending';
+
+// Received vs Shipped reconciliation at the PO line (procurement view).
+// Shipped = "đã đưa lên lô vận chuyển quốc tế"; Received = "đã nhận đủ so với Shipped".
+// Warehouse-delivery completeness (DTO/container) is intentionally out of scope here.
+export function getPoLineReceiptState(line: PurchaseOrderLineV1): { state: PoLineReceiptState; shortfall: number } {
+  const shipped = toNumber(line.qty_shipped);
+  const received = toNumber(line.qty_received);
+  if (shipped <= 0) return { state: 'none', shortfall: 0 };
+  if (received >= shipped) return { state: 'full', shortfall: 0 };
+  if (received <= 0) return { state: 'pending', shortfall: shipped };
+  return { state: 'short', shortfall: shipped - received };
+}
+
 export function getDelayedDays(order: PurchaseOrderV1) {
   return toNumber(order.delayed_days);
 }

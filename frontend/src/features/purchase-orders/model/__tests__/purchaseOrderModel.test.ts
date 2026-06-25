@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import type { PurchaseOrderV1 } from '@shared/api/purchaseOrders';
+import type { PurchaseOrderLineV1, PurchaseOrderV1 } from '@shared/api/purchaseOrders';
 
 import { mapStatusFilterToApi } from '../poStageConfig';
-import { deriveContractNo, resolvePoStage } from '../purchaseOrderModel';
+import { deriveContractNo, getPoLineReceiptState, resolvePoStage } from '../purchaseOrderModel';
 
 describe('resolvePoStage', () => {
   it('keeps cancelled purchase orders in the cancelled stage first', () => {
@@ -112,6 +112,33 @@ describe('deriveContractNo', () => {
     expect(deriveContractNo('   ')).toBe('');
   });
 });
+
+describe('getPoLineReceiptState', () => {
+  it('returns none when nothing has shipped', () => {
+    expect(getPoLineReceiptState(poLine({ qty_shipped: 0, qty_received: 0 }))).toEqual({ state: 'none', shortfall: 0 });
+  });
+  it('returns pending when shipped but nothing received', () => {
+    expect(getPoLineReceiptState(poLine({ qty_shipped: 100, qty_received: 0 }))).toEqual({ state: 'pending', shortfall: 100 });
+  });
+  it('returns short with the missing quantity', () => {
+    expect(getPoLineReceiptState(poLine({ qty_shipped: 100, qty_received: 60 }))).toEqual({ state: 'short', shortfall: 40 });
+  });
+  it('returns full when received meets shipped', () => {
+    expect(getPoLineReceiptState(poLine({ qty_shipped: 100, qty_received: 100 }))).toEqual({ state: 'full', shortfall: 0 });
+  });
+  it('returns full (no negative shortfall) when received exceeds shipped', () => {
+    expect(getPoLineReceiptState(poLine({ qty_shipped: 100, qty_received: 120 }))).toEqual({ state: 'full', shortfall: 0 });
+  });
+});
+
+function poLine(partial: Partial<PurchaseOrderLineV1>): PurchaseOrderLineV1 {
+  return {
+    id: 'l', line_no: 1, item_id: 'i',
+    qty_ordered: 0, qty_confirmed: 0, qty_lotted: 0, qty_shipped: 0, qty_received: 0,
+    unit: 'PCS', unit_price: 0,
+    ...partial,
+  } as PurchaseOrderLineV1;
+}
 
 function makePurchaseOrder(patch: Partial<PurchaseOrderV1> = {}): PurchaseOrderV1 {
   return {

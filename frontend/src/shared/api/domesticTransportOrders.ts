@@ -83,6 +83,7 @@ export type DomesticTransportOrderV1 = {
   delayed_days?: number | null;
   total_qty?: ApiDecimal | null;
   total_gross_weight_kg?: ApiDecimal | null;
+  container_no?: string[] | string | null;
   create_at: string;
   update_at: string;
   delete_at?: string | null;

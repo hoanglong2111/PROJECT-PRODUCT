@@ -183,7 +183,7 @@ export function DeliveryOrders() {
         description={t('deliveryOrders.loadingDescription')}
         tableColumns={[
           t('deliveryOrders.doColumn'),
-          'Source PO / Lot',
+          t('deliveryOrders.sourcePoLot'),
           t('common.supplier'),
           t('common.item'),
           t('common.route'),

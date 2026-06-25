@@ -74,7 +74,7 @@ export function Gd1QuotationBiddingPanel({
   status,
 }: Gd1QuotationBiddingPanelProps) {
   const queryClient = useQueryClient();
-  const { t } = useI18n();
+  const { statusLabel, t } = useI18n();
 
   const canCreateQuote = status !== undefined && QUOTE_CREATE_STATUSES.includes(status);
 
@@ -277,7 +277,7 @@ export function Gd1QuotationBiddingPanel({
                 <SimpleGrid cols={{ base: 1, sm: 2 }} className="quotation-info-grid">
                   <InfoField
                     label={<HeaderLabel label={t('quotations.incotermsReadonly')} hint={t('glossary.incoterm')} />}
-                    value={incoterms?.trim() || '—'}
+                    value={incoterms?.trim() || t('common.notAvailable')}
                   />
                   <InfoField
                     label={<HeaderLabel label={t('quotations.incotermsGroup')} hint={t('glossary.incoterm')} />}
@@ -428,13 +428,13 @@ export function Gd1QuotationBiddingPanel({
                       </Text>
                         {quote.isFinal ? (
                         <Badge size="xs" color="teal" variant="filled" mt={4} className="quotation-status-badge">
-                          Final
+                          {t('quotations.final')}
                         </Badge>
                       ) : null}
                     </Table.Td>
                     <Table.Td>
                       <Text size="sm" lineClamp={2}>
-                        {quote.carrierName || 'N/A'}
+                        {quote.carrierName || t('common.notAvailable')}
                       </Text>
                     </Table.Td>
                     <Table.Td>
@@ -484,7 +484,7 @@ export function Gd1QuotationBiddingPanel({
                         variant="light"
                         className="quotation-status-badge"
                       >
-                        {quote.status}
+                        {statusLabel(quote.status)}
                       </Badge>
                     </Table.Td>
                     <Table.Td>
@@ -516,7 +516,7 @@ export function Gd1QuotationBiddingPanel({
                               onClick={() => actionMutation.mutate({ id: quote.id, action: 'CUSTOMER_APPROVED' })}
                               loading={actionMutation.isPending}
                             >
-                              Mark final
+                              {t('quotations.markFinal')}
                             </Button>
                             <Button
                               size="compact-xs"
@@ -572,7 +572,7 @@ export function Gd1QuotationBiddingPanel({
                   <Stack gap="xs">
                     <InfoField
                       label={<HeaderLabel label={t('quotations.carrier')} hint={t('glossary.carrier')} />}
-                      value={quote.carrierName || 'N/A'}
+                      value={quote.carrierName || t('common.notAvailable')}
                     />
                     <InfoField
                       label={<HeaderLabel label={t('quotations.shippingMode')} hint={t('glossary.shippingMode')} />}
@@ -583,7 +583,7 @@ export function Gd1QuotationBiddingPanel({
                       value={
                         quote.quoteAmount
                           ? `${Number(quote.quoteAmount).toLocaleString()} ${quote.currency}`
-                          : 'N/A'
+                          : t('common.notAvailable')
                       }
                     />
                     {lines.length > 0 ? (
@@ -632,7 +632,7 @@ export function Gd1QuotationBiddingPanel({
                         />
                       </>
                     )}
-                    <InfoField label={t('quotations.status')} value={quote.status} />
+                    <InfoField label={t('quotations.status')} value={statusLabel(quote.status)} />
                   </Stack>
                 </Paper>
               );
