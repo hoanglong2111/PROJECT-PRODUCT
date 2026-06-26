@@ -19,18 +19,18 @@ export type FormState = {
   warehouse: string;
 };
 
-export const statusOptions: Array<{ label: string; value: DomesticTransportOrderStatusV1 | '' }> = [
-  { label: 'All statuses', value: '' },
-  { label: 'Draft', value: 'DRAFT' },
-  { label: 'Quote pending', value: 'QUOTE_PENDING' },
-  { label: 'Quoted', value: 'QUOTED' },
-  { label: 'Quote confirmed', value: 'QUOTE_CONFIRMED' },
-  { label: 'Dispatched', value: 'DISPATCHED' },
-  { label: 'In transit', value: 'IN_TRANSIT' },
-  { label: 'Delivered', value: 'DELIVERED' },
-  { label: 'POD received', value: 'POD_RECEIVED' },
-  { label: 'Closed', value: 'CLOSED' },
-  { label: 'Cancelled', value: 'CANCELLED' },
+export const statusValues: Array<DomesticTransportOrderStatusV1 | ''> = [
+  '',
+  'DRAFT',
+  'QUOTE_PENDING',
+  'QUOTED',
+  'QUOTE_CONFIRMED',
+  'DISPATCHED',
+  'IN_TRANSIT',
+  'DELIVERED',
+  'POD_RECEIVED',
+  'CLOSED',
+  'CANCELLED',
 ];
 
 export const PAGE_SIZE = 20;
@@ -84,8 +84,8 @@ export function formatContainers(value: string[] | string | null | undefined) {
   return value || '-';
 }
 
-export function getErrorMessage(error: unknown) {
+export function getErrorMessage(error: unknown, fallback = 'Request failed') {
   if (error instanceof Error) return error.message;
   if (typeof error === 'string') return error;
-  return 'Request failed';
+  return fallback;
 }

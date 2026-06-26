@@ -90,6 +90,10 @@ indicative of current usage; see the matching module in `src/shared/api` for the
 exact request/response types.)
 
 ### Purchase Orders & Supplier Confirmation
+> PO list/detail responses include a backend-computed `lifecycle_status` — the
+> laggard (least-advanced) linked shipment's status, mapped to the PO stage
+> taxonomy. The UI reads it as the source of truth for the stage badge and only
+> falls back to a client-side derivation when it is absent.
 - `GET|POST /v1/purchase-orders`
 - `GET|PATCH /v1/purchase-orders/:id`
 - `POST /v1/purchase-orders/:id/send`
@@ -109,7 +113,7 @@ exact request/response types.)
 
 ### Delivery Orders (Internal DO)
 - `GET /v1/delivery-orders`
-- `GET /v1/delivery-orders/screen` — screen DTO (list with task_summary / missing_documents / warehouse)
+- `GET /v1/delivery-orders/screen` — screen DTO (list with task_summary / missing_documents / warehouse). `order_info.status` is **derived** from the laggard linked shipment once the DO is handed off (it is not the raw DO record status); CANCELLED/CLOSED stay terminal. Parallels the PO `lifecycle_status` rule.
 - `GET /v1/delivery-orders/:id`
 - `POST /v1/delivery-orders/from-lots`
 - `POST /v1/delivery-orders/:id/ready-for-quotation`
@@ -122,6 +126,9 @@ exact request/response types.)
 ### Quotations
 - `GET /v1/quotations` · `GET /v1/quotations/:id`
 - `GET|POST /v1/delivery-orders/:id/quotations`
+- `POST /v1/quotations/:id/request` — status transition DRAFT → REQUESTED
+- `POST /v1/quotations/:id/receive` — status transition DRAFT|REQUESTED → RECEIVED
+- `POST /v1/quotations/:id/submit-to-kbi` — status transition RECEIVED → SUBMITTED_TO_KBI
 - `POST /v1/quotations/:id/confirm-by-kbi`
 - `POST /v1/quotations/:id/mark-final`
 - `POST /v1/quotations/:id/reject`
@@ -193,10 +200,13 @@ envelope above; handle their shapes separately from the `/v1` envelope.
 > grows.
 
 - **Generic mock CRUD** — `/v1/mock/:collection` and `/v1/mock/:collection/:id`
-  (used today for PO/DO/quotation header patches and PO-line CRUD where no business
-  endpoint exists yet). Collection names may be table-style (`purchase_orders`,
-  `purchase_order_lines`, `quotations`, `delivery_orders`). Each such call is a
-  **known contract gap** to be promoted to a real `/v1/*` route.
+  may still be served by the mock backend for debug/fallback, but the **frontend no
+  longer calls them** — the count of `/v1/mock` usages in `src/shared/api` is **0**
+  and is locked there by the ratchet test
+  `src/shared/api/__tests__/mockScaffoldingBudget.test.ts` (budget `0`). Any new
+  screen need must be served by a real `/v1/*` business endpoint, never by adding a
+  `/v1/mock` call back into the client. If you genuinely need a new business
+  operation, add a real route here first (see §7).
 - **Deterministic dev IDs** — stable mock IDs are a convenience for local dev/tests
   only; never assume an ID scheme, sequence, or that a seeded ID exists.
 - **Seed/reset tooling** — `npm run mock:seed` and the `mock-data/*.json` files live

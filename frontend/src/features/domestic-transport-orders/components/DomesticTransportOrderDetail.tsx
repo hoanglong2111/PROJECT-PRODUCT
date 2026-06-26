@@ -65,13 +65,13 @@ export function DomesticTransportOrderDetail({
                 {isFetching ? <Loader size="xs" /> : null}
               </Group>
               <Text size="sm" c="dimmed">
-                {order.origin ?? '-'} to {order.destination ?? '-'} / {order.warehouse ?? '-'}
+                {order.origin ?? '-'} {t('deliveryOrders.routeConnector')} {order.destination ?? '-'} / {order.warehouse ?? '-'}
               </Text>
             </div>
             <Group gap="xs" className="dto-detail-actions">
               {order.shipment ? <EntityLink compact id={order.shipment.shipment_no} type="shp" /> : null}
-              <Tooltip label="Close detail">
-                <ActionIcon aria-label="Close DTO detail" variant="subtle" onClick={onClose}>
+              <Tooltip label={t('domesticTransportOrders.closeDetail')}>
+                <ActionIcon aria-label={t('domesticTransportOrders.closeDetail')} variant="subtle" onClick={onClose}>
                   <IconX size={16} />
                 </ActionIcon>
               </Tooltip>
@@ -80,7 +80,7 @@ export function DomesticTransportOrderDetail({
 
           <div className="dto-route-rail">
             <div className="dto-route-stop">
-              <Text className="metric-label dto-detail-kicker" size="xs" fw={700} tt="uppercase">Pickup</Text>
+              <Text className="metric-label dto-detail-kicker" size="xs" fw={700} tt="uppercase">{t('domesticTransportOrders.pickup')}</Text>
               <Text fw={700} lineClamp={1} title={order.origin ?? '-'}>
                 {order.origin ?? '-'}
               </Text>
@@ -94,7 +94,7 @@ export function DomesticTransportOrderDetail({
               </div>
             </div>
             <div className="dto-route-stop is-right">
-              <Text className="metric-label dto-detail-kicker" size="xs" fw={700} tt="uppercase">Delivery</Text>
+              <Text className="metric-label dto-detail-kicker" size="xs" fw={700} tt="uppercase">{t('domesticTransportOrders.delivery')}</Text>
               <Text fw={700} lineClamp={1} title={order.destination ?? '-'}>
                 {order.destination ?? '-'}
               </Text>
@@ -104,28 +104,28 @@ export function DomesticTransportOrderDetail({
 
           <Group gap="xs" className="dto-action-strip">
             <Button size="xs" variant="light" disabled={isClosed || order.status !== 'DRAFT'} loading={actionPending} onClick={() => onAction('quote-pending')}>
-              Quote pending
+              {t('domesticTransportOrders.actionQuotePending')}
             </Button>
             <Button size="xs" variant="light" disabled={isClosed || !['QUOTE_PENDING', 'QUOTED'].includes(order.status)} loading={actionPending} onClick={() => onAction('confirm-quote')}>
-              Confirm quote
+              {t('domesticTransportOrders.actionConfirmQuote')}
             </Button>
             <Button size="xs" color="blue" disabled={isClosed || order.status !== 'QUOTE_CONFIRMED'} loading={actionPending} onClick={() => onAction('dispatch')}>
-              Dispatch
+              {t('domesticTransportOrders.actionDispatch')}
             </Button>
             <Button size="xs" color="cyan" disabled={isClosed || order.status !== 'DISPATCHED'} loading={actionPending} onClick={() => onAction('start-transit')}>
-              Start transit
+              {t('domesticTransportOrders.actionStartTransit')}
             </Button>
             <Button size="xs" color="teal" disabled={isClosed || order.status !== 'IN_TRANSIT'} loading={actionPending} onClick={() => onAction('deliver')}>
-              Deliver
+              {t('domesticTransportOrders.actionDeliver')}
             </Button>
             <Button size="xs" color="teal" variant="light" disabled={isClosed || order.status !== 'DELIVERED'} loading={actionPending} onClick={() => onAction('pod-received')}>
-              Mark POD received
+              {t('domesticTransportOrders.actionMarkPodReceived')}
             </Button>
             <Button size="xs" color="teal" variant="outline" disabled={isClosed || !['DELIVERED', 'POD_RECEIVED'].includes(order.status)} loading={actionPending} onClick={() => onAction('close')}>
-              Close
+              {t('common.close')}
             </Button>
             <Button size="xs" color="red" variant="light" disabled={isClosed} loading={actionPending} onClick={() => onAction('cancel')}>
-              Cancel
+              {t('common.cancel')}
             </Button>
           </Group>
         </Stack>
@@ -134,13 +134,13 @@ export function DomesticTransportOrderDetail({
       <Tabs defaultValue="overview" keepMounted={false} className="dto-detail-tabs">
         <Tabs.List className="dto-detail-tabs-list">
           <Tabs.Tab value="overview" leftSection={<IconTruckDelivery size={16} />}>
-            Overview
+            {t('deliveryOrders.overview')}
           </Tabs.Tab>
           <Tabs.Tab value="dispatch" leftSection={<IconClipboardCheck size={16} />}>
-            Dispatch and POD
+            {t('domesticTransportOrders.dispatchAndPod')}
           </Tabs.Tab>
           <Tabs.Tab value="lines" leftSection={<IconFileCheck size={16} />}>
-            DTO lines
+            {t('domesticTransportOrders.dtoLines')}
           </Tabs.Tab>
         </Tabs.List>
 
@@ -148,7 +148,7 @@ export function DomesticTransportOrderDetail({
           <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="sm" className="dto-detail-facts">
             {order.shipments && order.shipments.length > 1 ? (
               <Paper withBorder p="sm">
-                <Text className="metric-label" size="xs" fw={700} tt="uppercase">Shipments</Text>
+                <Text className="metric-label" size="xs" fw={700} tt="uppercase">{t('domesticTransportOrders.shipments')}</Text>
                 <Group gap="xs" mt={4} wrap="wrap">
                   {order.shipments.map((s) => (
                     <EntityLink key={s.id} compact id={s.shipment_no ?? s.id} type="shp" />
@@ -156,20 +156,20 @@ export function DomesticTransportOrderDetail({
                 </Group>
               </Paper>
             ) : (
-              <InfoField label="Shipment" value={order.shipment?.shipment_no ?? order.shipments?.[0]?.shipment_no ?? order.shipment_id} />
+              <InfoField label={t('domesticTransportOrders.shipment')} value={order.shipment?.shipment_no ?? order.shipments?.[0]?.shipment_no ?? order.shipment_id} />
             )}
-            <InfoField label="Truck vendor" value={order.truck_vendor?.supplier_name ?? order.truck_vendor_id ?? '-'} />
-            <InfoField label="Carrier DO" value={order.carrier_delivery_order?.carrier_do_no ?? order.carrier_delivery_order_id ?? '-'} />
-            <InfoField label="Total qty" value={formatNumber(order.total_qty)} />
-            <InfoField label="Gross weight kg" value={formatNumber(order.total_gross_weight_kg)} />
+            <InfoField label={t('domesticTransportOrders.truckVendor')} value={order.truck_vendor?.supplier_name ?? order.truck_vendor_id ?? '-'} />
+            <InfoField label={t('domesticTransportOrders.carrierDo')} value={order.carrier_delivery_order?.carrier_do_no ?? order.carrier_delivery_order_id ?? '-'} />
+            <InfoField label={t('domesticTransportOrders.totalQty')} value={formatNumber(order.total_qty)} />
+            <InfoField label={t('domesticTransportOrders.grossWeightKg')} value={formatNumber(order.total_gross_weight_kg)} />
             <InfoField label="POD" value={order.pod_document_ref ?? '-'} />
             <Paper withBorder p="sm">
-              <Text className="metric-label" size="xs" fw={700} tt="uppercase">Delivery</Text>
-              <Text fw={700} mt={4}>{order.actual_delivery_at ? formatDateTime(order.actual_delivery_at) : 'Chưa giao'}</Text>
-              <Text size="xs" c="dimmed">Kế hoạch: {formatDateTime(order.scheduled_delivery_at)}</Text>
+              <Text className="metric-label" size="xs" fw={700} tt="uppercase">{t('domesticTransportOrders.delivery')}</Text>
+              <Text fw={700} mt={4}>{order.actual_delivery_at ? formatDateTime(order.actual_delivery_at) : t('domesticTransportOrders.notDelivered')}</Text>
+              <Text size="xs" c="dimmed">{t('domesticTransportOrders.planned')}: {formatDateTime(order.scheduled_delivery_at)}</Text>
             </Paper>
             <Paper withBorder p="sm">
-              <Text className="metric-label" size="xs" fw={700} tt="uppercase">Containers</Text>
+              <Text className="metric-label" size="xs" fw={700} tt="uppercase">{t('domesticTransportOrders.containers')}</Text>
               <Group gap="xs" mt={4} wrap="wrap">
                 {(() => {
                   const list = Array.isArray(order.container_no) ? order.container_no : order.container_no ? [order.container_no] : [];
@@ -178,7 +178,7 @@ export function DomesticTransportOrderDetail({
               </Group>
             </Paper>
             <InfoField
-              label="Quote amount"
+              label={t('domesticTransportOrders.quoteAmount')}
               value={order.quote_amount != null ? `${formatNumber(order.quote_amount)} ${order.quote_currency ?? ''}`.trim() : '-'}
             />
           </SimpleGrid>
@@ -189,32 +189,32 @@ export function DomesticTransportOrderDetail({
             <Stack gap="md">
               <Group justify="space-between" className="dto-form-header">
                 <div>
-                  <Text fw={700}>Dispatch and POD data</Text>
-                  <Text size="sm" c="dimmed">Update vendor, vehicle, driver, planned/actual delivery, and POD reference.</Text>
+                  <Text fw={700}>{t('domesticTransportOrders.dispatchAndPodData')}</Text>
+                  <Text size="sm" c="dimmed">{t('domesticTransportOrders.dispatchAndPodDescription')}</Text>
                 </div>
                 <Group gap="xs" className="dto-form-actions">
                   <Button leftSection={<IconCheck size={16} />} loading={saving} disabled={isClosed} onClick={onSave}>
-                    Save
+                    {t('common.save')}
                   </Button>
                 </Group>
               </Group>
               <SimpleGrid cols={{ base: 1, md: 2 }} spacing="sm" className="dto-form-grid">
-                <Select label="Truck vendor" searchable clearable data={truckVendorOptions} value={form.truckVendorId} disabled={isClosed} onChange={(value) => onChange({ ...form, truckVendorId: value })} />
-                <TextInput label="Vehicle type" value={form.vehicleType} disabled={isClosed} onChange={(event) => onChange({ ...form, vehicleType: event.currentTarget.value })} />
-                <TextInput label="Vehicle plate" value={form.vehiclePlate} disabled={isClosed} onChange={(event) => onChange({ ...form, vehiclePlate: event.currentTarget.value })} />
-                <TextInput label="Driver" value={form.driverName} disabled={isClosed} onChange={(event) => onChange({ ...form, driverName: event.currentTarget.value })} />
-                <TextInput label="Driver phone" value={form.driverPhone} disabled={isClosed} onChange={(event) => onChange({ ...form, driverPhone: event.currentTarget.value })} />
-                <TextInput label="POD document" value={form.podDocumentRef} disabled={isClosed} onChange={(event) => onChange({ ...form, podDocumentRef: event.currentTarget.value })} />
-                <TextInput label="Quote amount" type="number" value={form.quoteAmount} disabled={isClosed} onChange={(event) => onChange({ ...form, quoteAmount: event.currentTarget.value })} />
-                <Select label="Quote currency" data={[{ label: 'VND', value: 'VND' }, { label: 'USD', value: 'USD' }]} value={form.quoteCurrency || null} disabled={isClosed} clearable onChange={(value) => onChange({ ...form, quoteCurrency: value ?? '' })} />
-                <TextInput label="Origin" value={form.origin} disabled={isClosed} onChange={(event) => onChange({ ...form, origin: event.currentTarget.value })} />
-                <TextInput label="Destination" value={form.destination} disabled={isClosed} onChange={(event) => onChange({ ...form, destination: event.currentTarget.value })} />
-                <TextInput label={<HeaderLabel label="Warehouse" hint={t('glossary.warehouse')} />} value={form.warehouse} disabled={isClosed} onChange={(event) => onChange({ ...form, warehouse: event.currentTarget.value })} />
-                <TextInput label="Scheduled pickup" type="datetime-local" value={form.scheduledPickupAt} disabled={isClosed} onChange={(event) => onChange({ ...form, scheduledPickupAt: event.currentTarget.value })} />
-                <TextInput label="Actual pickup" type="datetime-local" value={form.actualPickupAt} disabled={isClosed} onChange={(event) => onChange({ ...form, actualPickupAt: event.currentTarget.value })} />
-                <TextInput label="Scheduled delivery" type="datetime-local" value={form.scheduledDeliveryAt} disabled={isClosed} onChange={(event) => onChange({ ...form, scheduledDeliveryAt: event.currentTarget.value })} />
-                <TextInput label="Actual delivery" type="datetime-local" value={form.actualDeliveryAt} disabled={isClosed} onChange={(event) => onChange({ ...form, actualDeliveryAt: event.currentTarget.value })} />
-                <TextInput label="Note" value={form.note} disabled={isClosed} onChange={(event) => onChange({ ...form, note: event.currentTarget.value })} />
+                <Select label={t('domesticTransportOrders.truckVendor')} searchable clearable data={truckVendorOptions} value={form.truckVendorId} disabled={isClosed} onChange={(value) => onChange({ ...form, truckVendorId: value })} />
+                <TextInput label={t('domesticTransportOrders.vehicleType')} value={form.vehicleType} disabled={isClosed} onChange={(event) => onChange({ ...form, vehicleType: event.currentTarget.value })} />
+                <TextInput label={t('domesticTransportOrders.vehiclePlate')} value={form.vehiclePlate} disabled={isClosed} onChange={(event) => onChange({ ...form, vehiclePlate: event.currentTarget.value })} />
+                <TextInput label={t('domesticTransportOrders.driver')} value={form.driverName} disabled={isClosed} onChange={(event) => onChange({ ...form, driverName: event.currentTarget.value })} />
+                <TextInput label={t('domesticTransportOrders.driverPhone')} value={form.driverPhone} disabled={isClosed} onChange={(event) => onChange({ ...form, driverPhone: event.currentTarget.value })} />
+                <TextInput label={t('domesticTransportOrders.podDocument')} value={form.podDocumentRef} disabled={isClosed} onChange={(event) => onChange({ ...form, podDocumentRef: event.currentTarget.value })} />
+                <TextInput label={t('domesticTransportOrders.quoteAmount')} type="number" value={form.quoteAmount} disabled={isClosed} onChange={(event) => onChange({ ...form, quoteAmount: event.currentTarget.value })} />
+                <Select label={t('domesticTransportOrders.quoteCurrency')} data={[{ label: 'VND', value: 'VND' }, { label: 'USD', value: 'USD' }]} value={form.quoteCurrency || null} disabled={isClosed} clearable onChange={(value) => onChange({ ...form, quoteCurrency: value ?? '' })} />
+                <TextInput label={t('domesticTransportOrders.origin')} value={form.origin} disabled={isClosed} onChange={(event) => onChange({ ...form, origin: event.currentTarget.value })} />
+                <TextInput label={t('domesticTransportOrders.destination')} value={form.destination} disabled={isClosed} onChange={(event) => onChange({ ...form, destination: event.currentTarget.value })} />
+                <TextInput label={<HeaderLabel label={t('domesticTransportOrders.warehouse')} hint={t('glossary.warehouse')} />} value={form.warehouse} disabled={isClosed} onChange={(event) => onChange({ ...form, warehouse: event.currentTarget.value })} />
+                <TextInput label={t('domesticTransportOrders.scheduledPickup')} type="datetime-local" value={form.scheduledPickupAt} disabled={isClosed} onChange={(event) => onChange({ ...form, scheduledPickupAt: event.currentTarget.value })} />
+                <TextInput label={t('domesticTransportOrders.actualPickup')} type="datetime-local" value={form.actualPickupAt} disabled={isClosed} onChange={(event) => onChange({ ...form, actualPickupAt: event.currentTarget.value })} />
+                <TextInput label={t('domesticTransportOrders.scheduledDelivery')} type="datetime-local" value={form.scheduledDeliveryAt} disabled={isClosed} onChange={(event) => onChange({ ...form, scheduledDeliveryAt: event.currentTarget.value })} />
+                <TextInput label={t('domesticTransportOrders.actualDelivery')} type="datetime-local" value={form.actualDeliveryAt} disabled={isClosed} onChange={(event) => onChange({ ...form, actualDeliveryAt: event.currentTarget.value })} />
+                <TextInput label={t('common.notes')} value={form.note} disabled={isClosed} onChange={(event) => onChange({ ...form, note: event.currentTarget.value })} />
               </SimpleGrid>
             </Stack>
           </Paper>
@@ -226,17 +226,17 @@ export function DomesticTransportOrderDetail({
               <Group justify="space-between" className="dto-lines-header">
                 <div>
                   <Text fw={700}>
-                    <HeaderLabel label="DTO lines" hint={t('glossary.dto')} />
+                    <HeaderLabel label={t('domesticTransportOrders.dtoLines')} hint={t('glossary.dto')} />
                   </Text>
-                  <Text size="sm" c="dimmed">Lines are copied from shipment lines and enriched by item, PO line, LOT, HS code, and weight.</Text>
+                  <Text size="sm" c="dimmed">{t('domesticTransportOrders.dtoLinesDescription')}</Text>
                   {order.shipments && order.shipments.length > 1 ? (
-                    <Text size="xs" c="orange">1 trong {order.shipments.length} shipment được gom vào chuyến này</Text>
+                    <Text size="xs" c="orange">{t('domesticTransportOrders.consolidatedShipments', { count: order.shipments.length })}</Text>
                   ) : null}
                 </div>
-                <Badge variant="light" className="dto-line-count">{order.lines?.length ?? 0} lines</Badge>
+                <Badge variant="light" className="dto-line-count">{t('domesticTransportOrders.linesCount', { count: order.lines?.length ?? 0 })}</Badge>
               </Group>
               {(order.lines ?? []).length === 0 ? (
-                <EmptyState title="No DTO lines" description="This domestic transport order has no copied shipment lines yet." />
+                <EmptyState title={t('domesticTransportOrders.noDtoLinesTitle')} description={t('domesticTransportOrders.noDtoLinesDescription')} />
               ) : (
                 <div className="dto-lines-grid">
                   {(order.lines ?? []).map((line) => {
@@ -256,14 +256,14 @@ export function DomesticTransportOrderDetail({
                         </div>
 
                         <dl className="dto-line-card-metrics">
-                          <LineMetric primary label="DTO qty" hint="Toàn bộ qty của shipment line cho chặng nội địa — không phải phần chia nhỏ">
+                          <LineMetric primary label={t('domesticTransportOrders.dtoQty')} hint={t('domesticTransportOrders.dtoQtyHint')}>
                             {formatNumber(line.qty)}
                             {line.unit ? <span className="dto-line-metric-unit"> {line.unit}</span> : null}
                           </LineMetric>
-                          <LineMetric label="PO qty" hint={t('glossary.po')}>
+                          <LineMetric label={t('domesticTransportOrders.poQty')} hint={t('glossary.po')}>
                             {formatNumber(line.qty_ordered)}
                           </LineMetric>
-                          <LineMetric label="Gross kg" hint={t('glossary.grossWeight')}>
+                          <LineMetric label={t('domesticTransportOrders.grossKg')} hint={t('glossary.grossWeight')}>
                             {formatNumber(line.gross_weight_kg)}
                           </LineMetric>
                           <LineMetric label="HS" hint={t('glossary.hsCode')}>

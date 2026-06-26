@@ -33,13 +33,13 @@ export function DtoListTable({
     <Paper withBorder p={0} className="dto-list-panel">
       <Group justify="space-between" align="flex-start" gap="sm" className="dto-list-header">
         <div>
-          <Text fw={700}>Transport queue</Text>
+          <Text fw={700}>{t('domesticTransportOrders.transportQueue')}</Text>
           <Text size="sm" c="dimmed" className="tabular-nums">
-            {total} orders
+            {t('domesticTransportOrders.ordersCount', { count: total })}
           </Text>
         </div>
         <Text size="xs" c="dimmed" className="tabular-nums">
-          Page {page} / {pageCount}
+          {t('domesticTransportOrders.pageCount', { page, pageCount })}
         </Text>
       </Group>
       <ScrollArea className="dto-list-scroll data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
@@ -50,12 +50,12 @@ export function DtoListTable({
                 <HeaderLabel label="DTO" hint={t('glossary.dto')} />
               </Table.Th>
               <Table.Th className="dto-col-shipment">
-                <HeaderLabel label="Shipment" hint={t('glossary.shipment')} />
+                <HeaderLabel label={t('domesticTransportOrders.shipment')} hint={t('glossary.shipment')} />
               </Table.Th>
-              <Table.Th className="dto-col-vendor">Vendor</Table.Th>
-              <Table.Th className="dto-col-route">Route</Table.Th>
-              <Table.Th className="dto-col-status">Status</Table.Th>
-              <Table.Th className="dto-col-open">Open</Table.Th>
+              <Table.Th className="dto-col-vendor">{t('domesticTransportOrders.vendor')}</Table.Th>
+              <Table.Th className="dto-col-route">{t('domesticTransportOrders.route')}</Table.Th>
+              <Table.Th className="dto-col-status">{t('common.status')}</Table.Th>
+              <Table.Th className="dto-col-open">{t('common.view')}</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
@@ -72,7 +72,7 @@ export function DtoListTable({
                 <Table.Td className="dto-shipment-cell dto-col-shipment">
                   <Text size="sm">
                     {order.shipments && order.shipments.length > 1
-                      ? `${order.shipments.length} shipments`
+                      ? t('domesticTransportOrders.shipmentsCount', { count: order.shipments.length })
                       : order.shipment?.shipment_no ?? order.shipments?.[0]?.shipment_no ?? order.shipment_id}
                   </Text>
                   <Text size="xs" c="dimmed">{formatContainers(order.shipment?.container_no)}</Text>
@@ -82,15 +82,15 @@ export function DtoListTable({
                   <Text size="sm" fw={600} lineClamp={1} title={`${order.origin ?? '-'} -> ${order.destination ?? '-'}`}>
                     {order.origin ?? '-'} {'->'} {order.destination ?? '-'}
                   </Text>
-                  <Text size="xs" c="dimmed">Pickup {formatDateTime(order.scheduled_pickup_at)}</Text>
-                  <Text size="xs" c="dimmed">Delivery {formatDateTime(order.scheduled_delivery_at)}</Text>
+                  <Text size="xs" c="dimmed">{t('domesticTransportOrders.pickup')} {formatDateTime(order.scheduled_pickup_at)}</Text>
+                  <Text size="xs" c="dimmed">{t('domesticTransportOrders.delivery')} {formatDateTime(order.scheduled_delivery_at)}</Text>
                 </Table.Td>
                 <Table.Td className="dto-col-status"><StatusBadge status={order.status} /></Table.Td>
                 <Table.Td className="dto-col-open">
                   <Group justify="flex-end">
-                    <Tooltip label="Open DTO detail">
+                    <Tooltip label={t('domesticTransportOrders.openDetail')}>
                       <ActionIcon
-                        aria-label="Open DTO detail"
+                        aria-label={t('domesticTransportOrders.openDetail')}
                         variant="subtle"
                         onClick={(event) => {
                           event.stopPropagation();
@@ -116,7 +116,7 @@ export function DtoListTable({
         total={total}
       />
       {orders.length === 0 ? (
-        <EmptyState title="No DTO found" description="No domestic transport order matches the current filters." />
+        <EmptyState title={t('domesticTransportOrders.emptyTitle')} description={t('domesticTransportOrders.emptyDescription')} />
       ) : null}
     </Paper>
   );

@@ -31,11 +31,11 @@ import { formatDate } from '@shared/utils/date';
 import { fetchShipmentContainers } from '@shared/api/shipmentContainers';
 import { resolveShipmentDelivery, type ShipmentDeliveryState } from '../model/deliveryReconciliation';
 
-const DELIVERY_STATE_META: Record<ShipmentDeliveryState, { label: string; color: string }> = {
-  NO_CONTAINERS: { label: 'Theo DTO (không có container)', color: 'gray' },
-  UNALLOCATED: { label: 'Chưa phân bổ đủ container', color: 'orange' },
-  IN_PROGRESS: { label: 'Đang giao', color: 'blue' },
-  COMPLETE: { label: 'Đã giao đủ', color: 'teal' },
+const DELIVERY_STATE_META: Record<ShipmentDeliveryState, { labelKey: string; color: string }> = {
+  NO_CONTAINERS: { labelKey: 'shipments.dtosNoContainers', color: 'gray' },
+  UNALLOCATED: { labelKey: 'shipments.dtosUnallocated', color: 'orange' },
+  IN_PROGRESS: { labelKey: 'shipments.inTransit', color: 'blue' },
+  COMPLETE: { labelKey: 'shipments.delivered', color: 'teal' },
 };
 
 export function ShipmentDtosPanel({ shipment }: { shipment: ShipmentRecord }) {
@@ -70,15 +70,15 @@ export function ShipmentDtosPanel({ shipment }: { shipment: ShipmentRecord }) {
       <Paper withBorder p="md">
         <Group justify="space-between" align="flex-start" mb="sm">
           <div>
-            <Text fw={700}>Đối soát giao hàng</Text>
+            <Text fw={700}>{t('shipments.dtosReconciliation')}</Text>
             <Text size="sm" c="dimmed">
               {summary.state === 'NO_CONTAINERS'
-                ? `Đã giao ${summary.deliveredDtoCount}/${summary.totalDtoCount} DTO · số lượng từng phần không theo dõi (LCL)`
-                : `Đã giao ${summary.delivered}/${summary.totalContainers} container`}
+                ? t('shipments.dtosNoContainersSummary', { delivered: summary.deliveredDtoCount, total: summary.totalDtoCount })
+                : t('shipments.dtosDeliveryProgress', { delivered: summary.delivered, total: summary.totalContainers })}
             </Text>
           </div>
           <Badge color={DELIVERY_STATE_META[summary.state].color} variant="light" size="lg">
-            {DELIVERY_STATE_META[summary.state].label}
+            {t(DELIVERY_STATE_META[summary.state].labelKey)}
           </Badge>
         </Group>
         {summary.totalContainers > 0 ? (
@@ -90,10 +90,10 @@ export function ShipmentDtosPanel({ shipment }: { shipment: ShipmentRecord }) {
           />
         ) : null}
         <SimpleGrid cols={{ base: 2, sm: 4 }} mt="sm">
-          <div><Text size="xs" c="dimmed">Container</Text><Text fw={700} className="tabular-nums">{summary.totalContainers}</Text></div>
-          <div><Text size="xs" c="dimmed">Đã phân bổ</Text><Text fw={700} className="tabular-nums">{summary.allocated}</Text></div>
-          <div><Text size="xs" c="dimmed">Đã giao</Text><Text fw={700} className="tabular-nums">{summary.delivered}</Text></div>
-          <div><Text size="xs" c="dimmed">POD muộn nhất</Text><Text fw={700}>{summary.latestPodAt ? formatDate(summary.latestPodAt) : '-'}</Text></div>
+          <div><Text size="xs" c="dimmed">{t('shipments.dtosContainer')}</Text><Text fw={700} className="tabular-nums">{summary.totalContainers}</Text></div>
+          <div><Text size="xs" c="dimmed">{t('shipments.dtosAllocated')}</Text><Text fw={700} className="tabular-nums">{summary.allocated}</Text></div>
+          <div><Text size="xs" c="dimmed">{t('shipments.dtosDelivered')}</Text><Text fw={700} className="tabular-nums">{summary.delivered}</Text></div>
+          <div><Text size="xs" c="dimmed">{t('shipments.dtosLatestPod')}</Text><Text fw={700}>{summary.latestPodAt ? formatDate(summary.latestPodAt) : '-'}</Text></div>
         </SimpleGrid>
       </Paper>
 

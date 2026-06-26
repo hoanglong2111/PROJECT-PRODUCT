@@ -63,7 +63,7 @@ export function ShipmentCostsPanel({
   onDeleteCost: (costId: string) => void;
   onUpdateCost: (costId: string, payload: Partial<ShipmentCostPayload>) => void;
   shipment: ShipmentRecord;
-  t: (key: string) => string;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }) {
   const costs = shipment.costs;
   const total = landedCostTotal(costs);
@@ -146,13 +146,13 @@ export function ShipmentCostsPanel({
           />
           <TextInput
             label={t('shipments.costDescription')}
-            placeholder="Ocean freight, fumigation fee..."
+            placeholder={t('shipments.costDescriptionPlaceholder')}
             value={description}
             onChange={(event) => setDescription(event.currentTarget.value)}
           />
           <TextInput
             label={t('shipments.costInvoiceRef')}
-            placeholder="FRT-001"
+            placeholder={t('shipments.costInvoiceRefPlaceholder')}
             value={invoiceRef}
             onChange={(event) => setInvoiceRef(event.currentTarget.value)}
           />
@@ -237,7 +237,7 @@ export function ShipmentCostsPanel({
                           <ActionIcon
                             variant="subtle"
                             color="blue"
-                            aria-label="edit"
+                            aria-label={t('common.edit')}
                             onClick={() => startEdit(cost)}
                           >
                             <IconPencil size={16} />
@@ -245,7 +245,7 @@ export function ShipmentCostsPanel({
                           <ActionIcon
                             variant="subtle"
                             color="red"
-                            aria-label="delete"
+                            aria-label={t('common.delete')}
                             loading={isSaving}
                             onClick={() => onDeleteCost(cost.id)}
                           >

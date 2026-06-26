@@ -25,6 +25,7 @@ import { queryKeys } from '@shared/api/queryKeys';
 import { fetchSuppliers } from '@shared/api/tradeMasterData';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
 import { useEntityParam } from '@shared/hooks/useEntityParam';
+import { useI18n } from '@shared/i18n';
 
 import { CreateDtoFromShipmentModal } from '../shipments/components/CreateDtoFromShipmentModal';
 
@@ -34,7 +35,7 @@ import {
   getErrorMessage,
   initialForm,
   optionalString,
-  statusOptions,
+  statusValues,
   toDateTimeInput,
   type FormState,
 } from './model/domesticTransportOrderModel';
@@ -43,6 +44,7 @@ import { DtoListTable } from './components/DtoListTable';
 import { Metric } from './components/Metric';
 
 export function DomesticTransportOrders() {
+  const { statusLabel, t } = useI18n();
   const queryClient = useQueryClient();
   const { close: closeDtoParam, open: openDtoParam, value: focusedDto } = useEntityParam('dto');
   const [search, setSearch] = useState('');
@@ -156,6 +158,14 @@ export function DomesticTransportOrders() {
     label: `${supplier.supplier_code} - ${supplier.supplier_name}`,
     value: supplier.id,
   }));
+  const statusOptions = useMemo(
+    () =>
+      statusValues.map((value) => ({
+        label: value ? statusLabel(value) : t('common.allStatuses'),
+        value,
+      })),
+    [statusLabel, t],
+  );
 
   const refreshOrder = (id = selectedDtoId) => {
     void queryClient.invalidateQueries({ queryKey: queryKeys.domesticTransportOrderLists });
@@ -167,7 +177,7 @@ export function DomesticTransportOrders() {
 
   const updateMutation = useMutation({
     mutationFn: () => {
-      if (!selectedOrder) throw new Error('Select a DTO first');
+      if (!selectedOrder) throw new Error(t('domesticTransportOrders.selectDtoFirst'));
       return updateDomesticTransportOrder(selectedOrder.id, {
         actual_delivery_at: fromDateTimeInput(form.actualDeliveryAt),
         actual_pickup_at: fromDateTimeInput(form.actualPickupAt),
@@ -192,7 +202,7 @@ export function DomesticTransportOrders() {
 
   const actionMutation = useMutation({
     mutationFn: (action: DomesticTransportOrderAction) => {
-      if (!selectedOrder) throw new Error('Select a DTO first');
+      if (!selectedOrder) throw new Error(t('domesticTransportOrders.selectDtoFirst'));
       return runDomesticTransportOrderAction(selectedOrder.id, action);
     },
     onSuccess: (updated) => refreshOrder(updated.id),
@@ -211,8 +221,8 @@ export function DomesticTransportOrders() {
   if (ordersQuery.isError) {
     return (
       <PageError
-        title="Could not load Domestic Transport Orders"
-        description="KBFE could not load DTO data from the mock API."
+        title={t('domesticTransportOrders.errorTitle')}
+        description={t('domesticTransportOrders.errorDescription')}
         error={ordersQuery.error}
         onRetry={() => void ordersQuery.refetch()}
       />
@@ -222,10 +232,10 @@ export function DomesticTransportOrders() {
   if (ordersQuery.isLoading) {
     return (
       <PageLoading
-        title="Domestic Transport Orders"
-        description="Loading inland trucking orders, shipment links, vendor data, and item lines."
+        title={t('domesticTransportOrders.title')}
+        description={t('domesticTransportOrders.loadingDescription')}
         metricCount={4}
-        tableColumns={['DTO', 'Shipment', 'Vendor', 'Route', 'Status']}
+        tableColumns={['DTO', t('domesticTransportOrders.shipment'), t('domesticTransportOrders.vendor'), t('domesticTransportOrders.route'), t('common.status')]}
       />
     );
   }
@@ -236,11 +246,11 @@ export function DomesticTransportOrders() {
         <Group justify="space-between" align="flex-start" gap="lg" className="dto-page-header">
           <div className="dto-title-block">
             <Badge leftSection={<IconTruckDelivery size={14} />} variant="light" mb="xs">
-              Domestic trucking
+              {t('domesticTransportOrders.kicker')}
             </Badge>
-            <Title order={1} className="dto-page-title">Domestic Transport Orders</Title>
+            <Title order={1} className="dto-page-title">{t('domesticTransportOrders.title')}</Title>
             <Text c="dimmed" mt={6} maw={760}>
-              Track inland trucking from customs-cleared shipment to warehouse POD and closure.
+              {t('domesticTransportOrders.subtitle')}
             </Text>
           </div>
           <Group gap="xs" className="dto-page-actions">
@@ -250,55 +260,55 @@ export function DomesticTransportOrders() {
               loading={ordersQuery.isFetching}
               onClick={() => void ordersQuery.refetch()}
             >
-              Refresh
+              {t('domesticTransportOrders.refresh')}
             </Button>
           </Group>
         </Group>
       </Paper>
 
       <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} className="dto-metric-grid">
-        <Metric label="Total DTO" value={counts.total} color="gray" icon={<IconClipboardList size={22} />} />
-        <Metric label="Active" value={counts.active} color="blue" icon={<IconTruckDelivery size={22} />} />
-        <Metric label="Dispatched" value={counts.dispatched} color="cyan" icon={<IconRoute size={22} />} />
-        <Metric label="Closed" value={counts.closed} color="teal" icon={<IconCircleCheck size={22} />} />
+        <Metric label={t('domesticTransportOrders.metricTotal')} value={counts.total} color="gray" icon={<IconClipboardList size={22} />} />
+        <Metric label={t('domesticTransportOrders.metricActive')} value={counts.active} color="blue" icon={<IconTruckDelivery size={22} />} />
+        <Metric label={t('domesticTransportOrders.metricDispatched')} value={counts.dispatched} color="cyan" icon={<IconRoute size={22} />} />
+        <Metric label={t('domesticTransportOrders.metricClosed')} value={counts.closed} color="teal" icon={<IconCircleCheck size={22} />} />
       </SimpleGrid>
 
       <Paper withBorder p="md" className="dto-filter-panel">
         <div className="dto-filter-grid">
           <TextInput
             className="dto-filter-search"
-            label="Search"
-            placeholder="DTO, shipment, vendor, driver, route"
+            label={t('common.search')}
+            placeholder={t('domesticTransportOrders.searchPlaceholder')}
             leftSection={<IconSearch size={16} />}
             value={search}
             onChange={(event) => setSearch(event.currentTarget.value)}
           />
           <Select
-            label="Status"
+            label={t('common.status')}
             data={statusOptions}
             value={status}
             onChange={(value) => setStatus((value as DomesticTransportOrderStatusV1 | null) ?? '')}
           />
           <Select
-            label="Truck vendor"
-            placeholder="All vendors"
+            label={t('domesticTransportOrders.truckVendor')}
+            placeholder={t('domesticTransportOrders.allVendors')}
             data={truckVendorOptions}
             value={vendorFilter}
             onChange={setVendorFilter}
             searchable
             clearable
-            nothingFoundMessage={truckVendorsQuery.isLoading ? 'Loading vendors...' : 'No vendor'}
+            nothingFoundMessage={truckVendorsQuery.isLoading ? t('domesticTransportOrders.loadingVendors') : t('domesticTransportOrders.noVendor')}
           />
           <Select
-            label="Create from shipment"
+            label={t('domesticTransportOrders.createFromShipment')}
             searchable
             data={availableShipments.map((shipment) => ({
-              label: `${shipment.shipment_number} - ${shipment.origin_port || '-'} to ${shipment.dest_port || '-'}`,
+              label: `${shipment.shipment_number} - ${shipment.origin_port || '-'} ${t('deliveryOrders.routeConnector')} ${shipment.dest_port || '-'}`,
               value: shipment.id,
             }))}
             value={selectedShipmentId}
             onChange={setSelectedShipmentId}
-            nothingFoundMessage={availableShipmentsQuery.isLoading ? 'Loading shipments...' : 'No customs-cleared shipment'}
+            nothingFoundMessage={availableShipmentsQuery.isLoading ? t('domesticTransportOrders.loadingShipments') : t('domesticTransportOrders.noCustomsClearedShipment')}
           />
           <Group align="flex-end" gap="xs" className="dto-filter-actions">
             <Button
@@ -306,14 +316,14 @@ export function DomesticTransportOrders() {
               variant="subtle"
               onClick={clearFilters}
             >
-              Clear
+              {t('common.clear')}
             </Button>
             <Button
               leftSection={<IconTruck size={16} />}
               disabled={!selectedShipment || availableShipmentsQuery.isLoading}
               onClick={() => setDtoModalOpen(true)}
             >
-              Create DTO
+              {t('domesticTransportOrders.create')}
             </Button>
           </Group>
         </div>
@@ -368,7 +378,7 @@ export function DomesticTransportOrders() {
 
       {updateMutation.isError || actionMutation.isError ? (
         <Alert color="red" icon={<IconX size={18} />} className="dto-error-alert">
-          {getErrorMessage(updateMutation.error ?? actionMutation.error)}
+          {getErrorMessage(updateMutation.error ?? actionMutation.error, t('domesticTransportOrders.requestFailed'))}
         </Alert>
       ) : null}
 

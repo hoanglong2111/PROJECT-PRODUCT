@@ -104,67 +104,67 @@ export function ShipmentCarrierDoPanel({ shipment }: { shipment: ShipmentRecord 
   return (
     <Stack gap="md">
       <Alert color="grape" icon={<IconFileInvoice size={18} />}>
-        Carrier DO releases cargo from the carrier/forwarder after customs clearance. Issue it, then release it before the truck (DTO) picks up.
+        {t('shipments.carrierDoInfo')}
       </Alert>
 
       <Paper withBorder p="md">
         <Stack gap="md">
           <div>
-            <Text fw={700}>Create carrier DO</Text>
+            <Text fw={700}>{t('shipments.createCarrierDo')}</Text>
             <Text size="sm" c="dimmed">
               {isCleared
-                ? 'Create one carrier DO per release, then issue and release it.'
-                : 'Available after the shipment is CUSTOMS_CLEARED.'}
+                ? t('shipments.carrierDoClearedHint')
+                : t('shipments.carrierDoAvailableAfter')}
             </Text>
           </div>
           <SimpleGrid cols={{ base: 1, md: 3 }} spacing="sm">
             <Select
-              label={<HeaderLabel label="Forwarder" hint={t('glossary.forwarder')} />}
-              placeholder="Select forwarder..."
+              label={<HeaderLabel label={t('shipments.forwarder')} hint={t('glossary.forwarder')} />}
+              placeholder={t('shipments.selectForwarder')}
               searchable
               clearable
               data={forwarderOptions}
               value={forwarderId}
               disabled={!isCleared}
               onChange={setForwarderId}
-              nothingFoundMessage={forwardersQuery.isLoading ? 'Loading suppliers...' : 'No supplier found'}
+              nothingFoundMessage={forwardersQuery.isLoading ? t('shipments.loadingSuppliers') : t('shipments.noSupplierFound')}
             />
             <TextInput
-              label="Release location"
-              placeholder="Hai Phong Port"
+              label={t('shipments.releaseLocation')}
+              placeholder={t('shipments.releaseLocationPlaceholder')}
               value={releaseLocation}
               disabled={!isCleared}
               onChange={(event) => setReleaseLocation(event.currentTarget.value)}
             />
             <TextInput
-              label="Container no."
+              label={t('shipments.containerNumber')}
               value={containerNo}
               disabled={!isCleared}
               onChange={(event) => setContainerNo(event.currentTarget.value)}
             />
             <TextInput
-              label="Issued date"
+              label={t('shipments.issuedDate')}
               type="date"
               value={issuedDate}
               disabled={!isCleared}
               onChange={(event) => setIssuedDate(event.currentTarget.value)}
             />
             <TextInput
-              label="Expired date"
+              label={t('shipments.expiredDate')}
               type="date"
               value={expiredDate}
               disabled={!isCleared}
               onChange={(event) => setExpiredDate(event.currentTarget.value)}
             />
             <TextInput
-              label={<HeaderLabel label="Local charge (VND)" hint={t('glossary.localCharges')} />}
+              label={<HeaderLabel label={t('shipments.localChargeVnd')} hint={t('glossary.localCharges')} />}
               type="number"
               value={localCharge}
               disabled={!isCleared}
               onChange={(event) => setLocalCharge(event.currentTarget.value)}
             />
             <TextInput
-              label="Note"
+              label={t('shipments.note')}
               value={note}
               disabled={!isCleared}
               onChange={(event) => setNote(event.currentTarget.value)}
@@ -176,7 +176,7 @@ export function ShipmentCarrierDoPanel({ shipment }: { shipment: ShipmentRecord 
                 loading={createMutation.isPending}
                 onClick={() => createMutation.mutate()}
               >
-                Create carrier DO
+                {t('shipments.createCarrierDo')}
               </Button>
             </Group>
           </SimpleGrid>
@@ -184,11 +184,11 @@ export function ShipmentCarrierDoPanel({ shipment }: { shipment: ShipmentRecord 
       </Paper>
 
       {carrierDosQuery.isLoading ? (
-        <Group gap="xs"><Loader size="sm" /><Text size="sm" c="dimmed">Loading carrier DOs...</Text></Group>
+        <Group gap="xs"><Loader size="sm" /><Text size="sm" c="dimmed">{t('shipments.loadingCarrierDos')}</Text></Group>
       ) : carrierDos.length === 0 ? (
         <EmptyState
-          title="No carrier DO yet"
-          description="Create a carrier DO after the shipment clears customs to release the cargo."
+          title={t('shipments.carrierDoEmptyTitle')}
+          description={t('shipments.carrierDoEmptyDescription')}
         />
       ) : (
         <Paper withBorder p={0}>
@@ -197,15 +197,15 @@ export function ShipmentCarrierDoPanel({ shipment }: { shipment: ShipmentRecord 
               <Table.Thead>
                 <Table.Tr>
                   <Table.Th>
-                    <HeaderLabel label="Carrier DO" hint={t('glossary.carrierDo')} />
+                    <HeaderLabel label={t('shipments.carrierDo')} hint={t('glossary.carrierDo')} />
                   </Table.Th>
                   <Table.Th>
-                    <HeaderLabel label="Forwarder" hint={t('glossary.forwarder')} />
+                    <HeaderLabel label={t('shipments.forwarder')} hint={t('glossary.forwarder')} />
                   </Table.Th>
-                  <Table.Th>Release location</Table.Th>
-                  <Table.Th>Issued</Table.Th>
-                  <Table.Th>Status</Table.Th>
-                  <Table.Th>Actions</Table.Th>
+                  <Table.Th>{t('shipments.releaseLocation')}</Table.Th>
+                  <Table.Th>{t('shipments.issuedDate')}</Table.Th>
+                  <Table.Th>{t('common.status')}</Table.Th>
+                  <Table.Th>{t('shipments.actions')}</Table.Th>
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
@@ -225,7 +225,7 @@ export function ShipmentCarrierDoPanel({ shipment }: { shipment: ShipmentRecord 
                           loading={actionMutation.isPending}
                           onClick={() => actionMutation.mutate({ action: 'issue', id: cdo.id })}
                         >
-                          Issue
+                          {t('shipments.issue')}
                         </Button>
                         <Button
                           size="xs"
@@ -234,7 +234,7 @@ export function ShipmentCarrierDoPanel({ shipment }: { shipment: ShipmentRecord 
                           loading={actionMutation.isPending}
                           onClick={() => actionMutation.mutate({ action: 'release', id: cdo.id })}
                         >
-                          Release
+                          {t('shipments.release')}
                         </Button>
                         <Button
                           size="xs"
@@ -244,7 +244,7 @@ export function ShipmentCarrierDoPanel({ shipment }: { shipment: ShipmentRecord 
                           loading={actionMutation.isPending}
                           onClick={() => actionMutation.mutate({ action: 'cancel', id: cdo.id })}
                         >
-                          Cancel
+                          {t('common.cancel')}
                         </Button>
                       </Group>
                     </Table.Td>
@@ -259,7 +259,7 @@ export function ShipmentCarrierDoPanel({ shipment }: { shipment: ShipmentRecord 
       {(createMutation.isError || actionMutation.isError || carrierDosQuery.isError) && (
         <Alert color="red" icon={<IconX size={16} />}>
           {((createMutation.error ?? actionMutation.error ?? carrierDosQuery.error) as Error | undefined)?.message ??
-            'Operation failed'}
+            t('shipments.dtosPanel.operationFailed')}
         </Alert>
       )}
     </Stack>

@@ -17,7 +17,7 @@ export function ShipmentDocumentsPanel({
   onCreateDocument: (payload: ShipmentDocumentPayload) => void;
   onUpdateDocument: (documentId: string, payload: Partial<ShipmentDocumentPayload>) => void;
   shipment: ShipmentRecord;
-  t: (key: string) => string;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }) {
   const [rejectingDocId, setRejectingDocId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
@@ -25,19 +25,19 @@ export function ShipmentDocumentsPanel({
   const [newDocumentNo, setNewDocumentNo] = useState('');
 
   const documentTypeOptions: Array<{ label: string; value: ShipmentDocumentPayload['document_type'] }> = [
-    { label: 'Commercial invoice', value: 'COMMERCIAL_INVOICE' },
-    { label: 'Packing list', value: 'PACKING_LIST' },
-    { label: 'Contract', value: 'CONTRACT' },
-    { label: 'Booking confirmation', value: 'BOOKING_CONFIRMATION' },
-    { label: 'Bill of lading', value: 'BILL_OF_LADING' },
-    { label: 'Air waybill', value: 'AIR_WAYBILL' },
-    { label: 'Arrival notice', value: 'ARRIVAL_NOTICE' },
-    { label: 'Certificate of origin', value: 'CERTIFICATE_OF_ORIGIN' },
-    { label: 'Insurance', value: 'INSURANCE' },
-    { label: 'Customs declaration', value: 'CUSTOMS_DECLARATION' },
-    { label: 'eDO', value: 'EDO' },
-    { label: 'POD', value: 'POD' },
-    { label: 'Other', value: 'OTHER' },
+    { label: t('shipments.documentTypes.COMMERCIAL_INVOICE'), value: 'COMMERCIAL_INVOICE' },
+    { label: t('shipments.documentTypes.PACKING_LIST'), value: 'PACKING_LIST' },
+    { label: t('shipments.documentTypes.CONTRACT'), value: 'CONTRACT' },
+    { label: t('shipments.documentTypes.BOOKING_CONFIRMATION'), value: 'BOOKING_CONFIRMATION' },
+    { label: t('shipments.documentTypes.BILL_OF_LADING'), value: 'BILL_OF_LADING' },
+    { label: t('shipments.documentTypes.AIR_WAYBILL'), value: 'AIR_WAYBILL' },
+    { label: t('shipments.documentTypes.ARRIVAL_NOTICE'), value: 'ARRIVAL_NOTICE' },
+    { label: t('shipments.documentTypes.CERTIFICATE_OF_ORIGIN'), value: 'CERTIFICATE_OF_ORIGIN' },
+    { label: t('shipments.documentTypes.INSURANCE'), value: 'INSURANCE' },
+    { label: t('shipments.documentTypes.CUSTOMS_DECLARATION'), value: 'CUSTOMS_DECLARATION' },
+    { label: t('shipments.documentTypes.EDO'), value: 'EDO' },
+    { label: t('shipments.documentTypes.POD'), value: 'POD' },
+    { label: t('shipments.documentTypes.OTHER'), value: 'OTHER' },
   ];
 
   const handleDocumentApprove = (docId: string) => {
@@ -73,19 +73,19 @@ export function ShipmentDocumentsPanel({
   return (
     <Stack gap="md">
       <Alert color="orange" icon={<IconHourglassHigh size={18} />}>
-        Draft B/L SLA: 2-hour review window for cross-check.
+        {t('shipments.documentReviewAlert')}
       </Alert>
       <Paper withBorder p="md">
         <SimpleGrid cols={{ base: 1, md: 3 }} spacing="sm">
           <Select
-            label="Document type"
+            label={t('shipments.documentType')}
             data={documentTypeOptions}
             value={newDocumentType}
             onChange={(value) => setNewDocumentType((value as ShipmentDocumentPayload['document_type'] | null) ?? 'OTHER')}
           />
           <TextInput
-            label="Document no."
-            placeholder="BL123456"
+            label={t('shipments.documentNo')}
+            placeholder={t('shipments.blAwbPlaceholder')}
             value={newDocumentNo}
             onChange={(event) => setNewDocumentNo(event.currentTarget.value)}
           />
@@ -96,7 +96,7 @@ export function ShipmentDocumentsPanel({
               loading={isSaving}
               onClick={handleCreateDocument}
             >
-              Add document
+              {t('shipments.addDocument')}
             </Button>
           </Group>
         </SimpleGrid>
@@ -118,13 +118,13 @@ export function ShipmentDocumentsPanel({
                   </Text>
                 ) : (
                   <Text size="xs" c="dimmed" fs="italic">
-                    No file uploaded.
+                    {t('shipments.noFileUploaded')}
                   </Text>
                 )}
 
                 {isWaitingReview && doc.review_due_at && (
                   <Group justify="space-between">
-                    <Text size="xs" fw={700}>SLA Review Timeleft:</Text>
+                    <Text size="xs" fw={700}>{t('shipments.slaReviewTimeleft')}</Text>
                     <Badge color="orange" variant="filled">
                       2h SLA
                     </Badge>
@@ -133,13 +133,13 @@ export function ShipmentDocumentsPanel({
 
                 {doc.reject_reason && (
                   <Text size="xs" c="red" fw={600}>
-                    Rejected: {doc.reject_reason}
+                    {t('shipments.rejectDocument', { reason: doc.reject_reason })}
                   </Text>
                 )}
 
                 <Group gap="xs" justify="flex-end" mt="xs">
                   <FileInput
-                    placeholder="Upload..."
+                    placeholder={t('shipments.upload')}
                     size="xs"
                     onChange={(file) => handleDocumentUpload(doc.id, file)}
                     style={{ maxWidth: 120 }}
@@ -147,10 +147,10 @@ export function ShipmentDocumentsPanel({
                   {isWaitingReview && (
                     <>
                       <Button size="xs" color="green" loading={isSaving} onClick={() => handleDocumentApprove(doc.id)}>
-                        Approve
+                        {t('shipments.documentApprove')}
                       </Button>
                       <Button size="xs" color="red" variant="light" onClick={() => setRejectingDocId(doc.id)}>
-                        Reject
+                        {t('shipments.documentReject')}
                       </Button>
                     </>
                   )}
@@ -160,7 +160,7 @@ export function ShipmentDocumentsPanel({
                   <Paper withBorder p="xs" mt="xs">
                     <Stack gap="xs">
                       <TextInput
-                        label="Reject reason"
+                        label={t('shipments.rejectReason')}
                         value={rejectReason}
                         onChange={(e) => setRejectReason(e.currentTarget.value)}
                         size="xs"
@@ -177,7 +177,7 @@ export function ShipmentDocumentsPanel({
                           loading={isSaving}
                           onClick={() => handleDocumentReject(doc.id)}
                         >
-                          Confirm reject
+                          {t('shipments.confirmReject')}
                         </Button>
                       </Group>
                     </Stack>

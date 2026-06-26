@@ -17,7 +17,7 @@ import {
   Title,
   Tooltip,
 } from '@mantine/core';
-import { IconInfoCircle, IconPlus, IconX } from '@tabler/icons-react';
+import { IconEye, IconInfoCircle, IconPlus, IconX } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useMemo, useState } from 'react';
 
@@ -81,6 +81,7 @@ export function Gd1QuotationBiddingPanel({
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [showComparison, setShowComparison] = useState(false);
   const [createOpened, setCreateOpened] = useState(false);
+  const [detailQuote, setDetailQuote] = useState<any | null>(null);
 
   // Form states for creating a new quotation
   const [carrier, setCarrier] = useState('');
@@ -496,6 +497,16 @@ export function Gd1QuotationBiddingPanel({
                     </Table.Td>
                     <Table.Td style={{ textAlign: 'right' }}>
                       <Group gap="xs" justify="flex-end" wrap="nowrap" className="quotation-row-actions">
+                        <Button
+                          size="compact-xs"
+                          variant="subtle"
+                          color="gray"
+                          className="quotation-table-action"
+                          leftSection={<IconEye size={14} />}
+                          onClick={() => setDetailQuote(quote)}
+                        >
+                          {t('common.view')}
+                        </Button>
                         {quote.status === 'DRAFT' && (
                           <Button
                             size="compact-xs"
@@ -555,91 +566,105 @@ export function Gd1QuotationBiddingPanel({
             </Button>
           </Group>
           <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
-            {selectedQuotes.map((quote: any, idx) => {
-              const lines = (quote.chargeLines ?? []) as Array<{
-                id: string;
-                description: string | null;
-                charge_type: string;
-                unit: string | null;
-                total_amount?: number | string;
-                amount?: number | string;
-              }>;
-              return (
-                <Paper key={quote.id} withBorder p="md" className="quotation-compare-card">
-                  <Title order={5} mb="md">
-                    {t('quotations.option', { num: idx + 1, code: quote.quoteNumber })}
-                  </Title>
-                  <Stack gap="xs">
-                    <InfoField
-                      label={<HeaderLabel label={t('quotations.carrier')} hint={t('glossary.carrier')} />}
-                      value={quote.carrierName || t('common.notAvailable')}
-                    />
-                    <InfoField
-                      label={<HeaderLabel label={t('quotations.shippingMode')} hint={t('glossary.shippingMode')} />}
-                      value={quote.shippingMode}
-                    />
-                    <InfoField
-                      label={t('quotations.proposedPrice')}
-                      value={
-                        quote.quoteAmount
-                          ? `${Number(quote.quoteAmount).toLocaleString()} ${quote.currency}`
-                          : t('common.notAvailable')
-                      }
-                    />
-                    {lines.length > 0 ? (
-                      <Stack gap={4} mt={4}>
-                        <Text size="xs" fw={700} tt="uppercase" c="dimmed">
-                          {t('quotations.chargeBreakdown')}
-                        </Text>
-                        {lines.map((line) => (
-                          <Group key={line.id} justify="space-between" gap="xs" wrap="nowrap" className="quotation-compare-line">
-                            <Text size="xs" lineClamp={2}>
-                              {line.description || line.charge_type}
-                              {line.unit ? (
-                                <Text span size="xs" c="dimmed">
-                                  {' '}
-                                  /{line.unit}
-                                </Text>
-                              ) : null}
-                            </Text>
-                            <Text size="xs" fw={600} className="quotation-money">
-                              {Number(line.total_amount ?? line.amount ?? 0).toLocaleString()} {quote.currency}
-                            </Text>
-                          </Group>
-                        ))}
-                      </Stack>
-                    ) : (
-                      <>
-                        <InfoField
-                          label={<HeaderLabel label={t('quotations.mainFreight')} hint={t('glossary.freight')} />}
-                          value={
-                            quote.freightCost ? `${Number(quote.freightCost).toLocaleString()} ${quote.currency}` : '0'
-                          }
-                        />
-                        <InfoField
-                          label={<HeaderLabel label={t('quotations.localCharges')} hint={t('glossary.localCharges')} />}
-                          value={
-                            quote.localCharges
-                              ? `${Number(quote.localCharges).toLocaleString()} ${quote.currency}`
-                              : '0'
-                          }
-                        />
-                        <InfoField
-                          label={<HeaderLabel label={t('quotations.customsFee')} hint={t('glossary.customsClearance')} />}
-                          value={
-                            quote.customsFee ? `${Number(quote.customsFee).toLocaleString()} ${quote.currency}` : '0'
-                          }
-                        />
-                      </>
-                    )}
-                    <InfoField label={t('quotations.status')} value={statusLabel(quote.status)} />
-                  </Stack>
-                </Paper>
-              );
-            })}
+            {selectedQuotes.map((quote: any, idx) => (
+              <Paper key={quote.id} withBorder p="md" className="quotation-compare-card">
+                <Title order={5} mb="md">
+                  {t('quotations.option', { num: idx + 1, code: quote.quoteNumber })}
+                </Title>
+                <QuotationDetailBody quote={quote} />
+              </Paper>
+            ))}
           </SimpleGrid>
         </Paper>
       ) : null}
+
+      <Modal
+        opened={detailQuote !== null}
+        onClose={() => setDetailQuote(null)}
+        title={
+          detailQuote ? `${t('quotations.detailTitle')} · ${detailQuote.quoteNumber}` : t('quotations.detailTitle')
+        }
+        size="lg"
+        centered
+      >
+        {detailQuote ? <QuotationDetailBody quote={detailQuote} /> : null}
+      </Modal>
+    </Stack>
+  );
+}
+
+/**
+ * Full breakdown of a single quotation (carrier, mode, price, charge lines, status).
+ * Shared by the 2-up comparison panel and the per-row detail modal so both stay in sync.
+ */
+function QuotationDetailBody({ quote }: { quote: any }) {
+  const { statusLabel, t } = useI18n();
+  const lines = (quote.chargeLines ?? []) as Array<{
+    id: string;
+    description: string | null;
+    charge_type: string;
+    unit: string | null;
+    total_amount?: number | string;
+    amount?: number | string;
+  }>;
+
+  return (
+    <Stack gap="xs">
+      <InfoField
+        label={<HeaderLabel label={t('quotations.carrier')} hint={t('glossary.carrier')} />}
+        value={quote.carrierName || t('common.notAvailable')}
+      />
+      <InfoField
+        label={<HeaderLabel label={t('quotations.shippingMode')} hint={t('glossary.shippingMode')} />}
+        value={quote.shippingMode}
+      />
+      <InfoField
+        label={t('quotations.proposedPrice')}
+        value={
+          quote.quoteAmount
+            ? `${Number(quote.quoteAmount).toLocaleString()} ${quote.currency}`
+            : t('common.notAvailable')
+        }
+      />
+      {lines.length > 0 ? (
+        <Stack gap={4} mt={4}>
+          <Text size="xs" fw={700} tt="uppercase" c="dimmed">
+            {t('quotations.chargeBreakdown')}
+          </Text>
+          {lines.map((line) => (
+            <Group key={line.id} justify="space-between" gap="xs" wrap="nowrap" className="quotation-compare-line">
+              <Text size="xs" lineClamp={2}>
+                {line.description || line.charge_type}
+                {line.unit ? (
+                  <Text span size="xs" c="dimmed">
+                    {' '}
+                    /{line.unit}
+                  </Text>
+                ) : null}
+              </Text>
+              <Text size="xs" fw={600} className="quotation-money">
+                {Number(line.total_amount ?? line.amount ?? 0).toLocaleString()} {quote.currency}
+              </Text>
+            </Group>
+          ))}
+        </Stack>
+      ) : (
+        <>
+          <InfoField
+            label={<HeaderLabel label={t('quotations.mainFreight')} hint={t('glossary.freight')} />}
+            value={quote.freightCost ? `${Number(quote.freightCost).toLocaleString()} ${quote.currency}` : '0'}
+          />
+          <InfoField
+            label={<HeaderLabel label={t('quotations.localCharges')} hint={t('glossary.localCharges')} />}
+            value={quote.localCharges ? `${Number(quote.localCharges).toLocaleString()} ${quote.currency}` : '0'}
+          />
+          <InfoField
+            label={<HeaderLabel label={t('quotations.customsFee')} hint={t('glossary.customsClearance')} />}
+            value={quote.customsFee ? `${Number(quote.customsFee).toLocaleString()} ${quote.currency}` : '0'}
+          />
+        </>
+      )}
+      <InfoField label={t('quotations.status')} value={statusLabel(quote.status)} />
     </Stack>
   );
 }
