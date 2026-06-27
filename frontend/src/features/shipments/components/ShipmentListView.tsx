@@ -43,6 +43,10 @@ export function ShipmentListView({
   tabCounts: { all: number; in_transit: number; customs: number; delivered: number };
 }) {
   const { t } = useI18n();
+  const translatedShipmentModeOptions = shipmentModeOptions.map((option) => ({
+    label: t(option.labelKey),
+    value: option.value,
+  }));
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [dtoModalOpen, setDtoModalOpen] = useState(false);
   const activeTab = useShipmentsUiStore((s) => s.activeTab);
@@ -127,7 +131,7 @@ export function ShipmentListView({
               label={<HeaderLabel label={t('shipments.shipmentMode')} hint={t('glossary.shippingMode')} />}
               value={modeFilter}
               onChange={(value) => onModeFilterChange((value ?? 'all') as ShipmentModeV1 | 'all')}
-              data={[{ label: t('shipments.allModes'), value: 'all' }, ...shipmentModeOptions]}
+              data={[{ label: t('shipments.allModes'), value: 'all' }, ...translatedShipmentModeOptions]}
             />
             <Select
               label={<HeaderLabel label={t('shipments.carrier')} hint={t('glossary.carrier')} />}

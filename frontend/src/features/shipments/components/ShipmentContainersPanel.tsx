@@ -40,12 +40,12 @@ const CONTAINER_TYPE_OPTIONS = ['20GP', '40GP', '40HC', '45HC', '20RF', '40RF', 
   value,
 }));
 
-const CONTAINER_STATUS_OPTIONS: Array<{ label: string; value: ShipmentContainerStatusV1 }> = [
-  { label: 'Planned', value: 'PLANNED' },
-  { label: 'Stuffed', value: 'STUFFED' },
-  { label: 'Gated in', value: 'GATED_IN' },
-  { label: 'Discharged', value: 'DISCHARGED' },
-  { label: 'Returned', value: 'RETURNED' },
+const CONTAINER_STATUS_KEYS: Array<{ labelKey: string; value: ShipmentContainerStatusV1 }> = [
+  { labelKey: 'shipments.containerStatusPlanned', value: 'PLANNED' },
+  { labelKey: 'shipments.containerStatusStuffed', value: 'STUFFED' },
+  { labelKey: 'shipments.containerStatusGatedIn', value: 'GATED_IN' },
+  { labelKey: 'shipments.containerStatusDischarged', value: 'DISCHARGED' },
+  { labelKey: 'shipments.containerStatusReturned', value: 'RETURNED' },
 ];
 
 function statusColor(status: ShipmentContainerStatusV1) {
@@ -60,6 +60,10 @@ function statusColor(status: ShipmentContainerStatusV1) {
 
 export function ShipmentContainersPanel({ shipment }: { shipment: ShipmentRecord }) {
   const { t } = useI18n();
+  const containerStatusOptions = CONTAINER_STATUS_KEYS.map((option) => ({
+    label: t(option.labelKey),
+    value: option.value,
+  }));
   const queryClient = useQueryClient();
   const [newNo, setNewNo] = useState('');
   const [newType, setNewType] = useState<string | null>('40HC');
@@ -116,40 +120,39 @@ export function ShipmentContainersPanel({ shipment }: { shipment: ShipmentRecord
   return (
     <Stack gap="md">
       <Alert color="blue" icon={<IconBox size={18} />}>
-        Containers are the physical transport units of this shipment. Allocate them to a DTO when arranging
-        last-mile trucking; a container can belong to at most one DTO at a time.
+        {t('shipments.containersInfo')}
       </Alert>
 
       <Paper withBorder p="md">
         <SimpleGrid cols={{ base: 1, md: 6 }} spacing="sm">
           <TextInput
-            label="Container no."
-            placeholder="ABCU1234567"
+            label={t('shipments.containerNumber')}
+            placeholder={t('shipments.containerNumberPlaceholder')}
             value={newNo}
             onChange={(event) => setNewNo(event.currentTarget.value)}
             required
           />
           <Select
-            label={<HeaderLabel label="Type" hint={t('glossary.containerType')} />}
+            label={<HeaderLabel label={t('shipments.containerType')} hint={t('glossary.containerType')} />}
             data={CONTAINER_TYPE_OPTIONS}
             value={newType}
             onChange={setNewType}
           />
           <TextInput
-            label={<HeaderLabel label="Seal no." hint={t('glossary.seal')} />}
-            placeholder="SL-001"
+            label={<HeaderLabel label={t('shipments.sealNumber')} hint={t('glossary.seal')} />}
+            placeholder={t('shipments.sealNumberPlaceholder')}
             value={newSeal}
             onChange={(event) => setNewSeal(event.currentTarget.value)}
           />
           <NumberInput
-            label={<HeaderLabel label="Gross (kg)" hint={t('glossary.grossWeight')} />}
+            label={<HeaderLabel label={t('shipments.grossWeightKg')} hint={t('glossary.grossWeight')} />}
             placeholder="0"
             value={newGross}
             onChange={setNewGross}
             min={0}
           />
           <NumberInput
-            label={<HeaderLabel label="Volume (CBM)" hint={t('glossary.cbm')} />}
+            label={<HeaderLabel label={t('shipments.volumeCbm')} hint={t('glossary.cbm')} />}
             placeholder="0"
             value={newCbm}
             onChange={setNewCbm}
@@ -163,31 +166,31 @@ export function ShipmentContainersPanel({ shipment }: { shipment: ShipmentRecord
               disabled={!newNo.trim()}
               onClick={handleCreate}
             >
-              Add container
+              {t('shipments.addContainer')}
             </Button>
           </Group>
         </SimpleGrid>
       </Paper>
 
       {containersQuery.isLoading ? (
-        <Group gap="xs"><Loader size="sm" /><Text size="sm" c="dimmed">Loading containers...</Text></Group>
+        <Group gap="xs"><Loader size="sm" /><Text size="sm" c="dimmed">{t('shipments.loadingContainers')}</Text></Group>
       ) : containers.length === 0 ? (
-        <EmptyState title="No containers" description="Add a container to this shipment to start tracking transport units." />
+        <EmptyState title={t('shipments.containersEmptyTitle')} description={t('shipments.containersEmptyDescription')} />
       ) : (
         <Paper withBorder p={0}>
           <ScrollArea type="always" offsetScrollbars scrollbarSize={8}>
             <Table miw={820} verticalSpacing="sm" highlightOnHover>
               <Table.Thead>
                 <Table.Tr>
-                  <Table.Th>Container no.</Table.Th>
+                  <Table.Th>{t('shipments.containerNumber')}</Table.Th>
                   <Table.Th>
-                    <HeaderLabel label="Type" hint={t('glossary.containerType')} />
+                    <HeaderLabel label={t('shipments.containerType')} hint={t('glossary.containerType')} />
                   </Table.Th>
                   <Table.Th>
-                    <HeaderLabel label="Seal" hint={t('glossary.seal')} />
+                    <HeaderLabel label={t('shipments.seal')} hint={t('glossary.seal')} />
                   </Table.Th>
                   <Table.Th>
-                    <HeaderLabel label="Gross (kg)" hint={t('glossary.grossWeight')} />
+                    <HeaderLabel label={t('shipments.grossWeightKg')} hint={t('glossary.grossWeight')} />
                   </Table.Th>
                   <Table.Th>
                     <HeaderLabel label="CBM" hint={t('glossary.cbm')} />
@@ -195,7 +198,7 @@ export function ShipmentContainersPanel({ shipment }: { shipment: ShipmentRecord
                   <Table.Th>
                     <HeaderLabel label="DTO" hint={t('glossary.dto')} />
                   </Table.Th>
-                  <Table.Th>Status</Table.Th>
+                  <Table.Th>{t('common.status')}</Table.Th>
                   <Table.Th />
                 </Table.Tr>
               </Table.Thead>
@@ -211,14 +214,14 @@ export function ShipmentContainersPanel({ shipment }: { shipment: ShipmentRecord
                       {container.dto_id ? (
                         <Badge variant="light" color="teal">{container.dto_id}</Badge>
                       ) : (
-                        <Text size="xs" c="dimmed">Unallocated</Text>
+                        <Text size="xs" c="dimmed">{t('shipments.unallocated')}</Text>
                       )}
                     </Table.Td>
                     <Table.Td>
                       <Select
                         size="xs"
                         w={140}
-                        data={CONTAINER_STATUS_OPTIONS}
+                        data={containerStatusOptions}
                         value={container.status}
                         allowDeselect={false}
                         onChange={(value) =>
@@ -228,9 +231,9 @@ export function ShipmentContainersPanel({ shipment }: { shipment: ShipmentRecord
                       />
                     </Table.Td>
                     <Table.Td>
-                      <Tooltip label="Remove container">
+                      <Tooltip label={t('shipments.removeContainer')}>
                         <ActionIcon
-                          aria-label="Remove container"
+                          aria-label={t('shipments.removeContainer')}
                           color="red"
                           variant="subtle"
                           loading={deleteMutation.isPending}

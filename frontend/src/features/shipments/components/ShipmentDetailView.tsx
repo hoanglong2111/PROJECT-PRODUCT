@@ -58,7 +58,7 @@ export function ShipmentDetailView({
   onUpdateCost: (costId: string, payload: Partial<ShipmentCostPayload>) => void;
   onUpdateDocument: (documentId: string, payload: Partial<ShipmentDocumentPayload>) => void;
   shipment: ShipmentRecord;
-  t: (key: string) => string;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }) {
   return (
     <Stack gap="lg">
@@ -93,7 +93,7 @@ export function ShipmentDetailView({
             {t('shipments.documents')}
           </Tabs.Tab>
           <Tabs.Tab value="containers" leftSection={<IconBox size={14} />}>
-            Containers
+            {t('shipments.containers')}
           </Tabs.Tab>
           <Tabs.Tab value="customs" leftSection={<IconShield size={14} />}>
             {t('shipments.customs')}
@@ -105,7 +105,7 @@ export function ShipmentDetailView({
             {t('shipments.tasks')}
           </Tabs.Tab>
           <Tabs.Tab value="carrier-do" leftSection={<IconFileInvoice size={14} />}>
-            Carrier DO
+            {t('shipments.carrierDo')}
           </Tabs.Tab>
           <Tabs.Tab value="dtos" leftSection={<IconTruck size={14} />}>
             DTOs
@@ -170,7 +170,7 @@ export function ShipmentDetailView({
   );
 }
 
-function ShipmentOverviewCard({ shipment, t }: { shipment: ShipmentRecord; t: (key: string) => string }) {
+function ShipmentOverviewCard({ shipment, t }: { shipment: ShipmentRecord; t: (key: string, params?: Record<string, string | number>) => string }) {
   const completedTasks = shipment.po_tasks.filter((task) => task.status === 'COMPLETED').length;
   const completedMilestones = shipment.milestones.filter((milestone) => Boolean(milestone.actual_date)).length;
   const completedDocuments = shipment.documents.filter((document) =>

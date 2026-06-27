@@ -1,16 +1,18 @@
 import { Badge, Checkbox, Group, Paper, Stack, Text } from '@mantine/core';
 
 import type { ShipmentPoTask } from '@shared/api/logistics';
+import { useI18n } from '@shared/i18n';
 
 export function ShipmentTasksPanel({ tasks }: { tasks: ShipmentPoTask[] }) {
+  const { t } = useI18n();
   return (
     <Paper withBorder p="md">
       <Stack gap="sm">
         <Text fw={700} size="sm">
-          PO Stage Closure Tasks
+          {t('shipments.tasksTitle')}
         </Text>
         <Text size="xs" c="dimmed">
-          Tasks must be completed before shipment can proceed to next stage.
+          {t('shipments.tasksDescription')}
         </Text>
         <Stack mt="sm" gap="xs">
           {tasks.map((task) => (

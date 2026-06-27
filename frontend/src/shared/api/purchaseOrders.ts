@@ -358,11 +358,6 @@ export async function updatePurchaseOrder(id: string, payload: UpdatePurchaseOrd
   return unwrapV1Data(response);
 }
 
-export async function deletePurchaseOrder(id: string) {
-  const response = await apiClient.delete<V1Response<PurchaseOrderV1>>(`/v1/mock/purchase_orders/${id}`);
-  return unwrapV1Data(response);
-}
-
 export async function sendPurchaseOrder(id: string) {
   const response = await apiClient.post<V1Response<PurchaseOrderV1>>(`/v1/purchase-orders/${id}/send`);
   return unwrapV1Data(response);
@@ -370,20 +365,6 @@ export async function sendPurchaseOrder(id: string) {
 
 export async function cancelPurchaseOrder(id: string, payload: CancelPurchaseOrderPayload = {}) {
   const response = await apiClient.post<V1Response<PurchaseOrderV1>>(`/v1/purchase-orders/${id}/cancel`, payload);
-  return unwrapV1Data(response);
-}
-
-export async function markPurchaseOrderInProduction(id: string) {
-  const response = await apiClient.patch<V1Response<PurchaseOrderV1>>(`/v1/mock/purchase_orders/${id}`, {
-    status: 'IN_PRODUCTION',
-  });
-  return unwrapV1Data(response);
-}
-
-export async function markPurchaseOrderReadyToShip(id: string) {
-  const response = await apiClient.patch<V1Response<PurchaseOrderV1>>(`/v1/mock/purchase_orders/${id}`, {
-    status: 'READY_TO_SHIP',
-  });
   return unwrapV1Data(response);
 }
 
@@ -404,29 +385,6 @@ export async function confirmPurchaseOrder(id: string, payload: ConfirmPurchaseO
 
 export async function fetchPurchaseOrderLines(id: string) {
   const response = await apiClient.get<V1Response<PurchaseOrderLineV1[]>>(`/v1/purchase-orders/${id}/lines`);
-  return unwrapV1Data(response);
-}
-
-export async function createPurchaseOrderLine(id: string, payload: PurchaseOrderLinePayload) {
-  const response = await apiClient.post<V1Response<PurchaseOrderLineV1>>('/v1/mock/purchase_order_lines', {
-    ...payload,
-    purchase_order_id: id,
-  });
-  return unwrapV1Data(response);
-}
-
-export async function updatePurchaseOrderLine(lineId: string, payload: Partial<PurchaseOrderLinePayload>) {
-  const response = await apiClient.patch<V1Response<PurchaseOrderLineV1>>(
-    `/v1/mock/purchase_order_lines/${lineId}`,
-    payload,
-  );
-  return unwrapV1Data(response);
-}
-
-export async function deletePurchaseOrderLine(lineId: string) {
-  const response = await apiClient.delete<V1Response<PurchaseOrderLineV1>>(
-    `/v1/mock/purchase_order_lines/${lineId}`,
-  );
   return unwrapV1Data(response);
 }
 

@@ -43,7 +43,7 @@ export function OperationalGateSummary({
             {t('common.delay')}
           </Text>
           <Title order={3} c={delay.isLate ? 'red' : 'teal'}>
-            {delay.days}d
+            {t('deliveryOrders.delayDays', { days: delay.days })}
           </Title>
           <Text size="sm" c="dimmed">
             {deliveryOrder.warehouse_tracking.warehouse_deadline}

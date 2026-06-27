@@ -27,6 +27,7 @@ import {
 } from '@shared/api/shipmentContainers';
 import { fetchSuppliers } from '@shared/api/tradeMasterData';
 import { queryKeys } from '@shared/api/queryKeys';
+import { useI18n } from '@shared/i18n';
 
 type ContainerRow = ShipmentContainerV1 & { _shipmentNumber: string };
 
@@ -41,6 +42,7 @@ export function CreateDtoFromShipmentModal({
   opened: boolean;
   shipments: ShipmentRecord[];
 }) {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const [selectedContainerIds, setSelectedContainerIds] = useState<string[]>([]);
   const [truckVendorId, setTruckVendorId] = useState<string | null>(null);
@@ -100,9 +102,9 @@ export function CreateDtoFromShipmentModal({
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      if (shipments.length === 0) throw new Error('No shipment selected');
+      if (shipments.length === 0) throw new Error(t('shipments.noShipmentSelected'));
       if (podMismatch) {
-        throw new Error('Selected shipments must share the same discharge port (POD) to consolidate into one DTO.');
+        throw new Error(t('shipments.selectedShipmentsSamePod'));
       }
 
       const [primary, ...others] = shipments;
@@ -144,32 +146,31 @@ export function CreateDtoFromShipmentModal({
   });
 
   const title = isConsolidation
-    ? `Consolidate ${shipments.length} shipments into one DTO`
-    : `Create DTO from ${shipments[0]?.shipment_number ?? ''}`;
+    ? t('shipments.createDtoTitle', { count: shipments.length })
+    : t('shipments.createDtoFromShipment', { shipmentNumber: shipments[0]?.shipment_number ?? '' });
 
   return (
     <Modal opened={opened} onClose={onClose} title={title} size="lg">
       <Stack gap="md">
         <Alert color={isConsolidation ? 'orange' : 'teal'} icon={<IconTruck size={18} />}>
           {isConsolidation
-            ? 'Consolidation: one truck run (one DTO) will serve all selected shipments. This is valid only for LCL cargo arriving at the same discharge port and going to the same warehouse.'
-            : 'A Domestic Transport Order arranges last-mile trucking for a customs-cleared shipment. Pick the containers this truck run will haul; leave empty to create the DTO without container allocation.'}
+            ? t('shipments.dtoConsolidationInfo')
+            : t('shipments.dtoCreateInfo')}
         </Alert>
 
         {podMismatch && (
           <Alert color="red" icon={<IconAlertTriangle size={18} />}>
-            The selected shipments have different discharge ports ({distinctPods.join(', ')}). One truck run
-            cannot pick up from multiple ports — select shipments that share the same POD.
+            {t('shipments.podMismatch', { ports: distinctPods.join(', ') })}
           </Alert>
         )}
 
         <div>
-          <Text fw={600} size="sm" mb={4}>Containers</Text>
+          <Text fw={600} size="sm" mb={4}>{t('shipments.containers')}</Text>
           {containersLoading ? (
-            <Group gap="xs"><Loader size="sm" /><Text size="sm" c="dimmed">Loading containers...</Text></Group>
+            <Group gap="xs"><Loader size="sm" /><Text size="sm" c="dimmed">{t('shipments.loadingContainers')}</Text></Group>
           ) : containerRows.length === 0 ? (
             <Text size="sm" c="dimmed">
-              No containers on the selected shipment(s). The DTO will be created without container allocation.
+              {t('shipments.dtoNoContainers')}
             </Text>
           ) : (
             <Checkbox.Group value={selectedContainerIds} onChange={setSelectedContainerIds}>
@@ -187,7 +188,7 @@ export function CreateDtoFromShipmentModal({
                           <Badge size="xs" variant="outline" color="gray">{container._shipmentNumber}</Badge>
                         )}
                         {container.dto_id ? (
-                          <Badge size="xs" color="gray">Allocated to {container.dto_id}</Badge>
+                          <Badge size="xs" color="gray">{t('shipments.allocatedToDto', { dto: container.dto_id })}</Badge>
                         ) : (
                           <Badge size="xs" color="teal" variant="light">{container.status}</Badge>
                         )}
@@ -201,24 +202,24 @@ export function CreateDtoFromShipmentModal({
         </div>
 
         <Select
-          label="Truck vendor"
-          placeholder="Default trucking vendor"
+          label={t('shipments.truckVendor')}
+          placeholder={t('shipments.truckVendorDefault')}
           data={truckVendorOptions}
           value={truckVendorId}
           onChange={setTruckVendorId}
           searchable
           clearable
-          nothingFoundMessage={truckVendorsQuery.isLoading ? 'Loading vendors...' : 'No trucking vendor'}
+          nothingFoundMessage={truckVendorsQuery.isLoading ? t('domesticTransportOrders.loadingVendors') : t('domesticTransportOrders.noVendor')}
         />
 
         <Group grow>
           <TextInput
-            label="Warehouse"
+            label={t('shipments.warehouse')}
             value={warehouse}
             onChange={(event) => setWarehouse(event.currentTarget.value)}
           />
           <TextInput
-            label="Scheduled pickup"
+            label={t('shipments.scheduledPickup')}
             type="date"
             value={pickupDate}
             onChange={(event) => setPickupDate(event.currentTarget.value)}
@@ -226,8 +227,8 @@ export function CreateDtoFromShipmentModal({
         </Group>
 
         <Textarea
-          label="Note"
-          placeholder="Optional dispatch note"
+          label={t('shipments.note')}
+          placeholder={t('shipments.optionalDispatchNote')}
           value={note}
           onChange={(event) => setNote(event.currentTarget.value)}
           autosize
@@ -236,19 +237,19 @@ export function CreateDtoFromShipmentModal({
 
         {createMutation.isError && (
           <Alert color="red" icon={<IconX size={16} />}>
-            {createMutation.error instanceof Error ? createMutation.error.message : 'Could not create DTO'}
+            {createMutation.error instanceof Error ? createMutation.error.message : t('shipments.dtosPanel.operationFailed')}
           </Alert>
         )}
 
         <Group justify="flex-end" gap="xs">
-          <Button variant="subtle" onClick={onClose}>Cancel</Button>
+          <Button variant="subtle" onClick={onClose}>{t('common.cancel')}</Button>
           <Button
             leftSection={<IconTruck size={16} />}
             loading={createMutation.isPending}
             disabled={podMismatch || shipments.length === 0}
             onClick={() => createMutation.mutate()}
           >
-            {isConsolidation ? `Create consolidated DTO (${shipments.length})` : 'Create DTO'}
+            {isConsolidation ? t('shipments.createConsolidatedDto', { count: shipments.length }) : t('shipments.createDto')}
           </Button>
         </Group>
       </Stack>

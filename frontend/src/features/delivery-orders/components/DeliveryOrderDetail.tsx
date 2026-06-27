@@ -169,7 +169,7 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
         </Group>
         {actionMutation.isError ? (
           <Alert color="red" icon={<IconAlertTriangle size={18} />} mt="md">
-            {getApiErrorMessage(actionMutation.error)}
+            {getApiErrorMessage(actionMutation.error, t('forms.apiUnknownError'))}
           </Alert>
         ) : null}
       </Paper>
@@ -476,7 +476,7 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
                       {t('common.delay')}
                     </Text>
                     <Text fw={900} size="xl" c={delay.isLate ? 'red' : 'teal'} className="tabular-nums">
-                      {delayDays}d
+                      {t('deliveryOrders.delayDays', { days: delayDays })}
                     </Text>
                     <Text size="xs" c="dimmed">
                       {deliveryOrder.warehouse_tracking.warehouse_deadline}

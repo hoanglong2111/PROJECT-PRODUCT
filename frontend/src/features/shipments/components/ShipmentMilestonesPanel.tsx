@@ -18,38 +18,38 @@ const MILESTONE_SEQUENCE: ShipmentMilestoneCodeV1[] = [
   'DELIVERED',
 ];
 
-const MILESTONE_LABELS: Record<ShipmentMilestoneCodeV1, string> = {
-  BOOKING_CONFIRMED: 'Booking Confirmed',
-  CARGO_READY: 'Cargo Ready',
-  PICKED_UP: 'Picked up',
-  BL_ISSUED: 'B/L Issued',
-  GATE_IN_POL: 'Gate in POL',
-  ATD: 'ATD',
-  CUSTOMS_DRAFT: 'Customs Draft',
-  ARRIVAL_NOTICE: 'Arrival Notice',
-  CUSTOMS_CLEARED: 'Customs Cleared',
-  DELIVERED: 'Delivered',
+const MILESTONE_LABEL_KEYS: Record<ShipmentMilestoneCodeV1, string> = {
+  BOOKING_CONFIRMED: 'shipments.milestone.BOOKING_CONFIRMED',
+  CARGO_READY: 'shipments.milestone.CARGO_READY',
+  PICKED_UP: 'shipments.milestone.PICKED_UP',
+  BL_ISSUED: 'shipments.milestone.BL_ISSUED',
+  GATE_IN_POL: 'shipments.milestone.GATE_IN_POL',
+  ATD: 'shipments.milestone.ATD',
+  CUSTOMS_DRAFT: 'shipments.milestone.CUSTOMS_DRAFT',
+  ARRIVAL_NOTICE: 'shipments.milestone.ARRIVAL_NOTICE',
+  CUSTOMS_CLEARED: 'shipments.milestone.CUSTOMS_CLEARED',
+  DELIVERED: 'shipments.milestone.DELIVERED',
 };
 
-const MILESTONE_AUTOMATION: Record<ShipmentMilestoneCodeV1, { auto: boolean; trigger?: string }> = {
-  BOOKING_CONFIRMED: { auto: true, trigger: 'tạo shipment' },
+const MILESTONE_AUTOMATION: Record<ShipmentMilestoneCodeV1, { auto: boolean; triggerKey?: string }> = {
+  BOOKING_CONFIRMED: { auto: true, triggerKey: 'shipments.milestoneTrigger.createShipment' },
   CARGO_READY: { auto: false },
   PICKED_UP: { auto: false },
-  BL_ISSUED: { auto: true, trigger: 'upload chứng từ B/L' },
+  BL_ISSUED: { auto: true, triggerKey: 'shipments.milestoneTrigger.uploadBl' },
   GATE_IN_POL: { auto: false },
   ATD: { auto: false },
-  CUSTOMS_DRAFT: { auto: true, trigger: 'tạo tờ khai hải quan' },
-  ARRIVAL_NOTICE: { auto: true, trigger: 'upload Arrival Notice' },
-  CUSTOMS_CLEARED: { auto: true, trigger: 'thông quan tờ khai' },
-  DELIVERED: { auto: true, trigger: 'DTO nhận POD' },
+  CUSTOMS_DRAFT: { auto: true, triggerKey: 'shipments.milestoneTrigger.createCustomsDeclaration' },
+  ARRIVAL_NOTICE: { auto: true, triggerKey: 'shipments.milestoneTrigger.uploadArrivalNotice' },
+  CUSTOMS_CLEARED: { auto: true, triggerKey: 'shipments.milestoneTrigger.clearCustomsDeclaration' },
+  DELIVERED: { auto: true, triggerKey: 'shipments.milestoneTrigger.dtoPodReceived' },
 };
 
-const MILESTONE_PHASES: Array<{ title: string; codes: ShipmentMilestoneCodeV1[] }> = [
-  { title: 'Booking', codes: ['BOOKING_CONFIRMED', 'CARGO_READY'] },
-  { title: 'Origin', codes: ['PICKED_UP', 'BL_ISSUED'] },
-  { title: 'Departure', codes: ['GATE_IN_POL', 'ATD'] },
-  { title: 'Import prep', codes: ['CUSTOMS_DRAFT', 'ARRIVAL_NOTICE'] },
-  { title: 'Clearance', codes: ['CUSTOMS_CLEARED', 'DELIVERED'] },
+const MILESTONE_PHASES: Array<{ titleKey: string; codes: ShipmentMilestoneCodeV1[] }> = [
+  { titleKey: 'shipments.milestonePhaseBooking', codes: ['BOOKING_CONFIRMED', 'CARGO_READY'] },
+  { titleKey: 'shipments.milestonePhaseOrigin', codes: ['PICKED_UP', 'BL_ISSUED'] },
+  { titleKey: 'shipments.milestonePhaseDeparture', codes: ['GATE_IN_POL', 'ATD'] },
+  { titleKey: 'shipments.milestonePhaseImportPrep', codes: ['CUSTOMS_DRAFT', 'ARRIVAL_NOTICE'] },
+  { titleKey: 'shipments.milestonePhaseClearance', codes: ['CUSTOMS_CLEARED', 'DELIVERED'] },
 ];
 
 const formatMilestoneDate = (value: string | null) => {
@@ -74,7 +74,7 @@ export function ShipmentMilestonesPanel({
   isSaving: boolean;
   onMarkDone: (milestoneCode: ShipmentMilestoneCodeV1, payload: { actualAt: string; notes?: string | null }) => void;
   shipment: ShipmentRecord;
-  t: (key: string) => string;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }) {
   const [editingMilestoneId, setEditingMilestoneId] = useState<string | null>(null);
   const [milestoneDate, setMilestoneDate] = useState('');
@@ -106,8 +106,8 @@ export function ShipmentMilestonesPanel({
   const progressValue = Math.round((completedCount / renderedMilestones.length) * 100);
   const currentMilestone = renderedMilestones.find((milestone) => !milestone.actual_date);
   const currentMilestoneLabel = currentMilestone
-    ? MILESTONE_LABELS[currentMilestone.milestone_code as ShipmentMilestoneCodeV1]
-    : 'All milestones completed';
+    ? t(MILESTONE_LABEL_KEYS[currentMilestone.milestone_code as ShipmentMilestoneCodeV1])
+    : t('shipments.allMilestonesCompleted');
   const currentPhase = currentMilestone
     ? MILESTONE_PHASES.find((phase) => phase.codes.includes(currentMilestone.milestone_code as ShipmentMilestoneCodeV1))
     : null;
@@ -148,15 +148,15 @@ export function ShipmentMilestonesPanel({
             </ThemeIcon>
             <div style={{ minWidth: 0 }}>
               <Text fw={800} size="md" lineClamp={1}>
-                Shipment milestones
+                {t('shipments.milestones')}
               </Text>
               <Text size="xs" c="dimmed" lineClamp={1}>
-                Next action: {currentMilestoneLabel}
+                {t('shipments.milestoneNextAction', { label: currentMilestoneLabel })}
               </Text>
             </div>
           </Group>
           <Badge color={progressValue === 100 ? 'teal' : 'blue'} variant="light" size="lg">
-            {completedCount}/{renderedMilestones.length} done
+            {t('shipments.completedOf', { completed: completedCount, total: renderedMilestones.length })}
           </Badge>
         </Group>
 
@@ -173,30 +173,30 @@ export function ShipmentMilestonesPanel({
           })}
         </div>
         <Group gap="md" mt="xs">
-          <Group gap={4}><Badge size="xs" variant="light" color="teal">Auto</Badge><Text size="xs" c="dimmed">hệ thống tự đánh dấu khi có sự kiện</Text></Group>
-          <Group gap={4}><Badge size="xs" variant="light" color="gray">Manual</Badge><Text size="xs" c="dimmed">nhập tay</Text></Group>
+          <Group gap={4}><Badge size="xs" variant="light" color="teal">{t('shipments.auto')}</Badge><Text size="xs" c="dimmed">{t('shipments.autoMilestoneDescription')}</Text></Group>
+          <Group gap={4}><Badge size="xs" variant="light" color="gray">{t('shipments.manual')}</Badge><Text size="xs" c="dimmed">{t('shipments.manualMilestoneHint')}</Text></Group>
         </Group>
       </div>
 
       <div className="shipment-milestone-summary">
         <div className="shipment-milestone-next-card">
           <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
-            Current work
+            {t('shipments.milestoneCurrentWork')}
           </Text>
           <Text fw={800} size="md" lineClamp={1}>
             {currentMilestoneLabel}
           </Text>
           <Text size="xs" c="dimmed" lineClamp={1}>
-            {currentPhase ? currentPhase.title : 'Shipment completed'}
+            {currentPhase ? t(currentPhase.titleKey) : t('shipments.allMilestonesCompleted')}
           </Text>
         </div>
 
         <div className="shipment-milestone-fact-card">
           <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
-            Last completed
+            {t('shipments.milestoneLastCompleted')}
           </Text>
           <Text fw={800} lineClamp={1}>
-            {lastCompleted ? MILESTONE_LABELS[lastCompleted.milestone_code as ShipmentMilestoneCodeV1] : '-'}
+            {lastCompleted ? t(MILESTONE_LABEL_KEYS[lastCompleted.milestone_code as ShipmentMilestoneCodeV1]) : '-'}
           </Text>
           <Text size="xs" c="dimmed">
             {lastCompleted ? formatMilestoneDate(lastCompleted.actual_date) : '-'}
@@ -205,13 +205,13 @@ export function ShipmentMilestonesPanel({
 
         <div className="shipment-milestone-fact-card">
           <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
-            Progress
+            {t('shipments.milestoneProgress')}
           </Text>
           <Text fw={800} className="tabular-nums">
             {progressValue}%
           </Text>
           <Text size="xs" c="dimmed">
-            {completedCount} of {renderedMilestones.length}
+            {t('shipments.completedOf', { completed: completedCount, total: renderedMilestones.length })}
           </Text>
         </div>
 
@@ -223,14 +223,14 @@ export function ShipmentMilestonesPanel({
             const phaseActive = phaseItems.some((item) => item?.milestone.id === currentMilestone?.id);
 
             return (
-              <div key={phase.title} className={`shipment-phase-row ${phaseActive ? 'is-active' : ''}`}>
+              <div key={phase.titleKey} className={`shipment-phase-row ${phaseActive ? 'is-active' : ''}`}>
                 <Group justify="space-between" gap="xs" wrap="nowrap">
                   <div style={{ minWidth: 0 }}>
                     <Text size="xs" c="dimmed" fw={700}>
-                      Phase {phaseIndex + 1}
+                      {t('shipments.milestonePhase', { number: phaseIndex + 1 })}
                     </Text>
                     <Text size="sm" fw={800} lineClamp={1}>
-                      {phase.title}
+                      {t(phase.titleKey)}
                     </Text>
                   </div>
                   <Badge size="xs" color={phaseDone === phaseItems.length ? 'teal' : phaseActive ? 'blue' : 'gray'} variant="light">
@@ -260,7 +260,7 @@ export function ShipmentMilestonesPanel({
                   const state = getMilestoneState(milestone.id, milestone.actual_date);
                   const isEditing = editingMilestoneId === milestone.id;
                   const color = getStatusColor(state);
-                  const label = MILESTONE_LABELS[milestone.milestone_code as ShipmentMilestoneCodeV1];
+                  const label = t(MILESTONE_LABEL_KEYS[milestone.milestone_code as ShipmentMilestoneCodeV1]);
                   const displayIndex = columnOffset + index + 1;
 
                   return (
@@ -286,26 +286,28 @@ export function ShipmentMilestonesPanel({
                               </Text>
                               {state === 'current' ? (
                                 <Badge size="xs" color="blue" variant="filled">
-                                  Now
+                                  {t('shipments.milestoneNow')}
                                 </Badge>
                               ) : null}
                             </Group>
                             <Group gap={6} wrap="nowrap">
                               <Text size="xs" c={state === 'completed' ? 'teal' : 'dimmed'} lineClamp={1}>
                                 {state === 'completed'
-                                  ? `Done ${formatMilestoneDate(milestone.actual_date)}`
-                                  : `Planned ${formatMilestoneDate(milestone.planned_date)}`}
+                                  ? t('shipments.milestoneDone', { date: formatMilestoneDate(milestone.actual_date) })
+                                  : t('shipments.milestonePlanned', { date: formatMilestoneDate(milestone.planned_date) })}
                               </Text>
                               {state === 'completed' ? (
                                 <Badge size="xs" variant="light" color={milestone.source && milestone.source !== 'MANUAL' ? 'teal' : 'gray'}>
-                                  {milestone.source && milestone.source !== 'MANUAL' ? 'Auto' : 'Manual'}
+                                  {milestone.source && milestone.source !== 'MANUAL' ? t('shipments.auto') : t('shipments.manual')}
                                 </Badge>
                               ) : MILESTONE_AUTOMATION[milestone.milestone_code as ShipmentMilestoneCodeV1].auto ? (
                                 <Tooltip
                                   withArrow
-                                  label={`Sẽ tự đánh dấu khi: ${MILESTONE_AUTOMATION[milestone.milestone_code as ShipmentMilestoneCodeV1].trigger}`}
+                                  label={t('shipments.autoMilestoneHint', {
+                                    trigger: t(MILESTONE_AUTOMATION[milestone.milestone_code as ShipmentMilestoneCodeV1].triggerKey ?? ''),
+                                  })}
                                 >
-                                  <Badge size="xs" variant="outline" color="gray">Auto</Badge>
+                                  <Badge size="xs" variant="outline" color="gray">{t('shipments.auto')}</Badge>
                                 </Tooltip>
                               ) : null}
                             </Group>
@@ -318,7 +320,7 @@ export function ShipmentMilestonesPanel({
                               loading={isSaving && isEditing}
                               onClick={() => openEditor(milestone.id, milestone.actual_date, milestone.note)}
                             >
-                              {state === 'completed' ? 'Update' : state === 'current' ? 'Done' : 'Set date'}
+                              {state === 'completed' ? t('shipments.milestoneUpdate') : state === 'current' ? t('shipments.markDone') : t('shipments.milestoneSetDate')}
                             </Button>
                           </div>
                         </div>

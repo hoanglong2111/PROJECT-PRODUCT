@@ -217,34 +217,18 @@ export async function createDeliveryOrderQuotation(
   return unwrapV1Data(response);
 }
 
-export async function updateQuotationV1(id: string, payload: UpdateQuotationPayload) {
-  const response = await apiClient.patch<V1Response<QuotationV1>>(`/v1/mock/quotations/${id}`, payload);
-  return unwrapV1Data(response);
-}
-
-export async function deleteQuotationV1(id: string) {
-  const response = await apiClient.delete<V1Response<QuotationV1>>(`/v1/mock/quotations/${id}`);
-  return unwrapV1Data(response);
-}
-
 export async function requestQuotation(id: string) {
-  const response = await apiClient.patch<V1Response<QuotationV1>>(`/v1/mock/quotations/${id}`, {
-    status: 'REQUESTED',
-  });
+  const response = await apiClient.post<V1Response<QuotationV1>>(`/v1/quotations/${id}/request`);
   return unwrapV1Data(response);
 }
 
 export async function receiveQuotation(id: string) {
-  const response = await apiClient.patch<V1Response<QuotationV1>>(`/v1/mock/quotations/${id}`, {
-    status: 'RECEIVED',
-  });
+  const response = await apiClient.post<V1Response<QuotationV1>>(`/v1/quotations/${id}/receive`);
   return unwrapV1Data(response);
 }
 
 export async function submitQuotationToKbi(id: string) {
-  const response = await apiClient.patch<V1Response<QuotationV1>>(`/v1/mock/quotations/${id}`, {
-    status: 'SUBMITTED_TO_KBI',
-  });
+  const response = await apiClient.post<V1Response<QuotationV1>>(`/v1/quotations/${id}/submit-to-kbi`);
   return unwrapV1Data(response);
 }
 
@@ -271,14 +255,6 @@ export async function rejectQuotation(id: string, payload: QuotationActionPayloa
 
 export async function cancelQuotation(id: string, payload: QuotationActionPayload = {}) {
   const response = await apiClient.post<V1Response<QuotationV1>>(`/v1/quotations/${id}/cancel`, payload);
-  return unwrapV1Data(response);
-}
-
-export async function expireQuotation(id: string, payload: QuotationActionPayload = {}) {
-  const response = await apiClient.patch<V1Response<QuotationV1>>(`/v1/mock/quotations/${id}`, {
-    ...payload,
-    status: 'EXPIRED',
-  });
   return unwrapV1Data(response);
 }
 

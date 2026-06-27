@@ -85,7 +85,7 @@ export function DocumentUploadPanel({
     <Stack gap="lg">
       {error ? (
         <Alert color="red" icon={<IconAlertTriangle size={16} />}>
-          {getApiErrorMessage(error)}
+          {getApiErrorMessage(error, t('forms.apiUnknownError'))}
         </Alert>
       ) : null}
 

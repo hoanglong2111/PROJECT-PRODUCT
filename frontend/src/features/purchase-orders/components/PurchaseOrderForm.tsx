@@ -26,6 +26,7 @@ import {
   type PurchaseOrderV1,
   type UpdatePurchaseOrderV1Payload,
 } from '@shared/api/purchaseOrders';
+import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
 import { usePoInvalidation } from '../hooks/usePoInvalidation';
@@ -258,7 +259,12 @@ export function PurchaseOrderForm({
               }
             />
             <Select
-              label="PO type"
+              label={
+                <HeaderLabel
+                  label="PO type"
+                  hint="Commercial lane (sea / air / domestic). Drives SOP task templates — not the booked container mode."
+                />
+              }
               data={poTypeOptions.map((type) => ({ label: type, value: type }))}
               value={draft.po_type}
               onChange={(value) => setDraft((current) => ({ ...current, po_type: value ?? '' }))}
@@ -337,7 +343,12 @@ export function PurchaseOrderForm({
         >
           <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
             <Select
-              label="Transport mode"
+              label={
+                <HeaderLabel
+                  label="Transport mode"
+                  hint="Planned method, incl. FCL / LCL / air. The final FCL vs LCL is confirmed downstream on the shipment."
+                />
+              }
               data={masterData.transportModeOptions}
               value={draft.transport_mode_id}
               onChange={(value) => setDraft((current) => ({ ...current, transport_mode_id: value ?? '' }))}

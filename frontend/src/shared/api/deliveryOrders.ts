@@ -183,17 +183,6 @@ export async function fetchDeliveryOrderV1(id: string) {
   return unwrapV1Data(response);
 }
 
-export async function createDeliveryOrderV1(payload: CreateDeliveryOrderPayload) {
-  const response = await apiClient.post<V1Response<DeliveryOrderV1>>('/v1/mock/delivery_orders', {
-    delivery_order_no: payload.do_no,
-    purchase_order_id: payload.purchase_order_id,
-    status: 'DRAFT',
-    requested_pickup_date: payload.planned_cargo_ready_date ?? null,
-    notes: payload.notes ?? null,
-  });
-  return unwrapV1Data(response);
-}
-
 export async function createDeliveryOrderFromLots(payload: CreateDeliveryOrderFromLotsPayload) {
   const response = await apiClient.post<V1Response<DeliveryOrderV1>>(
     '/v1/delivery-orders/from-lots',
@@ -216,11 +205,6 @@ export async function updateDeliveryOrderV1(id: string, payload: DeliveryOrderPa
     warehouse_name: payload.warehouse_name,
     notes: payload.notes,
   });
-  return unwrapV1Data(response);
-}
-
-export async function deleteDeliveryOrderV1(id: string) {
-  const response = await apiClient.delete<V1Response<DeliveryOrderV1>>(`/v1/mock/delivery_orders/${id}`);
   return unwrapV1Data(response);
 }
 
