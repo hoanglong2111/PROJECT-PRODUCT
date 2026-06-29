@@ -72,6 +72,7 @@ export const STATUS_MAP: Record<string, StatusBadgeConfig> = {
   RELEASE_READY: { color: 'teal' },
   REJECTED: { color: 'red' },
   REQUESTED: { color: 'yellow' },
+  REQUEST_FOR_QUOTATION: { color: 'grape' },
   REVISION_REQUESTED: { color: 'orange' },
   SEAWAY_BILL: { color: 'teal' },
   SENT_TO_ACC: { color: 'teal' },

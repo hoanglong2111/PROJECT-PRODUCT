@@ -48,7 +48,6 @@ import { getAllocationWeightKg, getContainerCount, shippingIcon } from '../model
 import { gateDetail, gateLabel, riskDetail, riskLabel, slaLabel } from '../model/deliveryOrderLabels';
 import { CreateShipmentFromDoModal } from './CreateShipmentFromDoModal';
 import { DocumentUploadPanel } from './DocumentUploadPanel';
-import { Gd1QuotationBiddingPanel } from './QuotationBiddingPanel';
 import { OperationalGateSummary } from './OperationalGateSummary';
 
 export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: DeliveryOrder; onClose: () => void }) {
@@ -98,13 +97,15 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
   });
 
   const primaryAction =
-    deliveryOrder.order_info.status === 'DRAFT'
-      ? { action: 'ready-for-quotation' as const, label: t('deliveryOrders.readyForQuotationAction') }
-      : deliveryOrder.order_info.status === 'ASSIGNED_TO_SHIPMENT'
-        ? { action: 'close' as const, label: t('deliveryOrders.closeDoAction') }
-        : null;
-  const canCancel = ['DRAFT', 'READY_FOR_QUOTATION', 'QUOTATION_CONFIRMED'].includes(deliveryOrder.order_info.status);
-  const isQuotationConfirmed = deliveryOrder.order_info.status === 'QUOTATION_CONFIRMED';
+    deliveryOrder.order_info.status === 'ASSIGNED_TO_SHIPMENT'
+      ? { action: 'close' as const, label: t('deliveryOrders.closeDoAction') }
+      : null;
+  const canCancel = deliveryOrder.order_info.status === 'DRAFT';
+  // Reversed flow: quotation no longer gates the DO. A shipment can be created from
+  // any DO that has no shipment yet and is not terminal/assigned.
+  const canCreateShipment =
+    !deliveryOrder.linked_shipment_number &&
+    !['CANCELLED', 'CLOSED', 'ASSIGNED_TO_SHIPMENT'].includes(deliveryOrder.order_info.status);
   const closureChecklist = [
     { ok: Boolean(deliveryOrder.linked_shipment_number), label: t('deliveryOrders.checklistLinkedShipment') },
     { ok: deliveryOrder.logistics_shipping.missing_documents.length === 0, label: t('deliveryOrders.checklistNoMissingDocuments') },
@@ -131,7 +132,7 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
           <Stack gap="xs" align="flex-end">
             <Text size="xs" c="dimmed" className="tabular-nums">{taskProgress}% {t('tasks.progress')}</Text>
             <Group gap="xs" justify="flex-end">
-              {isQuotationConfirmed ? (
+              {canCreateShipment ? (
                 <Button
                   size="xs"
                   leftSection={<IconAnchor size={14} />}
@@ -206,9 +207,6 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
         <Tabs.List>
           <Tabs.Tab value="overview" leftSection={<IconTruckDelivery size={16} />}>
             {t('deliveryOrders.overview')}
-          </Tabs.Tab>
-          <Tabs.Tab value="quotations" leftSection={<IconClipboardCheck size={16} />}>
-            {t('quotations.title')}
           </Tabs.Tab>
           <Tabs.Tab value="ops" leftSection={<IconClipboardCheck size={16} />}>
             {t('deliveryOrders.opsControl')}
@@ -418,15 +416,6 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
               </Paper>
             ) : null}
           </Stack>
-        </Tabs.Panel>
-
-        <Tabs.Panel value="quotations" pt="md">
-          <Gd1QuotationBiddingPanel
-            requestCode={deliveryOrder.order_info.order_number}
-            incoterms={deliveryOrder.logistics_shipping.incoterms}
-            shippingMethod={deliveryOrder.logistics_shipping.shipping_method}
-            status={deliveryOrder.order_info.status}
-          />
         </Tabs.Panel>
 
         <Tabs.Panel value="ops" pt="md">

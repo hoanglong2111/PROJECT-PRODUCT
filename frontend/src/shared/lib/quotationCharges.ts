@@ -5,10 +5,11 @@ import type { ShippingMode } from '@shared/model/logistics';
 /**
  * Incoterms-aware quotation charge catalog.
  *
- * The set of fees a KBI customer owes depends on the Incoterms group of the
- * originating PO and the shipping mode of the quote. See `docs/FE_rule.md`
- * (section 9, Quotation) for the business rules; this catalog is the frontend's
- * own source of truth for the fee groups.
+ * The set of fees a customer owes depends on the Incoterms group of the quotation
+ * and its shipping mode. In the reversed flow a quotation is a standalone, pre-PO
+ * freight quote that carries its own Incoterm + mode (it is no longer derived from
+ * a DO). See `docs/FE_rule.md` (Quotation section) for the business rules; this
+ * catalog is the frontend's own source of truth for the fee groups.
  */
 
 export type QuotationIncotermGroup = 'EXW_FCA' | 'FOB' | 'CFR' | 'PREPAID' | 'UNKNOWN';
@@ -119,7 +120,7 @@ function customsTransportFields(mode: ShippingMode): QuotationChargeField[] {
 /**
  * Return the ordered charge sections for a given Incoterms group and shipping
  * mode. UNKNOWN behaves like EXW_FCA (full set) so no field is hidden when the
- * DO has no Incoterms.
+ * quotation has no Incoterms.
  */
 export function getChargeFields(group: QuotationIncotermGroup, mode: ShippingMode): QuotationChargeSection[] {
   const showOrigin = group === 'EXW_FCA' || group === 'UNKNOWN';
