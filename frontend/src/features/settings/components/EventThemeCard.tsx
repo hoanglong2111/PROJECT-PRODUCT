@@ -40,7 +40,7 @@ export function EventThemeCard({ eventTheme, onChange }: Props) {
           </Alert>
         )}
 
-        <SimpleGrid cols={{ base: 3, sm: 5, lg: 9 }} spacing="sm">
+        <SimpleGrid cols={{ base: 3, sm: 4, lg: 5 }} spacing="sm">
           {(Object.keys(eventThemes) as EventThemeId[]).map((themeId) => {
             const ev = eventThemes[themeId];
             const isActive = eventTheme === themeId;

@@ -181,7 +181,7 @@ export function PurchaseOrderForm({
 
   return (
     <form className="purchase-order-form" onSubmit={handleSubmit}>
-      <Stack gap="md">
+      <Stack gap="sm">
         {mutation.isError ? (
           <Alert color="red" icon={<IconAlertTriangle size={18} />} title="Could not save PO">
             {getApiErrorMessage(mutation.error)}
@@ -195,7 +195,7 @@ export function PurchaseOrderForm({
           </Alert>
         ) : null}
 
-        <Paper withBorder p="md" className="purchase-order-form-hero">
+        <Paper withBorder p="sm" className="purchase-order-form-hero">
           <Group justify="space-between" align="flex-start" gap="md">
             <Stack gap={4}>
               <Group gap="xs">
@@ -243,186 +243,208 @@ export function PurchaseOrderForm({
           </SimpleGrid>
         </Paper>
 
-        <FormSection
-          title="Order identification"
-          description="Keep the operational reference fields short and searchable."
-        >
-          <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
-            <TextInput
-              label="PO no"
-              value={draft.po_no}
-              onChange={(event) => {
-                const { value } = event.currentTarget;
-                setDraft((current) => ({
-                  ...current,
-                  po_no: value,
-                  contract_no: contractAutoSync ? deriveContractNo(value) : current.contract_no,
-                }));
-              }}
-              required
-            />
-            <TextInput
-              label={contractAutoSync ? 'Contract no (auto)' : 'Contract no'}
-              value={draft.contract_no}
-              onChange={(event) => {
-                const { value } = event.currentTarget;
-                setContractAutoSync(false);
-                setDraft((current) => ({ ...current, contract_no: value }));
-              }}
-              rightSection={
-                contractAutoSync ? null : (
-                  <ActionIcon
-                    variant="subtle"
-                    color="gray"
-                    aria-label="Re-sync contract no from PO no"
-                    onClick={() => {
-                      setContractAutoSync(true);
-                      setDraft((current) => ({ ...current, contract_no: deriveContractNo(current.po_no) }));
-                    }}
-                  >
-                    <IconLink size={16} />
-                  </ActionIcon>
-                )
-              }
-            />
-            <Select
-              label={
-                <HeaderLabel
-                  label="PO type"
-                  hint="Commercial lane (sea / air / domestic). Drives SOP task templates — not the booked container mode."
-                />
-              }
-              data={poTypeOptions.map((type) => ({ label: type, value: type }))}
-              value={draft.po_type}
-              onChange={(value) => setDraft((current) => ({ ...current, po_type: value ?? '' }))}
-              clearable
-            />
-          </SimpleGrid>
-        </FormSection>
+        <div className="purchase-order-form-core-grid">
+          <FormSection
+            title="Order identification"
+            description="Short, searchable operational references."
+          >
+            <SimpleGrid cols={{ base: 1, sm: 2, lg: 1, xl: 2 }} spacing="sm">
+              <TextInput
+                label="PO no"
+                value={draft.po_no}
+                onChange={(event) => {
+                  const { value } = event.currentTarget;
+                  setDraft((current) => ({
+                    ...current,
+                    po_no: value,
+                    contract_no: contractAutoSync ? deriveContractNo(value) : current.contract_no,
+                  }));
+                }}
+                required
+              />
+              <TextInput
+                label={contractAutoSync ? 'Contract no (auto)' : 'Contract no'}
+                value={draft.contract_no}
+                onChange={(event) => {
+                  const { value } = event.currentTarget;
+                  setContractAutoSync(false);
+                  setDraft((current) => ({ ...current, contract_no: value }));
+                }}
+                rightSection={
+                  contractAutoSync ? null : (
+                    <ActionIcon
+                      variant="subtle"
+                      color="gray"
+                      aria-label="Re-sync contract no from PO no"
+                      onClick={() => {
+                        setContractAutoSync(true);
+                        setDraft((current) => ({ ...current, contract_no: deriveContractNo(current.po_no) }));
+                      }}
+                    >
+                      <IconLink size={16} />
+                    </ActionIcon>
+                  )
+                }
+              />
+              <Select
+                label={
+                  <HeaderLabel
+                    label="PO type"
+                    hint="Commercial lane (sea / air / domestic). Drives SOP task templates — not the booked container mode."
+                  />
+                }
+                data={poTypeOptions.map((type) => ({ label: type, value: type }))}
+                value={draft.po_type}
+                onChange={(value) => setDraft((current) => ({ ...current, po_type: value ?? '' }))}
+                clearable
+              />
+            </SimpleGrid>
+          </FormSection>
 
-        <FormSection
-          title="Supplier and commercial terms"
-          description="Selecting a supplier can prefill currency, incoterm, payment term, and default transport mode."
-        >
-          <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
-            <Select
-              label="Supplier"
-              data={masterData.supplierOptions}
-              value={draft.supplier_id}
-              onChange={(value) => {
-                const supplier = masterData.suppliers.find((item) => item.id === value);
-                setDraft((current) => ({
-                  ...current,
-                  supplier_id: value ?? '',
-                  currency_id: supplier?.default_currency_id ?? current.currency_id,
-                  incoterm_id: supplier?.default_incoterm_id ?? current.incoterm_id,
-                  payment_term: supplier?.payment_term ?? current.payment_term,
-                  transport_mode_id:
-                    supplier?.supplier_transport_modes?.find((mode) => mode.is_default)?.transport_mode_id ??
-                    current.transport_mode_id,
-                }));
-              }}
-              searchable
-              required
-            />
-            <Select
-              label="Incoterm"
-              data={masterData.incotermOptions}
-              value={draft.incoterm_id}
-              onChange={(value) => setDraft((current) => ({ ...current, incoterm_id: value ?? '' }))}
-              searchable
-              required
-            />
-            <Select
-              label="Currency"
-              data={masterData.currencyOptions}
-              value={draft.currency_id}
-              onChange={(value) => setDraft((current) => ({ ...current, currency_id: value ?? '' }))}
-              searchable
-              clearable
-            />
-            <NumberInput
-              label="Current exchange rate"
-              min={0}
-              value={draft.exchange_rate}
-              thousandSeparator=","
-              decimalScale={4}
-              onChange={(value) => setDraft((current) => ({ ...current, exchange_rate: toNumber(value, 1) }))}
-            />
-            <TextInput
-              label="Payment term"
-              value={draft.payment_term}
-              onChange={(event) => {
-                const { value } = event.currentTarget;
-                setDraft((current) => ({ ...current, payment_term: value }));
-              }}
-            />
-          </SimpleGrid>
-        </FormSection>
+          <FormSection
+            title="Supplier and commercial terms"
+            description="Supplier defaults can prefill currency, incoterm, payment, and transport."
+          >
+            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
+              <Select
+                label="Supplier"
+                data={masterData.supplierOptions}
+                value={draft.supplier_id}
+                onChange={(value) => {
+                  const supplier = masterData.suppliers.find((item) => item.id === value);
+                  setDraft((current) => ({
+                    ...current,
+                    supplier_id: value ?? '',
+                    currency_id: supplier?.default_currency_id ?? current.currency_id,
+                    incoterm_id: supplier?.default_incoterm_id ?? current.incoterm_id,
+                    payment_term: supplier?.payment_term ?? current.payment_term,
+                    transport_mode_id:
+                      supplier?.supplier_transport_modes?.find((mode) => mode.is_default)?.transport_mode_id ??
+                      current.transport_mode_id,
+                  }));
+                }}
+                searchable
+                required
+              />
+              <Select
+                label="Incoterm"
+                data={masterData.incotermOptions}
+                value={draft.incoterm_id}
+                onChange={(value) => setDraft((current) => ({ ...current, incoterm_id: value ?? '' }))}
+                searchable
+                required
+              />
+              <Select
+                label="Currency"
+                data={masterData.currencyOptions}
+                value={draft.currency_id}
+                onChange={(value) => setDraft((current) => ({ ...current, currency_id: value ?? '' }))}
+                searchable
+                clearable
+              />
+              <NumberInput
+                label="Current exchange rate"
+                min={0}
+                value={draft.exchange_rate}
+                thousandSeparator=","
+                decimalScale={4}
+                onChange={(value) => setDraft((current) => ({ ...current, exchange_rate: toNumber(value, 1) }))}
+              />
+              <TextInput
+                label="Payment term"
+                value={draft.payment_term}
+                onChange={(event) => {
+                  const { value } = event.currentTarget;
+                  setDraft((current) => ({ ...current, payment_term: value }));
+                }}
+              />
+            </SimpleGrid>
+          </FormSection>
 
-        <FormSection
-          title="Transport and schedule"
-          description={
-            selectedTransportMode
-              ? `${selectedTransportMode.mode_code} is selected for this PO movement.`
-              : 'Plan the expected departure and arrival dates before LOT planning.'
-          }
-        >
-          <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
-            <Select
-              label={
-                <HeaderLabel
-                  label="Transport mode"
-                  hint="Planned method, incl. FCL / LCL / air. The final FCL vs LCL is confirmed downstream on the shipment."
-                />
-              }
-              data={masterData.transportModeOptions}
-              value={draft.transport_mode_id}
-              onChange={(value) => setDraft((current) => ({ ...current, transport_mode_id: value ?? '' }))}
-              searchable
-              clearable
-            />
-            <TextInput
-              label="ETD"
-              type="date"
-              value={draft.expected_etd}
+          <FormSection
+            title="Transport and schedule"
+            description={
+              selectedTransportMode
+                ? `${selectedTransportMode.mode_code} selected for movement planning.`
+                : 'Expected departure and arrival before LOT planning.'
+            }
+          >
+            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
+              <Select
+                label={
+                  <HeaderLabel
+                    label="Transport mode"
+                    hint="Planned method, incl. FCL / LCL / air. The final FCL vs LCL is confirmed downstream on the shipment."
+                  />
+                }
+                data={masterData.transportModeOptions}
+                value={draft.transport_mode_id}
+                onChange={(value) => setDraft((current) => ({ ...current, transport_mode_id: value ?? '' }))}
+                searchable
+                clearable
+              />
+              <TextInput
+                label="ETD"
+                type="date"
+                value={draft.expected_etd}
+                onChange={(event) => {
+                  const { value } = event.currentTarget;
+                  setDraft((current) => ({ ...current, expected_etd: value }));
+                }}
+              />
+              <TextInput
+                label="ETA"
+                type="date"
+                value={draft.expected_eta}
+                onChange={(event) => {
+                  const { value } = event.currentTarget;
+                  setDraft((current) => ({ ...current, expected_eta: value }));
+                }}
+              />
+            </SimpleGrid>
+            <Textarea
+              label="Notes"
+              value={draft.notes}
               onChange={(event) => {
                 const { value } = event.currentTarget;
-                setDraft((current) => ({ ...current, expected_etd: value }));
+                setDraft((current) => ({ ...current, notes: value }));
               }}
+              autosize
+              minRows={2}
             />
-            <TextInput
-              label="ETA"
-              type="date"
-              value={draft.expected_eta}
-              onChange={(event) => {
-                const { value } = event.currentTarget;
-                setDraft((current) => ({ ...current, expected_eta: value }));
-              }}
-            />
-          </SimpleGrid>
-          <Textarea
-            label="Notes"
-            value={draft.notes}
-            onChange={(event) => {
-              const { value } = event.currentTarget;
-              setDraft((current) => ({ ...current, notes: value }));
-            }}
-            autosize
-            minRows={2}
-          />
-        </FormSection>
+          </FormSection>
+        </div>
 
         {mode === 'create' ? (
-          <Paper withBorder p="md" className="purchase-order-form-section purchase-order-lines-panel">
-            <Group justify="space-between" align="flex-start" gap="md">
-              <Stack gap={2}>
-                <Text fw={700}>PO lines</Text>
+          <Paper withBorder p="sm" className="purchase-order-form-section purchase-order-lines-panel">
+            <Group justify="space-between" align="flex-start" gap="sm" className="purchase-order-lines-command">
+              <Stack gap={2} className="purchase-order-lines-copy">
+                <Group gap="xs" wrap="wrap">
+                  <Text fw={700}>PO lines</Text>
+                  <Badge variant="light">{validLineCount} ready</Badge>
+                  {incompleteLineCount > 0 ? (
+                    <Badge color="orange" variant="light">
+                      {incompleteLineCount} incomplete
+                    </Badge>
+                  ) : null}
+                </Group>
                 <Text size="sm" c="dimmed">
-                  Use the line rail to move quickly, then edit one selected line at a time.
+                  Pick a line on the left, finish the required fields on the right, then create the PO.
                 </Text>
               </Stack>
-              <Badge variant="light">{draft.lines.length} lines</Badge>
+              <Group gap="xs" className="purchase-order-lines-actions">
+                <Group gap="xs" className="purchase-order-total-pill">
+                  <Text size="xs" c="dimmed" fw={700}>
+                    PO total
+                  </Text>
+                  <Text fw={800} size="md" className="tabular-nums">
+                    <NumberFormatter value={poTotal} thousandSeparator decimalScale={2} />
+                  </Text>
+                </Group>
+                <Button variant="light" size="sm" leftSection={<IconPlus size={14} />} onClick={addLine}>
+                  Add line
+                </Button>
+              </Group>
             </Group>
             {validLineCount === 0 ? (
               <Group gap={6} className="purchase-order-line-notice is-error">
@@ -440,6 +462,14 @@ export function PurchaseOrderForm({
             ) : null}
             <div className="purchase-order-line-workspace">
               <div className="purchase-order-line-rail">
+                <Group justify="space-between" className="purchase-order-line-rail-header">
+                  <Text size="xs" fw={800} c="dimmed">
+                    Lines
+                  </Text>
+                  <Text size="xs" c="dimmed" className="tabular-nums">
+                    {activeLineIndex + 1}/{draft.lines.length}
+                  </Text>
+                </Group>
                 <div className="purchase-order-line-rail-list" ref={railListRef}>
                   {draft.lines.map((line, index) => {
                     const item = masterData.items.find((candidate) => candidate.id === line.item_id);
@@ -531,97 +561,114 @@ export function PurchaseOrderForm({
                       }
                     />
 
-                    <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="md">
-                      <Select
-                        ref={itemInputRef}
-                        label="Item"
-                        data={masterData.itemOptions}
-                        value={activeLine.item_id}
-                        placeholder="Choose item"
-                        onChange={(value) => {
-                          const selectedItem = masterData.items.find((candidate) => candidate.id === value);
-                          updateLine(activeLine.clientId, {
-                            item_id: value ?? '',
-                            item_customs_profile_id:
-                              selectedItem?.customs_profiles?.find((profile) => profile.is_default)?.id ??
-                              selectedItem?.customs_profiles?.[0]?.id ??
-                              '',
-                            item_description: selectedItem?.item_description ?? selectedItem?.item_name ?? '',
-                            unit: selectedItem?.base_uom ?? activeLine.unit,
-                          });
-                        }}
-                        searchable
-                        required
-                      />
-                      <Select
-                        label="HS code"
-                        data={activeCustomsOptions}
-                        value={activeLine.item_customs_profile_id}
-                        onChange={(value) => updateLine(activeLine.clientId, { item_customs_profile_id: value ?? '' })}
-                        placeholder="Choose customs profile"
-                        searchable
-                        clearable
-                      />
-                    </SimpleGrid>
+                    <div className="purchase-order-line-detail-grid">
+                      <div className="purchase-order-line-field-group is-wide">
+                        <Text size="xs" fw={800} c="dimmed">
+                          Item and customs
+                        </Text>
+                        <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="sm">
+                          <Select
+                            ref={itemInputRef}
+                            label="Item"
+                            data={masterData.itemOptions}
+                            value={activeLine.item_id}
+                            placeholder="Choose item"
+                            onChange={(value) => {
+                              const selectedItem = masterData.items.find((candidate) => candidate.id === value);
+                              updateLine(activeLine.clientId, {
+                                item_id: value ?? '',
+                                item_customs_profile_id:
+                                  selectedItem?.customs_profiles?.find((profile) => profile.is_default)?.id ??
+                                  selectedItem?.customs_profiles?.[0]?.id ??
+                                  '',
+                                item_description: selectedItem?.item_description ?? selectedItem?.item_name ?? '',
+                                unit: selectedItem?.base_uom ?? activeLine.unit,
+                              });
+                            }}
+                            searchable
+                            required
+                          />
+                          <Select
+                            label="HS code"
+                            data={activeCustomsOptions}
+                            value={activeLine.item_customs_profile_id}
+                            onChange={(value) => updateLine(activeLine.clientId, { item_customs_profile_id: value ?? '' })}
+                            placeholder="Choose customs profile"
+                            searchable
+                            clearable
+                          />
+                        </SimpleGrid>
+                      </div>
 
-                    <SimpleGrid cols={{ base: 1, xs: 2, lg: 4 }} spacing="md">
-                      <NumberInput
-                        label="Qty"
-                        min={0.0001}
-                        value={activeLine.qty_ordered}
-                        thousandSeparator=","
-                        decimalScale={4}
-                        onChange={(value) => updateLine(activeLine.clientId, { qty_ordered: toNumber(value, 1) })}
-                      />
-                      <TextInput
-                        label="Unit"
-                        value={activeLine.unit}
-                        onChange={(event) => updateLine(activeLine.clientId, { unit: event.currentTarget.value })}
-                      />
-                      <NumberInput
-                        label="Gross kg"
-                        min={0}
-                        value={activeLine.gross_weight_kg}
-                        thousandSeparator=","
-                        decimalScale={3}
-                        onChange={(value) => updateLine(activeLine.clientId, { gross_weight_kg: toNumber(value) })}
-                      />
-                      <TextInput
-                        label="Line ETA"
-                        type="date"
-                        value={activeLine.expected_eta_line}
-                        onChange={(event) => updateLine(activeLine.clientId, { expected_eta_line: event.currentTarget.value })}
-                      />
-                    </SimpleGrid>
+                      <div className="purchase-order-line-field-group is-wide">
+                        <Text size="xs" fw={800} c="dimmed">
+                          Quantity and schedule
+                        </Text>
+                        <SimpleGrid cols={{ base: 1, xs: 2, lg: 4 }} spacing="sm">
+                          <NumberInput
+                            label="Qty"
+                            min={0.0001}
+                            value={activeLine.qty_ordered}
+                            thousandSeparator=","
+                            decimalScale={4}
+                            onChange={(value) => updateLine(activeLine.clientId, { qty_ordered: toNumber(value, 1) })}
+                          />
+                          <TextInput
+                            label="Unit"
+                            value={activeLine.unit}
+                            onChange={(event) => updateLine(activeLine.clientId, { unit: event.currentTarget.value })}
+                          />
+                          <NumberInput
+                            label="Gross kg"
+                            min={0}
+                            value={activeLine.gross_weight_kg}
+                            thousandSeparator=","
+                            decimalScale={3}
+                            onChange={(value) => updateLine(activeLine.clientId, { gross_weight_kg: toNumber(value) })}
+                          />
+                          <TextInput
+                            label="Line ETA"
+                            type="date"
+                            value={activeLine.expected_eta_line}
+                            onChange={(event) => updateLine(activeLine.clientId, { expected_eta_line: event.currentTarget.value })}
+                          />
+                        </SimpleGrid>
+                      </div>
 
-                    <SimpleGrid cols={{ base: 1, xs: 2, lg: 3 }} spacing="md">
-                      <NumberInput
-                        label="Unit price"
-                        min={0}
-                        value={activeLine.unit_price}
-                        thousandSeparator=","
-                        decimalScale={2}
-                        onChange={(value) => updateLine(activeLine.clientId, { unit_price: toNumber(value) })}
-                      />
-                      <NumberInput
-                        label="Tax %"
-                        min={0}
-                        max={100}
-                        suffix="%"
-                        value={activeLine.tax_rate}
-                        decimalScale={2}
-                        onChange={(value) => updateLine(activeLine.clientId, { tax_rate: toNumber(value) })}
-                      />
-                      <NumberInput
-                        label="Disc %"
-                        min={0}
-                        max={100}
-                        suffix="%"
-                        value={activeLine.discount_pct}
-                        decimalScale={2}
-                        onChange={(value) => updateLine(activeLine.clientId, { discount_pct: toNumber(value) })}
-                      />
-                    </SimpleGrid>
+                      <div className="purchase-order-line-field-group">
+                        <Text size="xs" fw={800} c="dimmed">
+                          Pricing
+                        </Text>
+                        <SimpleGrid cols={{ base: 1, xs: 2, lg: 3 }} spacing="sm">
+                          <NumberInput
+                            label="Unit price"
+                            min={0}
+                            value={activeLine.unit_price}
+                            thousandSeparator=","
+                            decimalScale={2}
+                            onChange={(value) => updateLine(activeLine.clientId, { unit_price: toNumber(value) })}
+                          />
+                          <NumberInput
+                            label="Tax %"
+                            min={0}
+                            max={100}
+                            suffix="%"
+                            value={activeLine.tax_rate}
+                            decimalScale={2}
+                            onChange={(value) => updateLine(activeLine.clientId, { tax_rate: toNumber(value) })}
+                          />
+                          <NumberInput
+                            label="Disc %"
+                            min={0}
+                            max={100}
+                            suffix="%"
+                            value={activeLine.discount_pct}
+                            decimalScale={2}
+                            onChange={(value) => updateLine(activeLine.clientId, { discount_pct: toNumber(value) })}
+                          />
+                        </SimpleGrid>
+                      </div>
+                    </div>
 
                     <Textarea
                       label="Line note"
@@ -635,19 +682,6 @@ export function PurchaseOrderForm({
                 ) : null}
               </div>
             </div>
-            <Group justify="space-between" className="purchase-order-line-footer">
-              <Button variant="light" size="sm" leftSection={<IconPlus size={14} />} onClick={addLine}>
-                Add line
-              </Button>
-              <Group gap="xs" className="purchase-order-total-pill">
-                <Text size="xs" c="dimmed" fw={700}>
-                  PO total
-                </Text>
-                <Text fw={800} size="lg" className="tabular-nums">
-                  <NumberFormatter value={poTotal} thousandSeparator decimalScale={2} />
-                </Text>
-              </Group>
-            </Group>
           </Paper>
         ) : null}
       </Stack>
@@ -665,9 +699,9 @@ function FormSection({
   title: string;
 }) {
   return (
-    <Paper withBorder p="md" className="purchase-order-form-section">
-      <Stack gap="md">
-        <Stack gap={2}>
+    <Paper withBorder p="sm" className="purchase-order-form-section">
+      <Stack gap="sm">
+        <Stack gap={1} className="purchase-order-form-section-title">
           <Text fw={700}>{title}</Text>
           <Text size="sm" c="dimmed">
             {description}

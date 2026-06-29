@@ -116,22 +116,42 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
 
   return (
     <Stack gap="lg">
-      {/* Identity card */}
-      <Paper withBorder p="lg" className="workbench-section">
-        <Group justify="space-between" align="flex-start">
-          <div>
-            <Group gap="xs" mb={4} wrap="nowrap">
+      <Paper withBorder p="md" className="delivery-order-detail-hero">
+        <div className="delivery-order-detail-hero-grid">
+          <Stack gap="sm" className="delivery-order-detail-main">
+            <Group gap="xs" align="center" wrap="wrap">
               <Title order={3}>{deliveryOrder.order_info.order_number}</Title>
               <StatusBadge status={deliveryOrder.order_info.status} />
+              <FlowTagBadge tags={deliveryOrder.flow_tags} />
             </Group>
-            <Text c="dimmed" size="sm">
-              {deliveryOrder.source_po_number ?? deliveryOrder.sap_integration.po_number ?? t('deliveryOrders.poPending')} / {deliveryOrder.source_lot_no ?? deliveryOrder.product_details.lot_number} - {deliveryOrder.product_details.item_name_requested}
+            <Text c="dimmed" size="sm" lineClamp={2}>
+              {sourcePoNumber} / {sourceLotNumber} - {deliveryOrder.product_details.item_name_requested}
             </Text>
-            <FlowTagBadge tags={deliveryOrder.flow_tags} />
-          </div>
-          <Stack gap="xs" align="flex-end">
-            <Text size="xs" c="dimmed" className="tabular-nums">{taskProgress}% {t('tasks.progress')}</Text>
-            <Group gap="xs" justify="flex-end">
+            <Group gap="xs" wrap="wrap" className="delivery-order-detail-links">
+              <EntityLink type="po" id={sourcePoNumber} />
+              <Button
+                component={Link}
+                to={`/tasks?do=${deliveryOrder.order_info.order_number}`}
+                size="xs"
+                variant="light"
+                rightSection={<IconArrowRight size={14} />}
+              >
+                {t('deliveryOrders.viewClosureTasks')}
+              </Button>
+            </Group>
+          </Stack>
+
+          <Stack gap="sm" className="delivery-order-detail-action-panel">
+            <Group justify="space-between" gap="sm" wrap="nowrap">
+              <Text size="xs" c="dimmed" fw={700}>
+                {t('tasks.progress')}
+              </Text>
+              <Text size="xs" c="dimmed" className="tabular-nums">
+                {taskProgress}%
+              </Text>
+            </Group>
+            <Progress value={taskProgress} size="sm" color={taskProgress === 100 ? 'teal' : 'blue'} />
+            <Group gap="xs" justify="flex-end" className="delivery-order-detail-actions">
               {canCreateShipment ? (
                 <Button
                   size="xs"
@@ -167,34 +187,37 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
               ) : null}
             </Group>
           </Stack>
-        </Group>
+        </div>
+
+        <SimpleGrid cols={{ base: 1, sm: 2, xl: 4 }} spacing="sm" className="delivery-order-detail-facts">
+          <InfoField label={t('deliveryOrders.sourcePoLot')} value={`${sourcePoNumber} / ${sourceLotNumber}`} />
+          <InfoField
+            label={t('common.route')}
+            value={`${deliveryOrder.logistics_shipping.port_of_departure || '-'} ${t('deliveryOrders.routeConnector')} ${deliveryOrder.logistics_shipping.port_of_destination || '-'}`}
+          />
+          <InfoField
+            label={t('deliveryOrders.overviewAllocation')}
+            value={`${deliveryOrder.source_lines.length} ${t('deliveryOrders.overviewItems')} · ${allocationWeightKg.toLocaleString()} kg · ${containerCount} ${t('deliveryOrders.overviewContainers')}`}
+          />
+          <InfoField
+            label={t('forms.warehouse')}
+            value={deliveryOrder.warehouse_tracking.actual_entry_date ?? deliveryOrder.warehouse_tracking.planned_entry_date ?? '-'}
+          />
+        </SimpleGrid>
+
+        {(deliveryOrder.logistics_shipping.missing_documents.length > 0 ||
+          deliveryOrder.task_summary.blocked_tasks > 0 ||
+          deliveryOrder.warehouse_tracking.delay_days > 0) && (
+            <Alert color="red" icon={<IconAlertTriangle size={18} />} mt="sm" className="delivery-order-detail-risk-alert">
+              {t('deliveryOrders.alertRisk')}
+            </Alert>
+        )}
         {actionMutation.isError ? (
           <Alert color="red" icon={<IconAlertTriangle size={18} />} mt="md">
             {getApiErrorMessage(actionMutation.error, t('forms.apiUnknownError'))}
           </Alert>
         ) : null}
       </Paper>
-
-      <Group gap="xs">
-        <EntityLink type="po" id={deliveryOrder.source_po_number ?? deliveryOrder.sap_integration.po_number} />
-        <Button
-          component={Link}
-          to={`/tasks?do=${deliveryOrder.order_info.order_number}`}
-          size="xs"
-          variant="light"
-          rightSection={<IconArrowRight size={14} />}
-        >
-          {t('deliveryOrders.viewClosureTasks')}
-        </Button>
-      </Group>
-
-      {(deliveryOrder.logistics_shipping.missing_documents.length > 0 ||
-        deliveryOrder.task_summary.blocked_tasks > 0 ||
-        deliveryOrder.warehouse_tracking.delay_days > 0) && (
-          <Alert color="red" icon={<IconAlertTriangle size={18} />}>
-            {t('deliveryOrders.alertRisk')}
-          </Alert>
-        )}
 
       <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="md" className="delivery-order-control-grid">
         <div className="delivery-order-gate-sidebar">

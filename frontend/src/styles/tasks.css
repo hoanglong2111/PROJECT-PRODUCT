@@ -39,6 +39,26 @@
   white-space: nowrap;
 }
 
+.task-form-modal-body .mantine-InputWrapper-label {
+  margin-bottom: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.task-form-modal-body .mantine-InputWrapper-description {
+  min-height: 1rem;
+  margin-bottom: 0.25rem;
+  color: var(--kbfe-text-secondary);
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
+.task-form-modal-body .mantine-Input-input,
+.task-form-modal-body .mantine-Select-input,
+.task-form-modal-body .mantine-Textarea-input {
+  min-height: 2.25rem;
+}
+
 @media (max-width: 48em) {
   .tasks-filter-toggles {
     align-self: stretch;

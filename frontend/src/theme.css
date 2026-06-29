@@ -1,16 +1,19 @@
 :root,
 html[data-kbfe-resolved-color-scheme='light'][data-kbfe-visual-theme='standard'] {
   --kbfe-background-primary: #f7f8f6;
-  --kbfe-background-secondary: #ffffff;
-  --kbfe-surface-elevated: rgba(255, 255, 255, 0.9);
-  --kbfe-text-primary: #111827;
+  /* Eye-comfort: avoid pure #fff surfaces (glare) — a hair off-white keeps it
+     crisp without the harsh light bounce. Text softened off near-black so the
+     light↔dark contrast isn't a fatiguing ~16:1 (still ~13:1, well above AA). */
+  --kbfe-background-secondary: #fbfcfa;
+  --kbfe-surface-elevated: rgba(251, 252, 250, 0.92);
+  --kbfe-text-primary: #1b232e;
   --kbfe-text-secondary: #4b5563;
   --kbfe-border-primary: #dde3de;
   --kbfe-border-strong: #b9c3bb;
   --kbfe-primary-color: #0d9488;
   --kbfe-primary-contrast: #ffffff;
   --kbfe-hover-background: #eef7f5;
-  --kbfe-page-background: linear-gradient(180deg, rgba(245, 248, 250, 0.95), rgba(255, 255, 255, 0.92)), #f7f8f6;
+  --kbfe-page-background: linear-gradient(180deg, rgba(245, 248, 250, 0.95), rgba(251, 252, 250, 0.94)), #f7f8f6;
   --kbfe-risk-background: #fff7f7;
   --kbfe-risk-border: #fecaca;
   --kbfe-flow-background: #eff6ff;
@@ -26,17 +29,21 @@ html[data-kbfe-resolved-color-scheme='light'][data-kbfe-visual-theme='standard']
 }
 
 html[data-kbfe-resolved-color-scheme='dark'][data-kbfe-visual-theme='standard'] {
-  --kbfe-background-primary: #030712;
-  --kbfe-background-secondary: #111827;
-  --kbfe-surface-elevated: rgba(17, 24, 39, 0.88);
-  --kbfe-text-primary: #f8fafc;
+  /* Eye-comfort: lift the base off near-#000 to a dark slate. Pure-black bg with
+     near-white text causes halation (text appears to glow/smear, worst for
+     astigmatism); a slightly-lifted ground + slightly-dimmed text keeps it
+     legible while killing the glow. */
+  --kbfe-background-primary: #0f141d;
+  --kbfe-background-secondary: #161e2b;
+  --kbfe-surface-elevated: rgba(26, 33, 47, 0.9);
+  --kbfe-text-primary: #e7ebf2;
   --kbfe-text-secondary: #cbd5e1;
   --kbfe-border-primary: #253044;
   --kbfe-border-strong: #3b4c66;
   --kbfe-primary-color: #2dd4bf;
   --kbfe-primary-contrast: #042f2e;
   --kbfe-hover-background: #1f2937;
-  --kbfe-page-background: linear-gradient(180deg, rgba(17, 24, 39, 0.97), rgba(3, 7, 18, 0.94)), #030712;
+  --kbfe-page-background: linear-gradient(180deg, rgba(22, 30, 43, 0.97), rgba(15, 20, 29, 0.94)), #0f141d;
   --kbfe-risk-background: #2a1216;
   --kbfe-risk-border: #7f1d1d;
   --kbfe-flow-background: #111827;
@@ -258,6 +265,11 @@ html {
   --mantine-color-default-border: var(--kbfe-border-primary);
   --mantine-primary-color-filled: var(--kbfe-primary-color);
   --mantine-primary-color-filled-hover: color-mix(in srgb, var(--kbfe-primary-color) 88%, #000000 12%);
+  /* Make filled controls (Button/Badge/Tabs) read OUR per-preset contrast token
+     instead of Mantine's hard default (#fff). Without this, bright primaries —
+     amber/sunset in light, every preset's bright shade in dark — render white
+     label text on a light fill and become unreadable. */
+  --mantine-primary-color-contrast: var(--kbfe-primary-contrast);
   --mantine-spacing-xs: var(--kbfe-space-xs);
   --mantine-spacing-sm: var(--kbfe-space-sm);
   --mantine-spacing-md: var(--kbfe-space-md);
@@ -366,7 +378,9 @@ html[data-kbfe-color-preset='forest'][data-kbfe-resolved-color-scheme='dark'] {
 html[data-kbfe-color-preset='sunset']:not([data-kbfe-resolved-color-scheme='dark']),
 html[data-kbfe-color-preset='sunset'][data-kbfe-resolved-color-scheme='light'] {
   --kbfe-primary-color: #dd6b20;
-  --kbfe-primary-contrast: #ffffff;
+  /* Light sunset is too bright for white label text — use a deep brown (its own
+     darkest shade) so filled-button text reads. */
+  --kbfe-primary-contrast: #4a2410;
 }
 html[data-kbfe-color-preset='sunset'][data-kbfe-resolved-color-scheme='dark'] {
   --kbfe-primary-color: #f6ad55;
@@ -406,7 +420,9 @@ html[data-kbfe-color-preset='rose'][data-kbfe-resolved-color-scheme='dark'] {
 html[data-kbfe-color-preset='amber']:not([data-kbfe-resolved-color-scheme='dark']),
 html[data-kbfe-color-preset='amber'][data-kbfe-resolved-color-scheme='light'] {
   --kbfe-primary-color: #d69e2e;
-  --kbfe-primary-contrast: #ffffff;
+  /* Light amber (gold) + white text is the worst offender (~2:1) — use deep
+     brown so filled-button text reads. */
+  --kbfe-primary-contrast: #4a330a;
 }
 html[data-kbfe-color-preset='amber'][data-kbfe-resolved-color-scheme='dark'] {
   --kbfe-primary-color: #ecc94b;

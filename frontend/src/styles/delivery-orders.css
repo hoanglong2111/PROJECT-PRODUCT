@@ -30,6 +30,51 @@
   align-items: start;
 }
 
+.delivery-order-detail-hero {
+  overflow: hidden;
+  border-color: var(--kbfe-border-primary) !important;
+  background: var(--kbfe-surface-elevated);
+  box-shadow: var(--kbfe-shadow-xs);
+}
+
+.delivery-order-detail-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(18rem, 0.85fr);
+  gap: 1rem;
+  align-items: start;
+  min-width: 0;
+}
+
+.delivery-order-detail-main,
+.delivery-order-detail-links,
+.delivery-order-detail-action-panel,
+.delivery-order-detail-actions,
+.delivery-order-detail-facts > * {
+  min-width: 0;
+}
+
+.delivery-order-detail-action-panel {
+  padding: 0.75rem;
+  border: 1px solid var(--kbfe-border-primary);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 94%, var(--kbfe-surface-subtle) 6%);
+}
+
+.delivery-order-detail-facts {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--kbfe-border-primary);
+}
+
+.delivery-order-detail-facts .mantine-Paper-root {
+  min-width: 0;
+}
+
+.delivery-order-detail-risk-alert {
+  border-color: var(--kbfe-status-red);
+  background: var(--kbfe-status-red-bg);
+}
+
 .delivery-order-overview-pages {
   align-items: stretch;
 }
@@ -148,6 +193,31 @@
   min-width: 0;
 }
 
+.quotation-create-scroll {
+  margin-right: -0.25rem;
+  padding-right: 0.25rem;
+}
+
+.quotation-create-layout {
+  display: grid;
+  grid-template-columns: minmax(17rem, 0.72fr) minmax(0, 1.58fr);
+  gap: 0.75rem;
+  align-items: start;
+  min-width: 0;
+}
+
+.quotation-create-context,
+.quotation-charge-sections,
+.quotation-charge-section-head,
+.quotation-charge-item {
+  min-width: 0;
+}
+
+.quotation-create-context {
+  position: sticky;
+  top: 0;
+}
+
 .quotation-bidding-header {
   min-width: 0;
 }
@@ -175,12 +245,17 @@
   white-space: nowrap;
 }
 
-.quotation-create-form .mantine-InputWrapper-label {
-  display: flex;
-  width: 100%;
-  min-height: 2rem;
-  align-items: flex-end;
+.quotation-create-context .mantine-Paper-root,
+.quotation-pricing-section .mantine-Paper-root {
   min-width: 0;
+}
+
+.quotation-create-form .mantine-InputWrapper-label {
+  width: 100%;
+  min-width: 0;
+  margin-bottom: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
 }
 
 .quotation-create-form .mantine-InputWrapper-label > span {
@@ -196,7 +271,6 @@
 }
 
 .quotation-charge-grid .mantine-InputWrapper-description {
-  min-height: 1.0625rem;
   white-space: nowrap;
 }
 
@@ -206,10 +280,38 @@
   min-width: 0;
 }
 
+.quotation-charge-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(8.5rem, 0.46fr);
+  gap: 0.625rem;
+  align-items: end;
+  padding: 0.625rem;
+  border: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 82%, transparent);
+  border-radius: 0.375rem;
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 96%, var(--kbfe-surface-subtle) 4%);
+}
+
+.quotation-charge-item.is-disabled {
+  opacity: 0.64;
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 92%, var(--kbfe-background-secondary) 8%);
+}
+
+.quotation-charge-item .mantine-Checkbox-label,
+.quotation-charge-item .mantine-Checkbox-description {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.quotation-charge-item .mantine-InputWrapper-root {
+  min-width: 0;
+}
+
+.quotation-selected-count {
+  justify-self: start;
+}
+
 .quotation-pricing-section {
-  background:
-    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--kbfe-primary-color) 10%, transparent), transparent 34%),
-    var(--kbfe-surface-elevated);
+  background: color-mix(in srgb, var(--kbfe-primary-color) 8%, var(--kbfe-surface-elevated));
 }
 
 .quotation-modal-footer {
@@ -285,6 +387,18 @@
     grid-column: 1 / -1;
   }
 
+  .delivery-order-detail-hero-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .quotation-create-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .quotation-create-context {
+    position: static;
+  }
+
   .delivery-order-filter-clear {
     justify-self: start;
   }
@@ -303,6 +417,10 @@
   .delivery-order-risk-filter,
   .delivery-order-filter-clear {
     width: 100%;
+  }
+
+  .delivery-order-detail-actions {
+    justify-content: flex-start;
   }
 
   .delivery-order-ops-kpi-grid {
@@ -327,6 +445,10 @@
   .quotation-modal-footer .mantine-Button-root,
   .quotation-empty-content .mantine-Button-root {
     flex: 1 1 9rem;
+  }
+
+  .quotation-charge-item {
+    grid-template-columns: 1fr;
   }
 
   .quotation-empty-copy {
