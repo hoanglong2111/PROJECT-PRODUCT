@@ -33,32 +33,10 @@
   box-shadow: var(--kbfe-shadow-xs);
 }
 
-.dto-page-hero {
-  position: relative;
-  background:
-    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--kbfe-primary-color) 14%, transparent), transparent 34%),
-    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--mantine-color-blue-5) 8%, transparent), transparent 30%),
-    color-mix(in srgb, var(--kbfe-surface-elevated) 96%, var(--kbfe-surface-subtle) 4%);
-}
-
-.dto-page-hero::before,
-.dto-detail-hero::before {
-  position: absolute;
-  inset: 0;
-  content: "";
-  pointer-events: none;
-  background-image:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent 42%),
-    radial-gradient(circle at 24px 24px, color-mix(in srgb, var(--kbfe-primary-color) 10%, transparent) 1px, transparent 1.5px);
-  background-size: auto, 28px 28px;
-  opacity: 0.55;
-}
-
-.dto-page-hero > *,
-.dto-detail-hero > * {
-  position: relative;
-  z-index: 1;
-}
+/* Page hero kept flat: it inherits the shared DTO panel chrome above (clean
+   elevated surface + border + shadow). The decorative dotted-grid + gradient
+   overlay was removed so the list header matches the rest of the app — no
+   AI-dashboard texture. */
 
 .dto-page-header,
 .dto-detail-title-row,
@@ -100,10 +78,11 @@
 .dto-metric-card {
   --dto-accent: var(--kbfe-primary-color);
   min-height: 7.5rem;
-  border-color: color-mix(in srgb, var(--dto-accent) 24%, var(--kbfe-border-primary)) !important;
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--dto-accent) 8%, transparent), transparent 58%),
-    var(--kbfe-surface-elevated);
+  /* Matches the shared flat .metric-card chrome (clean elevated surface + neutral
+     border). DTO identity is kept only as a faint accent border plus the
+     accent-coloured icon + value below — no gradient wash. */
+  border-color: color-mix(in srgb, var(--dto-accent) 10%, var(--kbfe-border-primary)) !important;
+  background: var(--kbfe-surface-elevated);
 }
 
 .dto-metric-card-blue {
@@ -145,9 +124,7 @@
 }
 
 .dto-filter-panel {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--kbfe-surface-elevated) 94%, var(--kbfe-primary-color) 6%), var(--kbfe-surface-elevated)),
-    var(--kbfe-surface-elevated);
+  background: var(--kbfe-surface-elevated);
 }
 
 .dto-filter-grid {
@@ -225,11 +202,11 @@
 
 .dto-list-row:hover td,
 .dto-line-row:hover td {
-  background: color-mix(in srgb, var(--kbfe-primary-color) 5%, transparent);
+  background: var(--kbfe-row-hover-background);
 }
 
 .dto-list-row.is-selected td {
-  background: color-mix(in srgb, var(--kbfe-primary-color) 10%, var(--kbfe-surface-elevated));
+  background: var(--kbfe-row-selected-background);
 }
 
 .dto-list-row.is-selected td:first-child {

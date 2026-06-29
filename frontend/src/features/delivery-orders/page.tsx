@@ -200,8 +200,8 @@ export function DeliveryOrders() {
   return (
     <Stack gap="lg">
       {!selectedDeliveryOrder ? (
-        <Group justify="space-between" align="flex-start" gap="md">
-          <div>
+        <Group justify="space-between" align="flex-start" gap="md" className="dl-page-header">
+          <div className="dl-page-title-block">
             <Title order={1}>{t('deliveryOrders.title')}</Title>
             <Text c="dimmed" mt={4}>
               {t('deliveryOrders.subtitle')}
@@ -209,7 +209,7 @@ export function DeliveryOrders() {
           </div>
         </Group>
       ) : (
-        <Group justify="space-between" align="center" gap="md">
+        <Group justify="space-between" align="center" gap="md" className="dl-page-header">
           <Group gap="xs" align="center">
             <Button onClick={closeDetail} leftSection={<IconX size={16} />} variant="subtle" size="sm">
               {t('common.backToList')}

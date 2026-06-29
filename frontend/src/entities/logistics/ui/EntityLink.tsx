@@ -54,7 +54,14 @@ export function EntityLink({
   }
 
   return (
-    <Button component={Link} to={`${ROUTE[type]}?${type}=${id}`} size="xs" variant="light" leftSection={<Icon size={14} />}>
+    <Button
+      component={Link}
+      to={`${ROUTE[type]}?${type}=${id}`}
+      size="xs"
+      variant="light"
+      className={`entity-link entity-link-${type}`}
+      leftSection={<Icon size={14} />}
+    >
       {compact ? id : `${label[type]} - ${id}`}
     </Button>
   );

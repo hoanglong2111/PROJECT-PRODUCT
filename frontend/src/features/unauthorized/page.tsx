@@ -8,7 +8,7 @@ export function Unauthorized() {
 
   return (
     <Center h="100dvh" p="md">
-      <Paper withBorder p="xl" maw={520}>
+      <Paper withBorder p="xl" maw={520} className="dl-data-panel">
         <Stack>
           <Title order={2}>{t('unauthorized.title')}</Title>
           <Text c="dimmed">

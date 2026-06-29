@@ -176,14 +176,14 @@ export function PurchaseOrders() {
   return (
     <Stack gap="lg" className="purchase-orders-workbench">
       {workbench === 'list' ? (
-        <Group justify="space-between" align="flex-start" className="purchase-orders-page-header">
-          <div className="purchase-orders-page-title">
+        <Group justify="space-between" align="flex-start" className="purchase-orders-page-header dl-page-header">
+          <div className="purchase-orders-page-title dl-page-title-block">
             <Title order={1}>Purchase Orders</Title>
             <Text c="dimmed" mt={4}>
               Operational PO intake, supplier confirmation, and LOT planning.
             </Text>
           </div>
-          <Group gap="xs" wrap="nowrap" className="purchase-orders-page-actions">
+          <Group gap="xs" wrap="nowrap" className="purchase-orders-page-actions dl-page-actions">
             {canManagePurchaseOrders ? (
               <Button
                 className="purchase-orders-primary-action"
@@ -200,7 +200,7 @@ export function PurchaseOrders() {
           </Group>
         </Group>
       ) : (
-        <Group justify="space-between" className="purchase-orders-subheader">
+        <Group justify="space-between" className="purchase-orders-subheader dl-page-header">
           <Button className="purchase-orders-back-action" leftSection={<IconArrowBackUp size={16} />} variant="subtle" onClick={closeWorkbench}>
             Back to list
           </Button>

@@ -6,6 +6,7 @@
 @import './styles/app-shell.css';
 @import './styles/global-search.css';
 @import './styles/components.css';
+@import './styles/settings.css';
 @import './styles/dashboard.css';
 @import './styles/purchase-orders.css';
 @import './styles/tasks.css';

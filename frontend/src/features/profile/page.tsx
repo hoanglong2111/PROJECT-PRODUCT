@@ -177,14 +177,14 @@ export function Profile() {
 
   return (
     <Stack gap="lg">
-      <Group justify="space-between" align="flex-start">
-        <div>
+      <Group justify="space-between" align="flex-start" className="dl-page-header">
+        <div className="dl-page-title-block">
           <Title order={1}>{t('profile.title')}</Title>
           <Text c="dimmed" mt={4}>
             {t('profile.description')}
           </Text>
         </div>
-        <Badge leftSection={<IconUserCircle size={14} />} size="lg" variant="light">
+        <Badge leftSection={<IconUserCircle size={14} />} size="lg" variant="light" className="dl-page-actions">
           {roleLabel(user.role)}
         </Badge>
       </Group>
@@ -216,7 +216,7 @@ export function Profile() {
         </Tabs.List>
 
         <Tabs.Panel value="info" pt="lg">
-          <Paper withBorder p="lg">
+          <Paper withBorder p="lg" className="dl-data-panel">
             <form
               onSubmit={form.onSubmit(async (values) => {
                 setMessage(null);
@@ -339,7 +339,7 @@ export function Profile() {
 
         <Tabs.Panel value="security" pt="lg">
           <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="lg">
-            <Paper withBorder p="lg">
+            <Paper withBorder p="lg" className="dl-data-panel">
               <form
                 onSubmit={emailForm.onSubmit(async (values) => {
                   setMessage(null);
@@ -370,7 +370,7 @@ export function Profile() {
               </form>
             </Paper>
 
-            <Paper withBorder p="lg">
+            <Paper withBorder p="lg" className="dl-data-panel">
               <form
                 onSubmit={passwordForm.onSubmit(async (values) => {
                   setMessage(null);

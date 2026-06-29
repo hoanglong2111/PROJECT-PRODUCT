@@ -1,33 +1,5 @@
 /* delivery-orders.css — split from src/styles.css. Global classes; do not rename. See AGENTS.md "Styling". */
 
-.delivery-order-tabs-list {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 0.375rem;
-  overflow-x: auto;
-  padding-bottom: 0.125rem;
-  scrollbar-width: none;
-  white-space: nowrap;
-}
-
-.delivery-order-tabs-list::-webkit-scrollbar {
-  display: none;
-}
-
-.delivery-order-tabs-list .mantine-Tabs-tab {
-  flex: 0 0 auto;
-}
-
-.delivery-order-tabs {
-  flex: 1 1 28rem;
-  min-width: 0;
-}
-
-.delivery-order-filter-result {
-  flex: 0 0 auto;
-  min-height: 2rem;
-}
-
 .delivery-order-filter-shell {
   display: grid;
   grid-template-columns: minmax(18rem, 1.4fr) minmax(12rem, 0.72fr) minmax(14rem, 1fr) minmax(12rem, 0.72fr) auto;
@@ -94,15 +66,11 @@
 }
 
 .delivery-order-ops-hero-risk {
-  background:
-    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--mantine-color-red-4) 12%, transparent), transparent 34%),
-    color-mix(in srgb, var(--kbfe-surface-elevated) 94%, var(--mantine-color-red-0) 6%);
+  background: color-mix(in srgb, var(--kbfe-status-red-bg) 72%, var(--kbfe-surface-elevated) 28%);
 }
 
 .delivery-order-ops-hero-clear {
-  background:
-    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--mantine-color-teal-4) 12%, transparent), transparent 34%),
-    color-mix(in srgb, var(--kbfe-surface-elevated) 95%, var(--mantine-color-teal-0) 5%);
+  background: color-mix(in srgb, var(--kbfe-status-teal-bg) 72%, var(--kbfe-surface-elevated) 28%);
 }
 
 .delivery-order-ops-kpi-grid,
@@ -142,20 +110,20 @@
 
 .delivery-order-ops-kpi.is-good,
 .delivery-order-ops-gate-card.is-passed {
-  background: color-mix(in srgb, var(--kbfe-surface-elevated) 90%, var(--mantine-color-teal-0) 10%);
-  box-shadow: inset 0.1875rem 0 0 var(--mantine-color-teal-5);
+  background: var(--kbfe-status-teal-bg);
+  box-shadow: inset 0.1875rem 0 0 var(--kbfe-status-teal);
 }
 
 .delivery-order-ops-kpi.is-alert,
 .delivery-order-ops-gate-card.is-blocked,
 .delivery-order-ops-risk-row.severity-high {
-  background: color-mix(in srgb, var(--kbfe-surface-elevated) 90%, var(--mantine-color-orange-0) 10%);
-  box-shadow: inset 0.1875rem 0 0 var(--mantine-color-orange-5);
+  background: var(--kbfe-status-orange-bg);
+  box-shadow: inset 0.1875rem 0 0 var(--kbfe-status-orange);
 }
 
 .delivery-order-ops-risk-row.severity-medium {
-  background: color-mix(in srgb, var(--kbfe-surface-elevated) 92%, var(--mantine-color-yellow-0) 8%);
-  box-shadow: inset 0.1875rem 0 0 var(--mantine-color-yellow-5);
+  background: var(--kbfe-status-yellow-bg);
+  box-shadow: inset 0.1875rem 0 0 var(--kbfe-status-yellow);
 }
 
 .delivery-order-ops-risk-row.severity-low {
@@ -323,16 +291,6 @@
 }
 
 @media (max-width: 48em) {
-
-  .delivery-order-tabs {
-    flex-basis: 100%;
-  }
-
-  .delivery-order-filter-result {
-    order: -1;
-    width: 100%;
-    justify-content: flex-start;
-  }
 
   .delivery-order-filter-shell {
     grid-template-columns: 1fr;

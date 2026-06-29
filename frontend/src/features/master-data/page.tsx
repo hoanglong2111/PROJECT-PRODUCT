@@ -430,8 +430,8 @@ export function MasterData() {
 
   return (
     <Stack gap="lg">
-      <Group justify="space-between" align="center">
-        <div>
+      <Group justify="space-between" align="center" className="dl-page-header">
+        <div className="dl-page-title-block">
           <Title order={1}>{t('masterData.title')}</Title>
           <Text c="dimmed" mt={4}>
             {t('masterData.subtitle')}

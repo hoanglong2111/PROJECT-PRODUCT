@@ -1,4 +1,4 @@
-﻿import {
+import {
   Alert,
   Avatar,
   Badge,
@@ -38,6 +38,7 @@ import {
   useWorkspacePreferences,
 } from '@shared/preferences/WorkspacePreferencesContext';
 import { eventThemes } from '@shared/theme/eventThemes';
+import { getEffectivePresetId } from '@shared/theme/theme';
 import {
   AppearanceModeCard,
   ColorPresetGrid,
@@ -150,14 +151,14 @@ export function Settings() {
 
   return (
     <Stack gap="lg">
-      <Group justify="space-between" align="flex-start">
-        <div>
+      <Group justify="space-between" align="flex-start" className="dl-page-header">
+        <div className="dl-page-title-block">
           <Title order={1}>{t('settings.title')}</Title>
           <Text c="dimmed" mt={4}>
             {t('settings.subtitle')}
           </Text>
         </div>
-        <Badge leftSection={<IconSettings size={14} />} size="lg" variant="light">
+        <Badge leftSection={<IconSettings size={14} />} size="lg" variant="light" className="dl-page-actions">
           {t('settings.preferences')}
         </Badge>
       </Group>
@@ -189,22 +190,27 @@ export function Settings() {
           <Stack gap="lg">
             <ThemePreview />
 
+            <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="lg">
+              <ColorPresetGrid
+                colorPreset={colorPreset}
+                eventTheme={eventTheme}
+                onChange={setColorPreset}
+                onEventReset={() => setEventTheme('none')}
+              />
+              <EventThemeCard
+                eventTheme={eventTheme}
+                onChange={setEventTheme}
+              />
+            </SimpleGrid>
+
             <SimpleGrid cols={{ base: 1, md: 2, xl: 4 }}>
               <AppearanceModeCard
                 appearanceMode={appearanceMode}
                 onChange={setAppearanceMode}
               />
-              <ColorPresetGrid
-                colorPreset={colorPreset}
-                onChange={setColorPreset}
-              />
               <VisualThemeCard
                 visualTheme={visualTheme}
                 onChange={setVisualTheme}
-              />
-              <EventThemeCard
-                eventTheme={eventTheme}
-                onChange={setEventTheme}
               />
               <DensityCard
                 density={density}
@@ -216,17 +222,29 @@ export function Settings() {
               />
             </SimpleGrid>
 
-            <Paper withBorder p="lg">
+            <Paper withBorder p="lg" className="dl-data-panel">
               <SimpleGrid cols={{ base: 1, md: 2, xl: 5 }}>
                 <Info label={t('settings.currentAppearance')} value={appearanceModeLabel(appearanceMode)} />
                 <Info label={t('settings.currentResolvedMode')} value={appearanceModeLabel(resolvedColorScheme)} />
-                <Info label={t('settings.colorPreset')} value={t(`settings.colorPresets.${colorPreset}`)} />
+                {(() => {
+                  const effective = getEffectivePresetId(colorPreset, eventTheme);
+                  const isOverridden = effective !== colorPreset;
+                  const displayValue = isOverridden
+                    ? `${t(`settings.colorPresets.${colorPreset}`)} -> ${t(`settings.colorPresets.${effective}`)} (${t('settings.eventTheme')})`
+                    : t(`settings.colorPresets.${colorPreset}`);
+                  return (
+                    <Info
+                      label={t('settings.colorPreset')}
+                      value={displayValue}
+                    />
+                  );
+                })()}
                 {(() => {
                   const ev = eventThemes[eventTheme] ?? eventThemes.none;
                   return (
                     <Info
                       label={t('settings.eventTheme')}
-                      value={`${ev.emoji} ${t(`settings.eventThemes.${ev.id}`)}`}
+                      value={t(`settings.eventThemes.${ev.id}`)}
                     />
                   );
                 })()}
@@ -236,7 +254,7 @@ export function Settings() {
               </SimpleGrid>
             </Paper>
 
-            <Paper withBorder p="lg">
+            <Paper withBorder p="lg" className="dl-data-panel">
               <Group gap="sm" mb="md">
                 <IconBulb size={18} />
                 <Text fw={700}>{t('settings.recommendations')}</Text>
@@ -290,7 +308,7 @@ export function Settings() {
                   <Alert color="red">{t('settings.createAccountError')}</Alert>
                 ) : null}
 
-                <Paper withBorder p="lg">
+                <Paper withBorder p="lg" className="dl-data-panel">
                   <form
                     onSubmit={form.onSubmit((values) => {
                       setMessage(null);
@@ -326,8 +344,8 @@ export function Settings() {
                   </form>
                 </Paper>
 
-                <Paper withBorder p="lg">
-                  <Group justify="space-between" mb="md">
+                <Paper withBorder p="lg" className="dl-data-panel">
+                  <Group justify="space-between" mb="md" className="dl-data-panel-header">
                     <Text fw={700}>{t('settings.accounts')}</Text>
                     <Badge variant="light">{t('common.users', { count: users.length })}</Badge>
                   </Group>

@@ -243,8 +243,8 @@ export function DomesticTransportOrders() {
   return (
     <Stack gap="lg" className="dto-page">
       <Paper withBorder p="lg" className="dto-page-hero">
-        <Group justify="space-between" align="flex-start" gap="lg" className="dto-page-header">
-          <div className="dto-title-block">
+        <Group justify="space-between" align="flex-start" gap="lg" className="dto-page-header dl-page-header">
+          <div className="dto-title-block dl-page-title-block">
             <Badge leftSection={<IconTruckDelivery size={14} />} variant="light" mb="xs">
               {t('domesticTransportOrders.kicker')}
             </Badge>
@@ -253,7 +253,7 @@ export function DomesticTransportOrders() {
               {t('domesticTransportOrders.subtitle')}
             </Text>
           </div>
-          <Group gap="xs" className="dto-page-actions">
+          <Group gap="xs" className="dto-page-actions dl-page-actions">
             <Button
               leftSection={<IconRefresh size={16} />}
               variant="light"
@@ -266,17 +266,17 @@ export function DomesticTransportOrders() {
         </Group>
       </Paper>
 
-      <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} className="dto-metric-grid">
+      <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} className="dto-metric-grid dl-metrics-strip">
         <Metric label={t('domesticTransportOrders.metricTotal')} value={counts.total} color="gray" icon={<IconClipboardList size={22} />} />
         <Metric label={t('domesticTransportOrders.metricActive')} value={counts.active} color="blue" icon={<IconTruckDelivery size={22} />} />
         <Metric label={t('domesticTransportOrders.metricDispatched')} value={counts.dispatched} color="cyan" icon={<IconRoute size={22} />} />
         <Metric label={t('domesticTransportOrders.metricClosed')} value={counts.closed} color="teal" icon={<IconCircleCheck size={22} />} />
       </SimpleGrid>
 
-      <Paper withBorder p="md" className="dto-filter-panel">
-        <div className="dto-filter-grid">
+      <Paper withBorder p="md" className="dto-filter-panel dl-filter-panel">
+        <div className="dto-filter-grid dl-filter-row">
           <TextInput
-            className="dto-filter-search"
+            className="dto-filter-search dl-filter-search"
             label={t('common.search')}
             placeholder={t('domesticTransportOrders.searchPlaceholder')}
             leftSection={<IconSearch size={16} />}
@@ -310,7 +310,7 @@ export function DomesticTransportOrders() {
             onChange={setSelectedShipmentId}
             nothingFoundMessage={availableShipmentsQuery.isLoading ? t('domesticTransportOrders.loadingShipments') : t('domesticTransportOrders.noCustomsClearedShipment')}
           />
-          <Group align="flex-end" gap="xs" className="dto-filter-actions">
+          <Group align="flex-end" gap="xs" className="dto-filter-actions dl-filter-actions">
             <Button
               leftSection={<IconX size={16} />}
               variant="subtle"

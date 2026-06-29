@@ -140,8 +140,9 @@ export function TaskTemplatesSection({
 
   return (
     <Stack gap="md">
-      <Group justify="space-between" align="end" gap="md">
+      <Group justify="space-between" align="end" gap="md" className="dl-filter-row">
         <TextInput
+          className="dl-filter-search"
           label={t('masterData.taskTemplatesTitle')}
           placeholder={t('masterData.searchTaskTemplates')}
           leftSection={<IconSearch size={16} />}
@@ -206,8 +207,8 @@ export function TaskTemplatesSection({
       ) : (
         <Stack gap="md">
           {groupedTemplates.map((group) => (
-            <Paper key={group.key} withBorder p={0}>
-              <Group justify="space-between" px="md" py="sm">
+            <Paper key={group.key} withBorder p={0} className="dl-data-panel">
+              <Group justify="space-between" px="md" py="sm" className="dl-data-panel-header">
                 <Group gap="xs">
                   <Badge variant="light">{group.groupCode}</Badge>
                   <Text fw={700}>{group.groupName}</Text>

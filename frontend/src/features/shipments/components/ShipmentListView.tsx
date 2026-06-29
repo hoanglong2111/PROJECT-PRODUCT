@@ -119,7 +119,7 @@ export function ShipmentListView({
         ]}
       >
         <Stack className="shipment-filter-shell" gap="sm">
-          <div className="shipment-filter-primary">
+          <div className="shipment-filter-primary dl-filter-row">
             <TextInput
               label={t('common.search')}
               placeholder={t('shipments.searchPlaceholder')}
@@ -154,7 +154,7 @@ export function ShipmentListView({
             </Button>
           </div>
 
-          <div className="shipment-filter-advanced">
+          <div className="shipment-filter-advanced dl-filter-advanced">
             <div className="shipment-filter-secondary">
               <Stack gap={6} className="shipment-filter-channel">
                 <Group justify="space-between" gap="xs" wrap="nowrap">
@@ -206,7 +206,7 @@ export function ShipmentListView({
                   ]}
                 />
               </Stack>
-              <div className="shipment-filter-dates">
+              <div className="shipment-filter-dates dl-filter-dates">
                 <TextInput
                   label={<HeaderLabel label={t('shipments.etdFrom')} hint={t('glossary.etd')} />}
                   leftSection={<IconCalendarStats size={16} />}
@@ -252,7 +252,7 @@ export function ShipmentListView({
         </Paper>
       ) : null}
 
-      <Paper withBorder p={0}>
+      <Paper withBorder p={0} className="dl-data-panel">
         {filteredShipments.length === 0 ? (
           <EmptyState title={t('shipments.emptyTitle')} description={t('shipments.emptyDescription')} />
         ) : (
@@ -319,7 +319,7 @@ export function ShipmentListView({
                       </Tooltip>
                     </Table.Td>
                     <Table.Td>
-                      <Text fw={700}>{shp.shipment_number}</Text>
+                      <Text fw={700} className="dl-code-text">{shp.shipment_number}</Text>
                     </Table.Td>
                     <Table.Td>
                       <Stack gap={2} align="flex-start">

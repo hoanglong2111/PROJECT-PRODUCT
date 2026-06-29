@@ -68,8 +68,8 @@ export function Dashboard() {
 
   return (
     <Stack gap="lg" className="dashboard-page">
-      <Group justify="space-between" align="flex-start" gap="md" className="dashboard-header">
-        <Stack gap={4}>
+      <Group justify="space-between" align="flex-start" gap="md" className="dashboard-header dl-page-header">
+        <Stack gap={4} className="dl-page-title-block">
           <Group gap="xs">
             <span className="dashboard-header-icon">
               <IconPackageExport size={20} />
@@ -93,7 +93,7 @@ export function Dashboard() {
         />
       </Group>
 
-      <SimpleGrid cols={{ base: 1, lg: 3 }} spacing="md">
+      <SimpleGrid cols={{ base: 1, lg: 3 }} spacing="md" className="dl-metrics-strip">
         <Paper withBorder p="md" className="metric-card dashboard-card dashboard-kpi-card dashboard-po-card">
           <Group gap="xs" mb="sm">
             <span className="dashboard-mini-icon dashboard-mini-icon-orange">

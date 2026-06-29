@@ -30,8 +30,8 @@ export function DtoListTable({
   const { t } = useI18n();
 
   return (
-    <Paper withBorder p={0} className="dto-list-panel">
-      <Group justify="space-between" align="flex-start" gap="sm" className="dto-list-header">
+    <Paper withBorder p={0} className="dto-list-panel dl-data-panel">
+      <Group justify="space-between" align="flex-start" gap="sm" className="dto-list-header dl-data-panel-header">
         <div>
           <Text fw={700}>{t('domesticTransportOrders.transportQueue')}</Text>
           <Text size="sm" c="dimmed" className="tabular-nums">
@@ -66,7 +66,7 @@ export function DtoListTable({
                 onClick={() => onSelect(order)}
               >
                 <Table.Td className="dto-identity-cell dto-col-dto">
-                  <Text fw={700}>{order.dto_no}</Text>
+                  <Text fw={700} className="dl-code-text">{order.dto_no}</Text>
                   <Text size="xs" c="dimmed">{order.vehicle_plate ?? order.vehicle_type ?? '-'}</Text>
                 </Table.Td>
                 <Table.Td className="dto-shipment-cell dto-col-shipment">
