@@ -78,7 +78,7 @@ export function TaskFormModal({
     queryFn: () => fetchTaskTemplates({ page: 1, limit: 100 }),
     enabled: opened,
   });
-  const templates = templatesQuery.data?.data ?? [];
+  const templates = useMemo(() => templatesQuery.data?.data ?? [], [templatesQuery.data?.data]);
 
   const templateOptions = useMemo(
     () =>
@@ -161,26 +161,29 @@ export function TaskFormModal({
     <Modal
       opened={opened}
       onClose={onClose}
-      size="lg"
+      size="xl"
       title={editing ? t('tasks.editTask') : t('tasks.createTask')}
     >
-      <Stack gap="md">
+      <Stack gap="sm" className="task-form-modal-body">
         {mutation.isError ? (
           <Alert color="red" icon={<IconAlertCircle size={18} />}>
             {getApiErrorMessage(mutation.error)}
           </Alert>
         ) : null}
 
-        <Select
-          label={t('tasks.sopTemplate')}
-          description={t('tasks.templatePickerHint')}
-          placeholder={t('tasks.templatePickerPlaceholder')}
-          data={templateOptions}
-          searchable
-          clearable
-          value={form.values.taskTemplateId}
-          onChange={onTemplateChange}
-        />
+        <SimpleGrid cols={{ base: 1, md: 2 }} spacing="sm">
+          <Select
+            label={t('tasks.sopTemplate')}
+            description={t('tasks.templatePickerHint')}
+            placeholder={t('tasks.templatePickerPlaceholder')}
+            data={templateOptions}
+            searchable
+            clearable
+            value={form.values.taskTemplateId}
+            onChange={onTemplateChange}
+          />
+          <TextInput label={t('common.task')} required {...form.getInputProps('taskName')} />
+        </SimpleGrid>
 
         {selectedTemplate ? (
           <Alert variant="light" color="grape" icon={<IconAlertCircle size={16} />}>
@@ -198,9 +201,7 @@ export function TaskFormModal({
           </Alert>
         ) : null}
 
-        <TextInput label={t('common.task')} required {...form.getInputProps('taskName')} />
-
-        <SimpleGrid cols={{ base: 1, sm: 2 }}>
+        <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="sm">
           <Select
             label={t('common.role')}
             data={ROLE_VALUES.map((role) => ({ label: taskRoleLabel(role), value: role }))}

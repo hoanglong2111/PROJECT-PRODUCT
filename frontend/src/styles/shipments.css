@@ -5,6 +5,63 @@
   min-width: 0;
 }
 
+.shipment-create-panel {
+  overflow: hidden;
+  border-color: var(--kbfe-border-primary) !important;
+  background: var(--kbfe-surface-elevated);
+  box-shadow: var(--kbfe-shadow-xs);
+}
+
+.shipment-create-command,
+.shipment-create-layout,
+.shipment-create-source,
+.shipment-create-fields {
+  min-width: 0;
+}
+
+.shipment-create-command {
+  padding-bottom: 0.625rem;
+  border-bottom: 1px solid var(--kbfe-border-primary);
+}
+
+.shipment-create-layout {
+  display: grid;
+  grid-template-columns: minmax(17rem, 0.78fr) minmax(0, 1.72fr);
+  gap: 0.75rem;
+}
+
+.shipment-create-source {
+  display: grid;
+  align-content: start;
+  gap: 0.625rem;
+  padding-right: 0.75rem;
+  border-right: 1px solid var(--kbfe-border-primary);
+}
+
+.shipment-create-facts {
+  display: grid;
+  gap: 0.375rem;
+}
+
+.shipment-create-fact {
+  min-width: 0;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--kbfe-border-primary);
+  border-radius: 0.375rem;
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 92%, var(--kbfe-surface-subtle) 8%);
+}
+
+.shipment-create-panel .mantine-InputWrapper-label {
+  margin-bottom: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.shipment-create-panel .mantine-Input-input,
+.shipment-create-panel .mantine-Select-input {
+  min-height: 2.25rem;
+}
+
 .shipment-filter-primary {
   display: grid;
   grid-template-columns: minmax(18rem, 1.4fr) minmax(10rem, 0.62fr) minmax(14rem, 0.85fr) auto;
@@ -480,6 +537,21 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .shipment-create-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .shipment-create-source {
+    padding-right: 0;
+    padding-bottom: 0.75rem;
+    border-right: 0;
+    border-bottom: 1px solid var(--kbfe-border-primary);
+  }
+
+  .shipment-create-facts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .shipment-filter-clear {
     justify-self: start;
   }
@@ -570,6 +642,20 @@
 
   .shipment-filter-primary,
   .shipment-filter-dates {
+    grid-template-columns: 1fr;
+  }
+
+  .shipment-create-command {
+    align-items: stretch;
+  }
+
+  .shipment-create-command .mantine-Group-root {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .shipment-create-facts {
     grid-template-columns: 1fr;
   }
 

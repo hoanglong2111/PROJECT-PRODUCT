@@ -302,104 +302,106 @@ export function Settings() {
                 onRetry={() => void usersQuery.refetch()}
               />
             ) : (
-              <Stack gap="lg">
+              <Stack gap="md">
                 {message ? <Alert color="teal">{message}</Alert> : null}
                 {createUserMutation.isError ? (
                   <Alert color="red">{t('settings.createAccountError')}</Alert>
                 ) : null}
 
-                <Paper withBorder p="lg" className="dl-data-panel">
-                  <form
-                    onSubmit={form.onSubmit((values) => {
-                      setMessage(null);
-                      createUserMutation.mutate({
-                        avatarUrl: values.avatarUrl.trim() || null,
-                        department: values.department.trim(),
-                        email: values.email.trim().toLowerCase(),
-                        fullName: values.fullName.trim(),
-                        password: values.password,
-                        position: values.position.trim(),
-                        role: values.role,
-                      });
-                    })}
-                  >
-                    <Stack>
-                      <Group gap="sm">
-                        <IconPlus size={18} />
-                        <Text fw={700}>{t('settings.createAccount')}</Text>
-                      </Group>
-                      <SimpleGrid cols={{ base: 1, md: 2 }}>
-                        <TextInput label={t('settings.fullName')} placeholder="Nguyen Van A" {...form.getInputProps('fullName')} />
-                        <TextInput label="Email" placeholder="user@kbfe.local" {...form.getInputProps('email')} />
-                        <PasswordInput label={t('common.password')} placeholder={t('settings.passwordMin')} {...form.getInputProps('password')} />
-                        <Select label={t('common.role')} data={roleOptions} {...form.getInputProps('role')} />
-                        <TextInput label={t('common.position')} placeholder="PIC Manager" {...form.getInputProps('position')} />
-                        <TextInput label={t('common.department')} placeholder="Purchasing" {...form.getInputProps('department')} />
-                      </SimpleGrid>
-                      <TextInput label={t('settings.avatarUrl')} placeholder="https://example.com/avatar.png" {...form.getInputProps('avatarUrl')} />
-                      <Button type="submit" loading={createUserMutation.isPending} w={{ base: '100%', sm: 220 }}>
-                        {t('settings.createAccount')}
-                      </Button>
-                    </Stack>
-                  </form>
-                </Paper>
+                <div className="settings-accounts-layout">
+                  <Paper withBorder p="md" className="dl-data-panel settings-account-create-panel">
+                    <form
+                      onSubmit={form.onSubmit((values) => {
+                        setMessage(null);
+                        createUserMutation.mutate({
+                          avatarUrl: values.avatarUrl.trim() || null,
+                          department: values.department.trim(),
+                          email: values.email.trim().toLowerCase(),
+                          fullName: values.fullName.trim(),
+                          password: values.password,
+                          position: values.position.trim(),
+                          role: values.role,
+                        });
+                      })}
+                    >
+                      <Stack gap="sm">
+                        <Group gap="sm" className="settings-account-create-title">
+                          <IconPlus size={18} />
+                          <Text fw={700}>{t('settings.createAccount')}</Text>
+                        </Group>
+                        <SimpleGrid cols={{ base: 1, sm: 2, lg: 1 }} spacing="sm">
+                          <TextInput label={t('settings.fullName')} placeholder="Nguyen Van A" {...form.getInputProps('fullName')} />
+                          <TextInput label="Email" placeholder="user@kbfe.local" {...form.getInputProps('email')} />
+                          <PasswordInput label={t('common.password')} placeholder={t('settings.passwordMin')} {...form.getInputProps('password')} />
+                          <Select label={t('common.role')} data={roleOptions} {...form.getInputProps('role')} />
+                          <TextInput label={t('common.position')} placeholder="PIC Manager" {...form.getInputProps('position')} />
+                          <TextInput label={t('common.department')} placeholder="Purchasing" {...form.getInputProps('department')} />
+                        </SimpleGrid>
+                        <TextInput label={t('settings.avatarUrl')} placeholder="https://example.com/avatar.png" {...form.getInputProps('avatarUrl')} />
+                        <Button type="submit" loading={createUserMutation.isPending} fullWidth>
+                          {t('settings.createAccount')}
+                        </Button>
+                      </Stack>
+                    </form>
+                  </Paper>
 
-                <Paper withBorder p="lg" className="dl-data-panel">
-                  <Group justify="space-between" mb="md" className="dl-data-panel-header">
-                    <Text fw={700}>{t('settings.accounts')}</Text>
-                    <Badge variant="light">{t('common.users', { count: users.length })}</Badge>
-                  </Group>
-                  <Table.ScrollContainer minWidth={780}>
-                    <Table highlightOnHover verticalSpacing="sm">
-                      <Table.Thead>
-                        <Table.Tr>
-                          <Table.Th>{t('common.account')}</Table.Th>
-                          <Table.Th>{t('common.role')}</Table.Th>
-                          <Table.Th>{t('common.department')}</Table.Th>
-                          <Table.Th>{t('common.position')}</Table.Th>
-                          <Table.Th>{t('common.email')}</Table.Th>
-                        </Table.Tr>
-                      </Table.Thead>
-                      <Table.Tbody>
-                        {visibleUsers.map((account) => (
-                          <Table.Tr
-                            className={highlightedAccount === account.id ? 'settings-account-row-highlight' : undefined}
-                            key={account.id}
-                          >
-                            <Table.Td>
-                              <Group gap="sm" wrap="nowrap">
-                                <Avatar src={account.avatarUrl} radius="xl" size={32}>
-                                  {account.fullName
-                                    .split(' ')
-                                    .filter(Boolean)
-                                    .slice(0, 2)
-                                    .map((word) => word[0])
-                                    .join('')
-                                    .toUpperCase()}
-                                </Avatar>
-                                <Text fw={600}>{account.fullName}</Text>
-                              </Group>
-                            </Table.Td>
-                            <Table.Td>
-                              <Badge variant="light">{roleLabel(account.role)}</Badge>
-                            </Table.Td>
-                            <Table.Td>{departmentLabel(account.department)}</Table.Td>
-                            <Table.Td>{account.position}</Table.Td>
-                            <Table.Td>{account.email}</Table.Td>
+                  <Paper withBorder p="md" className="dl-data-panel settings-accounts-table-panel">
+                    <Group justify="space-between" mb="sm" className="dl-data-panel-header">
+                      <Text fw={700}>{t('settings.accounts')}</Text>
+                      <Badge variant="light">{t('common.users', { count: users.length })}</Badge>
+                    </Group>
+                    <Table.ScrollContainer minWidth={780}>
+                      <Table highlightOnHover verticalSpacing="sm">
+                        <Table.Thead>
+                          <Table.Tr>
+                            <Table.Th>{t('common.account')}</Table.Th>
+                            <Table.Th>{t('common.role')}</Table.Th>
+                            <Table.Th>{t('common.department')}</Table.Th>
+                            <Table.Th>{t('common.position')}</Table.Th>
+                            <Table.Th>{t('common.email')}</Table.Th>
                           </Table.Tr>
-                        ))}
-                      </Table.Tbody>
-                    </Table>
-                  </Table.ScrollContainer>
-                  <ListPagination
-                    page={page}
-                    pageCount={pageCount}
-                    pageEnd={pageEnd}
-                    pageStart={pageStart}
-                    setPage={setPage}
-                    total={users.length}
-                  />
-                </Paper>
+                        </Table.Thead>
+                        <Table.Tbody>
+                          {visibleUsers.map((account) => (
+                            <Table.Tr
+                              className={highlightedAccount === account.id ? 'settings-account-row-highlight' : undefined}
+                              key={account.id}
+                            >
+                              <Table.Td>
+                                <Group gap="sm" wrap="nowrap">
+                                  <Avatar src={account.avatarUrl} radius="xl" size={32}>
+                                    {account.fullName
+                                      .split(' ')
+                                      .filter(Boolean)
+                                      .slice(0, 2)
+                                      .map((word) => word[0])
+                                      .join('')
+                                      .toUpperCase()}
+                                  </Avatar>
+                                  <Text fw={600}>{account.fullName}</Text>
+                                </Group>
+                              </Table.Td>
+                              <Table.Td>
+                                <Badge variant="light">{roleLabel(account.role)}</Badge>
+                              </Table.Td>
+                              <Table.Td>{departmentLabel(account.department)}</Table.Td>
+                              <Table.Td>{account.position}</Table.Td>
+                              <Table.Td>{account.email}</Table.Td>
+                            </Table.Tr>
+                          ))}
+                        </Table.Tbody>
+                      </Table>
+                    </Table.ScrollContainer>
+                    <ListPagination
+                      page={page}
+                      pageCount={pageCount}
+                      pageEnd={pageEnd}
+                      pageStart={pageStart}
+                      setPage={setPage}
+                      total={users.length}
+                    />
+                  </Paper>
+                </div>
               </Stack>
             )}
           </Tabs.Panel>
