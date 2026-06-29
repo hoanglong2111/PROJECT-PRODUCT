@@ -48,6 +48,17 @@ function buildColorVariables(
   for (let i = 0; i < colors.length; i++) {
     result[`--mantine-color-${colorName}-${i}`] = colors[i];
   }
+  
+  // Override Mantine's variant variables for the primary color palette
+  // so components that specifically reference this color name (e.g., Button)
+  // use our custom theme tokens instead of Mantine's auto-generated ones.
+  result[`--mantine-color-${colorName}-filled`] = 'var(--kbfe-primary-color)';
+  result[`--mantine-color-${colorName}-filled-hover`] = 'color-mix(in srgb, var(--kbfe-primary-color) 88%, #000000 12%)';
+  result[`--mantine-color-${colorName}-contrast`] = 'var(--kbfe-primary-contrast)';
+  result[`--mantine-color-${colorName}-light`] = 'color-mix(in srgb, var(--kbfe-primary-color) 12%, transparent)';
+  result[`--mantine-color-${colorName}-light-hover`] = 'color-mix(in srgb, var(--kbfe-primary-color) 18%, transparent)';
+  result[`--mantine-color-${colorName}-light-color`] = 'var(--kbfe-primary-color)';
+
   return result;
 }
 
@@ -130,6 +141,10 @@ export function buildCssVariablesResolver(
       '--mantine-primary-color-filled': 'var(--kbfe-primary-color)',
       '--mantine-primary-color-filled-hover':
         'color-mix(in srgb, var(--kbfe-primary-color) 88%, #000000 12%)',
+      '--mantine-primary-color-contrast': 'var(--kbfe-primary-contrast)',
+      '--mantine-primary-color-light': 'color-mix(in srgb, var(--kbfe-primary-color) 12%, transparent)',
+      '--mantine-primary-color-light-hover': 'color-mix(in srgb, var(--kbfe-primary-color) 18%, transparent)',
+      '--mantine-primary-color-light-color': 'var(--kbfe-primary-color)',
     },
     light: buildColorVariables(lightColors, primaryColor),
     dark: buildColorVariables(darkColors, primaryColor),

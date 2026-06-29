@@ -499,7 +499,7 @@
 
 .po-stage-subchip.is-active .po-stage-subchip-count {
   background: var(--kbfe-primary-color);
-  color: #fff;
+  color: var(--kbfe-primary-contrast, #fff);
 }
 
 /* Sub-status with no matching POs on this page: dimmed but still clickable. */
