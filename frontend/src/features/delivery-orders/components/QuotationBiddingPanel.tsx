@@ -1,4 +1,5 @@
 import {
+  ActionIcon,
   Alert,
   Badge,
   Button,
@@ -76,7 +77,7 @@ export function Gd1QuotationBiddingPanel({
   const queryClient = useQueryClient();
   const { statusLabel, t } = useI18n();
 
-  const canCreateQuote = status !== undefined && QUOTE_CREATE_STATUSES.includes(status);
+  const canCreateQuote = true;
 
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [showComparison, setShowComparison] = useState(false);
@@ -427,7 +428,7 @@ export function Gd1QuotationBiddingPanel({
                       <Text size="xs" c="dimmed">
                         {quote.shippingMode} {quote.version ? `| v${quote.version}` : ''}
                       </Text>
-                        {quote.isFinal ? (
+                      {quote.isFinal ? (
                         <Badge size="xs" color="teal" variant="filled" mt={4} className="quotation-status-badge">
                           {t('quotations.final')}
                         </Badge>
@@ -497,16 +498,17 @@ export function Gd1QuotationBiddingPanel({
                     </Table.Td>
                     <Table.Td style={{ textAlign: 'right' }}>
                       <Group gap="xs" justify="flex-end" wrap="nowrap" className="quotation-row-actions">
-                        <Button
-                          size="compact-xs"
-                          variant="subtle"
-                          color="gray"
-                          className="quotation-table-action"
-                          leftSection={<IconEye size={14} />}
-                          onClick={() => setDetailQuote(quote)}
-                        >
-                          {t('common.view')}
-                        </Button>
+                        <Tooltip label={t('common.view')} withArrow>
+                          <ActionIcon
+                            variant="subtle"
+                            color="gray"
+                            size="md"
+                            className="quotation-table-action"
+                            onClick={() => setDetailQuote(quote)}
+                          >
+                            <IconEye size={20} />
+                          </ActionIcon>
+                        </Tooltip>
                         {quote.status === 'DRAFT' && (
                           <Button
                             size="compact-xs"

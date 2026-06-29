@@ -2242,7 +2242,7 @@ export const vi: Record<MessageKey, string> = {
   'entityLink.openShipment': 'Mở Lô hàng',
 
   'shipments.title': 'Lô hàng (Shipment)',
-  'shipments.subtitle': 'Theo dõi lô hàng quốc tế, luồng hải quan, 10 mốc logistics và landed cost.',
+  'shipments.subtitle': 'Theo dõi lô hàng quốc tế, luồng hải quan, 10 milestones và landed cost.',
   'shipments.total': 'Tổng lô hàng',
   'shipments.carrier': 'Hãng tàu',
   'shipments.vessel': 'Tàu / Chuyến bay',
@@ -2302,7 +2302,7 @@ export const vi: Record<MessageKey, string> = {
   'shipments.customsProcessing': 'Thông quan',
   'shipments.delivered': 'Đã giao',
   'shipments.overview': 'Tổng quan',
-  'shipments.milestones': '10 Mốc Logistics',
+  'shipments.milestones': 'Milestones',
   'shipments.documents': 'Chứng từ',
   'shipments.customs': 'Hải quan',
   'shipments.costs': 'Landed Cost',
