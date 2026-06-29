@@ -58,6 +58,8 @@ function buildColorVariables(
   result[`--mantine-color-${colorName}-light`] = 'color-mix(in srgb, var(--kbfe-primary-color) 12%, transparent)';
   result[`--mantine-color-${colorName}-light-hover`] = 'color-mix(in srgb, var(--kbfe-primary-color) 18%, transparent)';
   result[`--mantine-color-${colorName}-light-color`] = 'var(--kbfe-primary-color)';
+  result[`--mantine-color-${colorName}-outline`] = 'var(--kbfe-primary-color)';
+  result[`--mantine-color-${colorName}-outline-hover`] = 'color-mix(in srgb, var(--kbfe-primary-color) 8%, transparent)';
 
   return result;
 }
