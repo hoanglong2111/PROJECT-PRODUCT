@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildTheme, buildCssVariablesResolver } from '../theme';
+import { buildTheme, buildCssVariablesResolver, getEffectivePresetId, getEffectivePalette } from '../theme';
 import { colorPresets } from '../colorPresets';
 import { eventThemes } from '../eventThemes';
 
@@ -128,3 +128,50 @@ describe('buildCssVariablesResolver', () => {
     expect(result.dark).toBeDefined();
   });
 });
+
+describe('getEffectivePresetId', () => {
+  it('returns event override preset when event theme is active', () => {
+    // Tet event uses rose preset
+    expect(getEffectivePresetId('teal', 'tet')).toBe('rose');
+  });
+
+  it('returns original preset when event theme is none', () => {
+    expect(getEffectivePresetId('teal', 'none')).toBe('teal');
+  });
+
+  it('returns rose when both original preset and event theme resolve to rose', () => {
+    expect(getEffectivePresetId('rose', 'tet')).toBe('rose');
+  });
+
+  it('handles empty/undefined inputs by falling back to default preset ID', () => {
+    expect(getEffectivePresetId()).toBe('teal');
+  });
+});
+
+describe('getEffectivePalette', () => {
+  it('returns original light preset colors when event is none', () => {
+    expect(getEffectivePalette('teal', 'none', 'light')).toEqual(colorPresets.teal.colors.light);
+  });
+
+  it('returns original dark preset colors when event is none', () => {
+    expect(getEffectivePalette('teal', 'none', 'dark')).toEqual(colorPresets.teal.colors.dark);
+  });
+
+  it('returns overridden light preset colors when event theme is active', () => {
+    const expected = [...colorPresets.rose.colors.light];
+    if (eventThemes.tet.accentOverride?.primaryLight) {
+      expected[6] = eventThemes.tet.accentOverride.primaryLight;
+    }
+    expect(getEffectivePalette('teal', 'tet', 'light')).toEqual(expected);
+  });
+
+  it('returns overridden dark preset colors when event theme is active', () => {
+    const expected = [...colorPresets.rose.colors.dark];
+    if (eventThemes.tet.accentOverride?.primaryDark) {
+      expected[7] = eventThemes.tet.accentOverride.primaryDark;
+    }
+    expect(getEffectivePalette('teal', 'tet', 'dark')).toEqual(expected);
+  });
+});
+
+

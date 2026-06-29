@@ -63,13 +63,13 @@
 .purchase-order-list-panel {
   overflow: hidden;
   border-color: var(--kbfe-border-primary) !important;
-  background: var(--mantine-color-white);
+  background: var(--kbfe-surface-elevated);
   box-shadow: var(--kbfe-shadow-xs);
 }
 
 .purchase-order-filter-panel .mantine-Input-input,
 .purchase-order-filter-panel .mantine-Select-input {
-  background: var(--mantine-color-white);
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 94%, var(--kbfe-background-secondary) 6%);
 }
 
 .purchase-order-detail-hero {
@@ -331,18 +331,20 @@
   min-width: 0;
 }
 
-/* Stage filter (segmented chips that replace the status select). */
+/* Stage filter (segmented chips that replace the status select).
+   Vertical padding insets the chips from the ScrollArea viewport's clip edge so the
+   shared .dl-chip 1px hover lift + shadow has room and isn't cut off at the top. */
 .po-stage-filter,
 .po-stage-subfilter {
-  padding-bottom: 0.125rem;
+  padding-block: 0.25rem;
 }
 
 .po-stage-chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.4rem 0.75rem;
-  border-radius: 999px;
+  gap: 0.375rem;
+  padding: 0.4rem 0.625rem;
+  border-radius: var(--mantine-radius-md, 0.5rem);
   border: 1px solid var(--kbfe-border-primary);
   background: var(--kbfe-surface-elevated);
   color: var(--kbfe-text-primary);
@@ -360,15 +362,15 @@
 .po-stage-chip-dot {
   width: 0.5rem;
   height: 0.5rem;
-  border-radius: 999px;
+  border-radius: 0.125rem;
   background: var(--chip-color);
   flex-shrink: 0;
 }
 
 .po-stage-chip-count {
   min-width: 1.35rem;
-  padding: 0.05rem 0.4rem;
-  border-radius: 999px;
+  padding: 0.05rem 0.32rem;
+  border-radius: 0.375rem;
   background: color-mix(in srgb, var(--chip-color) 16%, transparent);
   color: var(--chip-color);
   font-size: 0.75rem;
@@ -379,45 +381,67 @@
 .po-stage-chip.is-active {
   border-color: var(--chip-color);
   background: color-mix(in srgb, var(--chip-color) 12%, var(--kbfe-surface-elevated));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--chip-color) 16%, transparent),
+    inset 0 -2px 0 var(--chip-color);
   color: var(--chip-color);
 }
 
+.po-stage-filter .po-stage-chip:first-child.is-active {
+  --chip-color: var(--kbfe-primary-color) !important;
+}
+
 .po-stage-chip.is-active .po-stage-chip-count {
-  background: var(--chip-color);
-  color: #fff;
+  background: color-mix(in srgb, var(--chip-color) 16%, var(--kbfe-surface-elevated));
+  color: var(--chip-color);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--chip-color) 18%, transparent);
 }
 
 .po-stage-subchip {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.25rem 0.55rem 0.25rem 0.65rem;
-  border-radius: 999px;
-  border: 1px dashed var(--kbfe-border-primary);
-  background: transparent;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--mantine-radius-sm, 0.375rem);
+  border: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 86%, transparent);
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 96%, var(--kbfe-surface-subtle) 4%);
   color: var(--kbfe-text-primary);
   font-size: 0.75rem;
   font-weight: 500;
   line-height: 1;
   white-space: nowrap;
-  transition: background 120ms ease, border-color 120ms ease, opacity 120ms ease;
+  transition:
+    background-color 140ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 140ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 140ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    color 140ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 140ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .po-stage-subchip:hover {
-  border-color: var(--kbfe-primary-color);
+  border-color: color-mix(in srgb, var(--kbfe-primary-color) 52%, var(--kbfe-border-primary));
+  box-shadow: 0 8px 16px -15px color-mix(in srgb, var(--kbfe-primary-color) 45%, transparent);
+  transform: translateY(-1px);
+}
+
+.po-stage-subchip:active {
+  transform: translateY(0);
 }
 
 .po-stage-subchip.is-active {
-  border-style: solid;
   border-color: var(--kbfe-primary-color);
-  background: color-mix(in srgb, var(--kbfe-primary-color) 12%, var(--kbfe-surface-elevated));
+  background: color-mix(in srgb, var(--kbfe-primary-color) 10%, var(--kbfe-surface-elevated));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--kbfe-primary-color) 16%, transparent),
+    inset 0 -2px 0 var(--kbfe-primary-color);
   color: var(--kbfe-primary-color);
 }
 
 .po-stage-subchip-count {
   min-width: 1.2rem;
   padding: 0.05rem 0.35rem;
-  border-radius: 999px;
+  border-radius: 0.3125rem;
   background: var(--kbfe-surface-subtle);
   color: var(--kbfe-text-secondary, var(--kbfe-text-primary));
   font-size: 0.7rem;
@@ -513,7 +537,7 @@
 
 .purchase-order-list-table th,
 .purchase-order-list-table td {
-  background: var(--mantine-color-white);
+  background: var(--kbfe-surface-elevated);
 }
 
 .purchase-order-list-table td,
@@ -531,7 +555,7 @@
 .purchase-order-list-table tbody tr:hover td,
 .purchase-order-po-lines-table tbody tr:hover td,
 .purchase-order-confirmation-table tbody tr:hover td {
-  background: color-mix(in srgb, var(--kbfe-primary-color) 5%, transparent);
+  background: var(--kbfe-row-hover-background);
 }
 
 .purchase-order-list-lines-cell,
@@ -803,11 +827,11 @@
 }
 
 .po-line-row:hover > td {
-  background: color-mix(in srgb, var(--kbfe-primary-color) 5%, var(--kbfe-surface-elevated));
+  background: var(--kbfe-row-hover-background);
 }
 
 .po-line-row.is-open > td {
-  background: color-mix(in srgb, var(--kbfe-primary-color) 7%, var(--kbfe-surface-elevated));
+  background: var(--kbfe-row-selected-background);
   border-bottom-color: transparent;
 }
 
@@ -871,7 +895,7 @@
 .po-line-item-code {
   font-size: 0.8125rem;
   font-weight: 600;
-  color: var(--kbfe-text-primary);
+  color: var(--kbfe-code-text);
 }
 
 .po-line-item-name {

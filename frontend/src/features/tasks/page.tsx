@@ -26,6 +26,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 import { EmptyState } from '@shared/components/EmptyState';
+import { FilterSegment } from '@shared/components/FilterSegment';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { ListPagination, useListPagination } from '@shared/components/ListPagination';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
@@ -252,14 +253,14 @@ export function Tasks() {
 
   return (
     <Stack gap="lg">
-      <Group justify="space-between" align="flex-start" gap="md">
-        <div>
+      <Group justify="space-between" align="flex-start" gap="md" className="dl-page-header">
+        <div className="dl-page-title-block">
           <Title order={1}>{t('tasks.title')}</Title>
           <Text c="dimmed" mt={4}>
             {t('tasks.subtitle')}
           </Text>
         </div>
-        <Group gap="sm">
+        <Group gap="sm" className="dl-page-actions">
           <Button leftSection={<IconPlus size={16} />} onClick={openCreateTask}>
             {t('tasks.createTask')}
           </Button>
@@ -294,24 +295,29 @@ export function Tasks() {
               </Paper>
             ) : null}
 
-            <SimpleGrid cols={{ base: 1, sm: 3 }}>
+            <SimpleGrid cols={{ base: 1, sm: 3 }} className="dl-metrics-strip">
               <Metric label={t('tasks.totalTasks')} value={tasks.length} color="blue" icon={<IconChecklist size={22} />} />
               <Metric label={t('tasks.blocked')} value={blockedCount} color="red" icon={<IconAlertTriangle size={22} />} />
               <Metric label={t('tasks.overdue')} value={overdueCount} color="orange" icon={<IconClock size={22} />} />
             </SimpleGrid>
 
-            <Paper withBorder p="md" className="tasks-filter-panel">
+            <Paper withBorder p="md" className="tasks-filter-panel dl-filter-panel">
               <Stack gap="md">
-                <Group className="tasks-filter-primary" justify="space-between" align="flex-end" gap="md">
-                  <TextInput
-                    className="tasks-filter-search"
-                    label={t('common.search')}
-                    placeholder={t('tasks.searchPlaceholder')}
-                    leftSection={<IconSearch size={16} />}
-                    value={search}
-                    onChange={(event) => setSearch(event.currentTarget.value)}
-                  />
-                  <Group className="tasks-filter-actions" gap="xs" wrap="nowrap">
+                <div className="dl-filter-head">
+                  <div className="dl-filter-head__control">
+                    <FilterSegment
+                      ariaLabel={t('common.status')}
+                      value={statusFilter}
+                      onChange={(value) => setStatusFilter(value as TaskStatus | 'all')}
+                      options={statusOptions.map((option) => ({
+                        value: option.value,
+                        label: option.label,
+                        count: statusCounts[option.value],
+                        color: option.value === 'BLOCKED' ? 'red' : option.value === 'COMPLETED' ? 'teal' : undefined,
+                      }))}
+                    />
+                  </div>
+                  <div className="dl-filter-result">
                     {isFetching ? <Loader size="sm" /> : null}
                     <Text className="tasks-filter-count" size="sm" c="dimmed">
                       {t('common.shown', { count: filteredTasks.length })}
@@ -325,33 +331,18 @@ export function Tasks() {
                     >
                       {t('common.clear')}
                     </Button>
-                  </Group>
-                </Group>
-
-                <ScrollArea className="tasks-status-scroll" type="never" offsetScrollbars scrollbarSize={6}>
-                  <Group className="tasks-status-strip" gap="xs" wrap="nowrap">
-                    {statusOptions.map((option) => (
-                      <Button
-                        key={option.value}
-                        className={`tasks-status-pill ${statusFilter === option.value ? 'is-active' : ''}`}
-                        variant={statusFilter === option.value ? 'light' : 'subtle'}
-                        color={option.value === 'BLOCKED' ? 'red' : option.value === 'COMPLETED' ? 'teal' : undefined}
-                        size="compact-sm"
-                        onClick={() => setStatusFilter(option.value)}
-                        aria-pressed={statusFilter === option.value}
-                        rightSection={
-                          <Badge size="xs" variant={statusFilter === option.value ? 'filled' : 'light'}>
-                            {statusCounts[option.value]}
-                          </Badge>
-                        }
-                      >
-                        {option.label}
-                      </Button>
-                    ))}
-                  </Group>
-                </ScrollArea>
+                  </div>
+                </div>
 
                 <SimpleGrid className="tasks-filter-secondary" cols={{ base: 1, sm: 2, lg: 4 }}>
+                  <TextInput
+                    className="tasks-filter-search dl-filter-search"
+                    label={t('common.search')}
+                    placeholder={t('tasks.searchPlaceholder')}
+                    leftSection={<IconSearch size={16} />}
+                    value={search}
+                    onChange={(event) => setSearch(event.currentTarget.value)}
+                  />
                   <Select
                     label={t('common.role')}
                     value={roleFilter}
@@ -370,31 +361,32 @@ export function Tasks() {
                     onChange={(value) => setMilestoneFilter(value ?? 'all')}
                     data={milestoneOptions}
                   />
-                  <Group className="tasks-filter-toggles" gap="xs" wrap="nowrap">
-                    <Button
-                      className="tasks-filter-toggle"
-                      variant={requiredOnly ? 'light' : 'subtle'}
-                      color={requiredOnly ? 'blue' : 'gray'}
-                      onClick={() => setRequiredOnly(!requiredOnly)}
-                      aria-pressed={requiredOnly}
-                    >
-                      {t('tasks.filterRequiredOnly')}
-                    </Button>
-                    <Button
-                      className="tasks-filter-toggle"
-                      variant={overdueOnly ? 'light' : 'subtle'}
-                      color={overdueOnly ? 'orange' : 'gray'}
-                      onClick={() => setOverdueOnly(!overdueOnly)}
-                      aria-pressed={overdueOnly}
-                    >
-                      {t('tasks.filterOverdueOnly')}
-                    </Button>
-                  </Group>
                 </SimpleGrid>
+
+                <Group className="tasks-filter-toggles" gap="xs" wrap="nowrap">
+                  <Button
+                    className="tasks-filter-toggle dl-toggle"
+                    variant={requiredOnly ? 'light' : 'subtle'}
+                    color={requiredOnly ? 'blue' : 'gray'}
+                    onClick={() => setRequiredOnly(!requiredOnly)}
+                    aria-pressed={requiredOnly}
+                  >
+                    {t('tasks.filterRequiredOnly')}
+                  </Button>
+                  <Button
+                    className="tasks-filter-toggle dl-toggle"
+                    variant={overdueOnly ? 'light' : 'subtle'}
+                    color={overdueOnly ? 'orange' : 'gray'}
+                    onClick={() => setOverdueOnly(!overdueOnly)}
+                    aria-pressed={overdueOnly}
+                  >
+                    {t('tasks.filterOverdueOnly')}
+                  </Button>
+                </Group>
               </Stack>
             </Paper>
 
-            <Paper withBorder p={0}>
+            <Paper withBorder p={0} className="dl-data-panel">
               <ScrollArea className="data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
                 <Table miw={1320} verticalSpacing="sm" highlightOnHover>
                   <Table.Thead>

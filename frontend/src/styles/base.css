@@ -61,23 +61,20 @@ html {
   transform: translateX(3px);
 }
 
+/* Softer active NavLink styling in dark mode */
+html[data-kbfe-resolved-color-scheme='dark'] .mantine-NavLink-root[data-active] {
+  background-color: color-mix(in srgb, var(--mantine-primary-color-filled) 16%, transparent) !important;
+  color: var(--mantine-primary-color-filled) !important;
+}
+
+html[data-kbfe-resolved-color-scheme='dark'] .mantine-NavLink-root[data-active]:hover {
+  background-color: color-mix(in srgb, var(--mantine-primary-color-filled) 24%, transparent) !important;
+}
+
 /* Focus ring accessibility */
 :focus-visible {
   outline: 2px solid var(--kbfe-primary-color) !important;
   outline-offset: 2px !important;
-}
-
-/* Staggered card fade-in entry animation for metric cards */
-@keyframes cardFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(12px) scale(0.98);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
 }
 
 /* Accessibility Skip Link styling */

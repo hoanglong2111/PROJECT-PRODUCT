@@ -61,9 +61,9 @@ export function ItemCatalogSection({
   const { t } = useI18n();
 
   return (
-    <Paper withBorder p="md">
+    <Paper withBorder p="md" className="dl-data-panel">
       <Stack gap="md">
-        <Group justify="space-between" align="end">
+        <Group justify="space-between" align="end" className="dl-data-panel-header">
           <SimpleGrid cols={{ base: 1, sm: 2 }} style={{ flex: 1 }}>
             <TextInput
               label={t('masterData.itemCatalogTitle')}

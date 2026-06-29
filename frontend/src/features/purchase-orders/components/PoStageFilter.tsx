@@ -100,11 +100,11 @@ function StageChip({
       aria-pressed={active}
       onClick={onClick}
       style={colorVar(color)}
-      className={`po-stage-chip${active ? ' is-active' : ''}`}
+      className={`po-stage-chip dl-chip${active ? ' is-active' : ''}`}
     >
-      <span className="po-stage-chip-dot" aria-hidden="true" />
+      <span className="po-stage-chip-dot dl-chip-dot" aria-hidden="true" />
       <span className="po-stage-chip-label">{label}</span>
-      <span className="po-stage-chip-count">{count}</span>
+      <span className="po-stage-chip-count dl-chip-count">{count}</span>
     </UnstyledButton>
   );
 }

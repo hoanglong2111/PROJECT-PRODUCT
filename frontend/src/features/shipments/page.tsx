@@ -341,14 +341,14 @@ export function Shipments() {
   return (
     <Stack gap="lg">
       {workbench === 'list' ? (
-        <Group justify="space-between" align="flex-start" gap="md">
-          <div>
+        <Group justify="space-between" align="flex-start" gap="md" className="dl-page-header">
+          <div className="dl-page-title-block">
             <Title order={1}>{t('shipments.title')}</Title>
             <Text c="dimmed" mt={4}>
               {t('shipments.subtitle')}
             </Text>
           </div>
-          <Group gap="xs">
+          <Group gap="xs" className="dl-page-actions">
             <Button onClick={openCreate} leftSection={<IconPlus size={16} />} variant="light">
               {t('shipments.create')}
             </Button>
@@ -358,8 +358,8 @@ export function Shipments() {
           </Group>
         </Group>
       ) : (
-        <Group justify="space-between" align="center" gap="md">
-          <Group gap="xs" align="center">
+        <Group justify="space-between" align="center" gap="md" className="dl-page-header">
+          <Group gap="xs" align="center" className="dl-page-title-block">
             <Button onClick={closeWorkbench} leftSection={<IconX size={16} />} variant="subtle" size="sm">
               {t('common.backToList')}
             </Button>
@@ -375,7 +375,7 @@ export function Shipments() {
       )}
 
       {workbench === 'list' ? (
-        <SimpleGrid cols={{ base: 1, sm: 4 }}>
+        <SimpleGrid cols={{ base: 1, sm: 4 }} className="dl-metrics-strip">
           <Metric label={t('shipments.total')} value={shipments.length} color="blue" icon={<IconAnchor size={22} />} />
           <Metric label={t('shipments.inTransit')} value={tabCounts.in_transit} color="orange" icon={<IconClock size={22} />} />
           <Metric label={t('shipments.customsProcessing')} value={tabCounts.customs} color="yellow" icon={<IconShield size={22} />} />

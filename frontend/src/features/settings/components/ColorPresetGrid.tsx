@@ -1,57 +1,92 @@
-import { Button, Group, Paper, SimpleGrid, Stack, Text } from '@mantine/core';
-import { IconPalette } from '@tabler/icons-react';
+import { Alert, Group, Paper, SimpleGrid, Stack, Text, UnstyledButton } from '@mantine/core';
+import { IconCheck, IconInfoCircle, IconPalette } from '@tabler/icons-react';
 import { useI18n } from '@shared/i18n';
 import { colorPresets } from '@shared/theme/colorPresets';
+import { eventThemes } from '@shared/theme/eventThemes';
+import { getEffectivePresetId } from '@shared/theme/theme';
+import { useWorkspacePreferences } from '@shared/preferences/WorkspacePreferencesContext';
 import type { ColorPresetId } from '@shared/theme/colorPresets';
+import type { EventThemeId } from '@shared/theme/eventThemes';
 
 type Props = {
   colorPreset: ColorPresetId;
+  eventTheme: EventThemeId;
   onChange: (preset: ColorPresetId) => void;
+  onEventReset: () => void;
 };
 
-export function ColorPresetGrid({ colorPreset, onChange }: Props) {
+export function ColorPresetGrid({ colorPreset, eventTheme, onChange, onEventReset }: Props) {
   const { t } = useI18n();
+  const { resolvedColorScheme } = useWorkspacePreferences();
+
+  const isOverridden = eventTheme !== 'none';
+  const effectivePresetId = getEffectivePresetId(colorPreset, eventTheme);
+  const activeEvent = eventThemes[eventTheme];
+
+  const handlePresetSelect = (presetId: ColorPresetId) => {
+    if (isOverridden) {
+      onEventReset();
+    }
+    onChange(presetId);
+  };
 
   return (
     <Paper withBorder p="lg">
-      <Stack gap="sm">
-        <Group gap="sm">
-          <IconPalette size={20} />
-          <Text fw={700}>{t('settings.colorPreset')}</Text>
+      <Stack gap="md">
+        <Group justify="space-between" align="center">
+          <Group gap="sm">
+            <IconPalette size={20} />
+            <Text fw={700}>{t('settings.colorPreset')}</Text>
+          </Group>
         </Group>
-        <SimpleGrid cols={{ base: 3, sm: 5 }} spacing="sm">
+
+        {isOverridden && activeEvent && (
+          <Alert
+            variant="light"
+            color="indigo"
+            title={t('common.info')}
+            icon={<IconInfoCircle size={18} />}
+          >
+            {t('settings.colorPresetOverridden', {
+              name: t(`settings.eventThemes.${activeEvent.id}`),
+            })}
+          </Alert>
+        )}
+
+        <SimpleGrid cols={{ base: 3, sm: 5, lg: 9 }} spacing="sm">
           {(Object.keys(colorPresets) as ColorPresetId[]).map((presetId) => {
             const preset = colorPresets[presetId];
-            const isActive = colorPreset === presetId;
+            const isPresetActive = effectivePresetId === presetId;
+            const colors = preset.colors[resolvedColorScheme] ?? preset.colors.light;
+
+            const swatchColors = [colors[3], colors[5], colors[7]];
+
             return (
-              <Button
+              <UnstyledButton
                 key={presetId}
-                variant={isActive ? 'filled' : 'default'}
-                size="compact-sm"
-                radius="md"
-                onClick={() => onChange(presetId)}
-                style={{
-                  borderColor: isActive ? undefined : `var(--mantine-color-${preset.primaryColor}-filled)`,
-                  borderWidth: isActive ? 0 : 1.5,
-                }}
+                className={`settings-swatch-card ${isPresetActive ? 'is-active' : ''} ${
+                  isOverridden && !isPresetActive ? 'settings-override-dim' : ''
+                }`}
+                onClick={() => handlePresetSelect(presetId)}
               >
-                <Group gap={6}>
-                  <span
-                    style={{
-                      display: 'inline-block',
-                      width: 10,
-                      height: 10,
-                      borderRadius: '50%',
-                      background: `var(--mantine-color-${preset.primaryColor}-filled)`,
-                      flexShrink: 0,
-                    }}
-                  />
+                <div className="settings-swatch-gradient">
+                  {swatchColors.map((color) => (
+                    <span key={color} style={{ background: color }} />
+                  ))}
+                  {isPresetActive && (
+                    <div className="settings-swatch-checkmark">
+                      <IconCheck size={18} stroke={3} />
+                    </div>
+                  )}
+                </div>
+                <span className="settings-swatch-label">
                   {t(`settings.colorPresets.${presetId}`)}
-                </Group>
-              </Button>
+                </span>
+              </UnstyledButton>
             );
           })}
         </SimpleGrid>
+
         <Text c="dimmed" size="sm">
           {t('settings.colorPresetDescription')}
         </Text>
@@ -59,3 +94,4 @@ export function ColorPresetGrid({ colorPreset, onChange }: Props) {
     </Paper>
   );
 }
+

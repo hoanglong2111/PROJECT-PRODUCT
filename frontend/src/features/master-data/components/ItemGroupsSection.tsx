@@ -39,9 +39,9 @@ export function ItemGroupsSection({
   const { t } = useI18n();
 
   return (
-    <Paper withBorder p="md">
+    <Paper withBorder p="md" className="dl-data-panel">
       <Stack gap="md">
-        <Group justify="space-between" align="center">
+        <Group justify="space-between" align="center" className="dl-data-panel-header">
           <div>
             <Text fw={700}>{t('masterData.itemGroupsTitle')}</Text>
             <Text size="sm" c="dimmed">

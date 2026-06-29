@@ -1,6 +1,7 @@
-import { Group, Loader, Paper, Stack, Tabs, Text } from '@mantine/core';
+import { Group, Loader, Paper, Stack, Text } from '@mantine/core';
 import type { ReactNode } from 'react';
 
+import { FilterSegment } from '@shared/components/FilterSegment';
 import { useI18n } from '@shared/i18n';
 
 export function FilterToolbar<T extends string>({
@@ -21,31 +22,25 @@ export function FilterToolbar<T extends string>({
   const { t } = useI18n();
 
   return (
-    <Paper withBorder p="md">
+    <Paper withBorder p="md" className="dl-filter-panel">
       <Stack gap="sm">
-        <Group justify="space-between" align="center" gap="sm" wrap="wrap">
-          <Tabs
-            value={activeTab}
-            onChange={(value) => onTabChange((value ?? tabs[0].value) as T)}
-            variant="pills"
-            style={{ flex: '1 1 28rem', minWidth: 0 }}
-          >
-            <Tabs.List>
-              {tabs.map((tab) => (
-                <Tabs.Tab key={tab.value} value={tab.value}>
-                  {tab.label}
-                  {tab.count === undefined ? '' : ` (${tab.count})`}
-                </Tabs.Tab>
-              ))}
-            </Tabs.List>
-          </Tabs>
-          <Group gap="xs" wrap="nowrap" style={{ flex: '0 0 auto' }}>
+        <div className="dl-filter-head">
+          <div className="dl-filter-head__control">
+            <FilterSegment
+              ariaLabel={t('common.status')}
+              fill
+              value={activeTab}
+              onChange={(value) => onTabChange(value as T)}
+              options={tabs.map((tab) => ({ value: tab.value, label: tab.label, count: tab.count }))}
+            />
+          </div>
+          <div className="dl-filter-result">
             {isFetching ? <Loader size="sm" /> : null}
             <Text size="sm" c="dimmed">
               {t('common.shown', { count: shown })}
             </Text>
-          </Group>
-        </Group>
+          </div>
+        </div>
         <Group align="flex-end" gap="sm" wrap="wrap" style={{ width: '100%', minWidth: 0 }}>
           {children}
         </Group>

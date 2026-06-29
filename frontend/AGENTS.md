@@ -185,6 +185,28 @@ When adding or changing UI:
 - Prefer Mantine props / `style` / `styles` for one-off, component-local styling; use a global class
   only for reusable, structural, or cross-component rules.
 
+### Design Language (dl-* classes)
+
+To maintain premium visual consistency across pages without sacrificing component independence, a shared visual vocabulary of `dl-*` classes is declared in `src/styles/components.css`:
+
+- **Layout & Structure**:
+  - `.dl-page-header` / `.dl-page-title-block` / `.dl-page-actions` — Standard page title and actions container layout.
+  - `.dl-metrics-strip` — Metrics grids that stretch cards to the same height.
+  - `.dl-data-panel` / `.dl-data-panel-header` — Panels for tables and data lists.
+- **Filters & Controls**:
+  - `.dl-filter-panel` — Unified background, border, shadow, and spacing for search toolbars.
+  - `.dl-filter-row` — Grid container for input fields in filters (maintains layout columns per-page).
+  - `.dl-filter-search` — Dedicated search input width wrapper.
+  - `.dl-filter-actions` — Aligning actions (Clear, Refresh buttons).
+  - `.dl-filter-inline-control` — Bordered wrapper enclosing inline selectors/switches.
+  - `.dl-filter-advanced` — Nested accordion/advanced filter grids.
+  - `.dl-filter-dates` — Date/date-range grid wrapping structure.
+- **Interactive Elements**:
+  - `.dl-chip` / `.dl-chip-dot` / `.dl-chip-count` — Stage status badge style with micro-interactions.
+  - `.dl-toggle` — Micro-interaction styling layer for state-changing buttons.
+
+Always use the `dl-*` classes for new feature screens to keep them unified with the rest of the application.
+
 ### Typography & fonts
 
 - **Fonts are self-hosted, not from a CDN.** Geist + Geist Mono ship via `@fontsource-variable/geist`

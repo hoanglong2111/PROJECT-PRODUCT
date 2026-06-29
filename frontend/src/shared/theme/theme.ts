@@ -51,33 +51,54 @@ function buildColorVariables(
   return result;
 }
 
+export function getEffectivePresetId(
+  colorPresetId?: ColorPresetId,
+  eventThemeId?: EventThemeId,
+): ColorPresetId {
+  const presetId = colorPresetId ?? defaultColorPresetId;
+  const eventId = eventThemeId ?? defaultEventThemeId;
+  const event = eventThemes[eventId] ?? eventThemes[defaultEventThemeId];
+  const resolvedEventId = event ? event.id : defaultEventThemeId;
+  const eventPresetId = event ? event.colorPresetId : defaultColorPresetId;
+
+  return resolvedEventId !== 'none' && eventPresetId !== presetId
+    ? eventPresetId
+    : presetId;
+}
+
+export function getEffectivePalette(
+  colorPresetId: ColorPresetId,
+  eventThemeId: EventThemeId,
+  scheme: 'light' | 'dark',
+): string[] {
+  const effectivePresetId = getEffectivePresetId(colorPresetId, eventThemeId);
+  const effectivePreset = colorPresets[effectivePresetId] ?? colorPresets[defaultColorPresetId];
+  const event = eventThemes[eventThemeId] ?? eventThemes[defaultEventThemeId];
+
+  const colors = [...effectivePreset.colors[scheme]];
+
+  if (event && event.accentOverride) {
+    if (scheme === 'light' && event.accentOverride.primaryLight) {
+      colors[6] = event.accentOverride.primaryLight;
+    } else if (scheme === 'dark' && event.accentOverride.primaryDark) {
+      colors[7] = event.accentOverride.primaryDark;
+    }
+  }
+
+  return colors;
+}
+
 export function buildTheme(
   colorPresetId?: ColorPresetId,
   eventThemeId?: EventThemeId,
 ) {
+  const effectivePresetId = getEffectivePresetId(colorPresetId, eventThemeId);
+  const effectivePreset = colorPresets[effectivePresetId] ?? colorPresets[defaultColorPresetId];
   const presetId = colorPresetId ?? defaultColorPresetId;
   const eventId = eventThemeId ?? defaultEventThemeId;
 
-  const preset = colorPresets[presetId] ?? colorPresets[defaultColorPresetId];
-  const event = eventThemes[eventId] ?? eventThemes[defaultEventThemeId];
-  const resolvedEventId = event ? event.id : defaultEventThemeId;
-
-  const eventPresetId = event ? event.colorPresetId : defaultColorPresetId;
-  const eventPreset = colorPresets[eventPresetId] ?? colorPresets[defaultColorPresetId];
-
-  // Event theme can override the color preset (except 'none' which uses the user's preset)
-  const effectivePreset = resolvedEventId !== 'none' && eventPresetId !== presetId
-    ? eventPreset
-    : preset;
-
   // Build colors tuple (always use light palette as the base Mantine theme)
-  const baseColors = effectivePreset.colors.light;
-  const colors = [...baseColors];
-
-  // Apply event accent override if present (using light override since this is the base palette)
-  if (event && event.accentOverride && event.accentOverride.primaryLight) {
-    colors[6] = event.accentOverride.primaryLight;
-  }
+  const colors = getEffectivePalette(presetId, eventId, 'light');
 
   const primaryColor = effectivePreset.primaryColor;
 
@@ -94,30 +115,13 @@ export function buildCssVariablesResolver(
   colorPresetId?: ColorPresetId,
   eventThemeId?: EventThemeId,
 ) {
+  const effectivePresetId = getEffectivePresetId(colorPresetId, eventThemeId);
+  const effectivePreset = colorPresets[effectivePresetId] ?? colorPresets[defaultColorPresetId];
   const presetId = colorPresetId ?? defaultColorPresetId;
   const eventId = eventThemeId ?? defaultEventThemeId;
-  const preset = colorPresets[presetId] ?? colorPresets[defaultColorPresetId];
-  const event = eventThemes[eventId] ?? eventThemes[defaultEventThemeId];
-  const resolvedEventId = event ? event.id : defaultEventThemeId;
 
-  const eventPresetId = event ? event.colorPresetId : defaultColorPresetId;
-  const eventPreset = colorPresets[eventPresetId] ?? colorPresets[defaultColorPresetId];
-
-  const effectivePreset = resolvedEventId !== 'none' && eventPresetId !== presetId
-    ? eventPreset
-    : preset;
-
-  const lightColors = [...effectivePreset.colors.light];
-  const darkColors = [...effectivePreset.colors.dark];
-
-  if (event && event.accentOverride) {
-    if (event.accentOverride.primaryLight) {
-      lightColors[6] = event.accentOverride.primaryLight;
-    }
-    if (event.accentOverride.primaryDark) {
-      darkColors[7] = event.accentOverride.primaryDark;
-    }
-  }
+  const lightColors = getEffectivePalette(presetId, eventId, 'light');
+  const darkColors = getEffectivePalette(presetId, eventId, 'dark');
 
   const primaryColor = effectivePreset.primaryColor;
 
@@ -131,3 +135,4 @@ export function buildCssVariablesResolver(
     dark: buildColorVariables(darkColors, primaryColor),
   });
 }
+

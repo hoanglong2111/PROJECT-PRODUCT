@@ -11,8 +11,8 @@ export function RiskQueue({ riskRows }: { riskRows: DashboardRiskRow[] }) {
   const { t } = useI18n();
 
   return (
-    <Paper withBorder p="lg" className="metric-card dashboard-card dashboard-risk-card">
-      <Group justify="space-between" mb="md" align="flex-start">
+    <Paper withBorder p="lg" className="metric-card dashboard-card dashboard-risk-card dl-data-panel">
+      <Group justify="space-between" mb="md" align="flex-start" className="dl-data-panel-header">
         <div>
           <Title order={3}>{t('dashboard.riskQueue')}</Title>
           <Text size="sm" c="dimmed">

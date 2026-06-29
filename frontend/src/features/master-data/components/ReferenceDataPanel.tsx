@@ -83,39 +83,42 @@ export function ReferenceDataPanel<T extends { id: string }>({
 
   return (
     <Stack gap="md">
-      <Group justify="space-between" align="end" gap="md">
-        <TextInput
-          label={title}
-          placeholder={searchPlaceholder}
-          leftSection={<IconSearch size={16} />}
-          value={search}
-          onChange={(event) => {
-            setSearch(event.currentTarget.value);
-            setPage(1);
-          }}
-          style={{ flex: 1 }}
-        />
-        {toolbarExtra}
-        <Group gap="xs">
-          {query.isFetching ? <Loader size="sm" /> : null}
-          {canManage ? (
-            <Button leftSection={<IconPlus size={16} />} onClick={onAdd}>
-              {addLabel}
-            </Button>
-          ) : null}
-          <Tooltip label={t('masterData.refresh')}>
-            <ActionIcon
-              aria-label={t('masterData.refresh')}
-              variant="light"
-              onClick={() => {
-                void query.refetch();
-              }}
-            >
-              <IconRefresh size={18} />
-            </ActionIcon>
-          </Tooltip>
+      <Paper withBorder p="md" className="dl-filter-panel">
+        <Group justify="space-between" align="end" gap="md" className="dl-filter-row">
+          <TextInput
+            className="dl-filter-search"
+            label={title}
+            placeholder={searchPlaceholder}
+            leftSection={<IconSearch size={16} />}
+            value={search}
+            onChange={(event) => {
+              setSearch(event.currentTarget.value);
+              setPage(1);
+            }}
+            style={{ flex: 1 }}
+          />
+          {toolbarExtra}
+          <Group gap="xs">
+            {query.isFetching ? <Loader size="sm" /> : null}
+            {canManage ? (
+              <Button leftSection={<IconPlus size={16} />} onClick={onAdd}>
+                {addLabel}
+              </Button>
+            ) : null}
+            <Tooltip label={t('masterData.refresh')}>
+              <ActionIcon
+                aria-label={t('masterData.refresh')}
+                variant="light"
+                onClick={() => {
+                  void query.refetch();
+                }}
+              >
+                <IconRefresh size={18} />
+              </ActionIcon>
+            </Tooltip>
+          </Group>
         </Group>
-      </Group>
+      </Paper>
 
       {query.isError ? (
         <Alert color="red" icon={<IconAlertCircle size={18} />}>
@@ -123,7 +126,7 @@ export function ReferenceDataPanel<T extends { id: string }>({
         </Alert>
       ) : null}
 
-      <Paper withBorder p={0}>
+      <Paper withBorder p={0} className="dl-data-panel">
         {query.isLoading ? (
           <Group justify="center" p="xl">
             <Loader size="sm" />

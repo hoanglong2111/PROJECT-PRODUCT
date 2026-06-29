@@ -13,7 +13,6 @@ import {
   Stack,
   Switch,
   Table,
-  Tabs,
   Text,
   TextInput,
   Tooltip,
@@ -23,6 +22,7 @@ import { IconAlertTriangle, IconChecklist, IconEye, IconSearch, IconTruckDeliver
 import type { BusinessFlowTag, DeliveryOrder } from '@shared/api/logistics';
 import { DelayBadge } from '@shared/components/DelayBadge';
 import { EmptyState } from '@shared/components/EmptyState';
+import { FilterSegment } from '@shared/components/FilterSegment';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { ListPagination, useListPagination } from '@shared/components/ListPagination';
 import { StatusBadge } from '@shared/components/StatusBadge';
@@ -107,35 +107,32 @@ export function DeliveryOrderListView({
         />
       </SimpleGrid>
 
-      <Paper withBorder p="md">
+      <Paper withBorder p="md" className="dl-filter-panel">
         <Stack gap="sm">
-          <Group justify="space-between" align="center" gap="sm" wrap="wrap">
-            <Tabs
-              value={activeTab}
-              onChange={(value) => onTabChange((value as DeliveryOrderTab) ?? 'processing')}
-              variant="pills"
-              radius="xl"
-              className="delivery-order-tabs"
-            >
-              <Tabs.List className="delivery-order-tabs-list">
-                {deliveryOrderTabItems.map((tab) => (
-                  <Tabs.Tab key={tab.value} value={tab.value}>
-                    {t(tab.labelKey)} ({tabCounts[tab.value]})
-                  </Tabs.Tab>
-                ))}
-              </Tabs.List>
-            </Tabs>
-            <Group gap="xs" wrap="nowrap" className="delivery-order-filter-result">
+          <div className="dl-filter-head">
+            <div className="dl-filter-head__control">
+              <FilterSegment
+                ariaLabel={t('common.status')}
+                value={activeTab}
+                onChange={(value) => onTabChange(value as DeliveryOrderTab)}
+                options={deliveryOrderTabItems.map((tab) => ({
+                  value: tab.value,
+                  label: t(tab.labelKey),
+                  count: tabCounts[tab.value],
+                }))}
+              />
+            </div>
+            <div className="dl-filter-result">
               {isFetching ? <Loader size="sm" /> : null}
               <Text size="sm" c="dimmed">
                 {t('common.shown', { count: filteredDeliveryOrders.length })}
               </Text>
-            </Group>
-          </Group>
+            </div>
+          </div>
 
-          <div className="delivery-order-filter-shell">
+          <div className="delivery-order-filter-shell dl-filter-row">
             <TextInput
-              className="delivery-order-filter-search"
+              className="delivery-order-filter-search dl-filter-search"
               label={t('common.search')}
               placeholder={t('deliveryOrders.searchPlaceholder')}
               leftSection={<IconSearch size={16} />}
@@ -163,7 +160,7 @@ export function DeliveryOrderListView({
               clearable
               nothingFoundMessage={t('deliveryOrders.allSuppliers')}
             />
-            <div className="delivery-order-risk-filter">
+            <div className="delivery-order-risk-filter dl-filter-inline-control">
               <Switch
                 checked={riskOnly}
                 onChange={(event) => onRiskOnlyChange(event.currentTarget.checked)}
@@ -183,7 +180,7 @@ export function DeliveryOrderListView({
         </Stack>
       </Paper>
 
-      <Paper withBorder p={0}>
+      <Paper withBorder p={0} className="dl-data-panel">
         <ScrollArea className="data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
           <Table miw={1180} verticalSpacing="sm" highlightOnHover>
             <Table.Thead>
@@ -227,7 +224,7 @@ export function DeliveryOrderListView({
                 return (
                   <Table.Tr key={deliveryOrder.id}>
                     <Table.Td className="table-cell-truncate" style={{ maxWidth: '17rem' }}>
-                      <Text fw={700} lineClamp={1} title={deliveryOrder.order_info.order_number}>
+                      <Text fw={700} lineClamp={1} title={deliveryOrder.order_info.order_number} className="dl-code-text">
                         {deliveryOrder.order_info.order_number}
                       </Text>
                       <Text size="xs" c="dimmed" lineClamp={1}>

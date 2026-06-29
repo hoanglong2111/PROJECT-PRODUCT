@@ -3,6 +3,7 @@ import {
   Badge,
   Button,
   Group,
+  Loader,
   NumberFormatter,
   Paper,
   ScrollArea,
@@ -132,16 +133,26 @@ export function PurchaseOrderListView({
         />
       </SimpleGrid>
 
-      <Paper withBorder p="md" className="purchase-order-filter-panel">
+      <Paper withBorder p="md" className="purchase-order-filter-panel dl-filter-panel">
         <Stack gap="md">
           <Stack gap={6}>
-            <PoStageFilter
-              value={statusFilter}
-              onChange={onStatusFilterChange}
-              stageCounts={stageCounts}
-              subStageCounts={subStageCounts}
-              totalCount={total}
-            />
+            <div className="dl-filter-head">
+              <div className="dl-filter-head__control">
+                <PoStageFilter
+                  value={statusFilter}
+                  onChange={onStatusFilterChange}
+                  stageCounts={stageCounts}
+                  subStageCounts={subStageCounts}
+                  totalCount={total}
+                />
+              </div>
+              <div className="dl-filter-result">
+                {isFetching ? <Loader size="sm" /> : null}
+                <Text size="sm" c="dimmed">
+                  {t('common.shown', { count: total })}
+                </Text>
+              </div>
+            </div>
             {isClientSideStatusFilter ? (
               <Text size="xs" c="dimmed">
                 Stage / status filtering applies to the current page only.
@@ -149,9 +160,9 @@ export function PurchaseOrderListView({
             ) : null}
           </Stack>
 
-          <div className="purchase-order-filter-primary">
+          <div className="purchase-order-filter-primary dl-filter-row">
             <TextInput
-              className="purchase-order-filter-search"
+              className="purchase-order-filter-search dl-filter-search"
               label="Search"
               leftSection={<IconSearch size={16} />}
               placeholder="PO, contract, type, notes"
@@ -168,7 +179,7 @@ export function PurchaseOrderListView({
               clearable
               nothingFoundMessage="No suppliers"
             />
-            <div className="purchase-order-filter-dates">
+            <div className="purchase-order-filter-dates dl-filter-dates">
               <TextInput
                 label="Date from"
                 leftSection={<IconCalendarStats size={16} />}
@@ -184,7 +195,7 @@ export function PurchaseOrderListView({
                 onChange={(event) => onDateToChange(event.currentTarget.value)}
               />
             </div>
-            <Group className="purchase-order-filter-actions" gap="xs" wrap="nowrap">
+            <Group className="purchase-order-filter-actions dl-filter-actions" gap="xs" wrap="nowrap">
               <Button
                 className="purchase-order-filter-clear"
                 variant={hasActiveFilters ? 'light' : 'subtle'}
@@ -208,7 +219,7 @@ export function PurchaseOrderListView({
         </Stack>
       </Paper>
 
-      <Paper withBorder p={0} className="purchase-order-list-panel">
+      <Paper withBorder p={0} className="purchase-order-list-panel dl-data-panel">
         {purchaseOrders.length === 0 ? (
           <div className="purchase-order-list-empty">
             <EmptyState title="No purchase orders" description="Create a PO or adjust the filters." />
@@ -242,7 +253,7 @@ export function PurchaseOrderListView({
                 {purchaseOrders.map((order) => (
                   <Table.Tr key={order.id}>
                     <Table.Td className="table-cell-truncate purchase-order-list-po-cell" style={{ maxWidth: '16rem' }}>
-                      <Text fw={700} lineClamp={1} title={order.po_no}>
+                      <Text fw={700} lineClamp={1} title={order.po_no} className="dl-code-text">
                         {order.po_no}
                       </Text>
                       <Text size="xs" c="dimmed">

@@ -15,6 +15,7 @@ export function NotFound() {
           withBorder
           p={{ base: 'xl', md: 50 }}
           radius="lg"
+          className="dl-data-panel"
           style={{
             position: 'relative',
             overflow: 'hidden',
