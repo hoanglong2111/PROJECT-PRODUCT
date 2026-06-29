@@ -42,6 +42,11 @@ export const shipmentModeOptions: Array<{ labelKey: MessageKey; value: ShipmentM
   { labelKey: 'shipments.modeOther', value: 'OTHER' },
 ];
 
+/** Standard container type codes selectable when declaring a shipment container. */
+export const CONTAINER_TYPE_OPTIONS = ['20GP', '40GP', '40HC', '45HC', '20RF', '40RF', 'LCL'].map(
+  (value) => ({ label: value, value }),
+);
+
 export function inferShipmentModeFromDeliveryOrder(deliveryOrder: DeliveryOrderV1): ShipmentModeV1 {
   const modeType = deliveryOrder.transport_mode?.mode_type?.toUpperCase();
   if (modeType === 'AIR') return 'AIR';
