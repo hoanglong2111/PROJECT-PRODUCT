@@ -50,6 +50,8 @@ export type PurchaseOrderV1 = {
   transport_mode_id: string | null;
   po_type: PurchaseOrderTypeV1 | string | null;
   payment_term: string | null;
+  // Reversed flow: links the PO back to the CONFIRMED quotation it was created from.
+  quotation_id?: string | null;
   exchange_rate: ApiDecimal | null;
   expected_etd: string | null;
   expected_eta: string | null;
@@ -237,6 +239,7 @@ export type CreatePurchaseOrderV1Payload = {
   transport_mode_id?: string | null;
   po_type?: PurchaseOrderTypeV1 | null;
   payment_term?: string | null;
+  quotation_id?: string | null;
   exchange_rate?: number | null;
   expected_etd?: string | null;
   expected_eta?: string | null;

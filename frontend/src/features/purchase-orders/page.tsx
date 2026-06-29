@@ -9,6 +9,7 @@ import {
   type ListPurchaseOrdersParams,
   type PurchaseOrderV1,
 } from '@shared/api/purchaseOrders';
+import { fetchQuotationV1 } from '@shared/api/quotations';
 import { queryKeys } from '@shared/api/queryKeys';
 import {
   fetchSuppliers,
@@ -34,6 +35,8 @@ import { PurchaseOrderListView } from './components/PurchaseOrderListView';
 export function PurchaseOrders() {
   const [searchParams] = useSearchParams();
   const monthParam = searchParams.get('month');
+  const createParam = searchParams.get('create');
+  const fromQuotationId = searchParams.get('fromQuotation');
   const { user } = useAuth();
   const { close: closePoParam, open: openPoParam, value: focusedPo } = useEntityParam('po');
   const [workbench, setWorkbench] = useState<PurchaseOrderWorkbench>('list');
@@ -58,6 +61,21 @@ export function PurchaseOrders() {
       })),
     [suppliersQuery.data?.data],
   );
+
+  // Create-from-quotation: when navigated here with ?create=1&fromQuotation=<id>,
+  // open the create workbench and load the quotation to prefill the PO header.
+  const fromQuotationQuery = useQuery({
+    enabled: Boolean(fromQuotationId),
+    queryKey: queryKeys.quotationDetail(fromQuotationId ?? ''),
+    queryFn: () => fetchQuotationV1(fromQuotationId ?? ''),
+  });
+
+  useEffect(() => {
+    if (createParam === '1') {
+      setSelectedId(null);
+      setWorkbench('create');
+    }
+  }, [createParam, fromQuotationId]);
 
   useEffect(() => {
     setPage(1);
@@ -213,6 +231,7 @@ export function PurchaseOrders() {
       {workbench === 'create' ? (
         <PurchaseOrderForm
           mode="create"
+          quotation={fromQuotationQuery.data}
           onCancel={closeWorkbench}
           onSaved={(order) => {
             setSelectedId(order.id);

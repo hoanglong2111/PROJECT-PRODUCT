@@ -832,7 +832,7 @@ function mapV1Quotation(quotation: QuotationV1, requestCode?: string): Quotation
     quoteAmount: Number.isFinite(quotationTotal) ? quotationTotal : chargeLineTotal,
     quoteNumber: quotation.version > 1 ? `${quotation.quotation_no} v${quotation.version}` : quotation.quotation_no,
     quotationGroupId: quotation.quotation_group_id,
-    requestCode: requestCode ?? quotation.ref_id,
+    requestCode: requestCode ?? quotation.ref_id ?? '',
     shippingMode: inferQuotationShippingMode(quotation),
     status: quotationStatusToUi(quotation.status),
     updatedAt: quotation.update_at,
@@ -1427,7 +1427,7 @@ export async function fetchQuotations() {
   );
 
   return detailedQuotations.map((quotation) =>
-    mapV1Quotation(quotation, deliveryOrderNoById.get(quotation.ref_id)),
+    mapV1Quotation(quotation, deliveryOrderNoById.get(quotation.ref_id ?? '')),
   );
 }
 
