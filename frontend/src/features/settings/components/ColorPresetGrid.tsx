@@ -53,7 +53,7 @@ export function ColorPresetGrid({ colorPreset, eventTheme, onChange, onEventRese
           </Alert>
         )}
 
-        <SimpleGrid cols={{ base: 3, sm: 5, lg: 9 }} spacing="sm">
+        <SimpleGrid cols={{ base: 3, sm: 4, lg: 5 }} spacing="sm">
           {(Object.keys(colorPresets) as ColorPresetId[]).map((presetId) => {
             const preset = colorPresets[presetId];
             const isPresetActive = effectivePresetId === presetId;

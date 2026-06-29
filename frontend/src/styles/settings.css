@@ -120,9 +120,15 @@
   color: var(--kbfe-text-primary);
   text-align: center;
   max-width: 100%;
+  /* Preset/event names (e.g. "Đại dương", "Hổ phách") must stay readable — wrap
+     to a second line instead of truncating to a single letter + ellipsis. */
+  line-height: var(--kbfe-line-height-tight);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .settings-override-dim {

@@ -265,6 +265,11 @@ html {
   --mantine-color-default-border: var(--kbfe-border-primary);
   --mantine-primary-color-filled: var(--kbfe-primary-color);
   --mantine-primary-color-filled-hover: color-mix(in srgb, var(--kbfe-primary-color) 88%, #000000 12%);
+  /* Make filled controls (Button/Badge/Tabs) read OUR per-preset contrast token
+     instead of Mantine's hard default (#fff). Without this, bright primaries —
+     amber/sunset in light, every preset's bright shade in dark — render white
+     label text on a light fill and become unreadable. */
+  --mantine-primary-color-contrast: var(--kbfe-primary-contrast);
   --mantine-spacing-xs: var(--kbfe-space-xs);
   --mantine-spacing-sm: var(--kbfe-space-sm);
   --mantine-spacing-md: var(--kbfe-space-md);
@@ -373,7 +378,9 @@ html[data-kbfe-color-preset='forest'][data-kbfe-resolved-color-scheme='dark'] {
 html[data-kbfe-color-preset='sunset']:not([data-kbfe-resolved-color-scheme='dark']),
 html[data-kbfe-color-preset='sunset'][data-kbfe-resolved-color-scheme='light'] {
   --kbfe-primary-color: #dd6b20;
-  --kbfe-primary-contrast: #ffffff;
+  /* Light sunset is too bright for white label text — use a deep brown (its own
+     darkest shade) so filled-button text reads. */
+  --kbfe-primary-contrast: #4a2410;
 }
 html[data-kbfe-color-preset='sunset'][data-kbfe-resolved-color-scheme='dark'] {
   --kbfe-primary-color: #f6ad55;
@@ -413,7 +420,9 @@ html[data-kbfe-color-preset='rose'][data-kbfe-resolved-color-scheme='dark'] {
 html[data-kbfe-color-preset='amber']:not([data-kbfe-resolved-color-scheme='dark']),
 html[data-kbfe-color-preset='amber'][data-kbfe-resolved-color-scheme='light'] {
   --kbfe-primary-color: #d69e2e;
-  --kbfe-primary-contrast: #ffffff;
+  /* Light amber (gold) + white text is the worst offender (~2:1) — use deep
+     brown so filled-button text reads. */
+  --kbfe-primary-contrast: #4a330a;
 }
 html[data-kbfe-color-preset='amber'][data-kbfe-resolved-color-scheme='dark'] {
   --kbfe-primary-color: #ecc94b;
