@@ -25,6 +25,7 @@ import {
   updateDeliveryOrder,
   updateLogisticsTask,
 } from '@shared/api/logistics';
+import { DateField } from '@shared/components/DateField';
 import { queryKeys } from '@shared/api/queryKeys';
 import { getApiErrorMessage } from '@shared/lib/errors';
 import { findSupplierByCode, useTradeMasterDataOptions } from '@shared/hooks/useTradeMasterDataOptions';
@@ -209,12 +210,12 @@ export function UpdateDeliveryOrderForm({ deliveryOrder }: { deliveryOrder: Deli
               <TextInput label={t('forms.shippingLine')} {...form.getInputProps('shippingLine')} />
               <TextInput label={t('forms.portOfDeparture')} {...form.getInputProps('portOfDeparture')} />
               <TextInput label={t('forms.portOfDestination')} {...form.getInputProps('portOfDestination')} />
-              <TextInput label={t('forms.etdPlanned')} type="date" {...form.getInputProps('etdPlanned')} />
-              <TextInput label={t('forms.etaPlanned')} type="date" {...form.getInputProps('etaPlanned')} />
-              <TextInput label={t('forms.plannedWarehouseEntry')} type="date" {...form.getInputProps('plannedEntryDate')} />
-              <TextInput label={t('forms.actualEntryDate')} type="date" {...form.getInputProps('actualEntryDate')} />
+              <DateField label={t('forms.etdPlanned')} {...form.getInputProps('etdPlanned')} />
+              <DateField label={t('forms.etaPlanned')} {...form.getInputProps('etaPlanned')} />
+              <DateField label={t('forms.plannedWarehouseEntry')} {...form.getInputProps('plannedEntryDate')} />
+              <DateField label={t('forms.actualEntryDate')} {...form.getInputProps('actualEntryDate')} />
               <TextInput label={t('forms.warehouse')} {...form.getInputProps('warehouseCode')} />
-              <TextInput label={t('forms.warehouseDeadline')} type="date" {...form.getInputProps('warehouseDeadline')} />
+              <DateField label={t('forms.warehouseDeadline')} {...form.getInputProps('warehouseDeadline')} />
               <Select label={t('forms.incoterms')} data={incotermOptions} searchable clearable {...form.getInputProps('incoterms')} />
               <TextInput label={t('forms.trackingNumber')} {...form.getInputProps('trackingNumber')} />
               <NumberInput label={t('forms.importTaxRate')} min={0} decimalScale={2} suffix="%" {...form.getInputProps('importTaxRate')} />
@@ -340,7 +341,7 @@ export function UpdateTaskProgressForm({
             <SimpleGrid cols={{ base: 1, sm: 2 }}>
               <NumberInput label={t('tasks.progress')} min={0} max={100} suffix="%" {...form.getInputProps('progress')} />
               <Select label={t('common.status')} data={statusOptions} {...form.getInputProps('status')} />
-              <TextInput label={t('tasks.dueDate')} type="date" {...form.getInputProps('dueDate')} />
+              <DateField label={t('tasks.dueDate')} {...form.getInputProps('dueDate')} />
               <TextInput label={t('tasks.blockedReason')} {...form.getInputProps('blockedReason')} />
             </SimpleGrid>
             <Textarea label={t('common.notes')} minRows={3} {...form.getInputProps('notes')} />

@@ -16,6 +16,12 @@ const baseThemeOptions = {
     fontWeight: '600' as const,
   },
   defaultRadius: 'md',
+  // Auto-pick black/white text on filled controls by luminance, so light status
+  // fills (yellow/teal channel badges, "due today" delay badge, etc.) stop
+  // rendering unreadable white-on-light text. Primary filled text still follows
+  // our explicit --mantine-primary-color-contrast override in theme.css.
+  autoContrast: true,
+  luminanceThreshold: 0.3,
   components: {
     Button: {
       defaultProps: {
@@ -57,8 +63,15 @@ function buildColorVariables(
   result[`--mantine-color-${colorName}-contrast`] = 'var(--kbfe-primary-contrast)';
   result[`--mantine-color-${colorName}-light`] = 'color-mix(in srgb, var(--kbfe-primary-color) 12%, transparent)';
   result[`--mantine-color-${colorName}-light-hover`] = 'color-mix(in srgb, var(--kbfe-primary-color) 18%, transparent)';
-  result[`--mantine-color-${colorName}-light-color`] = 'var(--kbfe-primary-color)';
-  result[`--mantine-color-${colorName}-outline`] = 'var(--kbfe-primary-color)';
+  // Accent TEXT colours (light-variant label, outline label/border). The raw
+  // primary is unreadable as text on a light surface for bright presets
+  // (amber/sunset gold ≈ 2.3:1 — e.g. the active NavLink). Mix toward the theme
+  // text colour so it stays legible in every preset and scheme while keeping the
+  // hue. Filled/tint backgrounds above keep the pure primary.
+  result[`--mantine-color-${colorName}-light-color`] =
+    'color-mix(in srgb, var(--kbfe-primary-color) 68%, var(--kbfe-text-primary))';
+  result[`--mantine-color-${colorName}-outline`] =
+    'color-mix(in srgb, var(--kbfe-primary-color) 68%, var(--kbfe-text-primary))';
   result[`--mantine-color-${colorName}-outline-hover`] = 'color-mix(in srgb, var(--kbfe-primary-color) 8%, transparent)';
 
   return result;

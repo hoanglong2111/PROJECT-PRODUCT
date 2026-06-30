@@ -24,6 +24,7 @@ import {
   releaseCarrierDeliveryOrder,
   type CarrierDeliveryOrderV1,
 } from '@shared/api/carrierDeliveryOrders';
+import { DateField } from '@shared/components/DateField';
 import type { ShipmentRecord } from '@shared/api/logistics';
 import { queryKeys } from '@shared/api/queryKeys';
 import { fetchSuppliers } from '@shared/api/tradeMasterData';
@@ -142,19 +143,17 @@ export function ShipmentCarrierDoPanel({ shipment }: { shipment: ShipmentRecord 
               disabled={!isCleared}
               onChange={(event) => setContainerNo(event.currentTarget.value)}
             />
-            <TextInput
+            <DateField
               label={t('shipments.issuedDate')}
-              type="date"
               value={issuedDate}
               disabled={!isCleared}
-              onChange={(event) => setIssuedDate(event.currentTarget.value)}
+              onChange={(value) => setIssuedDate(value ?? '')}
             />
-            <TextInput
+            <DateField
               label={t('shipments.expiredDate')}
-              type="date"
               value={expiredDate}
               disabled={!isCleared}
-              onChange={(event) => setExpiredDate(event.currentTarget.value)}
+              onChange={(value) => setExpiredDate(value ?? '')}
             />
             <TextInput
               label={<HeaderLabel label={t('shipments.localChargeVnd')} hint={t('glossary.localCharges')} />}

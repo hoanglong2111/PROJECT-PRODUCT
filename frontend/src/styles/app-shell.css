@@ -46,6 +46,15 @@
   background: var(--kbfe-hover-background);
 }
 
+/* User avatar initials: reflect the active palette but stay readable — primary
+   fill + its matching contrast ink. Mantine's default muted gray went dark-on-
+   dark with slate / other dark presets (the initials nearly vanished). */
+.profile-trigger .mantine-Avatar-placeholder {
+  background: var(--kbfe-primary-color);
+  color: var(--kbfe-primary-contrast);
+  font-weight: 600;
+}
+
 .profile-meta {
   max-width: 11rem;
 }

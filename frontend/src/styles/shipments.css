@@ -5,6 +5,30 @@
   min-width: 0;
 }
 
+.shipment-filter-toolbar .dl-chip-row {
+  width: fit-content;
+  max-width: 100%;
+  padding-block: 0.125rem;
+  margin-block: -0.125rem;
+  overflow-x: auto;
+}
+
+.shipment-filter-toolbar .dl-chip-row.is-fill .dl-chip {
+  flex: 0 0 auto;
+  justify-content: flex-start;
+}
+
+.shipment-filter-toolbar .dl-chip {
+  min-height: 1.875rem;
+  padding-block: 0.25rem;
+  padding-inline: 0.5rem;
+  line-height: 1.1;
+}
+
+.shipment-filter-toolbar .dl-chip-count {
+  height: 0.875rem;
+}
+
 .shipment-create-panel {
   overflow: hidden;
   border-color: var(--kbfe-border-primary) !important;
@@ -142,6 +166,23 @@
   overflow: hidden;
   background: var(--kbfe-surface-elevated);
   border-color: var(--kbfe-border-primary);
+}
+
+.shipment-detail-tabs-list {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.shipment-detail-tabs-list::-webkit-scrollbar {
+  display: none;
+}
+
+.shipment-detail-tabs-tab {
+  min-height: 1.875rem;
+  padding-block: 0.25rem;
+  padding-inline: 0.625rem;
+  line-height: 1;
 }
 
 .shipment-detail-header {

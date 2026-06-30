@@ -2168,7 +2168,7 @@ export const vi: Record<MessageKey, string> = {
   'efms.totalNotes': '{count} note',
   'efms.openDo': 'Mở bảng Lô hàng',
 
-  'quotations.title': 'Báo giá',
+  'quotations.title': 'Báo giá (RFQ)',
   'quotations.subtitle': 'Theo dõi SLA báo giá sơ bộ/chính thức, phê duyệt và booking.',
   'quotations.create': 'Tạo báo giá',
   'quotations.createTitle': 'Tạo báo giá',
@@ -3266,7 +3266,7 @@ export const vi: Record<MessageKey, string> = {
   'shell.logout': 'Đăng xuất',
   'shell.profile': 'Hồ sơ',
   'shell.purchaseOrders': 'Đơn mua hàng (PO)',
-  'shell.quotations': 'Báo giá',
+  'shell.quotations': 'Báo giá (RFQ)',
   'shell.refresh': 'Làm mới dữ liệu workspace',
   'shell.settings': 'Cài đặt',
   'shell.tasks': 'Công việc',

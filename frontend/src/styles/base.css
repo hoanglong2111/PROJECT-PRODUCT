@@ -71,6 +71,14 @@ html[data-kbfe-resolved-color-scheme='dark'] .mantine-NavLink-root[data-active]:
   background-color: color-mix(in srgb, var(--mantine-primary-color-filled) 24%, transparent) !important;
 }
 
+/* Active NavLink in light mode: tint background + an INK label (primary mixed
+   toward text). Mantine's default colours the label with the raw primary, which
+   is unreadable for bright presets (amber/sunset gold ≈ 2.4:1). */
+html[data-kbfe-resolved-color-scheme='light'] .mantine-NavLink-root[data-active] {
+  background-color: color-mix(in srgb, var(--mantine-primary-color-filled) 12%, transparent) !important;
+  color: color-mix(in srgb, var(--mantine-primary-color-filled) 64%, var(--kbfe-text-primary)) !important;
+}
+
 /* Focus ring accessibility */
 :focus-visible {
   outline: 2px solid var(--kbfe-primary-color) !important;

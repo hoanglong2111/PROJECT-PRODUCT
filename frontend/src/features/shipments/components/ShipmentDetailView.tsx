@@ -81,7 +81,14 @@ export function ShipmentDetailView({
         </Group>
       </Paper>
 
-      <Tabs defaultValue="overview">
+      <Tabs
+        defaultValue="overview"
+        className="shipment-detail-tabs"
+        classNames={{
+          list: 'shipment-detail-tabs-list',
+          tab: 'shipment-detail-tabs-tab',
+        }}
+      >
         <Tabs.List>
           <Tabs.Tab value="overview" leftSection={<IconAnchor size={14} />}>
             {t('shipments.overview')}
@@ -112,11 +119,11 @@ export function ShipmentDetailView({
           </Tabs.Tab>
         </Tabs.List>
 
-        <Tabs.Panel value="overview" pt="md">
+        <Tabs.Panel value="overview" pt="sm">
           <ShipmentOverviewCard shipment={shipment} t={t} />
         </Tabs.Panel>
 
-        <Tabs.Panel value="milestones" pt="md">
+        <Tabs.Panel value="milestones" pt="sm">
           <ShipmentMilestonesPanel
             shipment={shipment}
             isSaving={isMilestoneSaving}
@@ -125,7 +132,7 @@ export function ShipmentDetailView({
           />
         </Tabs.Panel>
 
-        <Tabs.Panel value="documents" pt="md">
+        <Tabs.Panel value="documents" pt="sm">
           <ShipmentDocumentsPanel
             shipment={shipment}
             isSaving={isDocumentSaving}
@@ -135,15 +142,15 @@ export function ShipmentDetailView({
           />
         </Tabs.Panel>
 
-        <Tabs.Panel value="containers" pt="md">
+        <Tabs.Panel value="containers" pt="sm">
           <ShipmentContainersPanel shipment={shipment} />
         </Tabs.Panel>
 
-        <Tabs.Panel value="customs" pt="md">
+        <Tabs.Panel value="customs" pt="sm">
           <ShipmentCustomsPanel shipment={shipment} />
         </Tabs.Panel>
 
-        <Tabs.Panel value="costs" pt="md">
+        <Tabs.Panel value="costs" pt="sm">
           <ShipmentCostsPanel
             shipment={shipment}
             isSaving={isCostSaving}
@@ -154,15 +161,15 @@ export function ShipmentDetailView({
           />
         </Tabs.Panel>
 
-        <Tabs.Panel value="tasks" pt="md">
+        <Tabs.Panel value="tasks" pt="sm">
           <ShipmentTasksPanel tasks={shipment.po_tasks} />
         </Tabs.Panel>
 
-        <Tabs.Panel value="carrier-do" pt="md">
+        <Tabs.Panel value="carrier-do" pt="sm">
           <ShipmentCarrierDoPanel shipment={shipment} />
         </Tabs.Panel>
 
-        <Tabs.Panel value="dtos" pt="md">
+        <Tabs.Panel value="dtos" pt="sm">
           <ShipmentDtosPanel shipment={shipment} />
         </Tabs.Panel>
       </Tabs>

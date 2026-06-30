@@ -13,6 +13,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { IconAnchor, IconCheck, IconClock, IconPlus, IconShield, IconX } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 
+import { DateField } from '@shared/components/DateField';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
 import { fetchShipments, createShipment } from '@shared/api/logistics';
 import { fetchDeliveryOrdersV1 } from '@shared/api/deliveryOrders';
@@ -348,7 +349,7 @@ export function Shipments() {
             </Text>
           </div>
           <Group gap="xs" className="dl-page-actions">
-            <Button onClick={openCreate} leftSection={<IconPlus size={16} />} variant="light">
+            <Button onClick={openCreate} leftSection={<IconPlus size={16} />}>
               {t('shipments.create')}
             </Button>
           </Group>
@@ -392,7 +393,7 @@ export function Shipments() {
                 </Button>
                 <Button
                   onClick={handleCreateShipment}
-                  leftSection={<IconAnchor size={16} />}
+                  leftSection={<IconPlus size={16} />}
                   disabled={!newDeliveryOrderId}
                   loading={createMutation.isPending}
                 >
@@ -477,17 +478,15 @@ export function Shipments() {
                     value={newDestPort}
                     onChange={(e) => setNewDestPort(e.currentTarget.value)}
                   />
-                  <TextInput
+                  <DateField
                     label={t('shipments.etd')}
-                    type="date"
                     value={newEtd}
-                    onChange={(e) => setNewEtd(e.currentTarget.value)}
+                    onChange={(value) => setNewEtd(value ?? '')}
                   />
-                  <TextInput
+                  <DateField
                     label={t('shipments.eta')}
-                    type="date"
                     value={newEta}
-                    onChange={(e) => setNewEta(e.currentTarget.value)}
+                    onChange={(value) => setNewEta(value ?? '')}
                   />
                 </SimpleGrid>
               </div>

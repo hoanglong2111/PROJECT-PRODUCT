@@ -2,6 +2,7 @@ import { Badge, Button, Group, Paper, Progress, Stack, Text, TextInput, ThemeIco
 import { IconCircleCheckFilled, IconCircleDot, IconClockHour4, IconRoute } from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
 
+import { DateField } from '@shared/components/DateField';
 import type { ShipmentRecord } from '@shared/api/logistics';
 import type { ShipmentMilestoneCodeV1 } from '@shared/api/shipments';
 
@@ -333,11 +334,10 @@ export function ShipmentMilestonesPanel({
 
                         {isEditing ? (
                           <Stack gap="xs" className="shipment-milestone-editor">
-                            <TextInput
+                            <DateField
                               label={t('shipments.actualDate')}
-                              type="date"
                               value={milestoneDate}
-                              onChange={(event) => setMilestoneDate(event.currentTarget.value)}
+                              onChange={(value) => setMilestoneDate(value ?? '')}
                               size="xs"
                             />
                             <TextInput

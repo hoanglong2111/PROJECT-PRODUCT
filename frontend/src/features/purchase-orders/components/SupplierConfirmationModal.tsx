@@ -24,6 +24,7 @@ import {
   type ConfirmPurchaseOrderPayload,
   type PurchaseOrderV1,
 } from '@shared/api/purchaseOrders';
+import { DateField } from '@shared/components/DateField';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { useI18n } from '@shared/i18n';
 import { getApiErrorMessage } from '@shared/lib/errors';
@@ -158,14 +159,12 @@ export function SupplierConfirmationModal({
                       />
                     </Table.Td>
                     <Table.Td>
-                      <TextInput
-                        type="date"
+                      <DateField
                         value={lineDraft?.cargo_ready_date ?? ''}
-                        onChange={(event) => {
-                          const { value } = event.currentTarget;
+                        onChange={(value) => {
                           setLineDrafts((current) => ({
                             ...current,
-                            [line.id]: { ...current[line.id], cargo_ready_date: value },
+                            [line.id]: { ...current[line.id], cargo_ready_date: value ?? '' },
                           }));
                         }}
                       />

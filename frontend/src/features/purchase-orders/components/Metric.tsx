@@ -19,7 +19,12 @@ export function Metric({
           <Text className="metric-label" size="xs" fw={700} lts="0.05em" tt="uppercase" mb={4}>
             {label}
           </Text>
-          <Title order={1} fw={800} c={color} style={{ lineHeight: 1.1 }} title={String(value)}>
+          <Title
+            order={1}
+            fw={800}
+            style={{ lineHeight: 1.1, color: `var(--kbfe-status-${color}, var(--mantine-color-${color}-7))` }}
+            title={String(value)}
+          >
             {typeof value === 'number' ? <NumberFormatter value={value} thousandSeparator /> : value || '-'}
           </Title>
         </div>

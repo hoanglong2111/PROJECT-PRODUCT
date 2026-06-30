@@ -1,0 +1,122 @@
+/* Themed calendar for the shared <DateField> (Mantine DateInput).
+   The popover/calendar is portaled to <body>, so these rules target the global
+   Mantine date class names directly rather than scoping under the input wrapper.
+   All colors come from the eye-comfort --kbfe-* tokens (theme-aware, no pure black/white). */
+
+/* --- Calendar surface ------------------------------------------------------ */
+.mantine-DateInput-calendar {
+  padding: var(--kbfe-space-xs, 0.5rem);
+  background: var(--kbfe-surface-elevated);
+  border-radius: 0.75rem;
+}
+
+/* The popover shell that wraps the calendar */
+.mantine-Popover-dropdown:has(.mantine-DateInput-calendar) {
+  padding: 0.35rem;
+  background: var(--kbfe-surface-elevated);
+  border: 1px solid var(--kbfe-border-primary);
+  border-radius: 0.85rem;
+  box-shadow: var(--kbfe-shadow-md);
+}
+
+/* --- Header (month/year label + nav arrows) -------------------------------- */
+.mantine-DateInput-calendarHeaderLevel {
+  font-weight: var(--kbfe-font-weight-semibold, 600);
+  color: var(--kbfe-text-primary);
+  border-radius: 0.5rem;
+  transition: background-color 120ms ease;
+}
+
+.mantine-DateInput-calendarHeaderLevel:hover {
+  background: var(--kbfe-hover-background);
+}
+
+.mantine-DateInput-calendarHeaderControl {
+  color: var(--kbfe-text-secondary);
+  border-radius: 0.5rem;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.mantine-DateInput-calendarHeaderControl:hover {
+  background: var(--kbfe-hover-background);
+  color: var(--kbfe-text-primary);
+}
+
+/* --- Weekday header row ----------------------------------------------------- */
+.mantine-DateInput-weekday {
+  color: var(--kbfe-text-secondary);
+  font-size: var(--kbfe-font-size-xs, 0.75rem);
+  font-weight: var(--kbfe-font-weight-semibold, 600);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* --- Day cells -------------------------------------------------------------- */
+.mantine-DateInput-day {
+  border-radius: 0.5rem;
+  color: var(--kbfe-text-primary);
+  transition: background-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
+}
+
+.mantine-DateInput-day:hover:not([data-selected]):not([data-disabled]) {
+  background: var(--kbfe-row-hover-background, var(--kbfe-hover-background));
+}
+
+/* Today — subtle accent ring, distinct from selection */
+.mantine-DateInput-day[data-today]:not([data-selected]) {
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--kbfe-primary-color) 45%, transparent);
+  font-weight: var(--kbfe-font-weight-semibold, 600);
+}
+
+/* Selected day — filled primary with readable contrast */
+.mantine-DateInput-day[data-selected] {
+  background: var(--kbfe-primary-color);
+  color: var(--kbfe-primary-contrast);
+  font-weight: var(--kbfe-font-weight-semibold, 600);
+}
+
+.mantine-DateInput-day[data-selected]:hover {
+  background: color-mix(in srgb, var(--kbfe-primary-color) 88%, black);
+}
+
+/* Outside-month + disabled — dimmed */
+.mantine-DateInput-day[data-outside] {
+  color: var(--kbfe-text-secondary);
+  opacity: 0.55;
+}
+
+.mantine-DateInput-day[data-disabled] {
+  color: var(--kbfe-text-secondary);
+  opacity: 0.4;
+}
+
+.mantine-DateInput-day[data-weekend]:not([data-selected]):not([data-outside]) {
+  color: var(--kbfe-status-red, var(--kbfe-text-primary));
+}
+
+/* Keyboard focus ring */
+.mantine-DateInput-day:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--kbfe-primary-color) 55%, transparent);
+}
+
+/* --- Month / year / decade level cells ------------------------------------- */
+.mantine-DateInput-monthsListControl,
+.mantine-DateInput-yearsListControl {
+  border-radius: 0.5rem;
+  color: var(--kbfe-text-primary);
+  transition: background-color 120ms ease;
+}
+
+.mantine-DateInput-monthsListControl:hover,
+.mantine-DateInput-yearsListControl:hover {
+  background: var(--kbfe-hover-background);
+}
+
+.mantine-DateInput-monthsListControl[data-selected],
+.mantine-DateInput-yearsListControl[data-selected] {
+  background: var(--kbfe-primary-color);
+  color: var(--kbfe-primary-contrast);
+}

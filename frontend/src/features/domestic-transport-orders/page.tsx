@@ -3,10 +3,9 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import {
   IconCircleCheck,
   IconClipboardList,
-  IconRefresh,
+  IconPlus,
   IconRoute,
   IconSearch,
-  IconTruck,
   IconTruckDelivery,
   IconX,
 } from '@tabler/icons-react';
@@ -255,19 +254,11 @@ export function DomesticTransportOrders() {
           </div>
           <Group gap="xs" className="dto-page-actions dl-page-actions">
             <Button
-              leftSection={<IconTruck size={16} />}
+              leftSection={<IconPlus size={16} />}
               disabled={!selectedShipment || availableShipmentsQuery.isLoading}
               onClick={() => setDtoModalOpen(true)}
             >
               {t('domesticTransportOrders.create')}
-            </Button>
-            <Button
-              leftSection={<IconRefresh size={16} />}
-              variant="light"
-              loading={ordersQuery.isFetching}
-              onClick={() => void ordersQuery.refetch()}
-            >
-              {t('domesticTransportOrders.refresh')}
             </Button>
           </Group>
         </Group>

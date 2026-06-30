@@ -251,9 +251,6 @@ export function PurchaseOrders() {
           isClientSideStatusFilter={Boolean(statusFilterRoute.clientStageFilter)}
           isFetching={purchaseOrdersQuery.isFetching}
           onOpenDetail={openDetail}
-          onRefresh={() => {
-            void purchaseOrdersQuery.refetch();
-          }}
           page={page}
           pageCount={pagination?.totalPages ?? 1}
           purchaseOrderSummary={purchaseOrderSummary}

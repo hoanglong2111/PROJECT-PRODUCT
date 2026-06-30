@@ -1,5 +1,4 @@
 import {
-  ActionIcon,
   AppShell,
   Avatar,
   Burger,
@@ -7,7 +6,6 @@ import {
   Menu,
   NavLink,
   Text,
-  Tooltip,
   UnstyledButton,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
@@ -20,7 +18,6 @@ import {
   IconGitBranch,
   IconLayoutDashboard,
   IconLogout,
-  IconRefresh,
   IconSettings,
   IconShip,
   IconShoppingCart,
@@ -34,8 +31,6 @@ import { Link, NavLink as RouterNavLink, Outlet, useLocation } from 'react-route
 import { type AppRole } from '@shared/auth/types';
 import { useAuth } from '@shared/auth/useAuth';
 import { useI18n } from '@shared/i18n';
-import { queryKeys } from '@shared/api/queryKeys';
-import { queryClient } from '@shared/queryClient';
 import { GlobalSearch } from './GlobalSearch';
 import { RouteErrorBoundary } from './PageFeedback';
 
@@ -148,28 +143,6 @@ export function AppShellLayout() {
           <GlobalSearch />
 
           <Group gap="xs" wrap="nowrap">
-            <Tooltip label={t('shell.refresh')}>
-              <ActionIcon
-                variant="subtle"
-                color="gray"
-                aria-label={t('shell.refresh')}
-                onClick={() =>
-                  void Promise.all([
-                    queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats }),
-                    queryClient.invalidateQueries({ queryKey: queryKeys.purchaseOrders }),
-                    queryClient.invalidateQueries({ queryKey: queryKeys.deliveryOrders }),
-                    queryClient.invalidateQueries({ queryKey: queryKeys.domesticTransportOrders }),
-                    queryClient.invalidateQueries({ queryKey: queryKeys.shipments }),
-                    queryClient.invalidateQueries({ queryKey: queryKeys.masterData }),
-                    queryClient.invalidateQueries({ queryKey: queryKeys.tasks }),
-                    queryClient.invalidateQueries({ queryKey: queryKeys.globalSearch }),
-                    queryClient.invalidateQueries({ queryKey: queryKeys.users }),
-                  ])
-                }
-              >
-                <IconRefresh size={18} />
-              </ActionIcon>
-            </Tooltip>
             {user ? (
               <Menu shadow="md" width={280} position="bottom-end">
                 <Menu.Target>

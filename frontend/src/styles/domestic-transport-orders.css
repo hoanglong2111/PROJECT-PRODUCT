@@ -77,7 +77,6 @@
 
 .dto-metric-card {
   --dto-accent: var(--kbfe-primary-color);
-  min-height: 7.5rem;
   /* Matches the shared flat .metric-card chrome (clean elevated surface + neutral
      border). DTO identity is kept only as a faint accent border plus the
      accent-coloured icon + value below — no gradient wash. */
@@ -106,7 +105,10 @@
 }
 
 .dto-metric-value {
-  color: var(--dto-accent) !important;
+  /* Keep the accent hue but mix toward text so the big number stays readable on
+     the card surface (raw shade-6 cyan/blue is too light on white). Theme-aware:
+     darkens in light mode, lightens in dark mode. */
+  color: color-mix(in srgb, var(--dto-accent) 72%, var(--kbfe-text-primary)) !important;
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
 }

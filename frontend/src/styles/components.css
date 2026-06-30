@@ -428,12 +428,17 @@ html[data-kbfe-visual-theme='high-contrast'] .dl-filter-panel .mantine-Select-in
 
 .dl-chip.is-active {
   --dl-chip: var(--chip-color, var(--kbfe-primary-color));
+  /* Readable "ink" = the chip hue mixed toward the theme text colour. Using the
+     raw hue as label text fails for light primaries (amber/yellow → light-on-
+     light) and is muted for dark ones (slate). The mix keeps the hue but is
+     always legible on the 10% tint, in both light and dark schemes. */
+  --dl-chip-ink: color-mix(in srgb, var(--dl-chip) 62%, var(--kbfe-text-primary));
   background: color-mix(in srgb, var(--dl-chip) 10%, var(--kbfe-surface-elevated)) !important;
   border-color: color-mix(in srgb, var(--dl-chip) 72%, var(--kbfe-border-primary)) !important;
   box-shadow:
     inset 0 0 0 1px color-mix(in srgb, var(--dl-chip) 16%, transparent),
     inset 0 -2px 0 var(--dl-chip);
-  color: var(--dl-chip) !important;
+  color: var(--dl-chip-ink) !important;
 }
 
 .dl-chip-dot {
@@ -467,7 +472,7 @@ html[data-kbfe-visual-theme='high-contrast'] .dl-filter-panel .mantine-Select-in
 
 .dl-chip.is-active .dl-chip-count {
   background: color-mix(in srgb, var(--chip-color, var(--kbfe-primary-color)) 16%, var(--kbfe-surface-elevated));
-  color: var(--chip-color, var(--kbfe-primary-color));
+  color: var(--dl-chip-ink, var(--chip-color, var(--kbfe-primary-color)));
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--chip-color, var(--kbfe-primary-color)) 18%, transparent);
 }
 

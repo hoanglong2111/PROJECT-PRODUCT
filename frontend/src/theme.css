@@ -259,6 +259,10 @@ html {
   --kbfe-status-yellow-bg: color-mix(in srgb, var(--mantine-color-yellow-5) 12%, var(--kbfe-surface-elevated));
   --kbfe-status-red: color-mix(in srgb, var(--mantine-color-red-6) 74%, var(--kbfe-text-primary));
   --kbfe-status-red-bg: color-mix(in srgb, var(--mantine-color-red-6) 10%, var(--kbfe-surface-elevated));
+  --kbfe-status-cyan: color-mix(in srgb, var(--mantine-color-cyan-7) 72%, var(--kbfe-text-primary));
+  --kbfe-status-cyan-bg: color-mix(in srgb, var(--mantine-color-cyan-6) 10%, var(--kbfe-surface-elevated));
+  --kbfe-status-gray: color-mix(in srgb, var(--mantine-color-gray-7) 80%, var(--kbfe-text-primary));
+  --kbfe-status-gray-bg: color-mix(in srgb, var(--mantine-color-gray-6) 10%, var(--kbfe-surface-elevated));
   --mantine-color-body: var(--kbfe-background-primary);
   --mantine-color-text: var(--kbfe-text-primary);
   --mantine-color-default: var(--kbfe-background-secondary);
@@ -320,6 +324,10 @@ html[data-kbfe-visual-theme='high-contrast'] {
   --kbfe-status-yellow-bg: var(--kbfe-surface-elevated);
   --kbfe-status-red: var(--kbfe-text-primary);
   --kbfe-status-red-bg: var(--kbfe-surface-elevated);
+  --kbfe-status-cyan: var(--kbfe-text-primary);
+  --kbfe-status-cyan-bg: var(--kbfe-surface-elevated);
+  --kbfe-status-gray: var(--kbfe-text-primary);
+  --kbfe-status-gray-bg: var(--kbfe-surface-elevated);
 }
 
 html[data-kbfe-density='compact'] {

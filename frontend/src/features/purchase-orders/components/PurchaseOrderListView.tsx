@@ -22,12 +22,12 @@ import {
   IconCircleCheck,
   IconContainer,
   IconEye,
-  IconRefresh,
   IconSearch,
   IconX,
 } from '@tabler/icons-react';
 
 import type { PurchaseOrderV1 } from '@shared/api/purchaseOrders';
+import { DateField } from '@shared/components/DateField';
 import { EmptyState } from '@shared/components/EmptyState';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { ListPagination } from '@shared/components/ListPagination';
@@ -50,7 +50,6 @@ export function PurchaseOrderListView({
   isClientSideStatusFilter,
   isFetching,
   onOpenDetail,
-  onRefresh,
   page,
   pageCount,
   purchaseOrderSummary,
@@ -65,7 +64,6 @@ export function PurchaseOrderListView({
   isClientSideStatusFilter: boolean;
   isFetching: boolean;
   onOpenDetail: (order: PurchaseOrderV1) => void;
-  onRefresh: () => void;
   page: number;
   pageCount: number;
   purchaseOrderSummary: { totalWeightKg: number; totalContainers: number; totalLots: number };
@@ -180,19 +178,17 @@ export function PurchaseOrderListView({
               nothingFoundMessage="No suppliers"
             />
             <div className="purchase-order-filter-dates dl-filter-dates">
-              <TextInput
+              <DateField
                 label="Date from"
                 leftSection={<IconCalendarStats size={16} />}
-                type="date"
                 value={dateFrom}
-                onChange={(event) => onDateFromChange(event.currentTarget.value)}
+                onChange={(value) => onDateFromChange(value ?? '')}
               />
-              <TextInput
+              <DateField
                 label="Date to"
                 leftSection={<IconCalendarStats size={16} />}
-                type="date"
                 value={dateTo}
-                onChange={(event) => onDateToChange(event.currentTarget.value)}
+                onChange={(value) => onDateToChange(value ?? '')}
               />
             </div>
             <Group className="purchase-order-filter-actions dl-filter-actions" gap="xs" wrap="nowrap">
@@ -204,15 +200,6 @@ export function PurchaseOrderListView({
                 disabled={!hasActiveFilters}
               >
                 Clear
-              </Button>
-              <Button
-                className="purchase-order-filter-refresh"
-                variant="light"
-                leftSection={<IconRefresh size={16} />}
-                loading={isFetching}
-                onClick={onRefresh}
-              >
-                Refresh
               </Button>
             </Group>
           </div>
