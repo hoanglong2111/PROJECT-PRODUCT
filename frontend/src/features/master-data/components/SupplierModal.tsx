@@ -64,6 +64,14 @@ const supplierTypeOptions = [
   { label: 'DOMESTIC', value: 'DOMESTIC' },
 ];
 
+const paymentTermOptions = [
+  { label: 'NET30', value: 'NET30' },
+  { label: 'NET45', value: 'NET45' },
+  { label: 'NET60', value: 'NET60' },
+  { label: 'TT_ADVANCE', value: 'TT_ADVANCE' },
+  { label: 'LC', value: 'LC' },
+];
+
 function hintedLabel(label: string, hint: string) {
   return (
     <Group gap={4} component="span" wrap="nowrap">
@@ -229,9 +237,13 @@ export function SupplierModal({
           <TextInput label={t('masterData.contactPerson')} {...form.getInputProps('contactPerson')} />
           <TextInput label={t('masterData.contactEmail')} {...form.getInputProps('contactEmail')} />
           <TextInput label={t('masterData.contactPhone')} {...form.getInputProps('contactPhone')} />
-          <TextInput
+          <Select
             label={hintedLabel(t('masterData.paymentTerm'), t('glossary.paymentTerm'))}
-            {...form.getInputProps('paymentTerm')}
+            data={paymentTermOptions}
+            value={form.values.paymentTerm || null}
+            onChange={(value) => form.setFieldValue('paymentTerm', value || '')}
+            searchable
+            clearable
           />
           <Select
             label={t('masterData.defaultCurrency')}

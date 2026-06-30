@@ -4,6 +4,7 @@ import type {
   ItemTaxProfile,
   UpdateItemPayload,
 } from '@shared/api/items';
+import type { ChargeCodePayload } from '@shared/api/chargeCodes';
 import type {
   CurrencyPayload,
   IncotermPayload,
@@ -12,6 +13,7 @@ import type {
 } from '@shared/api/tradeMasterData';
 import type { CarrierPayload, ForwarderPayload } from '@shared/api/forwarders';
 import type { DepartmentCode, MilestoneCode, TaskTemplatePayload } from '@shared/api/taskTemplates';
+import type { UomPayload } from '@shared/api/uoms';
 
 export type SaveItemGroupInput = {
   id?: string;
@@ -53,6 +55,25 @@ export type SaveTransportModeInput = {
     mode_code: string;
     mode_name: string;
     mode_type: string;
+  };
+};
+
+export type SaveChargeCodeInput = {
+  id?: string;
+  payload: ChargeCodePayload & {
+    charge_code: string;
+    charge_name_en: string;
+    category: string;
+    default_uom: string;
+  };
+};
+
+export type SaveUomInput = {
+  id?: string;
+  payload: UomPayload & {
+    uom_code: string;
+    uom_name_en: string;
+    category: string;
   };
 };
 

@@ -81,7 +81,7 @@ const emptyProfileForm: ProfileForm = {
 
 export function Profile() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { updateEmail, updatePassword, updateProfile, user } = useAuth();
+  const { can, updateEmail, updatePassword, updateProfile, user } = useAuth();
   const { departmentLabel, roleLabel, t } = useI18n();
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -117,12 +117,12 @@ export function Profile() {
   const preferredModuleOptions = useMemo(
     () =>
       user
-        ? getAllowedWorkspaceModules(user).map((module) => ({
+        ? getAllowedWorkspaceModules(can).map((module) => ({
           label: t(module.labelKey),
           value: module.path,
         }))
         : [],
-    [t, user],
+    [can, t, user],
   );
   const departmentOptions = useMemo(() => {
     const values = user?.department && !knownDepartments.includes(user.department)

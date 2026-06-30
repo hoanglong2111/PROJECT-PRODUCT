@@ -31,6 +31,7 @@ export function ReferenceDataPanel<T extends { id: string }>({
   onAdd,
   onDelete,
   onEdit,
+  pageSize = LIST_PAGE_SIZE,
   queryKey,
   searchPlaceholder,
   title,
@@ -46,6 +47,8 @@ export function ReferenceDataPanel<T extends { id: string }>({
   onAdd: () => void;
   onDelete: (record: T) => void;
   onEdit: (record: T) => void;
+  /** Server fetch page size. Pass a large value to load all rows when using clientFilter. */
+  pageSize?: number;
   queryKey: (params: Record<string, unknown>) => readonly unknown[];
   searchPlaceholder: string;
   title: string;
@@ -57,10 +60,10 @@ export function ReferenceDataPanel<T extends { id: string }>({
   const params = useMemo(
     () => ({
       page,
-      limit: LIST_PAGE_SIZE,
+      limit: pageSize,
       search: optionalString(search),
     }),
-    [page, search],
+    [page, pageSize, search],
   );
 
   const query = useQuery({
@@ -72,8 +75,8 @@ export function ReferenceDataPanel<T extends { id: string }>({
   const records = clientFilter ? allRecords.filter(clientFilter) : allRecords;
   const total = clientFilter ? records.length : (query.data?.total ?? 0);
   const pageCount = clientFilter ? 1 : Math.max(1, query.data?.pagination.totalPages ?? 1);
-  const pageStart = total === 0 ? 0 : (page - 1) * LIST_PAGE_SIZE + 1;
-  const pageEnd = Math.min(total, page * LIST_PAGE_SIZE);
+  const pageStart = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const pageEnd = Math.min(total, page * pageSize);
 
   useEffect(() => {
     if (page > pageCount) {

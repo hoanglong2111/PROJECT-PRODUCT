@@ -1,41 +1,84 @@
-import type { AppRole, AuthUser } from '@shared/auth/types';
+import {
+  IconChecklist,
+  IconFileInvoice,
+  IconFileText,
+  IconLayoutDashboard,
+  IconShip,
+  IconShoppingCart,
+  IconTruck,
+  IconTruckDelivery,
+} from '@tabler/icons-react';
+import type { ComponentType } from 'react';
+
+import { canUserAccessCapability } from '@shared/auth/accessPolicy';
+import type { Capability } from '@shared/auth/capabilities';
+import type { AuthUser } from '@shared/auth/types';
 import type { MessageKey } from '@shared/i18n';
 
 export type WorkspaceModule = {
+  capability: Capability;
+  icon: ComponentType<{ size?: number | string; stroke?: number | string }>;
   labelKey: MessageKey;
   path: string;
-  roles?: readonly AppRole[];
 };
 
+type CanCapability = (capability: Capability) => boolean;
+
 export const workspaceModules = [
-  { labelKey: 'shell.dashboard', path: '/' },
-  { labelKey: 'shell.quotations', path: '/quotations', roles: ['ADMIN', 'PIC_MANAGER', 'SALE_STAFF', 'FINANCE_OFFICER'] },
-  { labelKey: 'shell.purchaseOrders', path: '/purchase-orders', roles: ['ADMIN', 'PIC_MANAGER', 'SALE_STAFF', 'FINANCE_OFFICER'] },
-  { labelKey: 'shell.deliveryOrders', path: '/delivery-orders', roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'WAREHOUSE_STAFF'] },
-  { labelKey: 'shell.shipments', path: '/shipments', roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'FINANCE_OFFICER', 'WAREHOUSE_STAFF'] },
-  { labelKey: 'shell.domesticTransportOrders', path: '/domestic-transport-orders', roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'FINANCE_OFFICER', 'WAREHOUSE_STAFF'] },
-  { labelKey: 'shell.masterData', path: '/master-data', roles: ['ADMIN', 'PIC_MANAGER'] },
-  { labelKey: 'shell.tasks', path: '/tasks', roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'FINANCE_OFFICER', 'WAREHOUSE_STAFF'] },
+  { labelKey: 'shell.dashboard', path: '/', capability: 'dashboard.view', icon: IconLayoutDashboard },
+  { labelKey: 'shell.quotations', path: '/quotations', capability: 'quotations.view', icon: IconFileInvoice },
+  { labelKey: 'shell.purchaseOrders', path: '/purchase-orders', capability: 'purchaseOrders.view', icon: IconShoppingCart },
+  { labelKey: 'shell.deliveryOrders', path: '/delivery-orders', capability: 'deliveryOrders.view', icon: IconTruckDelivery },
+  { labelKey: 'shell.shipments', path: '/shipments', capability: 'shipments.view', icon: IconShip },
+  {
+    labelKey: 'shell.domesticTransportOrders',
+    path: '/domestic-transport-orders',
+    capability: 'domesticTransportOrders.view',
+    icon: IconTruck,
+  },
+  { labelKey: 'shell.masterData', path: '/master-data', capability: 'masterData.view', icon: IconFileText },
+  { labelKey: 'shell.tasks', path: '/tasks', capability: 'tasks.view', icon: IconChecklist },
 ] as const satisfies readonly WorkspaceModule[];
 
 export type WorkspaceModulePath = (typeof workspaceModules)[number]['path'];
 
-export function canUserAccessModule(user: Pick<AuthUser, 'role'>, module: WorkspaceModule) {
-  return !module.roles || module.roles.includes(user.role);
+export function getWorkspaceModuleByPath(path: WorkspaceModulePath) {
+  const module = workspaceModules.find((candidate) => candidate.path === path);
+
+  if (!module) {
+    throw new Error(`Unknown workspace module path: ${path}`);
+  }
+
+  return module;
 }
 
-export function getAllowedWorkspaceModules(user: Pick<AuthUser, 'role'>) {
-  return workspaceModules.filter((module) => canUserAccessModule(user, module));
+export function canAccessModule(can: CanCapability, module: WorkspaceModule) {
+  return can(module.capability);
 }
 
-export function getPreferredModulePath(user: Pick<AuthUser, 'preferredModulePath' | 'role'>) {
-  const preferredModule = user.preferredModulePath
-    ? workspaceModules.find((module) => module.path === user.preferredModulePath)
+export function canUserAccessModule(user: Pick<AuthUser, 'permissions' | 'role'>, module: WorkspaceModule) {
+  return canUserAccessCapability(user, module.capability);
+}
+
+export function getAllowedWorkspaceModules(can: CanCapability) {
+  return workspaceModules.filter((module) => canAccessModule(can, module));
+}
+
+export function getPreferredModulePath(
+  preferredModulePath: string | null | undefined,
+  can: CanCapability,
+) {
+  const preferredModule = preferredModulePath
+    ? workspaceModules.find((module) => module.path === preferredModulePath)
     : undefined;
 
-  if (preferredModule && canUserAccessModule(user, preferredModule)) {
+  if (preferredModule && canAccessModule(can, preferredModule)) {
     return preferredModule.path;
   }
 
-  return '/';
+  return getAllowedWorkspaceModules(can)[0]?.path ?? '/unauthorized';
+}
+
+export function getPreferredModulePathForUser(user: Pick<AuthUser, 'permissions' | 'preferredModulePath' | 'role'>) {
+  return getPreferredModulePath(user.preferredModulePath, (capability) => canUserAccessCapability(user, capability));
 }

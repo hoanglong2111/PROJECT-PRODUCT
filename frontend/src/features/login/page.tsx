@@ -6,7 +6,7 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '@shared/auth/useAuth';
 import { useI18n } from '@shared/i18n';
-import { getPreferredModulePath } from '@shared/navigation/workspaceModules';
+import { getPreferredModulePath, getPreferredModulePathForUser } from '@shared/navigation/workspaceModules';
 
 type LoginForm = {
   email: string;
@@ -16,7 +16,7 @@ type LoginForm = {
 export function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated, login, user } = useAuth();
+  const { can, isAuthenticated, login, user } = useAuth();
   const { t } = useI18n();
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,7 +32,7 @@ export function Login() {
   });
 
   if (isAuthenticated) {
-    return <Navigate to={user ? getPreferredModulePath(user) : '/'} replace />;
+    return <Navigate to={user ? getPreferredModulePath(user.preferredModulePath, can) : '/'} replace />;
   }
 
   const fromPath = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? '/';
@@ -65,7 +65,7 @@ export function Login() {
               setIsSubmitting(true);
               try {
                 const authenticatedUser = await login(values);
-                navigate(fromPath === '/' ? getPreferredModulePath(authenticatedUser) : fromPath, { replace: true });
+                navigate(fromPath === '/' ? getPreferredModulePathForUser(authenticatedUser) : fromPath, { replace: true });
               } catch {
                 setError(t('login.invalidCredentials'));
               } finally {

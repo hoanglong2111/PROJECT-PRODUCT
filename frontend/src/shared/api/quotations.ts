@@ -42,6 +42,7 @@ export type QuotationChargeLineV1 = {
   quotation_id: string;
   line_no: number;
   charge_type: QuotationChargeTypeV1;
+  charge_code?: string | null;
   description: string;
   quantity: ApiDecimal;
   unit: string | null;
@@ -133,6 +134,7 @@ export type ListQuotationsParams = {
 export type QuotationChargeLinePayload = {
   line_no: number;
   charge_type: QuotationChargeTypeV1;
+  charge_code?: string | null;
   description: string;
   quantity?: number;
   unit?: string | null;

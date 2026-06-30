@@ -24,6 +24,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { createUser, fetchUsers, type CreateUserPayload } from '@shared/api/system';
 import { queryKeys } from '@shared/api/queryKeys';
 import { APP_ROLES } from '@shared/auth/types';
+import { useCan } from '@shared/auth/useCan';
 import { useAuth } from '@shared/auth/useAuth';
 import { ListPagination, useListPagination } from '@shared/components/ListPagination';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
@@ -74,15 +75,15 @@ export function Settings() {
   const { appearanceModeLabel, densityLabel, departmentLabel, languageLabel, roleLabel, t, visualThemeLabel } = useI18n();
   const queryClient = useQueryClient();
   const [message, setMessage] = useState<string | null>(null);
-  const isAdmin = user?.role === 'ADMIN';
+  const canManageUsers = useCan('settings.manageUsers');
   const requestedSection = searchParams.get('section');
-  const activeSection = requestedSection === 'accounts' && isAdmin ? 'accounts' : 'preferences';
-  const highlightedAccount = isAdmin ? searchParams.get('account') : null;
+  const activeSection = requestedSection === 'accounts' && canManageUsers ? 'accounts' : 'preferences';
+  const highlightedAccount = canManageUsers ? searchParams.get('account') : null;
 
   const usersQuery = useQuery({
     queryKey: queryKeys.users,
     queryFn: fetchUsers,
-    enabled: isAdmin,
+    enabled: canManageUsers,
   });
   const users = usersQuery.data ?? [];
   const {
@@ -128,7 +129,7 @@ export function Settings() {
     [roleLabel],
   );
   useEffect(() => {
-    if (!user || isAdmin || requestedSection !== 'accounts') {
+    if (!user || canManageUsers || requestedSection !== 'accounts') {
       return;
     }
 
@@ -136,7 +137,7 @@ export function Settings() {
     nextParams.set('section', 'preferences');
     nextParams.delete('account');
     setSearchParams(nextParams, { replace: true });
-  }, [isAdmin, requestedSection, searchParams, setSearchParams, user]);
+  }, [canManageUsers, requestedSection, searchParams, setSearchParams, user]);
 
   if (!user) {
     return (
@@ -166,7 +167,7 @@ export function Settings() {
       <Tabs
         value={activeSection}
         onChange={(value) => {
-          const nextSection = value === 'accounts' && isAdmin ? 'accounts' : 'preferences';
+          const nextSection = value === 'accounts' && canManageUsers ? 'accounts' : 'preferences';
           const nextParams = new URLSearchParams(searchParams);
           nextParams.set('section', nextSection);
           if (nextSection !== 'accounts') {
@@ -179,7 +180,7 @@ export function Settings() {
           <Tabs.Tab value="preferences" leftSection={<IconPalette size={16} />}>
             {t('settings.preferences')}
           </Tabs.Tab>
-          {isAdmin ? (
+          {canManageUsers ? (
             <Tabs.Tab value="accounts" leftSection={<IconUsers size={16} />}>
               {t('settings.accounts')}
             </Tabs.Tab>
@@ -259,7 +260,7 @@ export function Settings() {
                 <IconBulb size={18} />
                 <Text fw={700}>{t('settings.recommendations')}</Text>
               </Group>
-              <SimpleGrid cols={{ base: 1, md: isAdmin ? 3 : 2 }}>
+              <SimpleGrid cols={{ base: 1, md: canManageUsers ? 3 : 2 }}>
                 <Recommendation
                   description={t('settings.recommendationProfileDescription')}
                   icon={<IconUserCircle size={16} />}
@@ -272,7 +273,7 @@ export function Settings() {
                   label={t('settings.recommendationSecurity')}
                   to="/profile"
                 />
-                {isAdmin ? (
+                {canManageUsers ? (
                   <Recommendation
                     description={t('settings.recommendationAccountsDescription')}
                     icon={<IconUsers size={16} />}
@@ -285,7 +286,7 @@ export function Settings() {
           </Stack>
         </Tabs.Panel>
 
-        {isAdmin ? (
+        {canManageUsers ? (
           <Tabs.Panel value="accounts" pt="lg">
             {usersQuery.isLoading ? (
               <PageLoading

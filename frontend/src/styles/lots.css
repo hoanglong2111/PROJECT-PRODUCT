@@ -41,12 +41,39 @@
   overflow: hidden;
   background: var(--kbfe-surface-elevated);
   border-color: var(--kbfe-border-primary);
-  transition: border-color 150ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 150ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: border-color 150ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    background 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .lot-list-item:hover {
   border-color: color-mix(in srgb, var(--kbfe-primary-color) 36%, var(--kbfe-border-primary));
   box-shadow: var(--kbfe-shadow-sm);
+}
+
+/* --- Drag & drop visual feedback (HTML5 native DnD has none on its own) --- */
+
+/* The card currently being dragged: lifted out, dimmed, dashed outline. */
+.lot-list-item.is-dragging {
+  opacity: 0.5;
+  transform: scale(0.985);
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--kbfe-primary-color) 55%, var(--kbfe-border-primary));
+  box-shadow: var(--kbfe-shadow-md);
+  cursor: grabbing;
+}
+
+/* A card the cursor is hovering over while dragging: glowing drop target. */
+.lot-list-item.is-drop-target {
+  border-color: var(--kbfe-primary-color);
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 92%, var(--kbfe-primary-color) 8%);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--kbfe-primary-color) 35%, transparent), var(--kbfe-shadow-sm);
+}
+
+/* While any drag is in progress, hint every other card as a droppable zone. */
+.lot-planning-list[data-drag-active] .lot-list-item:not(.is-dragging) {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--kbfe-primary-color) 26%, var(--kbfe-border-primary));
 }
 
 .lot-list-header {
@@ -97,6 +124,19 @@
   padding: 0.75rem 0.875rem 0.875rem;
   border-top: 1px solid var(--kbfe-border-primary);
   background: color-mix(in srgb, var(--kbfe-surface-elevated) 88%, var(--kbfe-surface-subtle) 12%);
+  animation: lot-line-list-reveal 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes lot-line-list-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .lot-line-row {
@@ -109,6 +149,9 @@
   border-radius: 0.375rem;
   background: var(--kbfe-surface-elevated);
   box-shadow: 0 1px 0 color-mix(in srgb, #fff 42%, transparent) inset;
+  transition: background 150ms cubic-bezier(0.2, 0.8, 0.2, 1), border-color 150ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 160ms cubic-bezier(0.2, 0.8, 0.2, 1), transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .lot-line-row+.lot-line-row {
@@ -117,6 +160,23 @@
 
 .lot-line-row:hover {
   background: color-mix(in srgb, var(--kbfe-surface-elevated) 90%, var(--kbfe-surface-subtle) 10%);
+}
+
+/* The line currently being dragged. */
+.lot-line-row.is-dragging {
+  opacity: 0.45;
+  transform: scale(0.99);
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--kbfe-primary-color) 50%, var(--kbfe-border-primary));
+  cursor: grabbing;
+}
+
+/* The hovered line — an accent bar at the top marks the insertion point. */
+.lot-line-row.is-drop-target {
+  border-color: var(--kbfe-primary-color);
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 88%, var(--kbfe-primary-color) 12%);
+  box-shadow: inset 0 3px 0 -1px var(--kbfe-primary-color),
+    0 1px 6px color-mix(in srgb, var(--kbfe-primary-color) 22%, transparent);
 }
 
 .lot-line-main {
@@ -203,5 +263,24 @@
 
   .lot-line-empty {
     padding-left: 0.75rem;
+  }
+}
+
+/* Respect users who prefer reduced motion: keep the state styling, drop the movement. */
+@media (prefers-reduced-motion: reduce) {
+
+  .lot-list-item,
+  .lot-line-row,
+  .lot-toggle-button svg {
+    transition: none;
+  }
+
+  .lot-list-item.is-dragging,
+  .lot-line-row.is-dragging {
+    transform: none;
+  }
+
+  .lot-line-list {
+    animation: none;
   }
 }

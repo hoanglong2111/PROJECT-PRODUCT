@@ -17,7 +17,7 @@ import {
 import { useForm } from '@mantine/form';
 import { IconTrash } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import {
   createItem,
@@ -178,6 +178,7 @@ export function ItemModal({
   groupOptions,
   onClose,
   opened,
+  uomOptions,
 }: {
   canManage: boolean;
   defaultGroupId: string | null;
@@ -185,6 +186,7 @@ export function ItemModal({
   groupOptions: Array<{ label: string; value: string }>;
   onClose: () => void;
   opened: boolean;
+  uomOptions: Array<{ label: string; value: string }>;
 }) {
   const { t } = useI18n();
   const queryClient = useQueryClient();
@@ -193,6 +195,17 @@ export function ItemModal({
   const [loadedProfiles, setLoadedProfiles] = useState<ItemTaxProfile[]>([]);
 
   const itemFormReadOnly = Boolean(editing) && !canManage;
+  const resolvedUomOptions = useMemo(() => {
+    const options = [...uomOptions];
+
+    for (const value of [form.values.baseUom, form.values.purchaseUom]) {
+      if (value && !options.some((option) => option.value === value)) {
+        options.push({ label: value, value });
+      }
+    }
+
+    return options;
+  }, [form.values.baseUom, form.values.purchaseUom, uomOptions]);
 
   const applyItemToForm = (item: Item, profiles: ItemTaxProfile[]) => {
     const fallbackProfiles = profiles.length > 0 ? profiles : item.customs_profiles ?? [];
@@ -409,18 +422,25 @@ export function ItemModal({
             disabled={itemFormReadOnly}
             {...form.getInputProps('type')}
           />
-          <TextInput
+          <Select
             label={t('masterData.baseUom')}
             placeholder={t('masterData.baseUomPlaceholder')}
+            data={resolvedUomOptions}
+            value={form.values.baseUom || null}
+            onChange={(value) => form.setFieldValue('baseUom', value || '')}
+            searchable
             required
             disabled={itemFormReadOnly}
-            {...form.getInputProps('baseUom')}
           />
-          <TextInput
+          <Select
             label={t('masterData.purchaseUom')}
             placeholder={t('masterData.purchaseUomPlaceholder')}
+            data={resolvedUomOptions}
+            value={form.values.purchaseUom || null}
+            onChange={(value) => form.setFieldValue('purchaseUom', value || '')}
+            searchable
+            clearable
             disabled={itemFormReadOnly}
-            {...form.getInputProps('purchaseUom')}
           />
           <TextInput
             label={t('masterData.uomConversion')}

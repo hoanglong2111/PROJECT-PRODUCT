@@ -32,6 +32,9 @@ export function LotPlanningBoard({ canManage, planning }: { canManage: boolean; 
   const [splitDraft, setSplitDraft] = useState<SplitDraft | null>(null);
   const [selectedLotIds, setSelectedLotIds] = useState<string[]>([]);
   const [boardError, setBoardError] = useState<string | null>(null);
+  // Tracks what kind of item is currently being dragged so the board can light up
+  // every valid drop zone (null when nothing is being dragged).
+  const [activeDragType, setActiveDragType] = useState<'lot' | 'lotLine' | null>(null);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const purchaseOrderId = planning.purchase_order.id;
@@ -297,8 +300,12 @@ export function LotPlanningBoard({ canManage, planning }: { canManage: boolean; 
         <Stack
           gap="sm"
           className="lot-planning-list"
+          data-drag-active={activeDragType ?? undefined}
           onDragOver={(event) => event.preventDefault()}
-          onDrop={(event) => handleDropOnLot(event)}
+          onDrop={(event) => {
+            setActiveDragType(null);
+            handleDropOnLot(event);
+          }}
         >
           {sortedLots.map((lot) => (
             <LotCard
@@ -310,6 +317,7 @@ export function LotPlanningBoard({ canManage, planning }: { canManage: boolean; 
               onEdit={() => openEditLot(lot)}
               onSplitLine={(line) => openSplitLine(lot, line)}
               onSelect={(checked) => toggleLotSelection(lot, checked)}
+              onDragActiveChange={setActiveDragType}
               canManage={canManage}
               hasMoveTargets={sortedLots.some((candidate) => candidate.id !== lot.id && !lockedLotStatuses.has(candidate.status))}
               isSelected={selectedLotIds.includes(lot.id)}
