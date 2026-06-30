@@ -70,6 +70,8 @@ export type PoFormDraft = {
   expected_etd: string;
   expected_eta: string;
   notes: string;
+  // Reversed flow: a PO is created from a CONFIRMED quotation (required in create mode).
+  quotation_id: string;
   lines: PoLineDraft[];
 };
 
@@ -147,6 +149,7 @@ export function createInitialPoDraft(order?: PurchaseOrderV1): PoFormDraft {
     expected_etd: dateOnly(order?.expected_etd),
     expected_eta: dateOnly(order?.expected_eta),
     notes: order?.notes ?? '',
+    quotation_id: order?.quotation_id ?? '',
     lines: order?.lines?.length
       ? order.lines.map((line, index) => ({
         clientId: line.id,
@@ -181,6 +184,7 @@ export function buildPoPayload(draft: PoFormDraft): CreatePurchaseOrderV1Payload
     expected_etd: nullIfEmpty(draft.expected_etd),
     expected_eta: nullIfEmpty(draft.expected_eta),
     notes: nullIfEmpty(draft.notes),
+    quotation_id: nullIfEmpty(draft.quotation_id),
     lines: draft.lines
       .filter((line) => line.item_id && Number(line.qty_ordered) > 0)
       .map<PurchaseOrderLinePayload>((line, index) => ({

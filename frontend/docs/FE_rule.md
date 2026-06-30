@@ -402,46 +402,47 @@ After DO is created, frontend should navigate to:
 
 ---
 
-# 9. Quotation UI Rules
+# 9. Quotation UI Rules (reversed flow)
 
-Quotation is created from Internal DO.
+Quotation is a **top-level feature** (own sidebar tab at `/quotations`), no longer a tab
+inside the DO. It is a standalone **pre-PO freight quotation** (FDS → customer) that
+carries its own `customer_ref` + `incoterm_code` + `mode` + freight `charge_lines`
+(Incoterms×mode catalog at `@shared/lib/quotationCharges`). It is **freight-only** — no
+goods line items.
+
+Canonical flow: `Quotation(CONFIRMED) → PO → DO → Shipment → DTO`.
+
+5-state lifecycle (who acts):
+
+```txt
+REQUEST_FOR_QUOTATION  (KBI raises the RFQ)
+  → DRAFT              (FDS drafts)
+  → PENDING_APPROVAL   (FDS submits; KBI to approve)
+  → CONFIRMED          (KBI confirms — unlocks PO creation)
+  (any non-terminal)   → REJECTED (carries reject_reason)
+```
 
 Important rules:
 
 ```txt
-- Do not edit old quotation price directly.
-- Create new version when price changes.
-- Only one final quotation per quotation_group_id.
-- Mark final quotation before creating Shipment.
+- Do not edit old quotation price directly; create a new version when price changes.
+- Only one CONFIRMED quotation per quotation_group_id.
+- A PO can only be created from a CONFIRMED quotation (see §8 Purchase Orders).
 ```
 
-Frontend actions:
-
-```txt
-Create quotation
-Create quotation version
-Mark quotation final
-View charge lines
-View quotation events
-```
-
-When quotation is marked final:
-
-```txt
-delivery_order.status = QUOTATION_CONFIRMED
-```
+Frontend actions: create standalone quotation, advance status
+(start drafting / submit for approval / confirm / reject), view charge lines/events,
+and **Create PO from quotation** (on a CONFIRMED quotation → opens the PO create form
+prefilled with the commercial header (incoterm/currency) + `quotation_id`; goods lines
+are entered normally so the PO line → LOT logic is untouched).
 
 ---
 
 # 10. Shipment UI Rules
 
-Shipment can only be created after quotation final.
-
-Frontend should show Create Shipment only when:
-
-```txt
-delivery_order.status = QUOTATION_CONFIRMED
-```
+Quotation no longer gates the DO, so the old `QUOTATION_CONFIRMED` gate is removed.
+Frontend shows **Create Shipment** for any DO that has no linked shipment yet and is not
+`CANCELLED` / `CLOSED` / `ASSIGNED_TO_SHIPMENT`.
 
 Shipment has 10 milestones:
 

@@ -35,10 +35,7 @@ import { EmptyState } from '@shared/components/EmptyState';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { useI18n } from '@shared/i18n';
 
-const CONTAINER_TYPE_OPTIONS = ['20GP', '40GP', '40HC', '45HC', '20RF', '40RF', 'LCL'].map((value) => ({
-  label: value,
-  value,
-}));
+import { CONTAINER_TYPE_OPTIONS } from '../model/shipmentModel';
 
 const CONTAINER_STATUS_KEYS: Array<{ labelKey: string; value: ShipmentContainerStatusV1 }> = [
   { labelKey: 'shipments.containerStatusPlanned', value: 'PLANNED' },

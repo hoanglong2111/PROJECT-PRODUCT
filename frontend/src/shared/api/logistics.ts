@@ -755,14 +755,11 @@ function mapTaskScreenToPoStageTask(task: TaskScreenItem): Gd1PoStageTask {
 
 function quotationStatusToUi(status: QuotationStatusV1): QuotationStatus {
   const statusMap: Record<QuotationStatusV1, QuotationStatus> = {
-    CANCELLED: 'REJECTED',
-    CONFIRMED_BY_KBI: 'APPROVED',
+    REQUEST_FOR_QUOTATION: 'PRELIMINARY_SENT',
     DRAFT: 'DRAFT',
-    EXPIRED: 'REJECTED',
-    RECEIVED: 'OFFICIAL_SENT',
+    PENDING_APPROVAL: 'OFFICIAL_SENT',
+    CONFIRMED: 'APPROVED',
     REJECTED: 'REJECTED',
-    REQUESTED: 'PRELIMINARY_SENT',
-    SUBMITTED_TO_KBI: 'OFFICIAL_SENT',
   };
 
   return statusMap[status];
@@ -835,7 +832,7 @@ function mapV1Quotation(quotation: QuotationV1, requestCode?: string): Quotation
     quoteAmount: Number.isFinite(quotationTotal) ? quotationTotal : chargeLineTotal,
     quoteNumber: quotation.version > 1 ? `${quotation.quotation_no} v${quotation.version}` : quotation.quotation_no,
     quotationGroupId: quotation.quotation_group_id,
-    requestCode: requestCode ?? quotation.ref_id,
+    requestCode: requestCode ?? quotation.ref_id ?? '',
     shippingMode: inferQuotationShippingMode(quotation),
     status: quotationStatusToUi(quotation.status),
     updatedAt: quotation.update_at,
@@ -1183,13 +1180,16 @@ function mapV1Shipment(shipment: ShipmentV1): ShipmentRecord {
   const purchaseOrder = deliveryOrder?.purchase_order;
   const vesselParts = [shipment.vessel_flight, shipment.voyage_no].filter(Boolean);
 
+  // The customs channel (luồng xanh/vàng/đỏ) is only meaningful once the shipment has
+  // cleared customs ("đã thông quan"). While in transit / pre-clearance there is no lane,
+  // so we leave lane_status empty and every consumer (list, filter, detail) hides it.
+  const hasCleared = shipment.status === 'CUSTOMS_CLEARED' || shipment.status === 'DELIVERED';
+
   return {
     carrier_name: shipment.carrier ?? shipment.forwarder?.supplier_name ?? '',
     customs: {
-      clearance_date: shipment.status === 'CUSTOMS_CLEARED' || shipment.status === 'DELIVERED'
-        ? dateOnly(shipment.update_at)
-        : undefined,
-      lane_status: shipment.customs_channel ?? '',
+      clearance_date: hasCleared ? dateOnly(shipment.update_at) : undefined,
+      lane_status: hasCleared ? shipment.customs_channel ?? '' : '',
       stream: shipment.customs_channel ?? 'GREEN',
     },
     dest_port: shipment.pod ?? deliveryOrder?.destination_address ?? '',
@@ -1427,7 +1427,7 @@ export async function fetchQuotations() {
   );
 
   return detailedQuotations.map((quotation) =>
-    mapV1Quotation(quotation, deliveryOrderNoById.get(quotation.ref_id)),
+    mapV1Quotation(quotation, deliveryOrderNoById.get(quotation.ref_id ?? '')),
   );
 }
 
@@ -1593,21 +1593,17 @@ export async function updateQuotationAction(quotationId: string, payload: Update
   }
 
   if (payload.action === 'SEND_OFFICIAL') {
-    if (quotation.status === 'DRAFT' || quotation.status === 'REQUESTED') {
+    if (quotation.status === 'REQUEST_FOR_QUOTATION') {
       return mapV1Quotation(await receiveQuotation(quotationId));
     }
-    if (quotation.status === 'RECEIVED') {
+    if (quotation.status === 'DRAFT') {
       return mapV1Quotation(await submitQuotationToKbi(quotationId));
     }
     return mapV1Quotation(quotation);
   }
 
   if (payload.action === 'CUSTOMER_APPROVED') {
-    let nextQuotation = quotation;
-    if (nextQuotation.status === 'DRAFT' || nextQuotation.status === 'REQUESTED') {
-      nextQuotation = await receiveQuotation(quotationId);
-    }
-    return mapV1Quotation(await markQuotationFinal(nextQuotation.id));
+    return mapV1Quotation(await markQuotationFinal(quotationId));
   }
 
   if (payload.action === 'CUSTOMER_REJECTED') {

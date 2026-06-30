@@ -12,6 +12,7 @@ import {
   shipmentRoles,
   masterDataRoles,
   purchaseOrderRoles,
+  quotationRoles,
   taskRoles,
 } from './routeRoles';
 
@@ -33,6 +34,7 @@ const Login = lazyFeature(() => import('@features/login/page'), 'Login');
 const NotFound = lazyFeature(() => import('@features/not-found/page'), 'NotFound');
 const Profile = lazyFeature(() => import('@features/profile/page'), 'Profile');
 const PurchaseOrders = lazyFeature(() => import('@features/purchase-orders/page'), 'PurchaseOrders');
+const Quotations = lazyFeature(() => import('@features/quotations/page'), 'Quotations');
 const Settings = lazyFeature(() => import('@features/settings/page'), 'Settings');
 const Tasks = lazyFeature(() => import('@features/tasks/page'), 'Tasks');
 const Unauthorized = lazyFeature(() => import('@features/unauthorized/page'), 'Unauthorized');
@@ -44,6 +46,7 @@ const publicRoutes: RouteConfig[] = [
 
 const workspaceRoutes: RouteConfig[] = [
   { index: true, element: <Dashboard /> },
+  { path: 'quotations', element: withRole(<Quotations />, quotationRoles) },
   { path: 'purchase-orders', element: withRole(<PurchaseOrders />, purchaseOrderRoles) },
   { path: 'delivery-orders', element: withRole(<DeliveryOrders />, deliveryOrderRoles) },
   { path: 'shipments', element: withRole(<Shipments />, shipmentRoles) },

@@ -6,13 +6,15 @@ import {
   Group,
   Loader,
   Modal,
+  NumberInput,
+  Paper,
   Select,
   Stack,
   Text,
   TextInput,
   Textarea,
 } from '@mantine/core';
-import { IconAlertTriangle, IconTruck, IconX } from '@tabler/icons-react';
+import { IconAlertTriangle, IconBox, IconPlus, IconTruck, IconX } from '@tabler/icons-react';
 import { useMutation, useQueries, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -22,12 +24,15 @@ import {
 } from '@shared/api/domesticTransportOrders';
 import type { ShipmentRecord } from '@shared/api/logistics';
 import {
+  createShipmentContainer,
   fetchShipmentContainers,
   type ShipmentContainerV1,
 } from '@shared/api/shipmentContainers';
 import { fetchSuppliers } from '@shared/api/tradeMasterData';
 import { queryKeys } from '@shared/api/queryKeys';
 import { useI18n } from '@shared/i18n';
+
+import { CONTAINER_TYPE_OPTIONS } from '../model/shipmentModel';
 
 type ContainerRow = ShipmentContainerV1 & { _shipmentNumber: string };
 
@@ -49,6 +54,12 @@ export function CreateDtoFromShipmentModal({
   const [warehouse, setWarehouse] = useState('KBI Main Warehouse');
   const [pickupDate, setPickupDate] = useState('');
   const [note, setNote] = useState('');
+  const [newContainerNo, setNewContainerNo] = useState('');
+  const [newContainerType, setNewContainerType] = useState<string | null>('40HC');
+  const [newSeal, setNewSeal] = useState('');
+  const [newGross, setNewGross] = useState<number | string>('');
+  const [newCbm, setNewCbm] = useState<number | string>('');
+  const [addTargetShipmentId, setAddTargetShipmentId] = useState<string | null>(shipments[0]?.id ?? null);
 
   const isConsolidation = shipments.length > 1;
   const distinctPods = useMemo(
@@ -56,6 +67,15 @@ export function CreateDtoFromShipmentModal({
     [shipments],
   );
   const podMismatch = isConsolidation && distinctPods.length > 1;
+  const shipmentTargetOptions = shipments.map((shipment) => ({
+    label: shipment.shipment_number,
+    value: shipment.id,
+  }));
+  // Which shipment a newly-added container attaches to. For a single shipment it is implicit;
+  // when consolidating, the user picks via the target Select (defaults to the primary shipment).
+  const addTargetId = isConsolidation
+    ? addTargetShipmentId ?? shipments[0]?.id ?? null
+    : shipments[0]?.id ?? null;
 
   const containerQueries = useQueries({
     queries: shipments.map((shipment) => ({
@@ -97,6 +117,12 @@ export function CreateDtoFromShipmentModal({
       setWarehouse('KBI Main Warehouse');
       setPickupDate('');
       setNote('');
+      setNewContainerNo('');
+      setNewContainerType('40HC');
+      setNewSeal('');
+      setNewGross('');
+      setNewCbm('');
+      setAddTargetShipmentId(shipments[0]?.id ?? null);
     }
   }, [opened, shipments.map((shipment) => shipment.id).join(',')]);
 
@@ -145,6 +171,36 @@ export function CreateDtoFromShipmentModal({
     },
   });
 
+  const addContainerMutation = useMutation({
+    mutationFn: () => {
+      if (!addTargetId) throw new Error(t('shipments.noShipmentSelected'));
+      return createShipmentContainer(addTargetId, {
+        container_no: newContainerNo.trim(),
+        container_type: newContainerType,
+        seal_no: newSeal || null,
+        gross_weight_kg: newGross === '' ? null : Number(newGross),
+        volume_cbm: newCbm === '' ? null : Number(newCbm),
+        status: 'PLANNED',
+      });
+    },
+    onSuccess: (created) => {
+      if (addTargetId) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.shipmentContainers(addTargetId) });
+      }
+      // Auto-select the container the user just added — that is why they added it.
+      if (created?.id) setSelectedContainerIds((prev) => [...prev, created.id]);
+      setNewContainerNo('');
+      setNewSeal('');
+      setNewGross('');
+      setNewCbm('');
+    },
+  });
+
+  const handleAddContainer = () => {
+    if (!newContainerNo.trim()) return;
+    addContainerMutation.mutate();
+  };
+
   const title = isConsolidation
     ? t('shipments.createDtoTitle', { count: shipments.length })
     : t('shipments.createDtoFromShipment', { shipmentNumber: shipments[0]?.shipment_number ?? '' });
@@ -169,9 +225,9 @@ export function CreateDtoFromShipmentModal({
           {containersLoading ? (
             <Group gap="xs"><Loader size="sm" /><Text size="sm" c="dimmed">{t('shipments.loadingContainers')}</Text></Group>
           ) : containerRows.length === 0 ? (
-            <Text size="sm" c="dimmed">
+            <Alert color="gray" variant="light" icon={<IconBox size={16} />}>
               {t('shipments.dtoNoContainers')}
-            </Text>
+            </Alert>
           ) : (
             <Checkbox.Group value={selectedContainerIds} onChange={setSelectedContainerIds}>
               <Stack gap="xs">
@@ -199,6 +255,78 @@ export function CreateDtoFromShipmentModal({
               </Stack>
             </Checkbox.Group>
           )}
+
+          <Paper withBorder p="sm" mt="sm">
+            <Stack gap="xs">
+              <Text size="xs" c="dimmed">{t('shipments.dtoAddContainerHint')}</Text>
+              <Group gap="xs" align="flex-end" wrap="wrap">
+                {isConsolidation && (
+                  <Select
+                    label={t('shipments.dtoAddContainerTarget')}
+                    data={shipmentTargetOptions}
+                    value={addTargetShipmentId}
+                    onChange={setAddTargetShipmentId}
+                    allowDeselect={false}
+                    w={170}
+                  />
+                )}
+                <TextInput
+                  label={t('shipments.containerNumber')}
+                  placeholder={t('shipments.containerNumberPlaceholder')}
+                  value={newContainerNo}
+                  onChange={(event) => setNewContainerNo(event.currentTarget.value)}
+                  style={{ flex: 1, minWidth: 140 }}
+                />
+                <Select
+                  label={t('shipments.containerType')}
+                  data={CONTAINER_TYPE_OPTIONS}
+                  value={newContainerType}
+                  onChange={setNewContainerType}
+                  allowDeselect={false}
+                  w={100}
+                />
+                <TextInput
+                  label={t('shipments.sealNumber')}
+                  placeholder={t('shipments.sealNumberPlaceholder')}
+                  value={newSeal}
+                  onChange={(event) => setNewSeal(event.currentTarget.value)}
+                  w={120}
+                />
+                <NumberInput
+                  label={t('shipments.grossWeightKg')}
+                  placeholder="0"
+                  value={newGross}
+                  onChange={setNewGross}
+                  min={0}
+                  w={110}
+                />
+                <NumberInput
+                  label={t('shipments.volumeCbm')}
+                  placeholder="0"
+                  value={newCbm}
+                  onChange={setNewCbm}
+                  min={0}
+                  w={100}
+                />
+                <Button
+                  variant="light"
+                  leftSection={<IconPlus size={16} />}
+                  loading={addContainerMutation.isPending}
+                  disabled={!newContainerNo.trim() || podMismatch}
+                  onClick={handleAddContainer}
+                >
+                  {t('shipments.addContainer')}
+                </Button>
+              </Group>
+              {addContainerMutation.isError && (
+                <Text size="xs" c="red">
+                  {addContainerMutation.error instanceof Error
+                    ? addContainerMutation.error.message
+                    : t('shipments.dtosPanel.operationFailed')}
+                </Text>
+              )}
+            </Stack>
+          </Paper>
         </div>
 
         <Select

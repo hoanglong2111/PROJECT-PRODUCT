@@ -26,6 +26,7 @@ import {
   type PurchaseOrderV1,
   type UpdatePurchaseOrderV1Payload,
 } from '@shared/api/purchaseOrders';
+import type { QuotationV1 } from '@shared/api/quotations';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
@@ -49,11 +50,13 @@ export function PurchaseOrderForm({
   onCancel,
   onSaved,
   order,
+  quotation,
 }: {
   mode: 'create' | 'edit';
   onCancel: () => void;
   onSaved: (order: PurchaseOrderV1) => void;
   order?: PurchaseOrderV1;
+  quotation?: QuotationV1 | null;
 }) {
   const initialDraft = createInitialPoDraft(order);
   const [draft, setDraft] = useState(initialDraft);
@@ -73,6 +76,21 @@ export function PurchaseOrderForm({
     setActiveLineId(nextDraft.lines[0]?.clientId ?? null);
     setContractAutoSync(!order?.contract_no);
   }, [order]);
+
+  // Create-from-quotation: link the quotation and prefill the commercial header
+  // (incoterm + currency) from it once master data is available. Lines and supplier
+  // are entered normally, so the PO line -> LOT logic is untouched.
+  useEffect(() => {
+    if (mode !== 'create' || !quotation) return;
+    const incoterm = masterData.incoterms.find((item) => item.incoterm_code === quotation.incoterm_code);
+    const currency = masterData.currencies.find((item) => item.currency_code === quotation.currency_code);
+    setDraft((current) => ({
+      ...current,
+      quotation_id: quotation.id,
+      incoterm_id: incoterm?.id ?? current.incoterm_id,
+      currency_id: currency?.id ?? current.currency_id,
+    }));
+  }, [mode, quotation, masterData.incoterms, masterData.currencies]);
 
   const createMutation = useMutation({
     mutationFn: (payload: CreatePurchaseOrderV1Payload) => createPurchaseOrder(payload),
@@ -102,7 +120,8 @@ export function PurchaseOrderForm({
   const validLineCount = draft.lines.filter(lineIsComplete).length;
   const incompleteLineCount = draft.lines.length - validLineCount;
   const canSubmit =
-    Boolean(draft.po_no.trim() && draft.supplier_id && draft.incoterm_id) && (mode === 'edit' || validLineCount > 0);
+    Boolean(draft.po_no.trim() && draft.supplier_id && draft.incoterm_id) &&
+    (mode === 'edit' || (validLineCount > 0 && Boolean(draft.quotation_id)));
   const activeLine = draft.lines.find((line) => line.clientId === activeLineId) ?? draft.lines[0] ?? null;
   const activeLineIndex = activeLine ? draft.lines.findIndex((line) => line.clientId === activeLine.clientId) : -1;
   const activeLineItem = masterData.items.find((candidate) => candidate.id === activeLine?.item_id);
@@ -151,6 +170,7 @@ export function PurchaseOrderForm({
     event.preventDefault();
     if (!draft.po_no.trim() || !draft.supplier_id || !draft.incoterm_id) return;
     if (mode === 'create') {
+      if (!draft.quotation_id) return;
       const payload = buildPoPayload(draft);
       if (!payload.lines?.length) return;
       createMutation.mutate(payload);
@@ -165,6 +185,13 @@ export function PurchaseOrderForm({
         {mutation.isError ? (
           <Alert color="red" icon={<IconAlertTriangle size={18} />} title="Could not save PO">
             {getApiErrorMessage(mutation.error)}
+          </Alert>
+        ) : null}
+
+        {mode === 'create' && !draft.quotation_id ? (
+          <Alert color="yellow" icon={<IconAlertTriangle size={18} />} title="Confirmed quotation required">
+            A PO can only be created from a CONFIRMED quotation. Open a confirmed quotation and use
+            “Create PO from quotation”.
           </Alert>
         ) : null}
 

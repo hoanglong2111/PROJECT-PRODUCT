@@ -2,15 +2,14 @@ import { apiClient } from './axiosConfig';
 import type { ApiDecimal, PaginationMeta, V1ApiError, V1Response } from './purchaseOrders';
 import type { Currency, Supplier } from './tradeMasterData';
 
+// 5-state quotation lifecycle (reversed flow). KBI raises the RFQ; FDS drafts then
+// submits for approval; KBI confirms (opens the PO-create gate) or rejects.
 export type QuotationStatusV1 =
+  | 'REQUEST_FOR_QUOTATION'
   | 'DRAFT'
-  | 'REQUESTED'
-  | 'RECEIVED'
-  | 'SUBMITTED_TO_KBI'
-  | 'CONFIRMED_BY_KBI'
-  | 'REJECTED'
-  | 'CANCELLED'
-  | 'EXPIRED';
+  | 'PENDING_APPROVAL'
+  | 'CONFIRMED'
+  | 'REJECTED';
 
 export type QuotationTypeV1 = 'FREIGHT' | 'LOCAL_CHARGE' | 'CUSTOMS' | 'TRUCKING' | 'MIXED';
 export type QuotationRefTypeV1 = 'DELIVERY_ORDER' | 'PO' | 'SHIPMENT' | 'CARRIER_DO' | 'DTO';
@@ -79,8 +78,13 @@ export type QuotationV1 = {
   quotation_group_id: string;
   quotation_no: string;
   version: number;
-  ref_type: QuotationRefTypeV1;
-  ref_id: string;
+  // Standalone pre-PO quotations are not bound to a DO/PO yet, so ref_* are nullable
+  // and the customer/route/mode live on the quotation itself.
+  ref_type: QuotationRefTypeV1 | null;
+  ref_id: string | null;
+  customer_ref?: string | null;
+  incoterm_code?: string | null;
+  mode?: string | null;
   supplier_id: string;
   quotation_type: QuotationTypeV1;
   currency_id?: string;
@@ -96,6 +100,7 @@ export type QuotationV1 = {
   submitted_at: string | null;
   confirmed_at: string | null;
   rejected_at: string | null;
+  reject_reason?: string | null;
   cancelled_at: string | null;
   note: string | null;
   create_at: string;
@@ -165,6 +170,7 @@ export type CreateQuotationVersionPayload = {
 export type QuotationActionPayload = {
   actor_name?: string | null;
   note?: string | null;
+  reason?: string | null;
 };
 
 function unwrapV1Data<T, TMeta>(response: { data: V1Response<T, TMeta> }) {
@@ -214,6 +220,28 @@ export async function createDeliveryOrderQuotation(
     `/v1/delivery-orders/${deliveryOrderId}/quotations`,
     payload,
   );
+  return unwrapV1Data(response);
+}
+
+export type CreateQuotationPayload = {
+  quotation_no?: string;
+  customer_ref?: string | null;
+  supplier_id?: string;
+  quotation_type?: QuotationTypeV1;
+  incoterm_code?: string | null;
+  mode?: string | null;
+  currency_id?: string | null;
+  currency_code?: string;
+  exchange_rate?: number;
+  status?: QuotationStatusV1;
+  valid_until?: string | null;
+  note?: string | null;
+  charge_lines?: QuotationChargeLinePayload[];
+};
+
+// Standalone (pre-PO) freight quotation create. Not bound to a DO.
+export async function createQuotation(payload: CreateQuotationPayload) {
+  const response = await apiClient.post<V1Response<QuotationV1>>('/v1/quotations', payload);
   return unwrapV1Data(response);
 }
 

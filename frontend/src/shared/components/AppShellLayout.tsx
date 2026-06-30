@@ -46,6 +46,7 @@ const navigation: Array<{
   | 'shell.deliveryOrders'
   | 'shell.domesticTransportOrders'
   | 'shell.purchaseOrders'
+  | 'shell.quotations'
   | 'shell.shipments'
   | 'shell.masterData'
   | 'shell.tasks';
@@ -53,6 +54,12 @@ const navigation: Array<{
   roles?: AppRole[];
 }> = [
     { labelKey: 'shell.dashboard', path: '/', icon: IconLayoutDashboard },
+    {
+      labelKey: 'shell.quotations',
+      path: '/quotations',
+      icon: IconFileInvoice,
+      roles: ['ADMIN', 'PIC_MANAGER', 'SALE_STAFF', 'FINANCE_OFFICER'],
+    },
     {
       labelKey: 'shell.purchaseOrders',
       path: '/purchase-orders',

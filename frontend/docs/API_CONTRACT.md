@@ -94,7 +94,7 @@ exact request/response types.)
 > laggard (least-advanced) linked shipment's status, mapped to the PO stage
 > taxonomy. The UI reads it as the source of truth for the stage badge and only
 > falls back to a client-side derivation when it is absent.
-- `GET|POST /v1/purchase-orders`
+- `GET|POST /v1/purchase-orders` — **create requires `quotation_id`** referencing a `CONFIRMED` quotation; the PO stores `quotation_id` for traceability. A missing/non-CONFIRMED quotation is rejected (`VALIDATION_ERROR` 400 / `BUSINESS_RULE_VIOLATION` 409). The PO line → LOT auto-split on create is unchanged.
 - `GET|PATCH /v1/purchase-orders/:id`
 - `POST /v1/purchase-orders/:id/send`
 - `POST /v1/purchase-orders/:id/cancel`
@@ -124,15 +124,21 @@ exact request/response types.)
 - `PATCH|DELETE /v1/delivery-order-documents/:documentId`
 
 ### Quotations
+> **Reversed flow (top-level feature):** A quotation is a standalone **pre-PO freight
+> quotation** (FDS → customer). It is created independently (no DO required), carries its
+> own `customer_ref` + `incoterm_code` + `mode` + `charge_lines`, and runs a **5-state
+> lifecycle**: `REQUEST_FOR_QUOTATION → DRAFT → PENDING_APPROVAL → CONFIRMED`, with a
+> `REJECTED` branch (`reject_reason`). `ref_type`/`ref_id` are nullable for standalone
+> quotations. Confirming a quotation is what unlocks PO creation (see Purchase Orders).
 - `GET /v1/quotations` · `GET /v1/quotations/:id`
-- `GET|POST /v1/delivery-orders/:id/quotations`
-- `POST /v1/quotations/:id/request` — status transition DRAFT → REQUESTED
-- `POST /v1/quotations/:id/receive` — status transition DRAFT|REQUESTED → RECEIVED
-- `POST /v1/quotations/:id/submit-to-kbi` — status transition RECEIVED → SUBMITTED_TO_KBI
-- `POST /v1/quotations/:id/confirm-by-kbi`
-- `POST /v1/quotations/:id/mark-final`
-- `POST /v1/quotations/:id/reject`
-- `POST /v1/quotations/:id/cancel`
+- `POST /v1/quotations` — create a standalone quotation (`{ customer_ref, incoterm_code, mode, currency_code, charge_lines[] }`), initial status `DRAFT`
+- `GET|POST /v1/delivery-orders/:id/quotations` — **legacy** DO-scoped create (kept for back-compat; the UI no longer uses it)
+- `POST /v1/quotations/:id/request` — → `REQUEST_FOR_QUOTATION`
+- `POST /v1/quotations/:id/receive` — → `DRAFT` (FDS starts drafting)
+- `POST /v1/quotations/:id/submit-to-kbi` — → `PENDING_APPROVAL` (sent for KBI approval)
+- `POST /v1/quotations/:id/confirm-by-kbi` · `POST /v1/quotations/:id/mark-final` — → `CONFIRMED`
+- `POST /v1/quotations/:id/reject` — → `REJECTED`, body `{ reason }` stored as `reject_reason`
+- `POST /v1/quotations/:id/cancel` — folds into `REJECTED` (reason "Cancelled")
 - `POST /v1/quotations/:id/create-version`
 - `GET|POST /v1/quotations/:id/charge-lines`
 - `PATCH|DELETE /v1/quotation-charge-lines/:id`
@@ -140,7 +146,7 @@ exact request/response types.)
 
 ### Shipments
 - `GET /v1/shipments` · `GET|PATCH /v1/shipments/:id`
-- `POST /v1/shipments/from-delivery-order`
+- `POST /v1/shipments/from-delivery-order` — quotation no longer lives on the DO, so the old `QUOTATION_CONFIRMED` gate is dropped; only `CANCELLED`/`CLOSED`/`ASSIGNED_TO_SHIPMENT` DOs are blocked. Booking info (carrier/BL/vessel) is captured on the shipment here.
 - `POST /v1/shipments/:id/cancel`
 - `GET /v1/shipments/:id/lines`
 - `GET /v1/shipments/:id/milestones`
