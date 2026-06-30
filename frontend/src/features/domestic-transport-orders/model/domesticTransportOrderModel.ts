@@ -4,6 +4,7 @@ export type FormState = {
   actualDeliveryAt: string;
   actualPickupAt: string;
   destination: string;
+  driverIdentityNo: string;
   driverName: string;
   driverPhone: string;
   note: string;
@@ -39,6 +40,7 @@ export const initialForm: FormState = {
   actualDeliveryAt: '',
   actualPickupAt: '',
   destination: '',
+  driverIdentityNo: '',
   driverName: '',
   driverPhone: '',
   note: '',

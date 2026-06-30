@@ -11,7 +11,7 @@ export function EmptyState({
   title: string;
 }) {
   return (
-    <Stack align="center" gap="xs" py="xl">
+    <Stack component="section" aria-label={title} align="center" gap="xs" py="xl" className="empty-state">
       <ThemeIcon size={48} radius="md" variant="light" color="gray">
         <IconInbox size={28} />
       </ThemeIcon>

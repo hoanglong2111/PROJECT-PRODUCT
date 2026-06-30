@@ -77,7 +77,6 @@
 
 .dto-metric-card {
   --dto-accent: var(--kbfe-primary-color);
-  min-height: 7.5rem;
   /* Matches the shared flat .metric-card chrome (clean elevated surface + neutral
      border). DTO identity is kept only as a faint accent border plus the
      accent-coloured icon + value below — no gradient wash. */
@@ -106,7 +105,10 @@
 }
 
 .dto-metric-value {
-  color: var(--dto-accent) !important;
+  /* Keep the accent hue but mix toward text so the big number stays readable on
+     the card surface (raw shade-6 cyan/blue is too light on white). Theme-aware:
+     darkens in light mode, lightens in dark mode. */
+  color: color-mix(in srgb, var(--dto-accent) 72%, var(--kbfe-text-primary)) !important;
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
 }
@@ -321,12 +323,44 @@
   background: color-mix(in srgb, var(--kbfe-surface-elevated) 92%, var(--kbfe-surface-subtle) 8%);
 }
 
-.dto-action-strip {
+.dto-action-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.5rem;
+  align-items: stretch;
+  min-width: 0;
   padding: 0.625rem;
   border: 1px solid var(--kbfe-border-primary);
   border-radius: 0.5rem;
-  background: color-mix(in srgb, var(--kbfe-surface-elevated) 91%, var(--kbfe-surface-subtle) 9%);
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 92%, var(--kbfe-surface-subtle) 8%);
+}
+
+.dto-action-group {
+  min-width: 0;
+  padding: 0.55rem 0.625rem;
+  border: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 84%, transparent);
+  border-radius: 0.5rem;
+  background: var(--kbfe-surface-elevated);
+}
+
+.dto-action-group.is-closure {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: color-mix(in srgb, var(--kbfe-primary-color) 6%, var(--kbfe-surface-elevated));
+}
+
+.dto-closure-label {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.dto-closure-actions {
+  flex: 0 0 auto;
+}
+
+.dto-action-strip {
+  gap: 0.5rem;
 }
 
 .dto-action-strip .mantine-Button-root {
@@ -371,10 +405,30 @@
   background: color-mix(in srgb, var(--kbfe-surface-elevated) 97%, var(--kbfe-surface-subtle) 3%);
 }
 
+.dto-form-workspace,
+.dto-form-section,
 .dto-form-grid > *,
 .dto-lines-header > *,
 .dto-form-header > * {
   min-width: 0;
+}
+
+.dto-form-workspace {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.875rem;
+  align-items: start;
+}
+
+.dto-form-section {
+  padding: 0.875rem;
+  border: 1px solid var(--kbfe-border-primary);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 96%, var(--kbfe-surface-subtle) 4%);
+}
+
+.dto-form-section.is-wide {
+  grid-column: 1 / -1;
 }
 
 .dto-form-grid .mantine-InputWrapper-label {
@@ -527,6 +581,11 @@
 
   .dto-route-rail {
     grid-template-columns: minmax(0, 1fr) minmax(10rem, 0.65fr) minmax(0, 1fr);
+  }
+
+  .dto-action-workbench,
+  .dto-form-workspace {
+    grid-template-columns: 1fr;
   }
 }
 

@@ -1,12 +1,11 @@
-import { Alert, Badge, Button, Drawer, Group, Paper, Select, SimpleGrid, Stack, Text, TextInput, Title } from '@mantine/core';
+import { Alert, Badge, Button, Group, Paper, Select, SimpleGrid, Stack, Text, TextInput, Title } from '@mantine/core';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   IconCircleCheck,
   IconClipboardList,
-  IconRefresh,
+  IconPlus,
   IconRoute,
   IconSearch,
-  IconTruck,
   IconTruckDelivery,
   IconX,
 } from '@tabler/icons-react';
@@ -23,11 +22,12 @@ import {
 import { fetchShipments, type ShipmentRecord } from '@shared/api/logistics';
 import { queryKeys } from '@shared/api/queryKeys';
 import { fetchSuppliers } from '@shared/api/tradeMasterData';
+import { BackActionButton } from '@shared/components/BackActionButton';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
 import { useEntityParam } from '@shared/hooks/useEntityParam';
 import { useI18n } from '@shared/i18n';
 
-import { CreateDtoFromShipmentModal } from '../shipments/components/CreateDtoFromShipmentModal';
+import { CreateDtoFromShipmentPanel } from '../shipments/components/CreateDtoFromShipmentPanel';
 
 import {
   PAGE_SIZE,
@@ -118,6 +118,7 @@ export function DomesticTransportOrders() {
       actualDeliveryAt: toDateTimeInput(selectedOrder.actual_delivery_at),
       actualPickupAt: toDateTimeInput(selectedOrder.actual_pickup_at),
       destination: selectedOrder.destination ?? '',
+      driverIdentityNo: selectedOrder.driver_identity_no ?? '',
       driverName: selectedOrder.driver_name ?? '',
       driverPhone: selectedOrder.driver_phone ?? '',
       note: selectedOrder.note ?? '',
@@ -182,6 +183,7 @@ export function DomesticTransportOrders() {
         actual_delivery_at: fromDateTimeInput(form.actualDeliveryAt),
         actual_pickup_at: fromDateTimeInput(form.actualPickupAt),
         destination: optionalString(form.destination),
+        driver_identity_no: optionalString(form.driverIdentityNo),
         driver_name: optionalString(form.driverName),
         driver_phone: optionalString(form.driverPhone),
         note: optionalString(form.note),
@@ -240,6 +242,89 @@ export function DomesticTransportOrders() {
     );
   }
 
+  if (dtoModalOpen) {
+    const createTitle = selectedShipment
+      ? t('shipments.createDtoFromShipment', { shipmentNumber: selectedShipment.shipment_number })
+      : t('domesticTransportOrders.create');
+
+    return (
+      <Stack gap="lg" className="dto-page">
+        <Group justify="space-between" align="center" gap="md" className="dl-page-header dto-create-page-header">
+          <Group gap="xs" align="center" wrap="wrap">
+            <BackActionButton
+              label={t('common.back')}
+              onClick={() => setDtoModalOpen(false)}
+            />
+            <Text c="dimmed" size="sm">/</Text>
+            <Text fw={700} size="sm">
+              {createTitle}
+            </Text>
+          </Group>
+        </Group>
+
+        <CreateDtoFromShipmentPanel
+          opened
+          shipments={selectedShipment ? [selectedShipment] : []}
+          onClose={() => setDtoModalOpen(false)}
+          onCreated={() => {
+            refreshOrder();
+            void ordersQuery.refetch();
+            setSelectedShipmentId(null);
+          }}
+        />
+      </Stack>
+    );
+  }
+
+  if (selectedDtoId) {
+    return (
+      <Stack gap="lg" className="dto-page">
+        <Group justify="space-between" align="center" gap="md" className="dl-page-header dto-detail-page-header">
+          <Group gap="xs" align="center" wrap="wrap">
+            <BackActionButton
+              label={t('common.back')}
+              onClick={() => {
+                setSelectedDtoId(null);
+                closeDtoParam();
+              }}
+            />
+            <Text c="dimmed" size="sm">/</Text>
+            <Text fw={700} size="sm">
+              {selectedOrder?.dto_no ?? t('domesticTransportOrders.detailTitle')}
+            </Text>
+            {detailQuery.isFetching ? <Badge variant="light">{t('common.loading')}</Badge> : null}
+          </Group>
+        </Group>
+
+        {updateMutation.isError || actionMutation.isError ? (
+          <Alert color="red" icon={<IconX size={18} />} className="dto-error-alert">
+            {getErrorMessage(updateMutation.error ?? actionMutation.error, t('domesticTransportOrders.requestFailed'))}
+          </Alert>
+        ) : null}
+
+        {selectedOrder ? (
+          <DomesticTransportOrderDetail
+            actionPending={actionMutation.isPending}
+            form={form}
+            isFetching={detailQuery.isFetching}
+            onAction={(action) => actionMutation.mutate(action)}
+            onChange={setForm}
+            onSave={() => updateMutation.mutate()}
+            order={selectedOrder}
+            saving={updateMutation.isPending}
+            truckVendorOptions={truckVendorOptions}
+          />
+        ) : (
+          <PageLoading
+            title={t('domesticTransportOrders.detailTitle')}
+            description={t('domesticTransportOrders.loadingDescription')}
+            metricCount={3}
+          />
+        )}
+      </Stack>
+    );
+  }
+
   return (
     <Stack gap="lg" className="dto-page">
       <Paper withBorder p="lg" className="dto-page-hero">
@@ -255,19 +340,11 @@ export function DomesticTransportOrders() {
           </div>
           <Group gap="xs" className="dto-page-actions dl-page-actions">
             <Button
-              leftSection={<IconTruck size={16} />}
+              leftSection={<IconPlus size={16} />}
               disabled={!selectedShipment || availableShipmentsQuery.isLoading}
               onClick={() => setDtoModalOpen(true)}
             >
               {t('domesticTransportOrders.create')}
-            </Button>
-            <Button
-              leftSection={<IconRefresh size={16} />}
-              variant="light"
-              loading={ordersQuery.isFetching}
-              onClick={() => void ordersQuery.refetch()}
-            >
-              {t('domesticTransportOrders.refresh')}
             </Button>
           </Group>
         </Group>
@@ -342,56 +419,12 @@ export function DomesticTransportOrders() {
         total={total}
       />
 
-      <Drawer
-        classNames={{
-          body: 'dto-detail-drawer-body',
-          content: 'dto-detail-drawer-content',
-          header: 'dto-detail-drawer-header',
-        }}
-        opened={Boolean(selectedDtoId)}
-        onClose={() => {
-          setSelectedDtoId(null);
-          closeDtoParam();
-        }}
-        position="right"
-        size="min(94vw, 58rem)"
-        withCloseButton={false}
-      >
-        {selectedOrder ? (
-          <DomesticTransportOrderDetail
-            actionPending={actionMutation.isPending}
-            form={form}
-            isFetching={detailQuery.isFetching}
-            onAction={(action) => actionMutation.mutate(action)}
-            onChange={setForm}
-            onClose={() => {
-              setSelectedDtoId(null);
-              closeDtoParam();
-            }}
-            onSave={() => updateMutation.mutate()}
-            order={selectedOrder}
-            saving={updateMutation.isPending}
-            truckVendorOptions={truckVendorOptions}
-          />
-        ) : null}
-      </Drawer>
-
       {updateMutation.isError || actionMutation.isError ? (
         <Alert color="red" icon={<IconX size={18} />} className="dto-error-alert">
           {getErrorMessage(updateMutation.error ?? actionMutation.error, t('domesticTransportOrders.requestFailed'))}
         </Alert>
       ) : null}
 
-      <CreateDtoFromShipmentModal
-        opened={dtoModalOpen}
-        shipments={selectedShipment ? [selectedShipment] : []}
-        onClose={() => setDtoModalOpen(false)}
-        onCreated={() => {
-          refreshOrder();
-          void ordersQuery.refetch();
-          setSelectedShipmentId(null);
-        }}
-      />
     </Stack>
   );
 }

@@ -5,6 +5,8 @@ import { Link } from 'react-router-dom';
 
 import type { ShipmentRecord } from '@shared/api/logistics';
 import type { ShipmentModeV1 } from '@shared/api/shipments';
+import { DateField } from '@shared/components/DateField';
+import { BackActionButton } from '@shared/components/BackActionButton';
 import { EmptyState } from '@shared/components/EmptyState';
 import { EntityLink } from '@entities/logistics';
 import { FilterToolbar } from '@shared/components/FilterToolbar';
@@ -15,7 +17,7 @@ import { useI18n } from '@shared/i18n';
 
 import { channelColor, shipmentModeOptions, type ShipmentChannelFilter } from '../model/shipmentModel';
 import { useShipmentsUiStore } from '../model/shipmentsUiStore';
-import { CreateDtoFromShipmentModal } from './CreateDtoFromShipmentModal';
+import { CreateDtoFromShipmentPanel } from './CreateDtoFromShipmentPanel';
 
 const CHANNEL_LABEL_KEY: Record<'GREEN' | 'YELLOW' | 'RED', string> = {
   GREEN: 'shipments.channelGreen',
@@ -104,128 +106,158 @@ export function ShipmentListView({
       return Array.from(new Set([...current, ...eligibleVisible.map((shipment) => shipment.id)]));
     });
 
+  if (dtoModalOpen) {
+    const title = selectedShipments.length > 1
+      ? t('shipments.createDtoTitle', { count: selectedShipments.length })
+      : t('shipments.createDtoFromShipment', { shipmentNumber: selectedShipments[0]?.shipment_number ?? '' });
+
+    return (
+      <Stack gap="lg">
+        <Group justify="space-between" align="center" gap="md" className="dl-page-header shipment-dto-create-header">
+          <Group gap="xs" align="center" wrap="wrap">
+            <BackActionButton
+              label={t('common.back')}
+              onClick={() => setDtoModalOpen(false)}
+            />
+            <Text c="dimmed" size="sm">/</Text>
+            <Text fw={700} size="sm">
+              {title}
+            </Text>
+          </Group>
+        </Group>
+
+        <CreateDtoFromShipmentPanel
+          opened
+          shipments={selectedShipments}
+          onClose={() => setDtoModalOpen(false)}
+          onCreated={() => setSelectedIds([])}
+        />
+      </Stack>
+    );
+  }
+
   return (
     <>
-      <FilterToolbar
-        activeTab={activeTab}
-        isFetching={isFetching}
-        onTabChange={onTabChange}
-        shown={filteredShipments.length}
-        tabs={[
-          { label: t('common.all'), value: 'all', count: tabCounts.all },
-          { label: t('shipments.inTransit'), value: 'in_transit', count: tabCounts.in_transit },
-          { label: t('shipments.customsProcessing'), value: 'customs', count: tabCounts.customs },
-          { label: t('shipments.delivered'), value: 'delivered', count: tabCounts.delivered },
-        ]}
-      >
-        <Stack className="shipment-filter-shell" gap="sm">
-          <div className="shipment-filter-primary dl-filter-row">
-            <TextInput
-              label={t('common.search')}
-              placeholder={t('shipments.searchPlaceholder')}
-              leftSection={<IconSearch size={16} />}
-              value={search}
-              onChange={(event) => onSearchChange(event.currentTarget.value)}
-            />
-            <Select
-              label={<HeaderLabel label={t('shipments.shipmentMode')} hint={t('glossary.shippingMode')} />}
-              value={modeFilter}
-              onChange={(value) => onModeFilterChange((value ?? 'all') as ShipmentModeV1 | 'all')}
-              data={[{ label: t('shipments.allModes'), value: 'all' }, ...translatedShipmentModeOptions]}
-            />
-            <Select
-              label={<HeaderLabel label={t('shipments.carrier')} hint={t('glossary.carrier')} />}
-              placeholder={t('shipments.allCarriers')}
-              value={carrierFilter}
-              onChange={onCarrierFilterChange}
-              data={carrierOptions}
-              searchable
-              clearable
-              nothingFoundMessage={t('shipments.allCarriers')}
-            />
-            <Button
-              className="shipment-filter-clear"
-              variant={hasActiveFilters ? 'light' : 'subtle'}
-              leftSection={<IconX size={16} />}
-              onClick={onClearFilters}
-              disabled={!hasActiveFilters}
-            >
-              {t('common.clear')}
-            </Button>
-          </div>
+      <div className="shipment-filter-toolbar">
+        <FilterToolbar
+          activeTab={activeTab}
+          isFetching={isFetching}
+          onTabChange={onTabChange}
+          shown={filteredShipments.length}
+          tabs={[
+            { label: t('common.all'), value: 'all', count: tabCounts.all },
+            { label: t('shipments.inTransit'), value: 'in_transit', count: tabCounts.in_transit },
+            { label: t('shipments.customsProcessing'), value: 'customs', count: tabCounts.customs },
+            { label: t('shipments.delivered'), value: 'delivered', count: tabCounts.delivered },
+          ]}
+        >
+          <Stack className="shipment-filter-shell" gap="sm">
+            <div className="shipment-filter-primary dl-filter-row">
+              <TextInput
+                label={t('common.search')}
+                placeholder={t('shipments.searchPlaceholder')}
+                leftSection={<IconSearch size={16} />}
+                value={search}
+                onChange={(event) => onSearchChange(event.currentTarget.value)}
+              />
+              <Select
+                label={<HeaderLabel label={t('shipments.shipmentMode')} hint={t('glossary.shippingMode')} />}
+                value={modeFilter}
+                onChange={(value) => onModeFilterChange((value ?? 'all') as ShipmentModeV1 | 'all')}
+                data={[{ label: t('shipments.allModes'), value: 'all' }, ...translatedShipmentModeOptions]}
+              />
+              <Select
+                label={<HeaderLabel label={t('shipments.carrier')} hint={t('glossary.carrier')} />}
+                placeholder={t('shipments.allCarriers')}
+                value={carrierFilter}
+                onChange={onCarrierFilterChange}
+                data={carrierOptions}
+                searchable
+                clearable
+                nothingFoundMessage={t('shipments.allCarriers')}
+              />
+              <Button
+                className="shipment-filter-clear"
+                variant={hasActiveFilters ? 'light' : 'subtle'}
+                leftSection={<IconX size={16} />}
+                onClick={onClearFilters}
+                disabled={!hasActiveFilters}
+              >
+                {t('common.clear')}
+              </Button>
+            </div>
 
-          <div className="shipment-filter-advanced dl-filter-advanced">
-            <div className="shipment-filter-secondary">
-              <Stack gap={6} className="shipment-filter-channel">
-                <Group justify="space-between" gap="xs" wrap="nowrap">
-                  <Text size="sm" fw={500}>
-                    <HeaderLabel label={t('shipments.channel')} hint={t('glossary.customsChannel')} />
-                  </Text>
-                </Group>
-                <SegmentedControl
-                  fullWidth
-                  value={channelFilter}
-                  onChange={(value) => onChannelFilterChange(value as ShipmentChannelFilter)}
-                  data={[
-                    {
-                      label: (
-                        <Group component="span" gap={6} justify="center" wrap="nowrap">
-                          <span className="shipment-filter-channel-dot shipment-filter-channel-dot-all" />
-                          {t('common.all')}
-                        </Group>
-                      ),
-                      value: 'all',
-                    },
-                    {
-                      label: (
-                        <Group component="span" gap={6} justify="center" wrap="nowrap">
-                          <span className="shipment-filter-channel-dot shipment-filter-channel-dot-green" />
-                          {t('shipments.channelGreen')}
-                        </Group>
-                      ),
-                      value: 'GREEN',
-                    },
-                    {
-                      label: (
-                        <Group component="span" gap={6} justify="center" wrap="nowrap">
-                          <span className="shipment-filter-channel-dot shipment-filter-channel-dot-yellow" />
-                          {t('shipments.channelYellow')}
-                        </Group>
-                      ),
-                      value: 'YELLOW',
-                    },
-                    {
-                      label: (
-                        <Group component="span" gap={6} justify="center" wrap="nowrap">
-                          <span className="shipment-filter-channel-dot shipment-filter-channel-dot-red" />
-                          {t('shipments.channelRed')}
-                        </Group>
-                      ),
-                      value: 'RED',
-                    },
-                  ]}
-                />
-              </Stack>
-              <div className="shipment-filter-dates dl-filter-dates">
-                <TextInput
-                  label={<HeaderLabel label={t('shipments.etdFrom')} hint={t('glossary.etd')} />}
-                  leftSection={<IconCalendarStats size={16} />}
-                  type="date"
-                  value={etdFrom}
-                  onChange={(event) => onEtdFromChange(event.currentTarget.value)}
-                />
-                <TextInput
-                  label={<HeaderLabel label={t('shipments.etdTo')} hint={t('glossary.etd')} />}
-                  leftSection={<IconCalendarStats size={16} />}
-                  type="date"
-                  value={etdTo}
-                  onChange={(event) => onEtdToChange(event.currentTarget.value)}
-                />
+            <div className="shipment-filter-advanced dl-filter-advanced">
+              <div className="shipment-filter-secondary">
+                <Stack gap={6} className="shipment-filter-channel">
+                  <Group justify="space-between" gap="xs" wrap="nowrap">
+                    <Text size="sm" fw={500}>
+                      <HeaderLabel label={t('shipments.channel')} hint={t('glossary.customsChannel')} />
+                    </Text>
+                  </Group>
+                  <SegmentedControl
+                    fullWidth
+                    value={channelFilter}
+                    onChange={(value) => onChannelFilterChange(value as ShipmentChannelFilter)}
+                    data={[
+                      {
+                        label: (
+                          <Group component="span" gap={6} justify="center" wrap="nowrap">
+                            <span className="shipment-filter-channel-dot shipment-filter-channel-dot-all" />
+                            {t('common.all')}
+                          </Group>
+                        ),
+                        value: 'all',
+                      },
+                      {
+                        label: (
+                          <Group component="span" gap={6} justify="center" wrap="nowrap">
+                            <span className="shipment-filter-channel-dot shipment-filter-channel-dot-green" />
+                            {t('shipments.channelGreen')}
+                          </Group>
+                        ),
+                        value: 'GREEN',
+                      },
+                      {
+                        label: (
+                          <Group component="span" gap={6} justify="center" wrap="nowrap">
+                            <span className="shipment-filter-channel-dot shipment-filter-channel-dot-yellow" />
+                            {t('shipments.channelYellow')}
+                          </Group>
+                        ),
+                        value: 'YELLOW',
+                      },
+                      {
+                        label: (
+                          <Group component="span" gap={6} justify="center" wrap="nowrap">
+                            <span className="shipment-filter-channel-dot shipment-filter-channel-dot-red" />
+                            {t('shipments.channelRed')}
+                          </Group>
+                        ),
+                        value: 'RED',
+                      },
+                    ]}
+                  />
+                </Stack>
+                <div className="shipment-filter-dates dl-filter-dates">
+                  <DateField
+                    label={<HeaderLabel label={t('shipments.etdFrom')} hint={t('glossary.etd')} />}
+                    leftSection={<IconCalendarStats size={16} />}
+                    value={etdFrom}
+                    onChange={(value) => onEtdFromChange(value ?? '')}
+                  />
+                  <DateField
+                    label={<HeaderLabel label={t('shipments.etdTo')} hint={t('glossary.etd')} />}
+                    leftSection={<IconCalendarStats size={16} />}
+                    value={etdTo}
+                    onChange={(value) => onEtdToChange(value ?? '')}
+                  />
+                </div>
               </div>
             </div>
-          </div>
-        </Stack>
-      </FilterToolbar>
+          </Stack>
+        </FilterToolbar>
+      </div>
 
       {selectedIds.length > 0 ? (
         <Paper withBorder p="xs">
@@ -398,12 +430,6 @@ export function ShipmentListView({
         />
       </Paper>
 
-      <CreateDtoFromShipmentModal
-        opened={dtoModalOpen}
-        shipments={selectedShipments}
-        onClose={() => setDtoModalOpen(false)}
-        onCreated={() => setSelectedIds([])}
-      />
     </>
   );
 }

@@ -1,7 +1,8 @@
 import { Button, Center, Container, Group, Paper, SimpleGrid, Stack, Text, Title, ThemeIcon } from '@mantine/core';
 import { useNavigate, Link } from 'react-router-dom';
-import { IconArrowLeft, IconChecklist, IconLayoutDashboard, IconMapPinOff, IconSettings } from '@tabler/icons-react';
+import { IconChecklist, IconLayoutDashboard, IconMapPinOff, IconSettings } from '@tabler/icons-react';
 
+import { BackActionButton } from '@shared/components/BackActionButton';
 import { useI18n } from '@shared/i18n';
 
 export function NotFound() {
@@ -64,14 +65,7 @@ export function NotFound() {
               </div>
 
               <Group gap="sm" mt="md">
-                <Button
-                  leftSection={<IconArrowLeft size={16} />}
-                  onClick={() => navigate(-1)}
-                  variant="outline"
-                  radius="md"
-                >
-                  {t('pageFeedback.retry') || 'Back'}
-                </Button>
+                <BackActionButton label={t('common.back')} onClick={() => navigate(-1)} variant="outline" />
                 <Button
                   leftSection={<IconLayoutDashboard size={16} />}
                   onClick={() => navigate('/')}

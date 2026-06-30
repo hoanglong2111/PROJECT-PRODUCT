@@ -103,8 +103,17 @@ describe('buildCssVariablesResolver', () => {
   it('returns light and dark color mappings', () => {
     const resolver = buildCssVariablesResolver('ocean', 'none');
     const result = resolver();
+<<<<<<< HEAD
     expect(Object.keys(result.light).length).toBe(18);
     expect(Object.keys(result.dark).length).toBe(18);
+=======
+    // Each scheme maps the 10 palette shades (--mantine-color-<name>-0..9), plus a
+    // handful of primary-variant overrides (-filled/-contrast/-light/-outline...).
+    const shadeKeys = (vars: Record<string, string>) =>
+      Object.keys(vars).filter((key) => /-\d$/.test(key));
+    expect(shadeKeys(result.light).length).toBe(10);
+    expect(shadeKeys(result.dark).length).toBe(10);
+>>>>>>> upstream/main
   });
 
   it('dark mode uses dark tuple colors', () => {

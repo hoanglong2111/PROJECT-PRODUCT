@@ -2,7 +2,6 @@ import {
   ActionIcon,
   Badge,
   Button,
-  Drawer,
   Group,
   Loader,
   Paper,
@@ -26,6 +25,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 import { EmptyState } from '@shared/components/EmptyState';
+import { BackActionButton } from '@shared/components/BackActionButton';
 import { FilterSegment } from '@shared/components/FilterSegment';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { ListPagination, useListPagination } from '@shared/components/ListPagination';
@@ -47,7 +47,7 @@ import { useTasksUiStore } from './model/tasksUiStore';
 import { Gd1PoTasksBoard } from './components/Gd1PoTasksBoard';
 import { Metric } from './components/Metric';
 import { TaskDetail } from './components/TaskDetail';
-import { TaskFormModal } from './components/TaskFormModal';
+import { TaskFormPanel } from './components/TaskFormPanel';
 
 export function Tasks() {
   const { priorityLabel, statusLabel, t, taskRoleLabel } = useI18n();
@@ -69,6 +69,10 @@ export function Tasks() {
   const openEditTask = (task: LogisticsTask) => {
     setEditingTask(task);
     taskFormHandlers.open();
+  };
+  const closeTaskForm = () => {
+    taskFormHandlers.close();
+    setEditingTask(null);
   };
   const search = useTasksUiStore((s) => s.search);
   const statusFilter = useTasksUiStore((s) => s.statusFilter);
@@ -223,8 +227,10 @@ export function Tasks() {
     openTaskParam(task.task_id);
   };
 
-  const closeDrawer = () => {
+  const closeTaskDetail = () => {
     setSelectedTask(null);
+    setEditingTask(null);
+    taskFormHandlers.close();
     closeTaskParam();
   };
 
@@ -248,6 +254,50 @@ export function Tasks() {
         description={t('tasks.loadingDescription')}
         tableColumns={[t('common.task'), 'DO', t('common.role'), t('common.assignee'), t('forms.priority'), t('common.status'), t('tasks.progress'), t('tasks.dueDate'), t('common.blocker')]}
       />
+    );
+  }
+
+  if (taskFormOpened) {
+    return (
+      <Stack gap="lg">
+        <Group justify="space-between" align="center" gap="md" className="dl-page-header task-workbench-header">
+          <Group gap="xs" align="center" wrap="wrap">
+            <BackActionButton label={t('common.back')} onClick={closeTaskForm} />
+            <Text c="dimmed" size="sm">/</Text>
+            <Text fw={700} size="sm">
+              {editingTask ? t('tasks.editTask') : t('tasks.createTask')}
+            </Text>
+          </Group>
+        </Group>
+
+        <TaskFormPanel
+          editing={editingTask}
+          opened={taskFormOpened}
+          onClose={closeTaskForm}
+          onSaved={(saved) => {
+            setSelectedTask(saved);
+            openTaskParam(saved.task_id);
+          }}
+        />
+      </Stack>
+    );
+  }
+
+  if (selectedTask) {
+    return (
+      <Stack gap="lg">
+        <Group justify="space-between" align="center" gap="md" className="dl-page-header task-workbench-header">
+          <Group gap="xs" align="center" wrap="wrap">
+            <BackActionButton label={t('common.back')} onClick={closeTaskDetail} />
+            <Text c="dimmed" size="sm">/</Text>
+            <Text fw={700} size="sm">
+              {selectedTask.task_id}
+            </Text>
+          </Group>
+        </Group>
+
+        <TaskDetail task={selectedTask} onUpdated={setSelectedTask} onEdit={openEditTask} />
+      </Stack>
     );
   }
 
@@ -363,9 +413,9 @@ export function Tasks() {
                   />
                 </SimpleGrid>
 
-                <Group className="tasks-filter-toggles" gap="xs" wrap="nowrap">
+                <Group className="tasks-filter-toggles" gap="xs" wrap="wrap">
                   <Button
-                    className="tasks-filter-toggle dl-toggle"
+                    className="tasks-filter-toggle dl-toggle mr-2"
                     variant={requiredOnly ? 'light' : 'subtle'}
                     color={requiredOnly ? 'blue' : 'gray'}
                     onClick={() => setRequiredOnly(!requiredOnly)}
@@ -374,7 +424,7 @@ export function Tasks() {
                     {t('tasks.filterRequiredOnly')}
                   </Button>
                   <Button
-                    className="tasks-filter-toggle dl-toggle"
+                    className="tasks-filter-toggle dl-toggle mr-2"
                     variant={overdueOnly ? 'light' : 'subtle'}
                     color={overdueOnly ? 'orange' : 'gray'}
                     onClick={() => setOverdueOnly(!overdueOnly)}
@@ -502,16 +552,6 @@ export function Tasks() {
         </Tabs.Panel>
       </Tabs>
 
-      <Drawer opened={Boolean(focusedTask && selectedTask)} onClose={closeDrawer} title={t('tasks.detailTitle')} position="right" size="lg">
-        {selectedTask ? <TaskDetail task={selectedTask} onUpdated={setSelectedTask} onEdit={openEditTask} /> : null}
-      </Drawer>
-
-      <TaskFormModal
-        editing={editingTask}
-        opened={taskFormOpened}
-        onClose={taskFormHandlers.close}
-        onSaved={(saved) => setSelectedTask((current) => (current && current.task_id === saved.task_id ? saved : current))}
-      />
     </Stack>
   );
 }

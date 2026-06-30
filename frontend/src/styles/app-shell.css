@@ -2,10 +2,33 @@
 
 .mantine-AppShell-header {
   border-bottom-color: var(--kbfe-border-primary);
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 88%, var(--kbfe-background-secondary) 12%);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--kbfe-background-secondary) 78%, transparent);
+  backdrop-filter: blur(14px) saturate(1.08);
 }
 
 .mantine-AppShell-navbar {
   border-right-color: var(--kbfe-border-primary);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--kbfe-surface-elevated) 94%, var(--kbfe-background-secondary) 6%), var(--kbfe-background-secondary));
+  box-shadow: inset -1px 0 0 color-mix(in srgb, var(--kbfe-background-secondary) 64%, transparent);
+}
+
+.app-shell-nav {
+  display: grid;
+  align-content: start;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.app-shell-nav .mantine-NavLink-root {
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+}
+
+.app-shell-nav .mantine-NavLink-root:hover {
+  border-color: color-mix(in srgb, var(--kbfe-primary-color) 18%, var(--kbfe-border-primary));
+  background: color-mix(in srgb, var(--kbfe-primary-color) 5%, var(--kbfe-surface-elevated));
 }
 
 .brand-mark {
@@ -14,6 +37,19 @@
   min-width: 0;
   gap: 0.625rem;
   color: inherit;
+  border-radius: 0.5rem;
+  transition:
+    background-color 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.brand-mark:hover {
+  background: color-mix(in srgb, var(--kbfe-primary-color) 6%, transparent);
+  transform: translateY(-1px);
+}
+
+.brand-mark:active {
+  transform: translateY(0);
 }
 
 .brand-logo-frame {
@@ -40,10 +76,29 @@
 .profile-trigger {
   border-radius: 0.5rem;
   padding: 0.25rem 0.375rem;
+  border: 1px solid transparent;
+  transition:
+    background-color 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .profile-trigger:hover {
   background: var(--kbfe-hover-background);
+  border-color: color-mix(in srgb, var(--kbfe-primary-color) 16%, var(--kbfe-border-primary));
+}
+
+.profile-trigger:active {
+  transform: translateY(1px);
+}
+
+/* User avatar initials: reflect the active palette but stay readable — primary
+   fill + its matching contrast ink. Mantine's default muted gray went dark-on-
+   dark with slate / other dark presets (the initials nearly vanished). */
+.profile-trigger .mantine-Avatar-placeholder {
+  background: var(--kbfe-primary-color);
+  color: var(--kbfe-primary-contrast);
+  font-weight: 600;
 }
 
 .profile-meta {

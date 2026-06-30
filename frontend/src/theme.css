@@ -237,6 +237,12 @@ html {
   --kbfe-control-height-sm: 2rem;
   --kbfe-control-height-md: 2.25rem;
   --kbfe-control-height-lg: 2.625rem;
+  --kbfe-app-max-width: 92rem;
+  --kbfe-text-measure: 65ch;
+  --kbfe-z-background-texture: 0;
+  --kbfe-z-sticky: 10;
+  --kbfe-z-overlay: 40;
+  --kbfe-z-skip-link: 60;
   /* Subtle surface + shadow tokens, derived from the theme-aware base vars. */
   --kbfe-surface-subtle: color-mix(in srgb, var(--kbfe-surface-elevated) 92%, var(--kbfe-border-primary) 8%);
   --kbfe-shadow-xs: var(--kbfe-shadow-sm);
@@ -259,6 +265,10 @@ html {
   --kbfe-status-yellow-bg: color-mix(in srgb, var(--mantine-color-yellow-5) 12%, var(--kbfe-surface-elevated));
   --kbfe-status-red: color-mix(in srgb, var(--mantine-color-red-6) 74%, var(--kbfe-text-primary));
   --kbfe-status-red-bg: color-mix(in srgb, var(--mantine-color-red-6) 10%, var(--kbfe-surface-elevated));
+  --kbfe-status-cyan: color-mix(in srgb, var(--mantine-color-cyan-7) 72%, var(--kbfe-text-primary));
+  --kbfe-status-cyan-bg: color-mix(in srgb, var(--mantine-color-cyan-6) 10%, var(--kbfe-surface-elevated));
+  --kbfe-status-gray: color-mix(in srgb, var(--mantine-color-gray-7) 80%, var(--kbfe-text-primary));
+  --kbfe-status-gray-bg: color-mix(in srgb, var(--mantine-color-gray-6) 10%, var(--kbfe-surface-elevated));
   --mantine-color-body: var(--kbfe-background-primary);
   --mantine-color-text: var(--kbfe-text-primary);
   --mantine-color-default: var(--kbfe-background-secondary);
@@ -320,6 +330,10 @@ html[data-kbfe-visual-theme='high-contrast'] {
   --kbfe-status-yellow-bg: var(--kbfe-surface-elevated);
   --kbfe-status-red: var(--kbfe-text-primary);
   --kbfe-status-red-bg: var(--kbfe-surface-elevated);
+  --kbfe-status-cyan: var(--kbfe-text-primary);
+  --kbfe-status-cyan-bg: var(--kbfe-surface-elevated);
+  --kbfe-status-gray: var(--kbfe-text-primary);
+  --kbfe-status-gray-bg: var(--kbfe-surface-elevated);
 }
 
 html[data-kbfe-density='compact'] {

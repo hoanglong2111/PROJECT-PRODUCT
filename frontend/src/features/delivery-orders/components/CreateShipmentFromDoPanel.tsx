@@ -1,9 +1,10 @@
-import { Alert, Button, Group, Modal, Select, SimpleGrid, Stack, Text, TextInput } from '@mantine/core';
+import { Alert, Button, Group, Paper, Select, SimpleGrid, Stack, Text, TextInput } from '@mantine/core';
 import { IconAlertTriangle, IconAnchor } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { DateField } from '@shared/components/DateField';
 import type { DeliveryOrder } from '@shared/api/logistics';
 import { createShipment } from '@shared/api/logistics';
 import type { ShipmentModeV1 } from '@shared/api/shipments';
@@ -17,7 +18,7 @@ function inferMode(shippingMethod: DeliveryOrder['logistics_shipping']['shipping
   return 'SEA';
 }
 
-export function CreateShipmentFromDoModal({
+export function CreateShipmentFromDoPanel({
   deliveryOrder,
   onClose,
   opened,
@@ -53,7 +54,7 @@ export function CreateShipmentFromDoModal({
     { label: t('shipments.modeOther'), value: 'OTHER' },
   ];
 
-  // Re-seed the form from the DO every time the modal opens so prefilled
+  // Re-seed the form from the DO every time the panel opens so prefilled
   // route/date values follow the currently selected delivery order.
   useEffect(() => {
     if (!opened) return;
@@ -93,13 +94,10 @@ export function CreateShipmentFromDoModal({
     },
   });
 
+  if (!opened) return null;
+
   return (
-    <Modal
-      opened={opened}
-      onClose={onClose}
-      title={t('shipments.createFromDoTitle', { doNumber })}
-      size="lg"
-    >
+    <Paper withBorder p="lg" className="delivery-order-shipment-create-panel">
       <Stack gap="md">
         <Text size="sm" c="dimmed">
           {t('shipments.createFromDoDescription', { poNumber: poNumber || t('shipments.fallbackPo') })}
@@ -123,8 +121,8 @@ export function CreateShipmentFromDoModal({
           <TextInput label={t('shipments.blAwb')} value={blAwbNo} onChange={(event) => setBlAwbNo(event.currentTarget.value)} />
           <TextInput label="POL" placeholder={t('shipments.portOfLoading')} value={originPort} onChange={(event) => setOriginPort(event.currentTarget.value)} />
           <TextInput label="POD" placeholder={t('shipments.portOfDischarge')} value={destPort} onChange={(event) => setDestPort(event.currentTarget.value)} />
-          <TextInput label="ETD" type="date" value={etd} onChange={(event) => setEtd(event.currentTarget.value)} />
-          <TextInput label="ETA" type="date" value={eta} onChange={(event) => setEta(event.currentTarget.value)} />
+          <DateField label="ETD" value={etd} onChange={(value) => setEtd(value ?? '')} />
+          <DateField label="ETA" value={eta} onChange={(value) => setEta(value ?? '')} />
         </SimpleGrid>
 
         {createMutation.isError ? (
@@ -142,6 +140,6 @@ export function CreateShipmentFromDoModal({
           </Button>
         </Group>
       </Stack>
-    </Modal>
+    </Paper>
   );
 }

@@ -27,6 +27,7 @@ import {
   type UpdatePurchaseOrderV1Payload,
 } from '@shared/api/purchaseOrders';
 import type { QuotationV1 } from '@shared/api/quotations';
+import { DateField } from '@shared/components/DateField';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
@@ -383,22 +384,18 @@ export function PurchaseOrderForm({
                 searchable
                 clearable
               />
-              <TextInput
+              <DateField
                 label="ETD"
-                type="date"
                 value={draft.expected_etd}
-                onChange={(event) => {
-                  const { value } = event.currentTarget;
-                  setDraft((current) => ({ ...current, expected_etd: value }));
+                onChange={(value) => {
+                  setDraft((current) => ({ ...current, expected_etd: value ?? '' }));
                 }}
               />
-              <TextInput
+              <DateField
                 label="ETA"
-                type="date"
                 value={draft.expected_eta}
-                onChange={(event) => {
-                  const { value } = event.currentTarget;
-                  setDraft((current) => ({ ...current, expected_eta: value }));
+                onChange={(value) => {
+                  setDraft((current) => ({ ...current, expected_eta: value ?? '' }));
                 }}
               />
             </SimpleGrid>
@@ -626,11 +623,10 @@ export function PurchaseOrderForm({
                             decimalScale={3}
                             onChange={(value) => updateLine(activeLine.clientId, { gross_weight_kg: toNumber(value) })}
                           />
-                          <TextInput
+                          <DateField
                             label="Line ETA"
-                            type="date"
                             value={activeLine.expected_eta_line}
-                            onChange={(event) => updateLine(activeLine.clientId, { expected_eta_line: event.currentTarget.value })}
+                            onChange={(value) => updateLine(activeLine.clientId, { expected_eta_line: value ?? '' })}
                           />
                         </SimpleGrid>
                       </div>

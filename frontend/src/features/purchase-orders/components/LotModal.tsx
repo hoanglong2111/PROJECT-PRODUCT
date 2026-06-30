@@ -2,6 +2,7 @@ import { Alert, Button, Group, Modal, Select, SimpleGrid, Stack, Textarea, TextI
 import { IconAlertTriangle } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 
+import { DateField } from '@shared/components/DateField';
 import type { PoLotStatus } from '@shared/api/purchaseOrders';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
@@ -61,23 +62,20 @@ export function LotModal({
               data={lotStatusOptions}
               onChange={(value) => setLocalDraft({ ...localDraft, status: (value || 'PLANNED') as PoLotStatus })}
             />
-            <TextInput
+            <DateField
               label="Cargo ready"
-              type="date"
               value={localDraft.planned_cargo_ready_date}
-              onChange={(event) => setLocalDraft({ ...localDraft, planned_cargo_ready_date: event.currentTarget.value })}
+              onChange={(value) => setLocalDraft({ ...localDraft, planned_cargo_ready_date: value ?? '' })}
             />
-            <TextInput
+            <DateField
               label="ETD"
-              type="date"
               value={localDraft.planned_etd}
-              onChange={(event) => setLocalDraft({ ...localDraft, planned_etd: event.currentTarget.value })}
+              onChange={(value) => setLocalDraft({ ...localDraft, planned_etd: value ?? '' })}
             />
-            <TextInput
+            <DateField
               label="ETA"
-              type="date"
               value={localDraft.planned_eta}
-              onChange={(event) => setLocalDraft({ ...localDraft, planned_eta: event.currentTarget.value })}
+              onChange={(value) => setLocalDraft({ ...localDraft, planned_eta: value ?? '' })}
             />
           </SimpleGrid>
           <Textarea

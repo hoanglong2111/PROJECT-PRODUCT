@@ -15,8 +15,13 @@
   min-width: 0;
 }
 
+.purchase-order-edit-workbench {
+  min-width: 0;
+}
+
 .purchase-orders-page-header,
 .purchase-orders-subheader,
+.purchase-order-edit-header,
 .purchase-order-detail-hero-inner,
 .purchase-order-detail-title-row,
 .purchase-order-po-lines-header,
@@ -77,6 +82,36 @@
   background:
     radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--kbfe-primary-color) 10%, transparent), transparent 32%),
     var(--kbfe-surface-elevated);
+}
+
+.purchase-order-detail-hero-inner {
+  padding: 1rem;
+}
+
+.purchase-order-detail-signal-grid {
+  padding: 0 1rem 1rem;
+  align-items: stretch;
+}
+
+.purchase-order-detail-signal {
+  min-width: 0;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 84%, transparent);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 92%, var(--kbfe-surface-subtle) 8%);
+}
+
+.purchase-order-detail-signal .mantine-Text-root {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.purchase-order-detail-hero > .mantine-Alert-root {
+  margin: 0 1rem 1rem;
+}
+
+.purchase-order-detail-hero > .mantine-Text-root {
+  margin: -0.25rem 1rem 1rem;
 }
 
 .purchase-order-list-empty {

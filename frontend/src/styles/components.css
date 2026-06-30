@@ -27,14 +27,50 @@
   white-space: nowrap;
 }
 
-/* Flat, token-driven card chrome. No glassmorphism blur, no noise texture overlay —
-   depth comes only from a subtle border + shadow (premium = restraint, per AGENTS.md). */
+.kbfe-back-action {
+  max-width: 100%;
+  min-width: max-content;
+  min-height: 2rem;
+  padding-inline: 0.5rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  color: color-mix(in srgb, var(--kbfe-primary-color) 68%, var(--kbfe-text-primary)) !important;
+}
+
+.kbfe-back-action:hover {
+  border-color: color-mix(in srgb, var(--kbfe-primary-color) 22%, var(--kbfe-border-primary));
+  background: color-mix(in srgb, var(--kbfe-primary-color) 7%, var(--kbfe-surface-elevated)) !important;
+}
+
+.kbfe-back-action .mantine-Button-section {
+  margin-inline-end: 0.375rem;
+}
+
+.kbfe-back-action .mantine-Button-label,
+.kbfe-back-action-label {
+  min-width: 0;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+/* Token-driven card chrome. Depth stays restrained, but a faint top edge and
+   tinted shadow keep dashboards from reading as flat default cards. */
 .metric-card {
   position: relative;
   background: var(--kbfe-surface-elevated);
   border-color: var(--kbfe-border-primary);
   transition: transform 150ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 150ms cubic-bezier(0.2, 0.8, 0.2, 1), border-color 150ms cubic-bezier(0.2, 0.8, 0.2, 1);
   overflow: hidden;
+}
+
+.metric-card::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  content: "";
+  pointer-events: none;
+  background: color-mix(in srgb, var(--kbfe-primary-color) 18%, transparent);
 }
 
 .metric-card:hover {
@@ -137,11 +173,48 @@
 
 .page-state-panel {
   max-width: 56rem;
+  border-color: var(--kbfe-border-primary) !important;
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 96%, var(--kbfe-background-secondary) 4%);
+  box-shadow: var(--kbfe-shadow-sm);
 }
 
 .page-state-panel-error {
   border-color: var(--kbfe-risk-border);
   background: var(--kbfe-risk-background);
+}
+
+.page-loading-layout {
+  min-width: 0;
+}
+
+.page-loading-layout > .mantine-Group-root:first-child .mantine-Text-root {
+  max-width: var(--kbfe-text-measure);
+  line-height: var(--kbfe-line-height-normal);
+}
+
+.page-loading-filter,
+.page-loading-table {
+  overflow: hidden;
+  border-color: var(--kbfe-border-primary) !important;
+  background: var(--kbfe-surface-elevated);
+  box-shadow: var(--kbfe-shadow-sm);
+}
+
+.empty-state {
+  width: 100%;
+  min-width: 0;
+  padding-inline: 1rem;
+  border-radius: 0.5rem;
+}
+
+.empty-state .mantine-ThemeIcon-root {
+  color: var(--kbfe-icon-color);
+  background: var(--kbfe-icon-background);
+  box-shadow: inset 0 0 0 1px var(--kbfe-icon-border);
+}
+
+.empty-state .mantine-Text-root {
+  max-width: var(--kbfe-text-measure);
 }
 
 .status-control {
@@ -174,10 +247,11 @@ html[data-kbfe-density='compact'] .metric-icon {
   height: 2.25rem;
 }
 
-/* Active/pressed state on all buttons and interactive elements */
+/* Active/pressed state on buttons and interactive elements */
 .mantine-Button-root:active:not(:disabled),
+.mantine-ActionIcon-root:active:not(:disabled),
 .module-link:active {
-  transform: scale(0.98);
+  transform: translateY(1px) scale(0.99);
   transition: transform 80ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -428,12 +502,17 @@ html[data-kbfe-visual-theme='high-contrast'] .dl-filter-panel .mantine-Select-in
 
 .dl-chip.is-active {
   --dl-chip: var(--chip-color, var(--kbfe-primary-color));
+  /* Readable "ink" = the chip hue mixed toward the theme text colour. Using the
+     raw hue as label text fails for light primaries (amber/yellow → light-on-
+     light) and is muted for dark ones (slate). The mix keeps the hue but is
+     always legible on the 10% tint, in both light and dark schemes. */
+  --dl-chip-ink: color-mix(in srgb, var(--dl-chip) 62%, var(--kbfe-text-primary));
   background: color-mix(in srgb, var(--dl-chip) 10%, var(--kbfe-surface-elevated)) !important;
   border-color: color-mix(in srgb, var(--dl-chip) 72%, var(--kbfe-border-primary)) !important;
   box-shadow:
     inset 0 0 0 1px color-mix(in srgb, var(--dl-chip) 16%, transparent),
     inset 0 -2px 0 var(--dl-chip);
-  color: var(--dl-chip) !important;
+  color: var(--dl-chip-ink) !important;
 }
 
 .dl-chip-dot {
@@ -467,7 +546,7 @@ html[data-kbfe-visual-theme='high-contrast'] .dl-filter-panel .mantine-Select-in
 
 .dl-chip.is-active .dl-chip-count {
   background: color-mix(in srgb, var(--chip-color, var(--kbfe-primary-color)) 16%, var(--kbfe-surface-elevated));
-  color: var(--chip-color, var(--kbfe-primary-color));
+  color: var(--dl-chip-ink, var(--chip-color, var(--kbfe-primary-color)));
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--chip-color, var(--kbfe-primary-color)) 18%, transparent);
 }
 
@@ -550,6 +629,13 @@ html[data-kbfe-visual-theme='high-contrast'] .dl-filter-panel .mantine-Select-in
   box-shadow: var(--kbfe-shadow-sm) !important;
   border-radius: var(--mantine-radius-md);
   overflow: hidden;
+}
+
+.dl-data-panel,
+.dl-filter-panel,
+.page-state-panel,
+.metric-card {
+  background-clip: padding-box;
 }
 
 .dl-data-panel-header {

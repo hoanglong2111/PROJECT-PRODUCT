@@ -1,5 +1,5 @@
-import { Badge, Button, Group, Paper, Stack, Table, Tabs, Text, TextInput, Title } from '@mantine/core';
-import { IconPlus, IconSearch } from '@tabler/icons-react';
+import { ActionIcon, Badge, Button, Group, Paper, Stack, Table, Tabs, Text, TextInput, Title, Tooltip } from '@mantine/core';
+import { IconEye, IconPlus, IconSearch } from '@tabler/icons-react';
 
 import type { QuotationV1 } from '@shared/api/quotations';
 import { EmptyState } from '@shared/components/EmptyState';
@@ -89,15 +89,12 @@ export function QuotationListView({ filteredQuotations, tabCounts, onInspect, on
                   <Table.Th>{t('quotations.total')}</Table.Th>
                   <Table.Th>{t('quotations.validUntil')}</Table.Th>
                   <Table.Th>{t('quotations.status')}</Table.Th>
+                  <Table.Th />
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
                 {pagination.visibleItems.map((quotation) => (
-                  <Table.Tr
-                    key={quotation.id}
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => onInspect(quotation)}
-                  >
+                  <Table.Tr key={quotation.id}>
                     <Table.Td fw={600}>{quotation.quotation_no}</Table.Td>
                     <Table.Td>{quotation.customer_ref ?? '—'}</Table.Td>
                     <Table.Td>{quotation.incoterm_code ?? '—'}</Table.Td>
@@ -108,6 +105,17 @@ export function QuotationListView({ filteredQuotations, tabCounts, onInspect, on
                     <Table.Td>{quotation.valid_until ?? '—'}</Table.Td>
                     <Table.Td>
                       <StatusBadge status={quotation.status} />
+                    </Table.Td>
+                    <Table.Td>
+                      <Tooltip label={t('quotations.inspect')}>
+                        <ActionIcon
+                          variant="subtle"
+                          aria-label={t('quotations.inspect')}
+                          onClick={() => onInspect(quotation)}
+                        >
+                          <IconEye size={18} />
+                        </ActionIcon>
+                      </Tooltip>
                     </Table.Td>
                   </Table.Tr>
                 ))}

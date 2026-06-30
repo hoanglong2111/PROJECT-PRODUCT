@@ -5,7 +5,6 @@ import {
   Checkbox,
   Group,
   Loader,
-  Modal,
   NumberInput,
   Paper,
   Select,
@@ -22,6 +21,7 @@ import {
   consolidateDomesticTransportOrder,
   createDomesticTransportOrderFromShipment,
 } from '@shared/api/domesticTransportOrders';
+import { DateField } from '@shared/components/DateField';
 import type { ShipmentRecord } from '@shared/api/logistics';
 import {
   createShipmentContainer,
@@ -36,7 +36,7 @@ import { CONTAINER_TYPE_OPTIONS } from '../model/shipmentModel';
 
 type ContainerRow = ShipmentContainerV1 & { _shipmentNumber: string };
 
-export function CreateDtoFromShipmentModal({
+export function CreateDtoFromShipmentPanel({
   onClose,
   onCreated,
   opened,
@@ -201,186 +201,187 @@ export function CreateDtoFromShipmentModal({
     addContainerMutation.mutate();
   };
 
-  const title = isConsolidation
-    ? t('shipments.createDtoTitle', { count: shipments.length })
-    : t('shipments.createDtoFromShipment', { shipmentNumber: shipments[0]?.shipment_number ?? '' });
+  const content = (
+    <Stack gap="md">
+      <Alert color={isConsolidation ? 'orange' : 'teal'} icon={<IconTruck size={18} />}>
+        {isConsolidation
+          ? t('shipments.dtoConsolidationInfo')
+          : t('shipments.dtoCreateInfo')}
+      </Alert>
+
+      {podMismatch && (
+        <Alert color="red" icon={<IconAlertTriangle size={18} />}>
+          {t('shipments.podMismatch', { ports: distinctPods.join(', ') })}
+        </Alert>
+      )}
+
+      <div>
+        <Text fw={600} size="sm" mb={4}>{t('shipments.containers')}</Text>
+        {containersLoading ? (
+          <Group gap="xs"><Loader size="sm" /><Text size="sm" c="dimmed">{t('shipments.loadingContainers')}</Text></Group>
+        ) : containerRows.length === 0 ? (
+          <Alert color="gray" variant="light" icon={<IconBox size={16} />}>
+            {t('shipments.dtoNoContainers')}
+          </Alert>
+        ) : (
+          <Checkbox.Group value={selectedContainerIds} onChange={setSelectedContainerIds}>
+            <Stack gap="xs">
+              {containerRows.map((container) => (
+                <Checkbox
+                  key={container.id}
+                  value={container.id}
+                  disabled={!!container.dto_id}
+                  label={
+                    <Group gap="xs">
+                      <Text fw={600} size="sm">{container.container_no}</Text>
+                      <Badge size="xs" variant="light">{container.container_type ?? '-'}</Badge>
+                      {isConsolidation && (
+                        <Badge size="xs" variant="outline" color="gray">{container._shipmentNumber}</Badge>
+                      )}
+                      {container.dto_id ? (
+                        <Badge size="xs" color="gray">{t('shipments.allocatedToDto', { dto: container.dto_id })}</Badge>
+                      ) : (
+                        <Badge size="xs" color="teal" variant="light">{container.status}</Badge>
+                      )}
+                    </Group>
+                  }
+                />
+              ))}
+            </Stack>
+          </Checkbox.Group>
+        )}
+
+        <Paper withBorder p="sm" mt="sm">
+          <Stack gap="xs">
+            <Text size="xs" c="dimmed">{t('shipments.dtoAddContainerHint')}</Text>
+            <Group gap="xs" align="flex-end" wrap="wrap">
+              {isConsolidation && (
+                <Select
+                  label={t('shipments.dtoAddContainerTarget')}
+                  data={shipmentTargetOptions}
+                  value={addTargetShipmentId}
+                  onChange={setAddTargetShipmentId}
+                  allowDeselect={false}
+                  w={170}
+                />
+              )}
+              <TextInput
+                label={t('shipments.containerNumber')}
+                placeholder={t('shipments.containerNumberPlaceholder')}
+                value={newContainerNo}
+                onChange={(event) => setNewContainerNo(event.currentTarget.value)}
+                style={{ flex: 1, minWidth: 140 }}
+              />
+              <Select
+                label={t('shipments.containerType')}
+                data={CONTAINER_TYPE_OPTIONS}
+                value={newContainerType}
+                onChange={setNewContainerType}
+                allowDeselect={false}
+                w={100}
+              />
+              <TextInput
+                label={t('shipments.sealNumber')}
+                placeholder={t('shipments.sealNumberPlaceholder')}
+                value={newSeal}
+                onChange={(event) => setNewSeal(event.currentTarget.value)}
+                w={120}
+              />
+              <NumberInput
+                label={t('shipments.grossWeightKg')}
+                placeholder="0"
+                value={newGross}
+                onChange={setNewGross}
+                min={0}
+                w={110}
+              />
+              <NumberInput
+                label={t('shipments.volumeCbm')}
+                placeholder="0"
+                value={newCbm}
+                onChange={setNewCbm}
+                min={0}
+                w={100}
+              />
+              <Button
+                variant="light"
+                leftSection={<IconPlus size={16} />}
+                loading={addContainerMutation.isPending}
+                disabled={!newContainerNo.trim() || podMismatch}
+                onClick={handleAddContainer}
+              >
+                {t('shipments.addContainer')}
+              </Button>
+            </Group>
+            {addContainerMutation.isError && (
+              <Text size="xs" c="red">
+                {addContainerMutation.error instanceof Error
+                  ? addContainerMutation.error.message
+                  : t('shipments.dtosPanel.operationFailed')}
+              </Text>
+            )}
+          </Stack>
+        </Paper>
+      </div>
+
+      <Select
+        label={t('shipments.truckVendor')}
+        placeholder={t('shipments.truckVendorDefault')}
+        data={truckVendorOptions}
+        value={truckVendorId}
+        onChange={setTruckVendorId}
+        searchable
+        clearable
+        nothingFoundMessage={truckVendorsQuery.isLoading ? t('domesticTransportOrders.loadingVendors') : t('domesticTransportOrders.noVendor')}
+      />
+
+      <Group grow>
+        <TextInput
+          label={t('shipments.warehouse')}
+          value={warehouse}
+          onChange={(event) => setWarehouse(event.currentTarget.value)}
+        />
+        <DateField
+          label={t('shipments.scheduledPickup')}
+          value={pickupDate}
+          onChange={(value) => setPickupDate(value ?? '')}
+        />
+      </Group>
+
+      <Textarea
+        label={t('shipments.note')}
+        placeholder={t('shipments.optionalDispatchNote')}
+        value={note}
+        onChange={(event) => setNote(event.currentTarget.value)}
+        autosize
+        minRows={2}
+      />
+
+      {createMutation.isError && (
+        <Alert color="red" icon={<IconX size={16} />}>
+          {createMutation.error instanceof Error ? createMutation.error.message : t('shipments.dtosPanel.operationFailed')}
+        </Alert>
+      )}
+
+      <Group justify="flex-end" gap="xs">
+        <Button variant="subtle" onClick={onClose}>{t('common.cancel')}</Button>
+        <Button
+          leftSection={<IconTruck size={16} />}
+          loading={createMutation.isPending}
+          disabled={podMismatch || shipments.length === 0}
+          onClick={() => createMutation.mutate()}
+        >
+          {isConsolidation ? t('shipments.createConsolidatedDto', { count: shipments.length }) : t('shipments.createDto')}
+        </Button>
+      </Group>
+    </Stack>
+  );
+
+  if (!opened) return null;
 
   return (
-    <Modal opened={opened} onClose={onClose} title={title} size="lg">
-      <Stack gap="md">
-        <Alert color={isConsolidation ? 'orange' : 'teal'} icon={<IconTruck size={18} />}>
-          {isConsolidation
-            ? t('shipments.dtoConsolidationInfo')
-            : t('shipments.dtoCreateInfo')}
-        </Alert>
-
-        {podMismatch && (
-          <Alert color="red" icon={<IconAlertTriangle size={18} />}>
-            {t('shipments.podMismatch', { ports: distinctPods.join(', ') })}
-          </Alert>
-        )}
-
-        <div>
-          <Text fw={600} size="sm" mb={4}>{t('shipments.containers')}</Text>
-          {containersLoading ? (
-            <Group gap="xs"><Loader size="sm" /><Text size="sm" c="dimmed">{t('shipments.loadingContainers')}</Text></Group>
-          ) : containerRows.length === 0 ? (
-            <Alert color="gray" variant="light" icon={<IconBox size={16} />}>
-              {t('shipments.dtoNoContainers')}
-            </Alert>
-          ) : (
-            <Checkbox.Group value={selectedContainerIds} onChange={setSelectedContainerIds}>
-              <Stack gap="xs">
-                {containerRows.map((container) => (
-                  <Checkbox
-                    key={container.id}
-                    value={container.id}
-                    disabled={!!container.dto_id}
-                    label={
-                      <Group gap="xs">
-                        <Text fw={600} size="sm">{container.container_no}</Text>
-                        <Badge size="xs" variant="light">{container.container_type ?? '-'}</Badge>
-                        {isConsolidation && (
-                          <Badge size="xs" variant="outline" color="gray">{container._shipmentNumber}</Badge>
-                        )}
-                        {container.dto_id ? (
-                          <Badge size="xs" color="gray">{t('shipments.allocatedToDto', { dto: container.dto_id })}</Badge>
-                        ) : (
-                          <Badge size="xs" color="teal" variant="light">{container.status}</Badge>
-                        )}
-                      </Group>
-                    }
-                  />
-                ))}
-              </Stack>
-            </Checkbox.Group>
-          )}
-
-          <Paper withBorder p="sm" mt="sm">
-            <Stack gap="xs">
-              <Text size="xs" c="dimmed">{t('shipments.dtoAddContainerHint')}</Text>
-              <Group gap="xs" align="flex-end" wrap="wrap">
-                {isConsolidation && (
-                  <Select
-                    label={t('shipments.dtoAddContainerTarget')}
-                    data={shipmentTargetOptions}
-                    value={addTargetShipmentId}
-                    onChange={setAddTargetShipmentId}
-                    allowDeselect={false}
-                    w={170}
-                  />
-                )}
-                <TextInput
-                  label={t('shipments.containerNumber')}
-                  placeholder={t('shipments.containerNumberPlaceholder')}
-                  value={newContainerNo}
-                  onChange={(event) => setNewContainerNo(event.currentTarget.value)}
-                  style={{ flex: 1, minWidth: 140 }}
-                />
-                <Select
-                  label={t('shipments.containerType')}
-                  data={CONTAINER_TYPE_OPTIONS}
-                  value={newContainerType}
-                  onChange={setNewContainerType}
-                  allowDeselect={false}
-                  w={100}
-                />
-                <TextInput
-                  label={t('shipments.sealNumber')}
-                  placeholder={t('shipments.sealNumberPlaceholder')}
-                  value={newSeal}
-                  onChange={(event) => setNewSeal(event.currentTarget.value)}
-                  w={120}
-                />
-                <NumberInput
-                  label={t('shipments.grossWeightKg')}
-                  placeholder="0"
-                  value={newGross}
-                  onChange={setNewGross}
-                  min={0}
-                  w={110}
-                />
-                <NumberInput
-                  label={t('shipments.volumeCbm')}
-                  placeholder="0"
-                  value={newCbm}
-                  onChange={setNewCbm}
-                  min={0}
-                  w={100}
-                />
-                <Button
-                  variant="light"
-                  leftSection={<IconPlus size={16} />}
-                  loading={addContainerMutation.isPending}
-                  disabled={!newContainerNo.trim() || podMismatch}
-                  onClick={handleAddContainer}
-                >
-                  {t('shipments.addContainer')}
-                </Button>
-              </Group>
-              {addContainerMutation.isError && (
-                <Text size="xs" c="red">
-                  {addContainerMutation.error instanceof Error
-                    ? addContainerMutation.error.message
-                    : t('shipments.dtosPanel.operationFailed')}
-                </Text>
-              )}
-            </Stack>
-          </Paper>
-        </div>
-
-        <Select
-          label={t('shipments.truckVendor')}
-          placeholder={t('shipments.truckVendorDefault')}
-          data={truckVendorOptions}
-          value={truckVendorId}
-          onChange={setTruckVendorId}
-          searchable
-          clearable
-          nothingFoundMessage={truckVendorsQuery.isLoading ? t('domesticTransportOrders.loadingVendors') : t('domesticTransportOrders.noVendor')}
-        />
-
-        <Group grow>
-          <TextInput
-            label={t('shipments.warehouse')}
-            value={warehouse}
-            onChange={(event) => setWarehouse(event.currentTarget.value)}
-          />
-          <TextInput
-            label={t('shipments.scheduledPickup')}
-            type="date"
-            value={pickupDate}
-            onChange={(event) => setPickupDate(event.currentTarget.value)}
-          />
-        </Group>
-
-        <Textarea
-          label={t('shipments.note')}
-          placeholder={t('shipments.optionalDispatchNote')}
-          value={note}
-          onChange={(event) => setNote(event.currentTarget.value)}
-          autosize
-          minRows={2}
-        />
-
-        {createMutation.isError && (
-          <Alert color="red" icon={<IconX size={16} />}>
-            {createMutation.error instanceof Error ? createMutation.error.message : t('shipments.dtosPanel.operationFailed')}
-          </Alert>
-        )}
-
-        <Group justify="flex-end" gap="xs">
-          <Button variant="subtle" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button
-            leftSection={<IconTruck size={16} />}
-            loading={createMutation.isPending}
-            disabled={podMismatch || shipments.length === 0}
-            onClick={() => createMutation.mutate()}
-          >
-            {isConsolidation ? t('shipments.createConsolidatedDto', { count: shipments.length }) : t('shipments.createDto')}
-          </Button>
-        </Group>
-      </Stack>
-    </Modal>
+    <Paper withBorder p="lg" className="shipment-dto-create-panel">
+      {content}
+    </Paper>
   );
 }
