@@ -1,15 +1,17 @@
 import { ActionIcon, Alert, Button, Collapse, Group, Paper, Stack, Table, Text, Textarea, Title, Tooltip } from '@mantine/core';
-import { IconCheck, IconChevronDown, IconFileInvoice, IconSend, IconShoppingCart, IconX } from '@tabler/icons-react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { IconCheck, IconChevronDown, IconEdit, IconFileInvoice, IconSend, IconShoppingCart, IconX } from '@tabler/icons-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import {
+  fetchQuotationVersions,
   markQuotationFinal,
   receiveQuotation,
   rejectQuotation,
   submitQuotationToKbi,
+  type QuotationStatusV1,
   type QuotationV1,
 } from '@shared/api/quotations';
 import { queryKeys } from '@shared/api/queryKeys';
@@ -18,7 +20,7 @@ import { StatusBadge } from '@shared/components/StatusBadge';
 import { useI18n } from '@shared/i18n';
 import { formatDate, formatDateTime } from '@shared/utils/date';
 
-import { quotationTotal } from '../model/quotationModel';
+import { quotationDisplayTotal } from '../model/quotationModel';
 
 function formatAmount(amount: number): string {
   return new Intl.NumberFormat('en-US').format(Math.round(amount));
@@ -32,13 +34,6 @@ function formatChargeDescription(value?: string | null): string {
   const description = value?.trim();
   if (!description) return '-';
   return description.startsWith('-') ? description : `- ${description}`;
-}
-
-function displayTotal(quotation: QuotationV1): number {
-  const lineTotal = quotationTotal(quotation);
-  if (lineTotal > 0) return lineTotal;
-  const apiTotal = Number(quotation.grand_total_amount ?? quotation.total_amount ?? 0);
-  return Number.isFinite(apiTotal) ? apiTotal : 0;
 }
 
 function formatEventType(value?: string | null): string {
@@ -55,14 +50,24 @@ function formatEventType(value?: string | null): string {
 type QuotationDetailProps = {
   quotation: QuotationV1;
   onBack: () => void;
+  onRevise?: (q: QuotationV1) => void;
+  onInspectVersion?: (q: QuotationV1) => void;
 };
 
-export function QuotationDetail({ quotation, onBack }: QuotationDetailProps) {
+export function QuotationDetail({ quotation, onBack, onRevise, onInspectVersion }: QuotationDetailProps) {
   const { t, statusLabel } = useI18n();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [rejectReason, setRejectReason] = useState('');
+  const [rejectExpanded, setRejectExpanded] = useState(false);
   const [chargesExpanded, setChargesExpanded] = useState(true);
+
+  const versionsQuery = useQuery({
+    queryKey: queryKeys.quotationVersions(quotation.id),
+    queryFn: () => fetchQuotationVersions(quotation.id),
+    enabled: quotation.status === 'REJECTED',
+  });
+  const versions = (versionsQuery.data ?? []).sort((a, b) => b.version - a.version);
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: queryKeys.quotations });
@@ -79,15 +84,29 @@ export function QuotationDetail({ quotation, onBack }: QuotationDetailProps) {
 
   const rejectMutation = useMutation({
     mutationFn: () => rejectQuotation(quotation.id, { reason: rejectReason.trim() || undefined }),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      setRejectExpanded(false);
+      invalidate();
+    },
   });
 
   const status = quotation.status;
   const canReject = status === 'REQUEST_FOR_QUOTATION' || status === 'DRAFT' || status === 'PENDING_APPROVAL';
-  const total = displayTotal(quotation);
+  const total = quotationDisplayTotal(quotation);
   const chargeLines = quotation.charge_lines ?? [];
   const events = quotation.events ?? [];
   const chargesToggleLabel = chargesExpanded ? t('quotations.collapseCharges') : t('quotations.expandCharges');
+  const finalLifecycleStatus: QuotationStatusV1 = status === 'REJECTED' ? 'REJECTED' : 'CONFIRMED';
+  const lifecycleSteps: QuotationStatusV1[] = [
+    'REQUEST_FOR_QUOTATION',
+    'DRAFT',
+    'PENDING_APPROVAL',
+    finalLifecycleStatus,
+  ];
+  const activeLifecycleIndex = Math.max(
+    0,
+    status === 'REJECTED' ? lifecycleSteps.length - 1 : lifecycleSteps.findIndex((step) => step === status),
+  );
 
   return (
     <Stack gap="sm" className="rfq-detail">
@@ -172,14 +191,22 @@ export function QuotationDetail({ quotation, onBack }: QuotationDetailProps) {
                   <Table.Thead>
                     <Table.Tr>
                       <Table.Th>{t('quotations.chargeBreakdown')}</Table.Th>
+                      <Table.Th ta="right">{t('quotations.quantity')}</Table.Th>
                       <Table.Th>{t('forms.unit')}</Table.Th>
+                      <Table.Th ta="right">{t('quotations.unitPrice')}</Table.Th>
+                      <Table.Th ta="right">{t('forms.taxAmount')}</Table.Th>
                       <Table.Th ta="right">
                         {t('quotations.moneyCurrencyHeader', { currency: quotation.currency_code ?? '—' })}
                       </Table.Th>
                     </Table.Tr>
                   </Table.Thead>
                   <Table.Tbody>
-                    {chargeLines.map((line) => (
+                    {chargeLines.map((line) => {
+                      const quantity = Number(line.quantity ?? 0);
+                      const unitPrice = Number(line.unit_price ?? 0);
+                      const taxAmount = Number(line.tax_amount ?? 0);
+
+                      return (
                       <Table.Tr key={line.id}>
                         <Table.Td>
                           <Text fw={600} size="sm">{formatChargeDescription(line.description ?? line.charge_type)}</Text>
@@ -187,12 +214,22 @@ export function QuotationDetail({ quotation, onBack }: QuotationDetailProps) {
                             <Text size="xs" c="dimmed">{line.note}</Text>
                           ) : null}
                         </Table.Td>
+                        <Table.Td ta="right" className="tabular-nums">
+                          {Number.isFinite(quantity) ? formatAmount(quantity) : '-'}
+                        </Table.Td>
                         <Table.Td>{line.unit ?? '—'}</Table.Td>
+                        <Table.Td ta="right" className="tabular-nums">
+                          {Number.isFinite(unitPrice) ? formatAmount(unitPrice) : '-'}
+                        </Table.Td>
+                        <Table.Td ta="right" className="tabular-nums">
+                          {Number.isFinite(taxAmount) ? formatAmount(taxAmount) : '-'}
+                        </Table.Td>
                         <Table.Td ta="right" className="tabular-nums">
                           {formatAmount(Number(line.total_amount ?? line.amount ?? 0))}
                         </Table.Td>
                       </Table.Tr>
-                    ))}
+                      );
+                    })}
                   </Table.Tbody>
                 </Table>
               </div>
@@ -217,6 +254,21 @@ export function QuotationDetail({ quotation, onBack }: QuotationDetailProps) {
               <StatusBadge status={status} />
             </div>
 
+            <div className="rfq-lifecycle-steps" aria-label={t('quotations.lifecycle')}>
+              {lifecycleSteps.map((step, index) => {
+                const stepState =
+                  index < activeLifecycleIndex ? 'done' : index === activeLifecycleIndex ? 'active' : 'future';
+                return (
+                  <div className="rfq-lifecycle-step" data-state={stepState} key={`${step}-${index}`}>
+                    <span className="rfq-lifecycle-dot" aria-hidden="true" />
+                    <Text size="xs" fw={700}>
+                      {statusLabel(step)}
+                    </Text>
+                  </div>
+                );
+              })}
+            </div>
+
             <div className="rfq-action-body">
               {status === 'CONFIRMED' ? (
                 <Button
@@ -226,6 +278,21 @@ export function QuotationDetail({ quotation, onBack }: QuotationDetailProps) {
                 >
                   {t('quotations.createPo')}
                 </Button>
+              ) : status === 'REJECTED' ? (
+                <Stack gap="sm">
+                  {onRevise ? (
+                    <Button
+                      fullWidth
+                      leftSection={<IconEdit size={16} />}
+                      onClick={() => onRevise(quotation)}
+                    >
+                      {t('quotations.actionRevise')}
+                    </Button>
+                  ) : null}
+                  <Text size="xs" c="dimmed">
+                    {t('quotations.confirmedNeededForPo')} ({statusLabel('CONFIRMED')})
+                  </Text>
+                </Stack>
               ) : (
                 <Stack gap="sm">
                   {status === 'REQUEST_FOR_QUOTATION' ? (
@@ -260,25 +327,38 @@ export function QuotationDetail({ quotation, onBack }: QuotationDetailProps) {
                   ) : null}
                   {canReject ? (
                     <div className="rfq-reject-box">
-                      <Textarea
-                        label={t('quotations.rejectReason')}
-                        placeholder={t('quotations.rejectReasonPlaceholder')}
-                        value={rejectReason}
-                        onChange={(event) => setRejectReason(event.currentTarget.value)}
-                        autosize
-                        minRows={2}
-                      />
                       <Button
                         fullWidth
                         color="red"
-                        variant="light"
+                        variant={rejectExpanded ? 'filled' : 'light'}
                         leftSection={<IconX size={16} />}
-                        loading={rejectMutation.isPending}
-                        onClick={() => rejectMutation.mutate()}
-                        mt="xs"
+                        onClick={() => setRejectExpanded((current) => !current)}
                       >
                         {t('quotations.actionReject')}
                       </Button>
+                      <Collapse expanded={rejectExpanded}>
+                        <div className="rfq-reject-fields">
+                          <Textarea
+                            label={t('quotations.rejectReason')}
+                            placeholder={t('quotations.rejectReasonPlaceholder')}
+                            value={rejectReason}
+                            onChange={(event) => setRejectReason(event.currentTarget.value)}
+                            autosize
+                            minRows={2}
+                          />
+                          <Button
+                            fullWidth
+                            color="red"
+                            variant="light"
+                            leftSection={<IconX size={16} />}
+                            loading={rejectMutation.isPending}
+                            onClick={() => rejectMutation.mutate()}
+                            mt="xs"
+                          >
+                            {t('quotations.actionReject')}
+                          </Button>
+                        </div>
+                      </Collapse>
                     </div>
                   ) : null}
                   <Text size="xs" c="dimmed">
@@ -288,6 +368,53 @@ export function QuotationDetail({ quotation, onBack }: QuotationDetailProps) {
               )}
             </div>
           </Paper>
+
+          {status === 'REJECTED' && versions.length > 1 ? (
+            <Paper withBorder p={0} className="rfq-timeline-panel">
+              <div className="rfq-panel-head">
+                <div>
+                  <Text fw={800}>{t('quotations.versionHistory')}</Text>
+                  <Text size="xs" c="dimmed">
+                    {versions.length} {t('quotations.version')}
+                  </Text>
+                </div>
+              </div>
+              <div className="rfq-timeline-list">
+                {versionsQuery.isPending ? (
+                  <Text c="dimmed" size="sm">{t('common.loading')}</Text>
+                ) : (
+                  versions.map((v) => (
+                    <div
+                      className="rfq-timeline-item"
+                      key={v.id}
+                      style={{ cursor: onInspectVersion ? 'pointer' : undefined }}
+                      onClick={() => onInspectVersion?.(v)}
+                      role={onInspectVersion ? 'button' : undefined}
+                      tabIndex={onInspectVersion ? 0 : undefined}
+                      onKeyDown={(e) => {
+                        if (onInspectVersion && (e.key === 'Enter' || e.key === ' ')) onInspectVersion(v);
+                      }}
+                    >
+                      <span className="rfq-timeline-dot" aria-hidden="true" />
+                      <div>
+                        <Group gap="xs" align="center">
+                          <Text fw={700} size="sm">{v.quotation_no}</Text>
+                          <StatusBadge status={v.status} />
+                          {v.id === quotation.id ? (
+                            <Text size="xs" c="dimmed">({t('quotations.currentVersion')})</Text>
+                          ) : null}
+                        </Group>
+                        <Text size="xs" c="dimmed" className="tabular-nums">
+                          {formatMoney(quotationDisplayTotal(v), v.currency_code)}
+                        </Text>
+                        <Text size="xs" c="dimmed">{formatDateTime(v.create_at)}</Text>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </Paper>
+          ) : null}
 
           <Paper withBorder p={0} className="rfq-timeline-panel">
             <div className="rfq-panel-head">

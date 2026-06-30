@@ -1,22 +1,67 @@
-/* quotations.css — standalone RFQ create/detail workbench styles. */
+/* quotations.css - RFQ workbench styles aligned with the project data-list surfaces. */
 
+.quotations-workbench,
 .rfq-form,
 .rfq-detail,
+.rfq-list,
 .rfq-form-panel,
 .rfq-detail-hero,
+.rfq-list-filter-panel,
+.rfq-list-panel,
 .rfq-breakdown-panel,
 .rfq-action-panel,
 .rfq-timeline-panel,
 .rfq-form-title-copy,
 .rfq-detail-title-copy,
+.rfq-list-title-copy,
 .rfq-form-main,
 .rfq-detail-layout,
-.rfq-detail-side {
+.rfq-detail-side,
+.rfq-form-hero-metrics,
+.rfq-form-hero-metric,
+.rfq-fee-grid,
+.rfq-lifecycle-steps,
+.rfq-mobile-submit-bar,
+.rfq-list-toolbar,
+.rfq-list-body {
   min-width: 0;
+}
+
+.quotations-page-header,
+.quotations-subheader,
+.quotations-page-title {
+  min-width: 0;
+}
+
+.quotations-page-title {
+  max-width: 68ch;
+}
+
+.quotations-page-title .mantine-Title-root {
+  line-height: 1.05;
+}
+
+.quotations-page-actions,
+.quotations-primary-action,
+.quotations-back-action,
+.quotations-api-badge {
+  flex: 0 0 auto;
+}
+
+.quotations-primary-action .mantine-Button-label,
+.quotations-back-action .mantine-Button-label {
+  white-space: nowrap;
+}
+
+.rfq-form,
+.rfq-detail,
+.rfq-list {
+  isolation: isolate;
 }
 
 .rfq-form-panel,
 .rfq-detail-hero,
+.rfq-list-panel,
 .rfq-breakdown-panel,
 .rfq-action-panel,
 .rfq-timeline-panel {
@@ -26,17 +71,35 @@
   box-shadow: var(--kbfe-shadow-xs);
 }
 
+.rfq-list-filter-panel {
+  overflow: hidden;
+  border-color: var(--kbfe-border-primary) !important;
+  background: var(--kbfe-surface-elevated);
+  box-shadow: var(--kbfe-shadow-xs);
+}
+
+.rfq-metric-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+}
+
 .rfq-form-hero,
-.rfq-detail-hero-main {
-  padding: 0.875rem 1rem;
-  border-bottom: 1px solid var(--kbfe-border-primary);
-  background: color-mix(in srgb, var(--kbfe-surface-elevated) 94%, var(--kbfe-primary-color) 6%);
+.rfq-detail-hero-main,
+.rfq-list-hero {
+  position: relative;
+  padding: 1rem 1.125rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 84%, transparent);
+  background: var(--kbfe-surface-elevated);
 }
 
 .rfq-form-hero-inner,
 .rfq-detail-hero-inner,
+.rfq-list-hero-inner,
 .rfq-form-title-row,
-.rfq-detail-title-row {
+.rfq-detail-title-row,
+.rfq-list-title-row {
   min-width: 0;
 }
 
@@ -49,11 +112,11 @@
   border: 1px solid color-mix(in srgb, var(--kbfe-primary-color) 28%, var(--kbfe-border-primary));
   border-radius: 0.5rem;
   background: color-mix(in srgb, var(--kbfe-primary-color) 10%, var(--kbfe-surface-elevated));
-  color: var(--kbfe-primary-color);
+  color: color-mix(in srgb, var(--kbfe-primary-color) 82%, var(--kbfe-text-primary));
 }
 
 .rfq-back-action {
-  margin-bottom: 0.125rem;
+  margin: -0.125rem 0 0.125rem -0.5rem;
 }
 
 .rfq-back-action .mantine-Button-label {
@@ -61,46 +124,72 @@
 }
 
 .rfq-form-title-copy .mantine-Title-root,
-.rfq-detail-title-copy .mantine-Title-root {
+.rfq-detail-title-copy .mantine-Title-root,
+.rfq-list-title-copy .mantine-Title-root {
   line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.rfq-form-hero-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(10rem, 1fr));
+  gap: 0.625rem;
+  width: min(31rem, 100%);
+}
+
+.rfq-form-hero-metric {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.625rem;
+  align-items: center;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 84%, transparent);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 92%, var(--kbfe-surface-subtle) 8%);
+}
+
+.rfq-form-hero-metric > svg,
+.rfq-summary-row > svg,
+.rfq-total-icon {
+  color: color-mix(in srgb, var(--kbfe-primary-color) 82%, var(--kbfe-text-primary));
 }
 
 .rfq-form-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(18rem, 21rem);
+  grid-template-columns: minmax(0, 1fr) minmax(19rem, 22rem);
   gap: 0;
   align-items: start;
 }
 
 .rfq-form-main {
   display: grid;
-  gap: 0.75rem;
-  padding: 0.875rem;
+  gap: 1rem;
+  padding: 1rem;
 }
 
 .rfq-form-rail {
   position: sticky;
-  top: 0.75rem;
+  top: 0.875rem;
   display: grid;
-  gap: 0.75rem;
+  gap: 0.875rem;
   align-self: start;
-  padding: 0.875rem;
+  padding: 1rem;
   border-left: 1px solid var(--kbfe-border-primary);
-  background: color-mix(in srgb, var(--kbfe-surface-elevated) 94%, var(--kbfe-surface-subtle) 6%);
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 96%, var(--kbfe-surface-subtle) 4%);
 }
 
 .rfq-form-section {
   min-width: 0;
-  padding: 0.875rem;
-  border: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 88%, transparent);
+  padding: 1rem;
+  border: 1px solid var(--kbfe-border-primary);
   border-radius: 0.5rem;
-  background: color-mix(in srgb, var(--kbfe-surface-elevated) 97%, var(--kbfe-surface-subtle) 3%);
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 96%, var(--kbfe-surface-subtle) 4%);
 }
 
 .rfq-section-head {
   min-width: 0;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 80%, transparent);
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 78%, transparent);
 }
 
 .rfq-form-section .mantine-InputWrapper-label,
@@ -115,39 +204,180 @@
 .rfq-form-section .mantine-Textarea-input,
 .rfq-action-panel .mantine-Textarea-input {
   min-height: 2.25rem;
-  background: var(--kbfe-surface-elevated);
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 94%, var(--kbfe-background-secondary) 6%);
 }
 
 .rfq-charge-board {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
-  gap: 0.75rem;
-  padding-top: 0.75rem;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.875rem;
+  padding-top: 0.875rem;
 }
 
 .rfq-charge-group {
   min-width: 0;
-  padding: 0.75rem;
-  border: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 84%, transparent);
+  padding: 0.875rem;
+  border: 1px solid var(--kbfe-border-primary);
   border-radius: 0.5rem;
   background: color-mix(in srgb, var(--kbfe-surface-elevated) 92%, var(--kbfe-surface-subtle) 8%);
 }
 
 .rfq-charge-group-head {
   min-width: 0;
-  margin-bottom: 0.625rem;
+  margin-bottom: 0.75rem;
 }
 
 .rfq-charge-grid {
   min-width: 0;
 }
 
+.rfq-fee-grid {
+  --rfq-fee-columns: minmax(0, 1.35fr) minmax(4.25rem, 0.5fr) minmax(7rem, 0.78fr) minmax(7.25rem, 0.85fr) minmax(7rem, 0.78fr);
+
+  display: grid;
+  gap: 0.5rem;
+}
+
+.rfq-fee-grid.has-toggle {
+  --rfq-fee-columns: 2.25rem minmax(0, 1.35fr) minmax(4.25rem, 0.5fr) minmax(7rem, 0.78fr) minmax(7.25rem, 0.85fr) minmax(7rem, 0.78fr);
+}
+
+.rfq-fee-grid.has-remove {
+  --rfq-fee-columns: minmax(0, 1.35fr) minmax(4.25rem, 0.5fr) minmax(7rem, 0.78fr) minmax(7.25rem, 0.85fr) minmax(7rem, 0.78fr) 2.25rem;
+}
+
+.rfq-fee-header,
+.rfq-fee-row {
+  display: grid;
+  grid-template-columns: var(--rfq-fee-columns);
+  gap: 0.5rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.rfq-fee-header {
+  padding: 0.5rem 0.625rem;
+  border: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 76%, transparent);
+  border-radius: 0.5rem;
+  color: var(--kbfe-text-secondary, var(--kbfe-text-primary));
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: color-mix(in srgb, var(--kbfe-surface-subtle) 72%, var(--kbfe-surface-elevated) 28%);
+}
+
+.rfq-fee-header span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rfq-fee-row {
+  padding: 0.625rem;
+  border: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 76%, transparent);
+  border-radius: 0.625rem;
+  background: var(--kbfe-surface-elevated);
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    opacity 160ms ease;
+}
+
+.rfq-fee-row:hover {
+  border-color: color-mix(in srgb, var(--kbfe-primary-color) 22%, var(--kbfe-border-primary));
+  background: var(--kbfe-row-hover-background);
+}
+
+.rfq-fee-row[data-disabled='true'] {
+  opacity: 0.56;
+}
+
+.rfq-fee-cell {
+  min-width: 0;
+}
+
+.rfq-fee-cell .mantine-Input-wrapper,
+.rfq-fee-cell .mantine-Select-root,
+.rfq-fee-cell .mantine-NumberInput-root {
+  min-width: 0;
+}
+
+.rfq-fee-name-stack,
+.rfq-fee-total .mantine-Text-root {
+  min-width: 0;
+}
+
+.rfq-fee-name-stack {
+  display: grid;
+  gap: 0.25rem;
+  align-content: center;
+}
+
+.rfq-fee-name-text {
+  display: -webkit-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1.22;
+}
+
+.rfq-fee-code {
+  width: fit-content;
+  max-width: 100%;
+  overflow: hidden;
+  padding: 0.125rem 0.375rem;
+  border: 1px solid color-mix(in srgb, var(--kbfe-primary-color) 20%, var(--kbfe-border-primary));
+  border-radius: 0.375rem;
+  color: color-mix(in srgb, var(--kbfe-primary-color) 78%, var(--kbfe-text-primary));
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--kbfe-primary-color) 8%, var(--kbfe-surface-elevated));
+}
+
+.rfq-fee-total .mantine-Text-root {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rfq-fee-total {
+  text-align: right;
+}
+
+.rfq-fee-toggle,
+.rfq-fee-remove {
+  display: flex;
+  justify-content: center;
+}
+
+.rfq-fee-cell-label {
+  display: none;
+  margin-bottom: 0.25rem;
+  color: var(--kbfe-text-secondary, var(--kbfe-text-primary));
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.rfq-chip-row .mantine-Chip-label {
+  border-radius: 0.5rem;
+  font-weight: 700;
+}
+
+.rfq-add-fee-button {
+  align-self: flex-start;
+}
+
 .rfq-total-card {
   min-width: 0;
   padding: 0.875rem;
-  border: 1px solid color-mix(in srgb, var(--kbfe-primary-color) 30%, var(--kbfe-border-primary));
+  border: 1px solid color-mix(in srgb, var(--kbfe-primary-color) 36%, var(--kbfe-border-primary));
   border-radius: 0.5rem;
-  background: color-mix(in srgb, var(--kbfe-primary-color) 9%, var(--kbfe-surface-elevated));
+  background: color-mix(in srgb, var(--kbfe-primary-color) 10%, var(--kbfe-surface-elevated));
 }
 
 .rfq-total-card .mantine-Text-root,
@@ -155,29 +385,48 @@
   overflow-wrap: anywhere;
 }
 
+.rfq-total-icon {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 2rem;
+  place-items: center;
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--kbfe-primary-color) 12%, var(--kbfe-surface-elevated));
+}
+
 .rfq-summary-list {
   display: grid;
-  gap: 0.5rem;
+  gap: 0.625rem;
 }
 
 .rfq-summary-row,
 .rfq-fact {
   min-width: 0;
-  padding: 0.5rem 0.625rem;
+  padding: 0.625rem 0.75rem;
   border: 1px solid var(--kbfe-border-primary);
-  border-radius: 0.375rem;
-  background: color-mix(in srgb, var(--kbfe-surface-elevated) 94%, var(--kbfe-surface-subtle) 6%);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 88%, var(--kbfe-surface-subtle) 12%);
+}
+
+.rfq-summary-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.625rem;
+  align-items: start;
 }
 
 .rfq-summary-row .mantine-Text-root,
-.rfq-fact .mantine-Text-root {
+.rfq-fact .mantine-Text-root,
+.rfq-form-hero-metric .mantine-Text-root {
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .rfq-submit-hint {
-  padding: 0.5rem 0.625rem;
-  border-radius: 0.375rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--mantine-color-yellow-5) 26%, var(--kbfe-border-primary));
+  border-radius: 0.5rem;
   background: color-mix(in srgb, var(--mantine-color-yellow-5) 12%, var(--kbfe-surface-elevated));
 }
 
@@ -185,9 +434,144 @@
   align-self: end;
 }
 
+.rfq-mobile-submit-bar {
+  display: none;
+}
+
+.rfq-list-create-button {
+  flex: 0 0 auto;
+}
+
+.rfq-list-toolbar {
+  display: grid;
+  gap: 0.875rem;
+}
+
+.rfq-list-tabs {
+  min-width: 0;
+}
+
+.rfq-list-tabs .mantine-Tabs-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  border-bottom: 0;
+}
+
+.rfq-list-tabs .mantine-Tabs-tab {
+  border: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 76%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 94%, var(--kbfe-surface-subtle) 6%);
+  font-weight: 700;
+}
+
+.rfq-list-tabs .mantine-Tabs-tab[data-active] {
+  border-color: color-mix(in srgb, var(--kbfe-primary-color) 34%, var(--kbfe-border-primary));
+  background: color-mix(in srgb, var(--kbfe-primary-color) 10%, var(--kbfe-surface-elevated));
+}
+
+.rfq-list-search {
+  min-width: 0;
+}
+
+.rfq-list-search .mantine-Input-input {
+  min-height: 2.25rem;
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 94%, var(--kbfe-background-secondary) 6%);
+}
+
+.rfq-list-body {
+  --rfq-list-columns: minmax(10rem, 1.15fr) minmax(8rem, 1fr) minmax(7rem, 0.78fr) minmax(8rem, 0.78fr) minmax(8rem, 0.78fr) 2.5rem;
+
+  padding: 1rem 1.125rem;
+}
+
+.rfq-list-head,
+.rfq-list-row {
+  display: grid;
+  grid-template-columns: var(--rfq-list-columns);
+  gap: 0.75rem;
+  align-items: center;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.rfq-list-head {
+  padding: 0.5rem calc(0.75rem + 1px);
+  color: var(--kbfe-text-secondary, var(--kbfe-text-primary));
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.rfq-list-head span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rfq-list-rows {
+  display: grid;
+  gap: 0.625rem;
+}
+
+.rfq-list-row {
+  padding: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 76%, transparent);
+  border-radius: 0.5rem;
+  background: var(--kbfe-surface-elevated);
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.rfq-list-row:hover {
+  border-color: color-mix(in srgb, var(--kbfe-primary-color) 26%, var(--kbfe-border-primary));
+  background: var(--kbfe-row-hover-background);
+}
+
+.rfq-list-cell {
+  min-width: 0;
+}
+
+.rfq-list-cell .mantine-Text-root {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rfq-list-money,
+.rfq-list-status,
+.rfq-list-action {
+  justify-self: end;
+}
+
+.rfq-list-head-money,
+.rfq-list-head-status,
+.rfq-list-head-action {
+  justify-self: end;
+  text-align: right;
+}
+
+.rfq-list-action {
+  display: flex;
+}
+
+.rfq-list-mobile-label {
+  display: none;
+}
+
+.rfq-list-empty {
+  border: 1px dashed color-mix(in srgb, var(--kbfe-border-primary) 86%, transparent);
+  border-radius: 0.625rem;
+  background: color-mix(in srgb, var(--kbfe-surface-subtle) 28%, transparent);
+}
+
 .rfq-detail-total {
   flex: 0 0 auto;
   min-width: 13rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--kbfe-primary-color) 36%, var(--kbfe-border-primary));
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--kbfe-primary-color) 10%, var(--kbfe-surface-elevated));
   text-align: right;
 }
 
@@ -206,26 +590,26 @@
 
 .rfq-detail-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(18rem, 22rem);
-  gap: 0.875rem;
+  grid-template-columns: minmax(0, 1fr) minmax(19rem, 23rem);
+  gap: 1rem;
   align-items: start;
 }
 
 .rfq-detail-side {
   position: sticky;
-  top: 0.75rem;
+  top: 0.875rem;
   display: grid;
-  gap: 0.875rem;
+  gap: 1rem;
   align-self: start;
 }
 
 .rfq-panel-head {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.875rem;
   align-items: flex-start;
   justify-content: space-between;
   min-width: 0;
-  padding: 0.875rem 1rem;
+  padding: 1rem 1.125rem;
   border-bottom: 1px solid var(--kbfe-border-primary);
   background: color-mix(in srgb, var(--kbfe-surface-elevated) 94%, var(--kbfe-surface-subtle) 6%);
 }
@@ -239,7 +623,7 @@
   flex: 0 0 auto;
   border-color: color-mix(in srgb, var(--kbfe-primary-color) 24%, var(--kbfe-border-primary));
   background: color-mix(in srgb, var(--kbfe-primary-color) 8%, var(--kbfe-surface-elevated));
-  color: var(--kbfe-primary-color);
+  color: color-mix(in srgb, var(--kbfe-primary-color) 82%, var(--kbfe-text-primary));
 }
 
 .rfq-breakdown-chevron {
@@ -253,7 +637,13 @@
 .rfq-empty-lines,
 .rfq-action-body,
 .rfq-timeline-list {
-  padding: 0.875rem 1rem;
+  padding: 1rem 1.125rem;
+}
+
+.rfq-empty-lines {
+  border: 1px dashed color-mix(in srgb, var(--kbfe-border-primary) 86%, transparent);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--kbfe-surface-subtle) 32%, transparent);
 }
 
 .rfq-table-scroll {
@@ -262,6 +652,7 @@
 }
 
 .rfq-charge-table {
+  min-width: 52rem;
   border-collapse: separate;
   border-spacing: 0;
 }
@@ -269,7 +660,7 @@
 .rfq-charge-table th {
   color: var(--kbfe-text-secondary, var(--kbfe-text-primary));
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 800;
   white-space: nowrap;
   background: color-mix(in srgb, var(--kbfe-surface-subtle) 78%, var(--kbfe-surface-elevated) 22%);
 }
@@ -287,27 +678,87 @@
   gap: 0.75rem;
   align-items: center;
   justify-content: space-between;
-  padding: 0.875rem 1rem;
-  border-top: 1px solid var(--kbfe-border-primary);
+  padding: 1rem 1.125rem;
+  border-top: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 80%, transparent);
   background: color-mix(in srgb, var(--kbfe-primary-color) 7%, var(--kbfe-surface-elevated));
+}
+
+.rfq-action-body .mantine-Button-root {
+  min-height: 2.5rem;
+}
+
+.rfq-lifecycle-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+  padding: 0.875rem 1.125rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 80%, transparent);
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 96%, var(--kbfe-surface-subtle) 4%);
+}
+
+.rfq-lifecycle-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.375rem;
+  align-items: center;
+  min-width: 0;
+  color: var(--kbfe-text-secondary, var(--kbfe-text-primary));
+}
+
+.rfq-lifecycle-step .mantine-Text-root {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rfq-lifecycle-dot {
+  width: 0.625rem;
+  height: 0.625rem;
+  border: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 72%, var(--kbfe-text-secondary) 28%);
+  border-radius: 999px;
+  background: var(--kbfe-surface-elevated);
+}
+
+.rfq-lifecycle-step[data-state='done'] {
+  color: color-mix(in srgb, var(--kbfe-primary-color) 72%, var(--kbfe-text-primary));
+}
+
+.rfq-lifecycle-step[data-state='done'] .rfq-lifecycle-dot,
+.rfq-lifecycle-step[data-state='active'] .rfq-lifecycle-dot {
+  border-color: var(--kbfe-primary-color);
+  background: var(--kbfe-primary-color);
+}
+
+.rfq-lifecycle-step[data-state='active'] {
+  color: var(--kbfe-text-primary);
+}
+
+.rfq-lifecycle-step[data-state='active'] .rfq-lifecycle-dot {
+  box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--kbfe-primary-color) 12%, transparent);
 }
 
 .rfq-reject-box {
   min-width: 0;
+  padding-top: 0.875rem;
+  border-top: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 80%, transparent);
+}
+
+.rfq-reject-fields {
   padding-top: 0.75rem;
-  border-top: 1px solid var(--kbfe-border-primary);
 }
 
 .rfq-timeline-list {
   display: grid;
-  gap: 0.75rem;
+  gap: 0.875rem;
   max-height: 22rem;
   overflow: auto;
 }
 
 .rfq-timeline-item {
   display: grid;
-  grid-template-columns: 0.75rem minmax(0, 1fr);
+  grid-template-columns: 0.875rem minmax(0, 1fr);
   gap: 0.625rem;
   min-width: 0;
 }
@@ -334,26 +785,99 @@
   }
 
   .rfq-form-rail {
+    border-top: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 84%, transparent);
     border-left: 0;
-    border-top: 1px solid var(--kbfe-border-primary);
+  }
+
+  .rfq-form {
+    padding-bottom: 4.75rem;
+  }
+
+  .rfq-mobile-submit-bar {
+    position: fixed;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    left: 0.75rem;
+    z-index: 20;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.75rem;
+    border: 1px solid color-mix(in srgb, var(--kbfe-primary-color) 32%, var(--kbfe-border-primary));
+    border-radius: 0.625rem;
+    background: color-mix(in srgb, var(--kbfe-surface-elevated) 96%, var(--kbfe-primary-color) 4%);
+    box-shadow: var(--kbfe-shadow-md);
   }
 
   .rfq-detail-fact-strip {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .rfq-list-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .rfq-list-head {
+    display: none;
+  }
+
+  .rfq-list-row {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr) auto;
+    grid-template-areas:
+      "code money action"
+      "customer status action"
+      "route route action";
+    align-items: start;
+  }
+
+  .rfq-list-code {
+    grid-area: code;
+  }
+
+  .rfq-list-row > .rfq-list-cell:nth-child(2) {
+    grid-area: customer;
+  }
+
+  .rfq-list-route {
+    grid-area: route;
+  }
+
+  .rfq-list-money {
+    grid-area: money;
+  }
+
+  .rfq-list-status {
+    grid-area: status;
+  }
+
+  .rfq-list-action {
+    grid-area: action;
+  }
+
+  .rfq-list-mobile-label {
+    display: block;
   }
 }
 
 @media (max-width: 48em) {
 
   .rfq-form-hero-inner,
-  .rfq-detail-hero-inner {
+  .rfq-detail-hero-inner,
+  .rfq-list-hero-inner {
     align-items: stretch;
     flex-direction: column;
   }
 
   .rfq-form-title-row,
-  .rfq-detail-title-row {
+  .rfq-detail-title-row,
+  .rfq-list-title-row {
     align-items: flex-start;
+  }
+
+  .rfq-form-hero-metrics,
+  .rfq-charge-board {
+    grid-template-columns: 1fr;
   }
 
   .rfq-detail-total {
@@ -365,10 +889,6 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .rfq-charge-board {
-    grid-template-columns: 1fr;
-  }
-
   .rfq-breakdown-panel .rfq-panel-head {
     align-items: stretch;
     flex-direction: column;
@@ -376,6 +896,74 @@
 
   .rfq-breakdown-toggle {
     align-self: flex-start;
+  }
+
+  .rfq-lifecycle-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rfq-fee-header {
+    display: none;
+  }
+
+  .rfq-fee-row,
+  .rfq-fee-grid.has-remove .rfq-fee-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "name name"
+      "qty uom"
+      "price total";
+    align-items: start;
+  }
+
+  .rfq-fee-grid.has-toggle .rfq-fee-row {
+    grid-template-columns: 2.25rem minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "toggle name name"
+      ". qty uom"
+      ". price total";
+  }
+
+  .rfq-fee-grid.has-remove .rfq-fee-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 2.25rem;
+    grid-template-areas:
+      "name name remove"
+      "qty uom remove"
+      "price total remove";
+  }
+
+  .rfq-fee-toggle {
+    grid-area: toggle;
+  }
+
+  .rfq-fee-name {
+    grid-area: name;
+  }
+
+  .rfq-fee-quantity {
+    grid-area: qty;
+  }
+
+  .rfq-fee-uom {
+    grid-area: uom;
+  }
+
+  .rfq-fee-price {
+    grid-area: price;
+  }
+
+  .rfq-fee-total {
+    grid-area: total;
+    text-align: left;
+  }
+
+  .rfq-fee-remove {
+    grid-area: remove;
+    align-self: center;
+  }
+
+  .rfq-fee-cell-label {
+    display: block;
   }
 }
 
@@ -395,5 +983,64 @@
 
   .rfq-detail-fact-strip {
     grid-template-columns: 1fr;
+  }
+
+  .rfq-rail-actions {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .rfq-mobile-submit-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .rfq-mobile-submit-bar .mantine-Button-root {
+    width: 100%;
+  }
+
+  .rfq-fee-row,
+  .rfq-fee-grid.has-toggle .rfq-fee-row,
+  .rfq-fee-grid.has-remove .rfq-fee-row {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "toggle"
+      "name"
+      "qty"
+      "uom"
+      "price"
+      "total"
+      "remove";
+  }
+
+  .rfq-fee-toggle,
+  .rfq-fee-remove {
+    justify-content: flex-start;
+  }
+
+  .rfq-list-body,
+  .rfq-list-toolbar,
+  .rfq-list-hero {
+    padding-inline: 0.75rem;
+  }
+
+  .rfq-list-row {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "code"
+      "customer"
+      "route"
+      "money"
+      "status"
+      "action";
+  }
+
+  .rfq-list-money,
+  .rfq-list-status,
+  .rfq-list-action {
+    justify-self: stretch;
+  }
+
+  .rfq-list-action {
+    justify-content: flex-start;
   }
 }

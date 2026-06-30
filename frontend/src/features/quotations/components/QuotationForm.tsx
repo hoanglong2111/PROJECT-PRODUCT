@@ -1,6 +1,9 @@
 import {
+  ActionIcon,
+  Alert,
   Button,
   Chip,
+  Collapse,
   Group,
   Paper,
   Select,
@@ -9,19 +12,34 @@ import {
   Text,
   TextInput,
   Title,
+  Tooltip,
 } from '@mantine/core';
-import { IconArrowLeft, IconPlus } from '@tabler/icons-react';
+import {
+  IconAlertTriangle,
+  IconArrowLeft,
+  IconChevronDown,
+  IconFileInvoice,
+  IconPlus,
+  IconReceipt2,
+  IconRoute,
+  IconWallet,
+} from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { fetchChargeCodes, type ChargeCode } from '@shared/api/chargeCodes';
-import { createQuotation, type QuotationChargeLinePayload, type QuotationV1 } from '@shared/api/quotations';
+import {
+  createQuotation,
+  createQuotationVersion,
+  type QuotationChargeLinePayload,
+  type QuotationV1,
+} from '@shared/api/quotations';
 import { queryKeys } from '@shared/api/queryKeys';
 import { fetchUoms } from '@shared/api/uoms';
+import { useTradeMasterDataOptions } from '@shared/hooks/useTradeMasterDataOptions';
 import { useI18n } from '@shared/i18n';
 import { CHARGE_CATEGORY_GROUPS } from '@shared/lib/chargeCategories';
 import { chargeCodeToType, getChargeFields, groupLabelKey, incotermToGroup } from '@shared/lib/quotationCharges';
-import { useTradeMasterDataOptions } from '@shared/hooks/useTradeMasterDataOptions';
 
 import { quotationModeOptions, toShippingMode } from '../model/quotationModel';
 import {
@@ -34,6 +52,7 @@ import {
 type QuotationFormProps = {
   onCancel: () => void;
   onCreated: (quotation: QuotationV1) => void;
+  sourceQuotation?: QuotationV1;
 };
 
 type MandatoryLineState = ChargeLineState & { enabled: boolean };
@@ -45,15 +64,18 @@ function nextUid() {
   return `other-${++uidCounter}`;
 }
 
-export function QuotationForm({ onCancel, onCreated }: QuotationFormProps) {
+const EMPTY_CHARGE_CODES: ChargeCode[] = [];
+
+export function QuotationForm({ onCancel, onCreated, sourceQuotation }: QuotationFormProps) {
   const { t } = useI18n();
   const queryClient = useQueryClient();
   const { incotermOptions, currencyOptions } = useTradeMasterDataOptions();
+  const isRevise = Boolean(sourceQuotation);
 
-  const [customerRef, setCustomerRef] = useState('');
-  const [incoterm, setIncoterm] = useState<string | null>('FOB');
-  const [mode, setMode] = useState<string | null>('SEA_FCL');
-  const [currency, setCurrency] = useState<string | null>('USD');
+  const [customerRef, setCustomerRef] = useState(sourceQuotation?.customer_ref ?? '');
+  const [incoterm, setIncoterm] = useState<string | null>(sourceQuotation?.incoterm_code ?? 'FOB');
+  const [mode, setMode] = useState<string | null>(sourceQuotation?.mode ?? 'SEA_FCL');
+  const [currency, setCurrency] = useState<string | null>(sourceQuotation?.currency_code ?? 'USD');
 
   // mandatory: keyed by catalog field.code
   const [mandatory, setMandatory] = useState<Record<string, MandatoryLineState>>({});
@@ -61,6 +83,10 @@ export function QuotationForm({ onCancel, onCreated }: QuotationFormProps) {
   const [otherLines, setOtherLines] = useState<OtherLine[]>([]);
   // group filter for "other" section (default ANCILLARY)
   const [otherGroup, setOtherGroup] = useState<string>('ANCILLARY');
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+
+  // guard: seed source lines only once after chargeCodes load
+  const seededRef = useRef(false);
 
   const group = incotermToGroup(incoterm);
   const shippingMode = toShippingMode(mode);
@@ -70,7 +96,7 @@ export function QuotationForm({ onCancel, onCreated }: QuotationFormProps) {
     queryKey: queryKeys.chargeCodes({ page: 1, limit: 200, is_active: true }),
     queryFn: () => fetchChargeCodes({ page: 1, limit: 200, is_active: true }),
   });
-  const chargeCodes = chargeCodesQuery.data?.data ?? [];
+  const chargeCodes = chargeCodesQuery.data?.data ?? EMPTY_CHARGE_CODES;
 
   const uomsQuery = useQuery({
     queryKey: queryKeys.uoms({ limit: 200, is_active: true }),
@@ -138,6 +164,88 @@ export function QuotationForm({ onCancel, onCreated }: QuotationFormProps) {
     [mandatory, chargeCodes, shippingMode],
   );
 
+  // Seed revise mode lines once, after chargeCodes load from the query.
+  // Only runs once (seededRef guard) so subsequent chargeCodes refetches don't overwrite edits.
+  useEffect(() => {
+    if (seededRef.current || !isRevise || !sourceQuotation?.charge_lines?.length || chargeCodes.length === 0) {
+      return;
+    }
+    seededRef.current = true;
+
+    // Inline the field-to-code mapping so this effect is self-contained
+    const currentShippingMode = toShippingMode(mode);
+    const currentSections = getChargeFields(incotermToGroup(incoterm), currentShippingMode);
+    const allFields = currentSections.flatMap((s) => s.fields);
+
+    function getExpectedCode(fieldCode: string, chargeType: QuotationChargeLinePayload['charge_type']): string | null {
+      const fieldMap: Record<string, string> = {
+        ORIGIN_PER_BL: 'EXD', ORIGIN_MAIN: 'PRE', DO_FEE: 'DOF', HANDLING: 'HDL',
+        THC: 'DTH', CFS: 'DTL', CIC: 'DPC', EMC_EMF: 'LSS', CLEANING: 'CLN',
+        CUSTOMS: 'IMC', TRUCKING: 'LMD', LOWERING: 'LOL', UNLOADING: 'HDL',
+      };
+      if (fieldCode === 'CARRIER_FREIGHT') {
+        if (currentShippingMode === 'AIR') return 'AFR';
+        if (currentShippingMode === 'LCL') return 'OFL';
+        return 'OFR';
+      }
+      const typeMap: Partial<Record<QuotationChargeLinePayload['charge_type'], string>> = {
+        AIR_FREIGHT: 'AFR',
+        OCEAN_FREIGHT: currentShippingMode === 'LCL' ? 'OFL' : 'OFR',
+        ORIGIN_CHARGE: 'PRE', CUSTOMS_FEE: 'IMC', TRUCKING: 'LMD', DO_FEE: 'DOF', HANDLING: 'HDL',
+      };
+      const code = fieldMap[fieldCode] ?? typeMap[chargeType] ?? 'HDL';
+      return chargeCodes.some((c) => c.charge_code === code) ? code : (chargeCodes[0]?.charge_code ?? null);
+    }
+
+    const sourceLines = sourceQuotation.charge_lines;
+    const newMandatory: Record<string, MandatoryLineState> = {};
+    const newOtherLines: OtherLine[] = [];
+    const takenFields = new Set<string>();
+    let firstUnmatchedCategory = 'ANCILLARY';
+
+    for (const srcLine of sourceLines) {
+      let matched = false;
+      for (const field of allFields) {
+        if (takenFields.has(field.code)) continue;
+        const expectedCode = getExpectedCode(field.code, field.charge_type);
+        if (expectedCode === srcLine.charge_code) {
+          takenFields.add(field.code);
+          const cc = chargeCodes.find((c) => c.charge_code === srcLine.charge_code) ?? null;
+          newMandatory[field.code] = {
+            enabled: true,
+            chargeCode: srcLine.charge_code ?? null,
+            quantity: String(srcLine.quantity ?? 1),
+            unit: srcLine.unit ?? cc?.default_uom ?? null,
+            unitPrice: String(srcLine.unit_price ?? 0),
+          };
+          matched = true;
+          break;
+        }
+      }
+      if (!matched) {
+        const cc = chargeCodes.find((c) => c.charge_code === srcLine.charge_code) ?? null;
+        if (newOtherLines.length === 0 && cc?.category) {
+          firstUnmatchedCategory = cc.category;
+        }
+        newOtherLines.push({
+          uid: nextUid(),
+          chargeCode: srcLine.charge_code ?? null,
+          quantity: String(srcLine.quantity ?? 1),
+          unit: srcLine.unit ?? cc?.default_uom ?? null,
+          unitPrice: String(srcLine.unit_price ?? 0),
+        });
+      }
+    }
+
+    if (Object.keys(newMandatory).length > 0) setMandatory(newMandatory);
+    if (newOtherLines.length > 0) {
+      setOtherLines(newOtherLines);
+      setOtherGroup(firstUnmatchedCategory);
+    }
+    // sourceQuotation and incoterm/mode are stable for this component's lifetime — intentionally omitted
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chargeCodes, isRevise]);
+
   function updateMandatory(fieldCode: string, patch: Partial<MandatoryLineState>) {
     setMandatory((prev) => ({
       ...prev,
@@ -163,7 +271,6 @@ export function QuotationForm({ onCancel, onCreated }: QuotationFormProps) {
   }
 
   function addOtherLine() {
-    // Default to first option in filtered list
     const defaultCode = filteredChargeCodeOptions[0]?.value ?? null;
     const cc = findChargeCode(defaultCode);
     setOtherLines((prev) => [...prev, { uid: nextUid(), ...seedLineState(cc), chargeCode: defaultCode }]);
@@ -174,7 +281,6 @@ export function QuotationForm({ onCancel, onCreated }: QuotationFormProps) {
       prev.map((line) => {
         if (line.uid !== uid) return line;
         const updated = { ...line, ...patch };
-        // When charge_code changes, reseed unit from its default_uom
         if (patch.chargeCode !== undefined && patch.chargeCode !== line.chargeCode) {
           const cc = findChargeCode(patch.chargeCode);
           updated.unit = cc?.default_uom ?? updated.unit;
@@ -188,73 +294,105 @@ export function QuotationForm({ onCancel, onCreated }: QuotationFormProps) {
     setOtherLines((prev) => prev.filter((l) => l.uid !== uid));
   }
 
-  const subtotal = useMemo(() => {
-    const mandatorySum = sections
-      .flatMap((s) => s.fields)
-      .reduce<number>((sum, field) => {
-        const line = getMandatoryLine(field.code, field.charge_type);
-        if (!line.enabled) return sum;
-        const val = Number(line.unitPrice);
-        const qty = Number(line.quantity);
-        return sum + (Number.isFinite(val) && Number.isFinite(qty) ? qty * val : 0);
-      }, 0);
-
-    const otherSum = otherLines.reduce<number>((sum, line) => {
+  const totals = useMemo(() => {
+    const addLine = (running: { subtotal: number; estimatedTax: number }, line: ChargeLineState) => {
       const val = Number(line.unitPrice);
       const qty = Number(line.quantity);
-      return sum + (Number.isFinite(val) && Number.isFinite(qty) ? qty * val : 0);
-    }, 0);
+      const amount = Number.isFinite(val) && Number.isFinite(qty) ? qty * val : 0;
+      const cc = findChargeCode(line.chargeCode);
+      return {
+        subtotal: running.subtotal + amount,
+        estimatedTax: running.estimatedTax + (cc?.taxable ? amount * 0.1 : 0),
+      };
+    };
 
-    return mandatorySum + otherSum;
-  }, [sections, mandatory, otherLines, getMandatoryLine]);
+    const mandatoryTotals = sections
+      .flatMap((s) => s.fields)
+      .reduce<{ subtotal: number; estimatedTax: number }>(
+        (running, field) => {
+          const line = getMandatoryLine(field.code, field.charge_type);
+          if (!line.enabled) return running;
+          return addLine(running, line);
+        },
+        { subtotal: 0, estimatedTax: 0 },
+      );
+
+    const allTotals = otherLines.reduce(addLine, mandatoryTotals);
+
+    return {
+      ...allTotals,
+      grandTotal: allTotals.subtotal + allTotals.estimatedTax,
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sections, otherLines, getMandatoryLine, chargeCodes]);
+  const subtotal = totals.subtotal;
+  const feeProgress = useMemo(() => {
+    const fields = sections.flatMap((section) => section.fields);
+    return {
+      selected: fields.filter((field) => getMandatoryLine(field.code, field.charge_type).enabled).length,
+      total: fields.length,
+    };
+  }, [sections, getMandatoryLine]);
 
   const canSubmit = Boolean(incoterm && mode && currency && subtotal > 0);
+  const formatCurrencyAmount = (amount: number) =>
+    `${new Intl.NumberFormat('en-US').format(Math.round(amount))} ${currency ?? ''}`.trim();
+
+  function buildChargeLines(): QuotationChargeLinePayload[] {
+    const mandatoryLines: QuotationChargeLinePayload[] = sections
+      .flatMap((s) => s.fields)
+      .flatMap((field) => {
+        const line = getMandatoryLine(field.code, field.charge_type);
+        if (!line.enabled || !(Number(line.unitPrice) > 0)) return [];
+        const cc = findChargeCode(line.chargeCode);
+        const entry: QuotationChargeLinePayload = {
+          line_no: 0,
+          charge_type: field.charge_type,
+          charge_code: line.chargeCode ?? cc?.charge_code,
+          description: cc?.charge_name_en ?? t(field.labelKey),
+          quantity: Number(line.quantity) || 1,
+          unit: line.unit ?? cc?.default_uom ?? field.unit,
+          unit_price: Number(line.unitPrice),
+          tax_rate: cc?.taxable ? 10 : 0,
+          note: cc ? `Rev/Cost: ${cc.rev_cost}` : null,
+        };
+        return [entry];
+      });
+
+    const otherChargeLines: QuotationChargeLinePayload[] = otherLines
+      .filter((line) => Number(line.unitPrice) > 0 && line.chargeCode)
+      .map((line) => {
+        const cc = findChargeCode(line.chargeCode);
+        const entry: QuotationChargeLinePayload = {
+          line_no: 0,
+          charge_type: chargeCodeToType(line.chargeCode ?? ''),
+          charge_code: line.chargeCode,
+          description: cc?.charge_name_en ?? line.chargeCode ?? '',
+          quantity: Number(line.quantity) || 1,
+          unit: line.unit ?? cc?.default_uom ?? 'SHPT',
+          unit_price: Number(line.unitPrice),
+          tax_rate: cc?.taxable ? 10 : 0,
+          note: cc ? `Rev/Cost: ${cc.rev_cost}` : null,
+        };
+        return entry;
+      });
+
+    return [...mandatoryLines, ...otherChargeLines].map((l, i) => ({ ...l, line_no: i + 1 }));
+  }
 
   const createMutation = useMutation({
     mutationFn: () => {
-      const mandatoryLines: QuotationChargeLinePayload[] = sections
-        .flatMap((s) => s.fields)
-        .flatMap((field) => {
-          const line = getMandatoryLine(field.code, field.charge_type);
-          if (!line.enabled || !(Number(line.unitPrice) > 0)) return [];
-          const cc = findChargeCode(line.chargeCode);
-          const entry: QuotationChargeLinePayload = {
-            line_no: 0,
-            charge_type: field.charge_type,
-            charge_code: line.chargeCode ?? cc?.charge_code,
-            description: cc?.charge_name_en ?? t(field.labelKey),
-            quantity: Number(line.quantity) || 1,
-            unit: line.unit ?? cc?.default_uom ?? field.unit,
-            unit_price: Number(line.unitPrice),
-            tax_rate: cc?.taxable ? 10 : 0,
-            note: cc ? `Rev/Cost: ${cc.rev_cost}` : null,
-          };
-          return [entry];
+      const chargeLines = buildChargeLines();
+      if (isRevise && sourceQuotation) {
+        return createQuotationVersion(sourceQuotation.id, {
+          status: 'DRAFT',
+          customer_ref: customerRef.trim() || null,
+          incoterm_code: incoterm,
+          mode,
+          currency_code: currency ?? 'USD',
+          charge_lines: chargeLines,
         });
-
-      const otherChargeLines: QuotationChargeLinePayload[] = otherLines
-        .filter((line) => Number(line.unitPrice) > 0 && line.chargeCode)
-        .map((line) => {
-          const cc = findChargeCode(line.chargeCode);
-          const entry: QuotationChargeLinePayload = {
-            line_no: 0,
-            charge_type: chargeCodeToType(line.chargeCode ?? ''),
-            charge_code: line.chargeCode,
-            description: cc?.charge_name_en ?? line.chargeCode ?? '',
-            quantity: Number(line.quantity) || 1,
-            unit: line.unit ?? cc?.default_uom ?? 'SHPT',
-            unit_price: Number(line.unitPrice),
-            tax_rate: cc?.taxable ? 10 : 0,
-            note: cc ? `Rev/Cost: ${cc.rev_cost}` : null,
-          };
-          return entry;
-        });
-
-      const chargeLines = [...mandatoryLines, ...otherChargeLines].map((l, i) => ({
-        ...l,
-        line_no: i + 1,
-      }));
-
+      }
       return createQuotation({
         customer_ref: customerRef.trim() || null,
         incoterm_code: incoterm,
@@ -270,155 +408,357 @@ export function QuotationForm({ onCancel, onCreated }: QuotationFormProps) {
     },
   });
 
+  const formTitle = isRevise ? t('quotations.reviseTitle') : t('quotations.formTitle');
+  const formSubtitle = isRevise ? t('quotations.reviseSubtitle') : t('quotations.formSubtitle');
+  const submitLabel = isRevise ? t('quotations.actionResubmit') : t('quotations.create');
+
   return (
-    <Stack gap="lg">
-      <Group gap="xs" align="center">
-        <Button variant="subtle" size="sm" leftSection={<IconArrowLeft size={16} />} onClick={onCancel}>
-          {t('common.backToList')}
-        </Button>
-      </Group>
+    <Stack gap="md" className="rfq-form">
+      <Paper withBorder p={0} className="rfq-form-panel">
+        <div className="rfq-form-hero">
+          <Group justify="space-between" align="flex-start" gap="md" className="rfq-form-hero-inner">
+            <Group gap="sm" align="flex-start" wrap="nowrap" className="rfq-form-title-row">
+              <div className="rfq-icon-box">
+                <IconFileInvoice size={18} />
+              </div>
+              <div className="rfq-form-title-copy">
+                <Button
+                  variant="subtle"
+                  size="xs"
+                  leftSection={<IconArrowLeft size={14} />}
+                  onClick={onCancel}
+                  className="rfq-back-action"
+                >
+                  {t('common.backToList')}
+                </Button>
+                <Title order={3}>{formTitle}</Title>
+                <Text c="dimmed" size="sm" mt={4}>
+                  {formSubtitle}
+                </Text>
+              </div>
+            </Group>
 
-      <Paper withBorder p="lg">
-        <Title order={3}>{t('quotations.formTitle')}</Title>
-        <Text c="dimmed" size="sm" mt={4}>
-          {t('quotations.formSubtitle')}
-        </Text>
+            <div className="rfq-form-hero-metrics">
+              <div className="rfq-form-hero-metric">
+                <IconRoute size={16} />
+                <div>
+                  <Text size="xs" c="dimmed">
+                    {t('quotations.incotermsGroup')}
+                  </Text>
+                  <Text size="sm" fw={800}>
+                    {t(groupLabelKey(group))}
+                  </Text>
+                </div>
+              </div>
+              <div className="rfq-form-hero-metric">
+                <IconReceipt2 size={16} />
+                <div>
+                  <Text size="xs" c="dimmed">
+                    {t('quotations.selectedCharges', { count: feeProgress.selected, total: feeProgress.total })}
+                  </Text>
+                  <Text size="sm" fw={800}>
+                    {otherLines.length} {t('quotations.otherFees')}
+                  </Text>
+                </div>
+              </div>
+            </div>
+          </Group>
+        </div>
 
-        <SimpleGrid cols={{ base: 1, sm: 2 }} mt="md">
-          <TextInput
-            label={t('quotations.customer')}
-            placeholder={t('quotations.customerPlaceholder')}
-            value={customerRef}
-            onChange={(event) => setCustomerRef(event.currentTarget.value)}
-          />
-          <Select
-            label={t('quotations.incoterm')}
-            data={incotermOptions}
-            value={incoterm}
-            onChange={setIncoterm}
-            searchable
-          />
-          <Select label={t('quotations.mode')} data={quotationModeOptions} value={mode} onChange={setMode} />
-          <Select
-            label={t('quotations.currency')}
-            data={currencyOptions}
-            value={currency}
-            onChange={setCurrency}
-            searchable
-          />
-        </SimpleGrid>
+        <div className="rfq-form-layout">
+          <div className="rfq-form-main">
+            {isRevise && sourceQuotation?.reject_reason ? (
+              <Alert
+                color="red"
+                icon={<IconAlertTriangle size={16} />}
+                title={t('quotations.reviseFromRejectedBanner')}
+                mb="md"
+              >
+                {sourceQuotation.reject_reason}
+              </Alert>
+            ) : null}
 
-        <Text size="xs" c="dimmed" mt="sm">
-          {t('quotations.incotermsGroup')}: {t(groupLabelKey(group))}
-        </Text>
-      </Paper>
+            <section className="rfq-form-section">
+              <div className="rfq-section-head">
+                <Text fw={800}>{t('quotations.setupSection')}</Text>
+                <Text size="xs" c="dimmed">
+                  {t('quotations.incotermsGroup')}: {t(groupLabelKey(group))}
+                </Text>
+              </div>
 
-      {/* Mandatory fees */}
-      <Paper withBorder p="lg">
-        <Title order={4} mb="sm">{t('quotations.mandatoryFees')}</Title>
-        <Text size="xs" c="dimmed" mb="md">{t('quotations.optionalChargesHint')}</Text>
-        <Stack gap="md">
-          {sections.map((section) => {
-            const rows: FeeRow[] = section.fields.map((field) => {
-              const line = getMandatoryLine(field.code, field.charge_type);
-              return {
-                key: field.code,
-                label: line.chargeCode ? `${t(field.labelKey)} · ${line.chargeCode}` : t(field.labelKey),
-                state: line,
-                enabled: line.enabled,
-              };
-            });
-
-            return (
-              <Stack key={section.id} gap="xs">
-                <Text fw={600} size="sm">{t(section.titleKey)}</Text>
-                <QuotationFeeTable
-                  rows={rows}
-                  chargeCodeOptions={chargeCodeOptions}
-                  uoms={uoms}
-                  currency={currency}
-                  onToggle={(key, enabled) => {
-                    const field = section.fields.find((candidate) => candidate.code === key);
-                    if (field) toggleMandatory(key, field.charge_type, enabled);
-                  }}
-                  onChange={updateMandatory}
+              <SimpleGrid cols={{ base: 1, sm: 2 }} mt="md" spacing="md">
+                <TextInput
+                  label={t('quotations.customer')}
+                  placeholder={t('quotations.customerPlaceholder')}
+                  value={customerRef}
+                  onChange={(event) => setCustomerRef(event.currentTarget.value)}
                 />
+                <Select
+                  label={t('quotations.incoterm')}
+                  data={incotermOptions}
+                  value={incoterm}
+                  onChange={setIncoterm}
+                  searchable
+                />
+                <Select label={t('quotations.mode')} data={quotationModeOptions} value={mode} onChange={setMode} />
+                <Select
+                  label={t('quotations.currency')}
+                  data={currencyOptions}
+                  value={currency}
+                  onChange={setCurrency}
+                  searchable
+                />
+              </SimpleGrid>
+            </section>
+
+            <section className="rfq-form-section">
+              <div className="rfq-section-head">
+                <Group justify="space-between" align="flex-start" gap="sm">
+                  <div>
+                    <Text fw={800}>{t('quotations.mandatoryFees')}</Text>
+                    <Text size="xs" c="dimmed">
+                      {t('quotations.optionalChargesHint')}
+                    </Text>
+                  </div>
+                  <Text size="xs" fw={700} c="dimmed" className="tabular-nums">
+                    {feeProgress.selected}/{feeProgress.total}
+                  </Text>
+                </Group>
+              </div>
+
+              <div className="rfq-charge-board">
+                {sections.map((section, index) => {
+                  const rows: FeeRow[] = section.fields.map((field) => {
+                    const line = getMandatoryLine(field.code, field.charge_type);
+                    return {
+                      key: field.code,
+                      label: t(field.labelKey),
+                      subLabel: line.chargeCode,
+                      state: line,
+                      enabled: line.enabled,
+                    };
+                  });
+                  const isExpanded = expandedSections[section.id] ?? index === 0;
+                  const selectedInSection = rows.filter((row) => row.enabled).length;
+                  const sectionToggleLabel = isExpanded
+                    ? t('quotations.collapseCharges')
+                    : t('quotations.expandCharges');
+
+                  return (
+                    <div key={section.id} className="rfq-charge-group">
+                      <div className="rfq-charge-group-head">
+                        <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
+                          <div>
+                            <Text fw={800} size="sm">
+                              {t(section.titleKey)}
+                            </Text>
+                            <Text size="xs" c="dimmed">
+                              {t('quotations.selectedCharges', { count: selectedInSection, total: rows.length })}
+                            </Text>
+                          </div>
+                          <Tooltip label={sectionToggleLabel}>
+                            <ActionIcon
+                              aria-expanded={isExpanded}
+                              aria-label={sectionToggleLabel}
+                              className="rfq-breakdown-toggle"
+                              variant="light"
+                              onClick={() =>
+                                setExpandedSections((current) => ({
+                                  ...current,
+                                  [section.id]: !isExpanded,
+                                }))
+                              }
+                            >
+                              <IconChevronDown
+                                className={isExpanded ? 'rfq-breakdown-chevron is-open' : 'rfq-breakdown-chevron'}
+                                size={18}
+                              />
+                            </ActionIcon>
+                          </Tooltip>
+                        </Group>
+                      </div>
+                      <Collapse expanded={isExpanded}>
+                        <div className="rfq-charge-grid">
+                          <QuotationFeeTable
+                            rows={rows}
+                            chargeCodeOptions={chargeCodeOptions}
+                            uoms={uoms}
+                            currency={currency}
+                            onToggle={(key, enabled) => {
+                              const field = section.fields.find((candidate) => candidate.code === key);
+                              if (field) toggleMandatory(key, field.charge_type, enabled);
+                            }}
+                            onChange={updateMandatory}
+                          />
+                        </div>
+                      </Collapse>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section className="rfq-form-section">
+              <div className="rfq-section-head">
+                <Text fw={800}>{t('quotations.otherFees')}</Text>
+              </div>
+
+              <Group gap="xs" mt="md" mb="md" wrap="wrap" className="rfq-chip-row">
+                {CHARGE_CATEGORY_GROUPS.map((g) => (
+                  <Chip
+                    key={g.value}
+                    checked={otherGroup === g.value}
+                    onChange={() => setOtherGroup(g.value)}
+                    size="sm"
+                    variant="outline"
+                  >
+                    {t(g.labelKey)}
+                  </Chip>
+                ))}
+              </Group>
+
+              <Stack gap="sm">
+                {otherLines.length === 0 ? (
+                  <div className="rfq-empty-lines">
+                    <Text size="sm" c="dimmed">
+                      {t('quotations.noOtherFees')}
+                    </Text>
+                  </div>
+                ) : (
+                  <QuotationFeeTable
+                    rows={otherLines.map((line) => ({
+                      key: line.uid,
+                      label: null,
+                      state: line,
+                      enabled: true,
+                    }))}
+                    chargeCodeOptions={filteredChargeCodeOptions}
+                    uoms={uoms}
+                    currency={currency}
+                    editableFee
+                    removable
+                    onChange={updateOtherLine}
+                    onRemove={removeOtherLine}
+                  />
+                )}
+                <Button
+                  variant="light"
+                  size="xs"
+                  leftSection={<IconPlus size={14} />}
+                  onClick={addOtherLine}
+                  className="rfq-add-fee-button"
+                >
+                  {t('quotations.addFee')}
+                </Button>
               </Stack>
-            );
-          })}
-        </Stack>
-      </Paper>
+            </section>
+          </div>
 
-      {/* Other / arising fees */}
-      <Paper withBorder p="lg">
-        <Title order={4} mb="sm">{t('quotations.otherFees')}</Title>
+          <aside className="rfq-form-rail">
+            <div className="rfq-total-card">
+              <Group justify="space-between" align="flex-start" gap="sm">
+                <div>
+                  <Text size="xs" tt="uppercase" fw={800} c="dimmed">
+                    {t('quotations.computedTotal')}
+                  </Text>
+                  <Text fw={900} size="xl" className="tabular-nums">
+                    {formatCurrencyAmount(totals.grandTotal)}
+                  </Text>
+                </div>
+                <div className="rfq-total-icon">
+                  <IconWallet size={18} />
+                </div>
+              </Group>
+            </div>
 
-        <Group gap="xs" mb="md" wrap="wrap">
-          {CHARGE_CATEGORY_GROUPS.map((g) => (
-            <Chip
-              key={g.value}
-              checked={otherGroup === g.value}
-              onChange={() => setOtherGroup(g.value)}
-              size="sm"
-              variant="outline"
-            >
-              {t(g.labelKey)}
-            </Chip>
-          ))}
-        </Group>
+            <div className="rfq-summary-list">
+              <div className="rfq-summary-row">
+                <IconWallet size={15} />
+                <div>
+                  <Text size="xs" c="dimmed">
+                    {t('quotations.subtotal')}
+                  </Text>
+                  <Text size="sm" fw={700} className="tabular-nums">
+                    {formatCurrencyAmount(totals.subtotal)}
+                  </Text>
+                </div>
+              </div>
+              <div className="rfq-summary-row">
+                <IconReceipt2 size={15} />
+                <div>
+                  <Text size="xs" c="dimmed">
+                    {t('quotations.estimatedTax')}
+                  </Text>
+                  <Text size="sm" fw={700} className="tabular-nums">
+                    {formatCurrencyAmount(totals.estimatedTax)}
+                  </Text>
+                </div>
+              </div>
+              <div className="rfq-summary-row">
+                <IconRoute size={15} />
+                <div>
+                  <Text size="xs" c="dimmed">
+                    {t('quotations.incoterm')} / {t('quotations.mode')}
+                  </Text>
+                  <Text size="sm" fw={700}>
+                    {incoterm ?? '-'} / {mode ?? '-'}
+                  </Text>
+                </div>
+              </div>
+              <div className="rfq-summary-row">
+                <IconReceipt2 size={15} />
+                <div>
+                  <Text size="xs" c="dimmed">
+                    {t('quotations.mandatoryFees')}
+                  </Text>
+                  <Text size="sm" fw={700} className="tabular-nums">
+                    {t('quotations.selectedCharges', { count: feeProgress.selected, total: feeProgress.total })}
+                  </Text>
+                </div>
+              </div>
+              <div className="rfq-summary-row">
+                <IconPlus size={15} />
+                <div>
+                  <Text size="xs" c="dimmed">
+                    {t('quotations.otherFees')}
+                  </Text>
+                  <Text size="sm" fw={700} className="tabular-nums">
+                    {otherLines.length}
+                  </Text>
+                </div>
+              </div>
+            </div>
 
-        <Stack gap="sm">
-          {otherLines.length === 0 ? (
-            <Text size="sm" c="dimmed">{t('quotations.noOtherFees')}</Text>
-          ) : (
-            <QuotationFeeTable
-              rows={otherLines.map((line) => ({
-                key: line.uid,
-                label: null,
-                state: line,
-                enabled: true,
-              }))}
-              chargeCodeOptions={filteredChargeCodeOptions}
-              uoms={uoms}
-              currency={currency}
-              editableFee
-              removable
-              onChange={updateOtherLine}
-              onRemove={removeOtherLine}
-            />
-          )}
-          <Button
-            variant="light"
-            size="xs"
-            leftSection={<IconPlus size={14} />}
-            onClick={addOtherLine}
-            style={{ alignSelf: 'flex-start' }}
-          >
-            {t('quotations.addFee')}
-          </Button>
-        </Stack>
-      </Paper>
+            {!canSubmit ? (
+              <Text size="xs" c="dimmed" className="rfq-submit-hint">
+                {t('quotations.enterAtLeastOneFee')}
+              </Text>
+            ) : null}
 
-      <Paper withBorder p="lg">
-        <Group justify="space-between">
-          <Text fw={700}>{t('quotations.computedTotal')}</Text>
-          <Text fw={700} className="tabular-nums">
-            {new Intl.NumberFormat('en-US').format(Math.round(subtotal))} {currency}
-          </Text>
-        </Group>
-        {!canSubmit ? (
-          <Text size="xs" c="dimmed" mt="xs">
-            {t('quotations.enterAtLeastOneFee')}
-          </Text>
-        ) : null}
-        <Group justify="flex-end" mt="md">
-          <Button variant="default" onClick={onCancel}>
-            {t('common.cancel')}
-          </Button>
-          <Button disabled={!canSubmit} loading={createMutation.isPending} onClick={() => createMutation.mutate()}>
-            {t('quotations.create')}
-          </Button>
-        </Group>
+            <Group justify="flex-end" className="rfq-rail-actions" grow>
+              <Button variant="default" onClick={onCancel}>
+                {t('common.cancel')}
+              </Button>
+              <Button disabled={!canSubmit} loading={createMutation.isPending} onClick={() => createMutation.mutate()}>
+                {submitLabel}
+              </Button>
+            </Group>
+          </aside>
+
+          <div className="rfq-mobile-submit-bar" aria-label={t('quotations.computedTotal')}>
+            <div>
+              <Text size="xs" c="dimmed" fw={800}>
+                {t('quotations.computedTotal')}
+              </Text>
+              <Text fw={900} size="sm" className="tabular-nums">
+                {formatCurrencyAmount(totals.grandTotal)}
+              </Text>
+            </div>
+            <Button disabled={!canSubmit} loading={createMutation.isPending} onClick={() => createMutation.mutate()}>
+              {submitLabel}
+            </Button>
+          </div>
+        </div>
       </Paper>
     </Stack>
   );
