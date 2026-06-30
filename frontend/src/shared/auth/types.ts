@@ -1,3 +1,5 @@
+import type { Capability } from './capabilities';
+
 export const APP_ROLES = [
   'ADMIN',
   'PIC_MANAGER',
@@ -22,6 +24,7 @@ export type AuthUser = {
   position: string;
   preferredModulePath: string | null;
   profileNote: string | null;
+  permissions?: Capability[];
   role: AppRole;
   workLocation: string | null;
   workShift: string | null;

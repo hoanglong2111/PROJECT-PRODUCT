@@ -12,101 +12,31 @@ import {
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
-  IconChecklist,
   IconChevronDown,
-  IconExchange,
-  IconFileText,
-  IconFileInvoice,
-  IconGitBranch,
-  IconLayoutDashboard,
   IconLogout,
   IconRefresh,
   IconSettings,
-  IconShip,
-  IconShoppingCart,
-  IconTruck,
-  IconTruckDelivery,
   IconUserCircle,
 } from '@tabler/icons-react';
-import type { ComponentType } from 'react';
 import { Link, NavLink as RouterNavLink, Outlet, useLocation } from 'react-router-dom';
 
-import { type AppRole } from '@shared/auth/types';
 import { useAuth } from '@shared/auth/useAuth';
 import { useI18n } from '@shared/i18n';
 import { queryKeys } from '@shared/api/queryKeys';
 import { queryClient } from '@shared/queryClient';
+import { workspaceModules } from '@shared/navigation/workspaceModules';
 import { GlobalSearch } from './GlobalSearch';
 import { RouteErrorBoundary } from './PageFeedback';
-
-const navigation: Array<{
-  icon: ComponentType<{ size?: number | string; stroke?: number | string }>;
-  labelKey:
-  | 'shell.dashboard'
-  | 'shell.deliveryOrders'
-  | 'shell.domesticTransportOrders'
-  | 'shell.purchaseOrders'
-  | 'shell.quotations'
-  | 'shell.shipments'
-  | 'shell.masterData'
-  | 'shell.tasks';
-  path: string;
-  roles?: AppRole[];
-}> = [
-    { labelKey: 'shell.dashboard', path: '/', icon: IconLayoutDashboard },
-    {
-      labelKey: 'shell.quotations',
-      path: '/quotations',
-      icon: IconFileInvoice,
-      roles: ['ADMIN', 'PIC_MANAGER', 'SALE_STAFF', 'FINANCE_OFFICER'],
-    },
-    {
-      labelKey: 'shell.purchaseOrders',
-      path: '/purchase-orders',
-      icon: IconShoppingCart,
-      roles: ['ADMIN', 'PIC_MANAGER', 'SALE_STAFF', 'FINANCE_OFFICER'],
-    },
-    {
-      labelKey: 'shell.deliveryOrders',
-      path: '/delivery-orders',
-      icon: IconTruckDelivery,
-      roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'WAREHOUSE_STAFF'],
-    },
-    {
-      labelKey: 'shell.shipments',
-      path: '/shipments',
-      icon: IconShip,
-      roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'FINANCE_OFFICER', 'WAREHOUSE_STAFF'],
-    },
-    {
-      labelKey: 'shell.domesticTransportOrders',
-      path: '/domestic-transport-orders',
-      icon: IconTruck,
-      roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'FINANCE_OFFICER', 'WAREHOUSE_STAFF'],
-    },
-    {
-      labelKey: 'shell.masterData',
-      path: '/master-data',
-      icon: IconFileText,
-      roles: ['ADMIN', 'PIC_MANAGER'],
-    },
-    {
-      labelKey: 'shell.tasks',
-      path: '/tasks',
-      icon: IconChecklist,
-      roles: ['ADMIN', 'PIC_MANAGER', 'PORT_OFFICER', 'CUSTOMS_OFFICER', 'FINANCE_OFFICER', 'WAREHOUSE_STAFF'],
-    },
-  ];
 
 export function AppShellLayout() {
   const [mobileOpened, mobileHandlers] = useDisclosure(false);
   const [desktopOpened, desktopHandlers] = useDisclosure(true);
   const location = useLocation();
-  const { hasAnyRole, logout, user } = useAuth();
+  const { can, logout, user } = useAuth();
   const { roleLabel, t } = useI18n();
 
-  const links = navigation
-    .filter((item) => !item.roles || hasAnyRole(item.roles))
+  const links = workspaceModules
+    .filter((item) => can(item.capability))
     .map((item) => {
       const Icon = item.icon;
       const active = item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path);
@@ -198,9 +128,11 @@ export function AppShellLayout() {
                 </Menu.Target>
                 <Menu.Dropdown>
                   <Menu.Label>{t('shell.account')}</Menu.Label>
-                  <Menu.Item component={Link} to="/settings" leftSection={<IconSettings size={16} />}>
-                    {t('shell.settings')}
-                  </Menu.Item>
+                  {can('settings.view') ? (
+                    <Menu.Item component={Link} to="/settings" leftSection={<IconSettings size={16} />}>
+                      {t('shell.settings')}
+                    </Menu.Item>
+                  ) : null}
                   <Menu.Item component={Link} to="/profile" leftSection={<IconUserCircle size={16} />}>
                     {t('shell.profile')}
                   </Menu.Item>

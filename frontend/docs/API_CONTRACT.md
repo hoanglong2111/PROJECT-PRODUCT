@@ -131,7 +131,7 @@ exact request/response types.)
 > `REJECTED` branch (`reject_reason`). `ref_type`/`ref_id` are nullable for standalone
 > quotations. Confirming a quotation is what unlocks PO creation (see Purchase Orders).
 - `GET /v1/quotations` · `GET /v1/quotations/:id`
-- `POST /v1/quotations` — create a standalone quotation (`{ customer_ref, incoterm_code, mode, currency_code, charge_lines[] }`), initial status `DRAFT`
+- `POST /v1/quotations` - create a standalone quotation (`{ customer_ref, incoterm_code, mode, currency_code, charge_lines[] }`), initial status `DRAFT`. `charge_lines[]` includes legacy `charge_type` plus optional `charge_code` from Charge Code master data.
 - `GET|POST /v1/delivery-orders/:id/quotations` — **legacy** DO-scoped create (kept for back-compat; the UI no longer uses it)
 - `POST /v1/quotations/:id/request` — → `REQUEST_FOR_QUOTATION`
 - `POST /v1/quotations/:id/receive` — → `DRAFT` (FDS starts drafting)
@@ -143,6 +143,14 @@ exact request/response types.)
 - `GET|POST /v1/quotations/:id/charge-lines`
 - `PATCH|DELETE /v1/quotation-charge-lines/:id`
 - `GET /v1/quotations/:id/events`
+
+### Auth
+- `GET /v1/auth/me` returns the current authenticated user in the standard v1
+  envelope. The frontend accepts `{ ...user, role, permissions?: string[] }`.
+  When `permissions` is present it is the source of truth for UI capabilities;
+  when omitted, the frontend derives capabilities from `role` using its local
+  policy. This is a real business endpoint for the future backend, not a
+  `/v1/mock/*` scaffold.
 
 ### Shipments
 - `GET /v1/shipments` · `GET|PATCH /v1/shipments/:id`
@@ -189,7 +197,7 @@ exact request/response types.)
 Mounted under `/api/*` (no `/v1`) and returning compatibility shapes
 (`{ data, total, pagination }` for lists, `{ data }` for detail, `{ data, message }`
 for mutations): `/currencies`, `/incoterms`, `/transport-modes`, `/suppliers`,
-`/forwarders`, `/carriers`, `/items`, `/item-groups`, `/item-tax-profiles`,
+`/charge-codes`, `/uoms`, `/forwarders`, `/carriers`, `/items`, `/item-groups`, `/item-tax-profiles`,
 `/task-templates`, `/options`. These are part of the contract but use the legacy
 envelope above; handle their shapes separately from the `/v1` envelope.
 

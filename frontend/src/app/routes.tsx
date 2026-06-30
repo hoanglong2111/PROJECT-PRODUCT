@@ -1,20 +1,12 @@
 import { lazy, type ComponentType, type ReactElement } from 'react';
 import { Route, Routes } from 'react-router-dom';
 
+import type { Capability } from '@shared/auth/capabilities';
 import { RequireAuth } from '@shared/auth/RequireAuth';
-import { RequireRole } from '@shared/auth/RequireRole';
-import type { AppRole } from '@shared/auth/types';
+import { RequireCapability } from '@shared/auth/RequireCapability';
 import { AppShellLayout } from '@shared/components/AppShellLayout';
 
-import {
-  deliveryOrderRoles,
-  domesticTransportOrderRoles,
-  shipmentRoles,
-  masterDataRoles,
-  purchaseOrderRoles,
-  quotationRoles,
-  taskRoles,
-} from './routeRoles';
+import { routeCapabilities } from './routeRoles';
 
 type RouteConfig = {
   element: ReactElement;
@@ -45,19 +37,19 @@ const publicRoutes: RouteConfig[] = [
 ];
 
 const workspaceRoutes: RouteConfig[] = [
-  { index: true, element: <Dashboard /> },
-  { path: 'quotations', element: withRole(<Quotations />, quotationRoles) },
-  { path: 'purchase-orders', element: withRole(<PurchaseOrders />, purchaseOrderRoles) },
-  { path: 'delivery-orders', element: withRole(<DeliveryOrders />, deliveryOrderRoles) },
-  { path: 'shipments', element: withRole(<Shipments />, shipmentRoles) },
+  { index: true, element: withCapability(<Dashboard />, routeCapabilities.dashboard) },
+  { path: 'quotations', element: withCapability(<Quotations />, routeCapabilities.quotations) },
+  { path: 'purchase-orders', element: withCapability(<PurchaseOrders />, routeCapabilities.purchaseOrders) },
+  { path: 'delivery-orders', element: withCapability(<DeliveryOrders />, routeCapabilities.deliveryOrders) },
+  { path: 'shipments', element: withCapability(<Shipments />, routeCapabilities.shipments) },
   {
     path: 'domestic-transport-orders',
-    element: withRole(<DomesticTransportOrders />, domesticTransportOrderRoles),
+    element: withCapability(<DomesticTransportOrders />, routeCapabilities.domesticTransportOrders),
   },
-  { path: 'master-data', element: withRole(<MasterData />, masterDataRoles) },
-  { path: 'tasks', element: withRole(<Tasks />, taskRoles) },
+  { path: 'master-data', element: withCapability(<MasterData />, routeCapabilities.masterData) },
+  { path: 'tasks', element: withCapability(<Tasks />, routeCapabilities.tasks) },
   { path: 'profile', element: <Profile /> },
-  { path: 'settings', element: <Settings /> },
+  { path: 'settings', element: withCapability(<Settings />, routeCapabilities.settings) },
   { path: '*', element: <NotFound /> },
 ];
 
@@ -94,6 +86,6 @@ function renderRoute(route: RouteConfig) {
   return <Route key={route.path} path={route.path} element={route.element} />;
 }
 
-function withRole(element: ReactElement, allowedRoles: AppRole[]) {
-  return <RequireRole allowedRoles={allowedRoles}>{element}</RequireRole>;
+function withCapability(element: ReactElement, capability: Capability) {
+  return <RequireCapability capability={capability}>{element}</RequireCapability>;
 }

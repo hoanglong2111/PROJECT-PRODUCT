@@ -1,6 +1,8 @@
 import { Badge, Group, Stack, Text } from '@mantine/core';
 
+import type { ChargeCode } from '@shared/api/chargeCodes';
 import type { Currency, Incoterm, Supplier, TransportMode } from '@shared/api/tradeMasterData';
+import type { Uom } from '@shared/api/uoms';
 import { useI18n } from '@shared/i18n';
 
 import { formatDateTime } from '../model/masterDataModel';
@@ -132,6 +134,147 @@ export function buildTransportModeColumns(t: T): Array<ReferenceColumn<Transport
       label: t('common.status'),
       width: 140,
       render: (mode) => <ActiveBadge active={mode.is_active} />,
+    },
+  ];
+}
+
+export function buildChargeCodeColumns(t: T): Array<ReferenceColumn<ChargeCode>> {
+  return [
+    {
+      key: 'identity',
+      label: t('masterData.chargeCode'),
+      render: (chargeCode) => (
+        <Stack gap={4}>
+          <Group gap="xs" wrap="nowrap">
+            <Badge variant="light">{chargeCode.charge_code}</Badge>
+            <Text fw={700} lineClamp={1} title={chargeCode.charge_name_en}>
+              {chargeCode.charge_name_en}
+            </Text>
+          </Group>
+          <Text size="xs" c="dimmed" lineClamp={1}>
+            {chargeCode.charge_name_vn || '-'}
+          </Text>
+        </Stack>
+      ),
+    },
+    {
+      key: 'category',
+      label: t('masterData.chargeCategory'),
+      width: 200,
+      render: (chargeCode) => {
+        const labelMap: Record<string, string> = {
+          ORIGIN_EXPORT: t('masterData.chargeCategoryOriginExport'),
+          MAIN_FREIGHT: t('masterData.chargeCategoryMainFreight'),
+          FREIGHT_SURCHARGE: t('masterData.chargeCategoryFreightSurcharge'),
+          DOCUMENTATION: t('masterData.chargeCategoryDocumentation'),
+          DESTINATION_IMPORT: t('masterData.chargeCategoryDestinationImport'),
+          ANCILLARY: t('masterData.chargeCategoryAncillary'),
+          SERVICE_OTHER: t('masterData.chargeCategoryServiceOther'),
+        };
+        return <Badge variant="outline">{labelMap[chargeCode.category] ?? chargeCode.category}</Badge>;
+      },
+    },
+    {
+      key: 'uom',
+      label: t('masterData.defaultUom'),
+      hint: t('glossary.defaultUom'),
+      width: 120,
+      render: (chargeCode) => <Badge color="gray" variant="light">{chargeCode.default_uom}</Badge>,
+    },
+    {
+      key: 'applicability',
+      label: t('masterData.transportApplicability'),
+      render: (chargeCode) => {
+        const modes = [
+          chargeCode.sea_fcl ? 'FCL' : null,
+          chargeCode.sea_lcl ? 'LCL' : null,
+          chargeCode.air ? 'AIR' : null,
+          chargeCode.road ? 'ROAD' : null,
+          chargeCode.rail ? 'RAIL' : null,
+        ].filter(Boolean);
+
+        return modes.length > 0 ? (
+          <Group gap={4}>
+            {modes.map((mode) => (
+              <Badge key={mode} size="xs" color="blue" variant="light">
+                {mode}
+              </Badge>
+            ))}
+          </Group>
+        ) : (
+          <Text c="dimmed">-</Text>
+        );
+      },
+    },
+    {
+      key: 'commercial',
+      label: t('masterData.revCost'),
+      hint: t('glossary.revCost'),
+      width: 140,
+      render: (chargeCode) => (
+        <Stack gap={2}>
+          <Badge color="teal" variant="light">{chargeCode.rev_cost}</Badge>
+          <Text size="xs" c="dimmed">
+            {chargeCode.taxable ? t('masterData.taxable') : t('masterData.nonTaxable')}
+          </Text>
+        </Stack>
+      ),
+    },
+    {
+      key: 'status',
+      label: t('common.status'),
+      width: 140,
+      render: (chargeCode) => <ActiveBadge active={chargeCode.is_active} />,
+    },
+  ];
+}
+
+export function buildUomColumns(t: T): Array<ReferenceColumn<Uom>> {
+  return [
+    {
+      key: 'identity',
+      label: t('masterData.uomCode'),
+      render: (uom) => (
+        <Stack gap={4}>
+          <Group gap="xs" wrap="nowrap">
+            <Badge variant="light">{uom.uom_code}</Badge>
+            <Text fw={700} lineClamp={1} title={uom.uom_name_en}>
+              {uom.uom_name_en}
+            </Text>
+          </Group>
+          <Text size="xs" c="dimmed" lineClamp={1}>
+            {uom.uom_name_vn || '-'}
+          </Text>
+        </Stack>
+      ),
+    },
+    {
+      key: 'category',
+      label: t('masterData.uomCategory'),
+      hint: t('glossary.uomCategory'),
+      width: 150,
+      render: (uom) => <Badge variant="outline">{uom.category}</Badge>,
+    },
+    {
+      key: 'description',
+      label: t('masterData.description'),
+      render: (uom) => (
+        <Text size="sm" c="dimmed" lineClamp={2}>
+          {uom.description || '-'}
+        </Text>
+      ),
+    },
+    {
+      key: 'status',
+      label: t('common.status'),
+      width: 140,
+      render: (uom) => <ActiveBadge active={uom.is_active} />,
+    },
+    {
+      key: 'updated',
+      label: t('masterData.updatedAt'),
+      width: 170,
+      render: (uom) => formatDateTime(uom.update_at),
     },
   ];
 }

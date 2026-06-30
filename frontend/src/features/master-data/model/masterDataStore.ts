@@ -1,13 +1,15 @@
 import { create } from 'zustand';
 
 type MasterDataTab =
+  | 'chargeCodes'
   | 'currencies'
   | 'forwarders'
   | 'incoterms'
   | 'items'
   | 'suppliers'
   | 'taskTemplates'
-  | 'transportModes';
+  | 'transportModes'
+  | 'uoms';
 
 type MasterDataState = {
   activeTab: MasterDataTab;

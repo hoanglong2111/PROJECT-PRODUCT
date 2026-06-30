@@ -15,7 +15,8 @@ import {
   fetchSuppliers,
   type Supplier,
 } from '@shared/api/tradeMasterData';
-import { useAuth } from '@shared/auth/useAuth';
+import { Can } from '@shared/auth/Can';
+import { useCan } from '@shared/auth/useCan';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
 import { useEntityParam } from '@shared/hooks/useEntityParam';
 
@@ -37,7 +38,6 @@ export function PurchaseOrders() {
   const monthParam = searchParams.get('month');
   const createParam = searchParams.get('create');
   const fromQuotationId = searchParams.get('fromQuotation');
-  const { user } = useAuth();
   const { close: closePoParam, open: openPoParam, value: focusedPo } = useEntityParam('po');
   const [workbench, setWorkbench] = useState<PurchaseOrderWorkbench>('list');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -47,7 +47,7 @@ export function PurchaseOrders() {
   const dateFrom = usePurchaseOrdersUiStore((s) => s.dateFrom);
   const dateTo = usePurchaseOrdersUiStore((s) => s.dateTo);
   const [page, setPage] = useState(1);
-  const canManagePurchaseOrders = user?.role === 'ADMIN' || user?.role === 'PIC_MANAGER';
+  const canManagePurchaseOrders = useCan('purchaseOrders.manage');
   const supplierParams = useMemo(() => ({ page: 1, limit: 100, role: 'SUPPLIER', is_active: true }), []);
   const suppliersQuery = useQuery({
     queryKey: queryKeys.suppliers(supplierParams),
@@ -202,7 +202,7 @@ export function PurchaseOrders() {
             </Text>
           </div>
           <Group gap="xs" wrap="nowrap" className="purchase-orders-page-actions dl-page-actions">
-            {canManagePurchaseOrders ? (
+            <Can capability="purchaseOrders.manage">
               <Button
                 className="purchase-orders-primary-action"
                 leftSection={<IconPlus size={16} />}
@@ -214,7 +214,7 @@ export function PurchaseOrders() {
               >
                 Create PO
               </Button>
-            ) : null}
+            </Can>
           </Group>
         </Group>
       ) : (

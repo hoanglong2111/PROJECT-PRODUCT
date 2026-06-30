@@ -1,4 +1,4 @@
-import { Alert, Badge, Group, SegmentedControl, Stack, Tabs, Text, Title } from '@mantine/core';
+import { Alert, Badge, Chip, Group, Paper, SegmentedControl, Stack, Tabs, Text, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -7,11 +7,18 @@ import {
   IconClipboardList,
   IconFileCode,
   IconMapPin,
+  IconReceiptTax,
   IconRoute,
+  IconRulerMeasure,
   IconTruckDelivery,
 } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 
+import {
+  deleteChargeCode,
+  fetchChargeCodes,
+  type ChargeCode,
+} from '@shared/api/chargeCodes';
 import {
   deleteCarrier,
   deleteForwarder,
@@ -44,14 +51,17 @@ import {
   type Supplier,
   type TransportMode,
 } from '@shared/api/tradeMasterData';
-import { useAuth } from '@shared/auth/useAuth';
+import { deleteUom, fetchUoms, type Uom } from '@shared/api/uoms';
+import { useCan } from '@shared/auth/useCan';
 import { LIST_PAGE_SIZE } from '@shared/components/ListPagination';
 import { useI18n } from '@shared/i18n';
+import { CHARGE_CATEGORY_GROUPS } from '@shared/lib/chargeCategories';
 import { useMasterDataStore } from './model/masterDataStore';
 
 import { optionalString } from './model/masterDataModel';
 import { CarrierModal } from './components/CarrierModal';
 import { CarriersSection } from './components/CarriersSection';
+import { ChargeCodeModal } from './components/ChargeCodeModal';
 import { CurrencyModal } from './components/CurrencyModal';
 import { ForwarderModal } from './components/ForwarderModal';
 import { ForwardersSection } from './components/ForwardersSection';
@@ -62,21 +72,28 @@ import { ItemGroupsSection } from './components/ItemGroupsSection';
 import { ItemModal } from './components/ItemModal';
 import { ReferenceDataPanel } from './components/ReferenceDataPanel';
 import {
+  buildChargeCodeColumns,
   buildCurrencyColumns,
   buildIncotermColumns,
   buildSupplierColumns,
   buildTransportModeColumns,
+  buildUomColumns,
 } from './components/referenceColumns';
 import { SupplierModal } from './components/SupplierModal';
 import { TaskTemplateModal } from './components/TaskTemplateModal';
 import { TaskTemplatesSection } from './components/TaskTemplatesSection';
 import { TransportModeModal } from './components/TransportModeModal';
+import { UomModal } from './components/UomModal';
+
+// Charge codes total ~79; fetch all so the group switcher counts and filtering
+// operate over the whole set rather than a single 20-row page.
+const CHARGE_CODE_FETCH_LIMIT = 500;
+
 
 export function MasterData() {
-  const { user } = useAuth();
   const { t } = useI18n();
   const queryClient = useQueryClient();
-  const canManageMasterData = user?.role === 'ADMIN' || user?.role === 'PIC_MANAGER';
+  const canManageMasterData = useCan('masterData.manage');
   const {
     activeTab,
     itemGroupFilter,
@@ -99,6 +116,8 @@ export function MasterData() {
   const [currencyModalOpened, currencyModalHandlers] = useDisclosure(false);
   const [incotermModalOpened, incotermModalHandlers] = useDisclosure(false);
   const [transportModeModalOpened, transportModeModalHandlers] = useDisclosure(false);
+  const [chargeCodeModalOpened, chargeCodeModalHandlers] = useDisclosure(false);
+  const [uomModalOpened, uomModalHandlers] = useDisclosure(false);
   const [supplierModalOpened, supplierModalHandlers] = useDisclosure(false);
   const [forwarderModalOpened, forwarderModalHandlers] = useDisclosure(false);
   const [carrierModalOpened, carrierModalHandlers] = useDisclosure(false);
@@ -109,11 +128,14 @@ export function MasterData() {
   const [editingCurrency, setEditingCurrency] = useState<Currency | null>(null);
   const [editingIncoterm, setEditingIncoterm] = useState<Incoterm | null>(null);
   const [editingTransportMode, setEditingTransportMode] = useState<TransportMode | null>(null);
+  const [editingChargeCode, setEditingChargeCode] = useState<ChargeCode | null>(null);
+  const [editingUom, setEditingUom] = useState<Uom | null>(null);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [editingForwarder, setEditingForwarder] = useState<Forwarder | null>(null);
   const [editingCarrier, setEditingCarrier] = useState<Carrier | null>(null);
   const [editingTaskTemplate, setEditingTaskTemplate] = useState<TaskTemplate | null>(null);
   const [transportScope, setTransportScope] = useState<'all' | 'intl' | 'domestic'>('all');
+  const [chargeGroup, setChargeGroup] = useState<string | null>(null);
 
   const itemListParams = useMemo(
     () => ({
@@ -155,6 +177,35 @@ export function MasterData() {
     enabled: activeTab === 'suppliers' || supplierModalOpened,
   });
 
+  const uomOptionsQuery = useQuery({
+    queryKey: queryKeys.uoms({ page: 1, limit: 100, is_active: true }),
+    queryFn: () => fetchUoms({ page: 1, limit: 100, is_active: true }),
+    enabled:
+      activeTab === 'items' ||
+      activeTab === 'chargeCodes' ||
+      activeTab === 'uoms' ||
+      itemModalOpened ||
+      chargeCodeModalOpened ||
+      uomModalOpened,
+  });
+
+  // Loads the full charge-code set so the group switcher can show per-group counts
+  // and the panel can filter by group across all rows (not just one page).
+  const chargeCodeAllQuery = useQuery({
+    queryKey: queryKeys.chargeCodes({ page: 1, limit: CHARGE_CODE_FETCH_LIMIT, search: undefined }),
+    queryFn: () => fetchChargeCodes({ page: 1, limit: CHARGE_CODE_FETCH_LIMIT }),
+    enabled: activeTab === 'chargeCodes',
+  });
+
+  const chargeGroupCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const code of chargeCodeAllQuery.data?.data ?? []) {
+      counts[code.category] = (counts[code.category] ?? 0) + 1;
+    }
+    return counts;
+  }, [chargeCodeAllQuery.data]);
+  const chargeCodeTotal = chargeCodeAllQuery.data?.data?.length ?? 0;
+
   const itemGroups = itemGroupsQuery.data?.data ?? [];
   const items = itemsQuery.data?.data ?? [];
   const currencyOptions = useMemo(
@@ -180,6 +231,14 @@ export function MasterData() {
         value: mode.id,
       })),
     [transportModeOptionsQuery.data],
+  );
+  const uomOptions = useMemo(
+    () =>
+      (uomOptionsQuery.data?.data ?? []).map((uom) => ({
+        label: `${uom.uom_code} - ${uom.uom_name_en}`,
+        value: uom.uom_code,
+      })),
+    [uomOptionsQuery.data],
   );
 
   const taxProfileQueries = useQueries({
@@ -270,6 +329,16 @@ export function MasterData() {
     onSuccess: () => invalidateTradeMasterData(queryKeys.transportModeLists),
   });
 
+  const deleteChargeCodeMutation = useMutation({
+    mutationFn: deleteChargeCode,
+    onSuccess: () => invalidateTradeMasterData(queryKeys.chargeCodeLists),
+  });
+
+  const deleteUomMutation = useMutation({
+    mutationFn: deleteUom,
+    onSuccess: () => invalidateTradeMasterData(queryKeys.uomLists),
+  });
+
   const deleteSupplierMutation = useMutation({
     mutationFn: deleteSupplier,
     onSuccess: () => invalidateTradeMasterData(queryKeys.supplierLists),
@@ -315,6 +384,24 @@ export function MasterData() {
   const openEditTransportMode = (mode: TransportMode) => {
     setEditingTransportMode(mode);
     transportModeModalHandlers.open();
+  };
+
+  const openAddChargeCode = () => {
+    setEditingChargeCode(null);
+    chargeCodeModalHandlers.open();
+  };
+  const openEditChargeCode = (chargeCode: ChargeCode) => {
+    setEditingChargeCode(chargeCode);
+    chargeCodeModalHandlers.open();
+  };
+
+  const openAddUom = () => {
+    setEditingUom(null);
+    uomModalHandlers.open();
+  };
+  const openEditUom = (uom: Uom) => {
+    setEditingUom(uom);
+    uomModalHandlers.open();
   };
 
   const openAddSupplier = () => {
@@ -386,6 +473,16 @@ export function MasterData() {
     deleteTransportModeMutation.mutate(mode.id);
   };
 
+  const handleDeleteChargeCode = (chargeCode: ChargeCode) => {
+    if (!window.confirm(t('masterData.confirmDeleteChargeCode'))) return;
+    deleteChargeCodeMutation.mutate(chargeCode.id);
+  };
+
+  const handleDeleteUom = (uom: Uom) => {
+    if (!window.confirm(t('masterData.confirmDeleteUom'))) return;
+    deleteUomMutation.mutate(uom.id);
+  };
+
   const handleDeleteSupplier = (supplier: Supplier) => {
     if (!window.confirm(t('masterData.confirmDeleteSupplier'))) return;
     deleteSupplierMutation.mutate(supplier.id);
@@ -426,6 +523,8 @@ export function MasterData() {
   const currencyColumns = useMemo(() => buildCurrencyColumns(t), [t]);
   const incotermColumns = useMemo(() => buildIncotermColumns(t), [t]);
   const transportModeColumns = useMemo(() => buildTransportModeColumns(t), [t]);
+  const chargeCodeColumns = useMemo(() => buildChargeCodeColumns(t), [t]);
+  const uomColumns = useMemo(() => buildUomColumns(t), [t]);
   const supplierColumns = useMemo(() => buildSupplierColumns(t), [t]);
 
   return (
@@ -481,6 +580,12 @@ export function MasterData() {
               </Tabs.Tab>
               <Tabs.Tab value="transportModes" leftSection={<IconMapPin size={16} />}>
                 {t('masterData.tabTransportModes')}
+              </Tabs.Tab>
+              <Tabs.Tab value="chargeCodes" leftSection={<IconReceiptTax size={16} />}>
+                {t('masterData.tabChargeCodes')}
+              </Tabs.Tab>
+              <Tabs.Tab value="uoms" leftSection={<IconRulerMeasure size={16} />}>
+                {t('masterData.tabUoms')}
               </Tabs.Tab>
             </Tabs.List>
           </Group>
@@ -600,6 +705,62 @@ export function MasterData() {
           />
         </Tabs.Panel>
 
+        <Tabs.Panel value="chargeCodes" pt="md">
+          <Stack gap="md">
+            <Paper withBorder p="md">
+              <Chip.Group
+                multiple={false}
+                value={chargeGroup ?? 'ALL'}
+                onChange={(value) => setChargeGroup(value === 'ALL' ? null : (value as string))}
+              >
+                <Group gap="xs">
+                  <Chip value="ALL" variant="outline">
+                    {t('common.all')} ({chargeCodeTotal})
+                  </Chip>
+                  {CHARGE_CATEGORY_GROUPS.map((g) => (
+                    <Chip key={g.value} value={g.value} variant="outline">
+                      {t(g.labelKey)} ({chargeGroupCounts[g.value] ?? 0})
+                    </Chip>
+                  ))}
+                </Group>
+              </Chip.Group>
+            </Paper>
+            <ReferenceDataPanel
+              addLabel={t('masterData.addChargeCode')}
+              canManage={canManageMasterData}
+              title={t('masterData.chargeCodesTitle')}
+              searchPlaceholder={t('masterData.searchChargeCodes')}
+              emptyTitle={t('masterData.noChargeCodes')}
+              emptyDescription={t('masterData.noChargeCodesDescription')}
+              columns={chargeCodeColumns}
+              queryKey={queryKeys.chargeCodes}
+              fetcher={fetchChargeCodes}
+              pageSize={CHARGE_CODE_FETCH_LIMIT}
+              onAdd={openAddChargeCode}
+              onEdit={openEditChargeCode}
+              onDelete={handleDeleteChargeCode}
+              clientFilter={chargeGroup ? (c) => c.category === chargeGroup : undefined}
+            />
+          </Stack>
+        </Tabs.Panel>
+
+        <Tabs.Panel value="uoms" pt="md">
+          <ReferenceDataPanel
+            addLabel={t('masterData.addUom')}
+            canManage={canManageMasterData}
+            title={t('masterData.uomsTitle')}
+            searchPlaceholder={t('masterData.searchUoms')}
+            emptyTitle={t('masterData.noUoms')}
+            emptyDescription={t('masterData.noUomsDescription')}
+            columns={uomColumns}
+            queryKey={queryKeys.uoms}
+            fetcher={fetchUoms}
+            onAdd={openAddUom}
+            onEdit={openEditUom}
+            onDelete={handleDeleteUom}
+          />
+        </Tabs.Panel>
+
         <Tabs.Panel value="items" pt="md">
           <Stack gap="md">
             <ItemGroupsSection
@@ -664,6 +825,19 @@ export function MasterData() {
         opened={transportModeModalOpened}
       />
 
+      <ChargeCodeModal
+        editing={editingChargeCode}
+        onClose={chargeCodeModalHandlers.close}
+        opened={chargeCodeModalOpened}
+        uomOptions={uomOptions}
+      />
+
+      <UomModal
+        editing={editingUom}
+        onClose={uomModalHandlers.close}
+        opened={uomModalOpened}
+      />
+
       <SupplierModal
         currencyOptions={currencyOptions}
         editing={editingSupplier}
@@ -704,6 +878,7 @@ export function MasterData() {
         groupOptions={groupOptions}
         onClose={itemModalHandlers.close}
         opened={itemModalOpened}
+        uomOptions={uomOptions}
       />
     </Stack>
   );

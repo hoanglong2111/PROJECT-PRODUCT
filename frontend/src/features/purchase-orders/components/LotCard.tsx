@@ -13,6 +13,7 @@ export function LotCard({
   isSelected,
   lot,
   onDelete,
+  onDragActiveChange,
   onDrop,
   onDropLine,
   onEdit,
@@ -25,6 +26,7 @@ export function LotCard({
   isSelected: boolean;
   lot: PoLot;
   onDelete: () => void;
+  onDragActiveChange: (type: 'lot' | 'lotLine' | null) => void;
   onDrop: (event: DragEvent<HTMLDivElement>) => void;
   onDropLine: (event: DragEvent<HTMLDivElement>, line: PoLotLine) => void;
   onEdit: () => void;
@@ -32,6 +34,11 @@ export function LotCard({
   onSplitLine: (line: PoLotLine) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(true);
+  // Drag-and-drop visual state (HTML5 native DnD gives no built-in feedback).
+  const [isDragging, setIsDragging] = useState(false); // this LOT card is being dragged
+  const [isDropTarget, setIsDropTarget] = useState(false); // something is hovering over this card
+  const [draggingLineId, setDraggingLineId] = useState<string | null>(null); // a line from this card is in hand
+  const [dropTargetLineId, setDropTargetLineId] = useState<string | null>(null); // hovered line (insertion point)
   const lines = lot.items ?? [];
   const isLocked = lockedLotStatuses.has(lot.status);
   const canDelete = canManage && !isLocked && lines.length === 0;
@@ -43,13 +50,42 @@ export function LotCard({
     <Paper
       withBorder
       p={0}
-      className="lot-list-item"
-      onDrop={onDrop}
-      onDragOver={(event) => event.preventDefault()}
+      className={[
+        'lot-list-item',
+        isDragging ? 'is-dragging' : '',
+        isDropTarget ? 'is-drop-target' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      onDrop={(event) => {
+        setIsDropTarget(false);
+        setDropTargetLineId(null);
+        onDrop(event);
+      }}
+      onDragOver={(event) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+        setIsDropTarget(true);
+      }}
+      onDragLeave={(event) => {
+        // Ignore leaves into a child element; only clear when the cursor truly exits the card.
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+          setIsDropTarget(false);
+        }
+      }}
       draggable={canManage && !isLocked}
       onDragStart={(event: DragEvent<HTMLDivElement>) => {
         event.dataTransfer.setData('dragType', 'lot');
         event.dataTransfer.setData('lotId', lot.id);
+        event.dataTransfer.effectAllowed = 'move';
+        setIsDragging(true);
+        onDragActiveChange('lot');
+      }}
+      onDragEnd={() => {
+        setIsDragging(false);
+        setIsDropTarget(false);
+        setDropTargetLineId(null);
+        onDragActiveChange(null);
       }}
       style={{ cursor: canManage && !isLocked ? 'grab' : 'default' }}
     >
@@ -136,16 +172,44 @@ export function LotCard({
                   return (
                     <div
                       key={line.id}
-                      className="lot-line-row"
+                      className={[
+                        'lot-line-row',
+                        draggingLineId === line.id ? 'is-dragging' : '',
+                        dropTargetLineId === line.id && draggingLineId !== line.id ? 'is-drop-target' : '',
+                      ]
+                        .filter(Boolean)
+                        .join(' ')}
                       draggable={canManage && !isLocked}
                       onDragStart={(event: DragEvent<HTMLDivElement>) => {
                         event.stopPropagation();
                         event.dataTransfer.setData('dragType', 'lotLine');
                         event.dataTransfer.setData('lotLineId', line.id);
                         event.dataTransfer.setData('sourceLotId', lot.id);
+                        event.dataTransfer.effectAllowed = 'move';
+                        setDraggingLineId(line.id);
+                        onDragActiveChange('lotLine');
                       }}
-                      onDragOver={(event) => event.preventDefault()}
-                      onDrop={(event) => onDropLine(event, line)}
+                      onDragEnd={() => {
+                        setDraggingLineId(null);
+                        setDropTargetLineId(null);
+                        setIsDropTarget(false);
+                        onDragActiveChange(null);
+                      }}
+                      onDragOver={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setDropTargetLineId(line.id);
+                      }}
+                      onDragLeave={(event) => {
+                        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                          setDropTargetLineId((current) => (current === line.id ? null : current));
+                        }
+                      }}
+                      onDrop={(event) => {
+                        setDropTargetLineId(null);
+                        setIsDropTarget(false);
+                        onDropLine(event, line);
+                      }}
                       style={{ cursor: canManage && !isLocked ? 'grab' : 'default' }}
                     >
                       <Group gap="sm" wrap="nowrap" className="lot-line-main">

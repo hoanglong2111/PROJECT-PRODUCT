@@ -103,8 +103,8 @@ describe('buildCssVariablesResolver', () => {
   it('returns light and dark color mappings', () => {
     const resolver = buildCssVariablesResolver('ocean', 'none');
     const result = resolver();
-    expect(Object.keys(result.light).length).toBe(10);
-    expect(Object.keys(result.dark).length).toBe(10);
+    expect(Object.keys(result.light).length).toBe(18);
+    expect(Object.keys(result.dark).length).toBe(18);
   });
 
   it('dark mode uses dark tuple colors', () => {

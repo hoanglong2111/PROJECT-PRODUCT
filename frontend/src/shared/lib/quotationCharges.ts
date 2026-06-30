@@ -118,6 +118,17 @@ function customsTransportFields(mode: ShippingMode): QuotationChargeField[] {
 }
 
 /**
+ * Derive charge_type for "Other / arising" lines (not catalog-driven).
+ * Catalog mandatory lines carry their charge_type directly from the field.
+ */
+export function chargeCodeToType(code: string): QuotationChargeTypeV1 {
+  if (code === 'DEM') return 'DEMURRAGE';
+  if (code === 'DET') return 'DETENTION';
+  if (code === 'STO') return 'WAREHOUSE';
+  return 'OTHER';
+}
+
+/**
  * Return the ordered charge sections for a given Incoterms group and shipping
  * mode. UNKNOWN behaves like EXW_FCA (full set) so no field is hidden when the
  * quotation has no Incoterms.

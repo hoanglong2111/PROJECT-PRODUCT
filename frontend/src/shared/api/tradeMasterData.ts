@@ -191,11 +191,13 @@ export type MasterDataOptions = {
   incoterms?: MasterDataOption[];
   transport_modes?: MasterDataOption[];
   suppliers?: MasterDataOption[];
+  charge_codes?: MasterDataOption[];
+  uoms?: MasterDataOption[];
 };
 
 export type MasterDataOptionsParams = {
   role?: string;
-  types?: Array<'currencies' | 'incoterms' | 'transport_modes' | 'suppliers'>;
+  types?: Array<'currencies' | 'incoterms' | 'transport_modes' | 'suppliers' | 'charge_codes' | 'uoms'>;
 };
 
 function unwrapData<T>(response: { data: { data: T } }) {

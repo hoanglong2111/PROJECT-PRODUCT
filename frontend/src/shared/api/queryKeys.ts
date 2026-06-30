@@ -16,6 +16,9 @@ export const queryKeys = {
   carrierLists: ['carriers'] as const,
   carriers: (params: Record<string, unknown>) => ['carriers', params] as const,
   carrierDetail: (id: string) => ['carriers', 'detail', id] as const,
+  chargeCodeDetail: (id: string) => ['charge-codes', 'detail', id] as const,
+  chargeCodeLists: ['charge-codes'] as const,
+  chargeCodes: (params: Record<string, unknown>) => ['charge-codes', params] as const,
   forwarderLists: ['forwarders'] as const,
   forwarders: (params: Record<string, unknown>) => ['forwarders', params] as const,
   forwarderDetail: (id: string) => ['forwarders', 'detail', id] as const,
@@ -83,5 +86,8 @@ export const queryKeys = {
   transportModeDetail: (id: string) => ['transport-modes', 'detail', id] as const,
   transportModeLists: ['transport-modes'] as const,
   transportModes: (params: Record<string, unknown>) => ['transport-modes', params] as const,
+  uomDetail: (id: string) => ['uoms', 'detail', id] as const,
+  uomLists: ['uoms'] as const,
+  uoms: (params: Record<string, unknown>) => ['uoms', params] as const,
   users: ['users'] as const,
 };
