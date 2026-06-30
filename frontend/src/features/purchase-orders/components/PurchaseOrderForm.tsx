@@ -578,7 +578,7 @@ export function PurchaseOrderForm({
                                   selectedItem?.customs_profiles?.find((profile) => profile.is_default)?.id ??
                                   selectedItem?.customs_profiles?.[0]?.id ??
                                   '',
-                                item_description: selectedItem?.item_description ?? selectedItem?.item_name ?? '',
+                                item_description: selectedItem?.note ?? selectedItem?.item_name ?? '',
                                 unit: selectedItem?.base_uom ?? activeLine.unit,
                               });
                             }}

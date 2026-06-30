@@ -6,14 +6,11 @@ type ApiMessageResponse<T> = {
   message?: string;
 };
 
-export type UomCategory = 'DOCUMENT' | 'CONTAINER' | 'MEASURE' | 'TIME' | 'PERCENT' | string;
-
 export type Uom = {
   id: string;
   uom_code: string;
   uom_name_en: string;
   uom_name_vn: string;
-  category: UomCategory;
   description: string | null;
   is_active: boolean;
   create_at?: string;
@@ -26,7 +23,6 @@ export type UomPayload = {
   uom_code?: string;
   uom_name_en?: string;
   uom_name_vn?: string;
-  category?: UomCategory;
   description?: string | null;
   is_active?: boolean;
 };
@@ -39,7 +35,6 @@ function normalizeUom(uom: Uom): Uom {
   return {
     ...uom,
     uom_name_vn: uom.uom_name_vn ?? '',
-    category: uom.category ?? 'DOCUMENT',
     description: uom.description ?? null,
     is_active: uom.is_active !== false,
   };
@@ -66,7 +61,7 @@ export async function fetchUom(id: string) {
 }
 
 export async function createUom(
-  payload: Required<Pick<UomPayload, 'uom_code' | 'uom_name_en' | 'category'>> & UomPayload,
+  payload: Required<Pick<UomPayload, 'uom_code' | 'uom_name_en'>> & UomPayload,
 ) {
   const response = await apiClient.post<ApiMessageResponse<Uom>>('/uoms', payload);
   return normalizeUom(unwrapData(response));

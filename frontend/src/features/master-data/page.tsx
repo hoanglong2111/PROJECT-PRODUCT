@@ -1,6 +1,6 @@
-import { Alert, Badge, Chip, Group, Paper, SegmentedControl, Stack, Tabs, Text, Title } from '@mantine/core';
+import { Alert, Badge, Chip, Group, Paper, Select, Stack, Tabs, Text, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   IconAlertCircle,
   IconCash,
@@ -27,13 +27,8 @@ import {
 } from '@shared/api/forwarders';
 import {
   deleteItem,
-  deleteItemGroup,
-  fetchItemGroups,
   fetchItems,
-  fetchItemTaxProfiles,
   type Item,
-  type ItemGroup,
-  type ItemTaxProfile,
 } from '@shared/api/items';
 import { queryKeys } from '@shared/api/queryKeys';
 import { deleteTaskTemplate, type TaskTemplate } from '@shared/api/taskTemplates';
@@ -55,7 +50,7 @@ import { deleteUom, fetchUoms, type Uom } from '@shared/api/uoms';
 import { useCan } from '@shared/auth/useCan';
 import { LIST_PAGE_SIZE } from '@shared/components/ListPagination';
 import { useI18n } from '@shared/i18n';
-import { CHARGE_CATEGORY_GROUPS } from '@shared/lib/chargeCategories';
+import { CHARGE_CATEGORIES, CHARGE_GROUPS } from '@shared/lib/chargeCategories';
 import { useMasterDataStore } from './model/masterDataStore';
 
 import { optionalString } from './model/masterDataModel';
@@ -67,8 +62,6 @@ import { ForwarderModal } from './components/ForwarderModal';
 import { ForwardersSection } from './components/ForwardersSection';
 import { IncotermModal } from './components/IncotermModal';
 import { ItemCatalogSection } from './components/ItemCatalogSection';
-import { ItemGroupModal } from './components/ItemGroupModal';
-import { ItemGroupsSection } from './components/ItemGroupsSection';
 import { ItemModal } from './components/ItemModal';
 import { ReferenceDataPanel } from './components/ReferenceDataPanel';
 import {
@@ -89,20 +82,15 @@ import { UomModal } from './components/UomModal';
 // operate over the whole set rather than a single 20-row page.
 const CHARGE_CODE_FETCH_LIMIT = 500;
 
-
 export function MasterData() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
   const canManageMasterData = useCan('masterData.manage');
   const {
     activeTab,
-    itemGroupFilter,
-    itemGroupSearch,
     itemPage,
     itemSearch,
     setActiveTab,
-    setItemGroupFilter,
-    setItemGroupSearch,
     setItemPage,
     setItemSearch,
     setTaskTemplateDepartmentFilter,
@@ -111,7 +99,6 @@ export function MasterData() {
     taskTemplateMilestoneFilter,
   } = useMasterDataStore();
 
-  const [itemGroupModalOpened, itemGroupModalHandlers] = useDisclosure(false);
   const [itemModalOpened, itemModalHandlers] = useDisclosure(false);
   const [currencyModalOpened, currencyModalHandlers] = useDisclosure(false);
   const [incotermModalOpened, incotermModalHandlers] = useDisclosure(false);
@@ -123,7 +110,6 @@ export function MasterData() {
   const [carrierModalOpened, carrierModalHandlers] = useDisclosure(false);
   const [taskTemplateModalOpened, taskTemplateModalHandlers] = useDisclosure(false);
 
-  const [editingItemGroup, setEditingItemGroup] = useState<ItemGroup | null>(null);
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [editingCurrency, setEditingCurrency] = useState<Currency | null>(null);
   const [editingIncoterm, setEditingIncoterm] = useState<Incoterm | null>(null);
@@ -134,47 +120,22 @@ export function MasterData() {
   const [editingForwarder, setEditingForwarder] = useState<Forwarder | null>(null);
   const [editingCarrier, setEditingCarrier] = useState<Carrier | null>(null);
   const [editingTaskTemplate, setEditingTaskTemplate] = useState<TaskTemplate | null>(null);
-  const [transportScope, setTransportScope] = useState<'all' | 'intl' | 'domestic'>('all');
   const [chargeGroup, setChargeGroup] = useState<string | null>(null);
+  const [chargeCategory, setChargeCategory] = useState<string | null>(null);
 
   const itemListParams = useMemo(
     () => ({
       page: itemPage,
       limit: LIST_PAGE_SIZE,
       q: optionalString(itemSearch),
-      item_group_id: itemGroupFilter || undefined,
     }),
-    [itemGroupFilter, itemPage, itemSearch],
+    [itemPage, itemSearch],
   );
-
-  const itemGroupsQuery = useQuery({
-    queryKey: queryKeys.itemGroups({ page: 1, limit: 100 }),
-    queryFn: () => fetchItemGroups({ page: 1, limit: 100 }),
-    enabled: activeTab === 'items',
-  });
 
   const itemsQuery = useQuery({
     queryKey: queryKeys.items(itemListParams),
     queryFn: () => fetchItems(itemListParams),
     enabled: activeTab === 'items',
-  });
-
-  const currencyOptionsQuery = useQuery({
-    queryKey: queryKeys.currencies({ page: 1, limit: 100, is_active: true }),
-    queryFn: () => fetchCurrencies({ page: 1, limit: 100, is_active: true }),
-    enabled: activeTab === 'suppliers' || supplierModalOpened,
-  });
-
-  const incotermOptionsQuery = useQuery({
-    queryKey: queryKeys.incoterms({ page: 1, limit: 100, is_active: true }),
-    queryFn: () => fetchIncoterms({ page: 1, limit: 100, is_active: true }),
-    enabled: activeTab === 'suppliers' || supplierModalOpened,
-  });
-
-  const transportModeOptionsQuery = useQuery({
-    queryKey: queryKeys.transportModes({ page: 1, limit: 100, is_active: true }),
-    queryFn: () => fetchTransportModes({ page: 1, limit: 100, is_active: true }),
-    enabled: activeTab === 'suppliers' || supplierModalOpened,
   });
 
   const uomOptionsQuery = useQuery({
@@ -189,8 +150,6 @@ export function MasterData() {
       uomModalOpened,
   });
 
-  // Loads the full charge-code set so the group switcher can show per-group counts
-  // and the panel can filter by group across all rows (not just one page).
   const chargeCodeAllQuery = useQuery({
     queryKey: queryKeys.chargeCodes({ page: 1, limit: CHARGE_CODE_FETCH_LIMIT, search: undefined }),
     queryFn: () => fetchChargeCodes({ page: 1, limit: CHARGE_CODE_FETCH_LIMIT }),
@@ -200,38 +159,28 @@ export function MasterData() {
   const chargeGroupCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const code of chargeCodeAllQuery.data?.data ?? []) {
-      counts[code.category] = (counts[code.category] ?? 0) + 1;
+      counts[code.group] = (counts[code.group] ?? 0) + 1;
     }
     return counts;
   }, [chargeCodeAllQuery.data]);
   const chargeCodeTotal = chargeCodeAllQuery.data?.data?.length ?? 0;
+  const chargeCategoryOptions = useMemo(
+    () => [
+      { label: t('common.all'), value: 'ALL' },
+      ...CHARGE_CATEGORIES.map((category) => ({ label: t(category.labelKey), value: category.value })),
+    ],
+    [t],
+  );
+  const chargeCodeFilter = useMemo(
+    () => (chargeGroup || chargeCategory
+      ? (chargeCode: ChargeCode) =>
+        (!chargeGroup || chargeCode.group === chargeGroup) &&
+        (!chargeCategory || chargeCode.category === chargeCategory)
+      : undefined),
+    [chargeCategory, chargeGroup],
+  );
 
-  const itemGroups = itemGroupsQuery.data?.data ?? [];
   const items = itemsQuery.data?.data ?? [];
-  const currencyOptions = useMemo(
-    () =>
-      (currencyOptionsQuery.data?.data ?? []).map((currency) => ({
-        label: `${currency.currency_code} - ${currency.currency_name}`,
-        value: currency.id,
-      })),
-    [currencyOptionsQuery.data],
-  );
-  const incotermOptions = useMemo(
-    () =>
-      (incotermOptionsQuery.data?.data ?? []).map((incoterm) => ({
-        label: `${incoterm.incoterm_code} - ${incoterm.incoterm_name}`,
-        value: incoterm.id,
-      })),
-    [incotermOptionsQuery.data],
-  );
-  const transportModeOptions = useMemo(
-    () =>
-      (transportModeOptionsQuery.data?.data ?? []).map((mode) => ({
-        label: `${mode.mode_code} - ${mode.mode_name}`,
-        value: mode.id,
-      })),
-    [transportModeOptionsQuery.data],
-  );
   const uomOptions = useMemo(
     () =>
       (uomOptionsQuery.data?.data ?? []).map((uom) => ({
@@ -240,44 +189,6 @@ export function MasterData() {
       })),
     [uomOptionsQuery.data],
   );
-
-  const taxProfileQueries = useQueries({
-    queries: items.map((item) => ({
-      queryKey: queryKeys.itemTaxProfiles(item.id),
-      queryFn: () => fetchItemTaxProfiles(item.id),
-      enabled: activeTab === 'items',
-    })),
-  });
-
-  const taxProfilesByItemId = useMemo(() => {
-    return new Map<string, ItemTaxProfile[]>(
-      items.map((item, index) => {
-        const embeddedProfiles = item.customs_profiles ?? [];
-        const queriedProfiles = taxProfileQueries[index]?.data ?? [];
-        return [item.id, queriedProfiles.length > 0 ? queriedProfiles : embeddedProfiles] as const;
-      }),
-    );
-  }, [items, taxProfileQueries]);
-
-  const groupOptions = useMemo(
-    () =>
-      itemGroups.map((group) => ({
-        label: `${group.group_code ? `${group.group_code} - ` : ''}${group.group_name}`,
-        value: group.id,
-      })),
-    [itemGroups],
-  );
-
-  const filteredItemGroups = useMemo(() => {
-    const q = itemGroupSearch.toLowerCase().trim();
-    return itemGroups.filter(
-      (group) =>
-        (group.group_code || '').toLowerCase().includes(q) ||
-        group.group_name.toLowerCase().includes(q) ||
-        (group.description || '').toLowerCase().includes(q) ||
-        (group.default_hs_code || '').toLowerCase().includes(q),
-    );
-  }, [itemGroupSearch, itemGroups]);
 
   const itemTotal = itemsQuery.data?.total ?? 0;
   const itemPageCount = Math.max(1, itemsQuery.data?.pagination.totalPages ?? 1);
@@ -290,15 +201,12 @@ export function MasterData() {
     }
   }, [itemPage, itemPageCount]);
 
-  const deleteItemGroupMutation = useMutation({
-    mutationFn: deleteItemGroup,
-    onSuccess: () => {
-      void Promise.all([
-        queryClient.invalidateQueries({ queryKey: queryKeys.itemGroupLists }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.itemLists }),
-      ]);
-    },
-  });
+  const invalidateTradeMasterData = (queryKey: readonly unknown[]) => {
+    void Promise.all([
+      queryClient.invalidateQueries({ queryKey }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.masterDataOptionLists }),
+    ]);
+  };
 
   const deleteItemMutation = useMutation({
     mutationFn: deleteItem,
@@ -306,13 +214,6 @@ export function MasterData() {
       void queryClient.invalidateQueries({ queryKey: queryKeys.itemLists });
     },
   });
-
-  const invalidateTradeMasterData = (queryKey: readonly unknown[]) => {
-    void Promise.all([
-      queryClient.invalidateQueries({ queryKey }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.masterDataOptionLists }),
-    ]);
-  };
 
   const deleteCurrencyMutation = useMutation({
     mutationFn: deleteCurrency,
@@ -359,165 +260,75 @@ export function MasterData() {
     onSuccess: () => invalidateTradeMasterData(queryKeys.taskTemplateLists),
   });
 
-  const openAddCurrency = () => {
-    setEditingCurrency(null);
-    currencyModalHandlers.open();
-  };
-  const openEditCurrency = (currency: Currency) => {
-    setEditingCurrency(currency);
-    currencyModalHandlers.open();
-  };
+  const openAddCurrency = () => { setEditingCurrency(null); currencyModalHandlers.open(); };
+  const openEditCurrency = (currency: Currency) => { setEditingCurrency(currency); currencyModalHandlers.open(); };
 
-  const openAddIncoterm = () => {
-    setEditingIncoterm(null);
-    incotermModalHandlers.open();
-  };
-  const openEditIncoterm = (incoterm: Incoterm) => {
-    setEditingIncoterm(incoterm);
-    incotermModalHandlers.open();
-  };
+  const openAddIncoterm = () => { setEditingIncoterm(null); incotermModalHandlers.open(); };
+  const openEditIncoterm = (incoterm: Incoterm) => { setEditingIncoterm(incoterm); incotermModalHandlers.open(); };
 
-  const openAddTransportMode = () => {
-    setEditingTransportMode(null);
-    transportModeModalHandlers.open();
-  };
-  const openEditTransportMode = (mode: TransportMode) => {
-    setEditingTransportMode(mode);
-    transportModeModalHandlers.open();
-  };
+  const openAddTransportMode = () => { setEditingTransportMode(null); transportModeModalHandlers.open(); };
+  const openEditTransportMode = (mode: TransportMode) => { setEditingTransportMode(mode); transportModeModalHandlers.open(); };
 
-  const openAddChargeCode = () => {
-    setEditingChargeCode(null);
-    chargeCodeModalHandlers.open();
-  };
-  const openEditChargeCode = (chargeCode: ChargeCode) => {
-    setEditingChargeCode(chargeCode);
-    chargeCodeModalHandlers.open();
-  };
+  const openAddChargeCode = () => { setEditingChargeCode(null); chargeCodeModalHandlers.open(); };
+  const openEditChargeCode = (chargeCode: ChargeCode) => { setEditingChargeCode(chargeCode); chargeCodeModalHandlers.open(); };
 
-  const openAddUom = () => {
-    setEditingUom(null);
-    uomModalHandlers.open();
-  };
-  const openEditUom = (uom: Uom) => {
-    setEditingUom(uom);
-    uomModalHandlers.open();
-  };
+  const openAddUom = () => { setEditingUom(null); uomModalHandlers.open(); };
+  const openEditUom = (uom: Uom) => { setEditingUom(uom); uomModalHandlers.open(); };
 
-  const openAddSupplier = () => {
-    setEditingSupplier(null);
-    supplierModalHandlers.open();
-  };
-  const openEditSupplier = (supplier: Supplier) => {
-    setEditingSupplier(supplier);
-    supplierModalHandlers.open();
-  };
+  const openAddSupplier = () => { setEditingSupplier(null); supplierModalHandlers.open(); };
+  const openEditSupplier = (supplier: Supplier) => { setEditingSupplier(supplier); supplierModalHandlers.open(); };
 
-  const openAddForwarder = () => {
-    setEditingForwarder(null);
-    forwarderModalHandlers.open();
-  };
-  const openEditForwarder = (forwarder: Forwarder) => {
-    setEditingForwarder(forwarder);
-    forwarderModalHandlers.open();
-  };
+  const openAddForwarder = () => { setEditingForwarder(null); forwarderModalHandlers.open(); };
+  const openEditForwarder = (forwarder: Forwarder) => { setEditingForwarder(forwarder); forwarderModalHandlers.open(); };
 
-  const openAddCarrier = () => {
-    setEditingCarrier(null);
-    carrierModalHandlers.open();
-  };
-  const openEditCarrier = (carrier: Carrier) => {
-    setEditingCarrier(carrier);
-    carrierModalHandlers.open();
-  };
+  const openAddCarrier = () => { setEditingCarrier(null); carrierModalHandlers.open(); };
+  const openEditCarrier = (carrier: Carrier) => { setEditingCarrier(carrier); carrierModalHandlers.open(); };
 
-  const openAddTaskTemplate = () => {
-    setEditingTaskTemplate(null);
-    taskTemplateModalHandlers.open();
-  };
-  const openEditTaskTemplate = (template: TaskTemplate) => {
-    setEditingTaskTemplate(template);
-    taskTemplateModalHandlers.open();
-  };
+  const openAddTaskTemplate = () => { setEditingTaskTemplate(null); taskTemplateModalHandlers.open(); };
+  const openEditTaskTemplate = (template: TaskTemplate) => { setEditingTaskTemplate(template); taskTemplateModalHandlers.open(); };
 
-  const openAddItemGroup = () => {
-    setEditingItemGroup(null);
-    itemGroupModalHandlers.open();
-  };
-  const openEditItemGroup = (group: ItemGroup) => {
-    setEditingItemGroup(group);
-    itemGroupModalHandlers.open();
-  };
-
-  const openAddItem = () => {
-    setEditingItem(null);
-    itemModalHandlers.open();
-  };
-  const openEditItem = (item: Item) => {
-    setEditingItem(item);
-    itemModalHandlers.open();
-  };
+  const openAddItem = () => { setEditingItem(null); itemModalHandlers.open(); };
+  const openEditItem = (item: Item) => { setEditingItem(item); itemModalHandlers.open(); };
 
   const handleDeleteCurrency = (currency: Currency) => {
     if (!window.confirm(t('masterData.confirmDeleteCurrency'))) return;
     deleteCurrencyMutation.mutate(currency.id);
   };
-
   const handleDeleteIncoterm = (incoterm: Incoterm) => {
     if (!window.confirm(t('masterData.confirmDeleteIncoterm'))) return;
     deleteIncotermMutation.mutate(incoterm.id);
   };
-
   const handleDeleteTransportMode = (mode: TransportMode) => {
     if (!window.confirm(t('masterData.confirmDeleteTransportMode'))) return;
     deleteTransportModeMutation.mutate(mode.id);
   };
-
   const handleDeleteChargeCode = (chargeCode: ChargeCode) => {
     if (!window.confirm(t('masterData.confirmDeleteChargeCode'))) return;
     deleteChargeCodeMutation.mutate(chargeCode.id);
   };
-
   const handleDeleteUom = (uom: Uom) => {
     if (!window.confirm(t('masterData.confirmDeleteUom'))) return;
     deleteUomMutation.mutate(uom.id);
   };
-
   const handleDeleteSupplier = (supplier: Supplier) => {
     if (!window.confirm(t('masterData.confirmDeleteSupplier'))) return;
     deleteSupplierMutation.mutate(supplier.id);
   };
-
   const handleDeleteForwarder = (forwarder: Forwarder) => {
     if (!window.confirm(t('masterData.confirmDeleteForwarder'))) return;
     deleteForwarderMutation.mutate(forwarder.id);
   };
-
   const handleDeleteCarrier = (carrier: Carrier) => {
     if (!window.confirm(t('masterData.confirmDeleteCarrier'))) return;
     deleteCarrierMutation.mutate(carrier.id);
   };
-
   const handleDeleteTaskTemplate = (template: TaskTemplate) => {
     if (!window.confirm(t('masterData.confirmDeleteTaskTemplate'))) return;
     deleteTaskTemplateMutation.mutate(template.id);
   };
-
-  const handleDeleteItemGroup = (id: string) => {
-    if (!window.confirm(t('masterData.confirmDeleteItemGroup'))) return;
-    deleteItemGroupMutation.mutate(id);
-  };
-
   const handleDeleteItem = (id: string) => {
     if (!window.confirm(t('masterData.confirmDeleteItem'))) return;
     deleteItemMutation.mutate(id);
-  };
-
-  const handleRefreshItems = () => {
-    void Promise.all([
-      queryClient.invalidateQueries({ queryKey: queryKeys.itemGroupLists }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.itemLists }),
-    ]);
   };
 
   const currencyColumns = useMemo(() => buildCurrencyColumns(t), [t]);
@@ -590,6 +401,28 @@ export function MasterData() {
             </Tabs.List>
           </Group>
         </Group>
+
+        <Tabs.Panel value="items" pt="md">
+          <ItemCatalogSection
+            canManage={canManageMasterData}
+            deleteItemIsPending={deleteItemMutation.isPending}
+            error={itemsQuery.error}
+            isError={itemsQuery.isError}
+            isLoading={itemsQuery.isLoading}
+            items={items}
+            onAddItem={openAddItem}
+            onDeleteItem={handleDeleteItem}
+            onEditItem={openEditItem}
+            onSearchChange={setItemSearch}
+            page={itemPage}
+            pageCount={itemPageCount}
+            pageEnd={itemPageEnd}
+            pageStart={itemPageStart}
+            search={itemSearch}
+            setPage={setItemPage}
+            total={itemTotal}
+          />
+        </Tabs.Panel>
 
         <Tabs.Panel value="suppliers" pt="md">
           <ReferenceDataPanel
@@ -686,22 +519,6 @@ export function MasterData() {
             onAdd={openAddTransportMode}
             onEdit={openEditTransportMode}
             onDelete={handleDeleteTransportMode}
-            clientFilter={
-              transportScope === 'all'
-                ? undefined
-                : (mode) => (transportScope === 'intl' ? mode.is_international : !mode.is_international)
-            }
-            toolbarExtra={
-              <SegmentedControl
-                value={transportScope}
-                onChange={(value) => setTransportScope(value as 'all' | 'intl' | 'domestic')}
-                data={[
-                  { label: t('common.all'), value: 'all' },
-                  { label: t('masterData.international'), value: 'intl' },
-                  { label: t('masterData.domestic'), value: 'domestic' },
-                ]}
-              />
-            }
           />
         </Tabs.Panel>
 
@@ -717,13 +534,20 @@ export function MasterData() {
                   <Chip value="ALL" variant="outline">
                     {t('common.all')} ({chargeCodeTotal})
                   </Chip>
-                  {CHARGE_CATEGORY_GROUPS.map((g) => (
+                  {CHARGE_GROUPS.map((g) => (
                     <Chip key={g.value} value={g.value} variant="outline">
                       {t(g.labelKey)} ({chargeGroupCounts[g.value] ?? 0})
                     </Chip>
                   ))}
                 </Group>
               </Chip.Group>
+              <Select
+                mt="md"
+                label={t('masterData.chargeCategory')}
+                data={chargeCategoryOptions}
+                value={chargeCategory ?? 'ALL'}
+                onChange={(value) => setChargeCategory(value === 'ALL' ? null : value)}
+              />
             </Paper>
             <ReferenceDataPanel
               addLabel={t('masterData.addChargeCode')}
@@ -739,7 +563,7 @@ export function MasterData() {
               onAdd={openAddChargeCode}
               onEdit={openEditChargeCode}
               onDelete={handleDeleteChargeCode}
-              clientFilter={chargeGroup ? (c) => c.category === chargeGroup : undefined}
+              clientFilter={chargeCodeFilter}
             />
           </Stack>
         </Tabs.Panel>
@@ -759,51 +583,6 @@ export function MasterData() {
             onEdit={openEditUom}
             onDelete={handleDeleteUom}
           />
-        </Tabs.Panel>
-
-        <Tabs.Panel value="items" pt="md">
-          <Stack gap="md">
-            <ItemGroupsSection
-              canManage={canManageMasterData}
-              error={itemGroupsQuery.error}
-              filteredItemGroups={filteredItemGroups}
-              isError={itemGroupsQuery.isError}
-              isFetching={itemGroupsQuery.isFetching}
-              isLoading={itemGroupsQuery.isLoading}
-              onAdd={openAddItemGroup}
-              onDelete={handleDeleteItemGroup}
-              onEdit={openEditItemGroup}
-              onRefresh={handleRefreshItems}
-              onSearchChange={setItemGroupSearch}
-              search={itemGroupSearch}
-              total={itemGroupsQuery.data?.total ?? 0}
-            />
-
-            <ItemCatalogSection
-              canManage={canManageMasterData}
-              deleteItemIsPending={deleteItemMutation.isPending}
-              error={itemsQuery.error}
-              groupFilter={itemGroupFilter}
-              groupOptions={groupOptions}
-              isError={itemsQuery.isError}
-              isLoading={itemsQuery.isLoading}
-              items={items}
-              onAddItem={openAddItem}
-              onDeleteItem={handleDeleteItem}
-              onEditItem={openEditItem}
-              onGroupFilterChange={setItemGroupFilter}
-              onSearchChange={setItemSearch}
-              page={itemPage}
-              pageCount={itemPageCount}
-              pageEnd={itemPageEnd}
-              pageStart={itemPageStart}
-              search={itemSearch}
-              setPage={setItemPage}
-              taxProfileQueries={taxProfileQueries}
-              taxProfilesByItemId={taxProfilesByItemId}
-              total={itemTotal}
-            />
-          </Stack>
         </Tabs.Panel>
       </Tabs>
 
@@ -839,12 +618,9 @@ export function MasterData() {
       />
 
       <SupplierModal
-        currencyOptions={currencyOptions}
         editing={editingSupplier}
-        incotermOptions={incotermOptions}
         onClose={supplierModalHandlers.close}
         opened={supplierModalOpened}
-        transportModeOptions={transportModeOptions}
       />
 
       <ForwarderModal
@@ -865,17 +641,9 @@ export function MasterData() {
         opened={taskTemplateModalOpened}
       />
 
-      <ItemGroupModal
-        editing={editingItemGroup}
-        onClose={itemGroupModalHandlers.close}
-        opened={itemGroupModalOpened}
-      />
-
       <ItemModal
         canManage={canManageMasterData}
-        defaultGroupId={itemGroupFilter}
         editing={editingItem}
-        groupOptions={groupOptions}
         onClose={itemModalHandlers.close}
         opened={itemModalOpened}
         uomOptions={uomOptions}

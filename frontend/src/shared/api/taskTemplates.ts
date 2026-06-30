@@ -130,7 +130,7 @@ export async function fetchTaskTemplate(id: string) {
 }
 
 export async function createTaskTemplate(
-  payload: Required<Pick<TaskTemplatePayload, 'group_code' | 'group_name' | 'task_name' | 'task_description'>> &
+  payload: Required<Pick<TaskTemplatePayload, 'group_name' | 'task_name' | 'task_description'>> &
     TaskTemplatePayload,
 ) {
   const response = await apiClient.post<ApiMessageResponse<TaskTemplate>>('/task-templates', payload);

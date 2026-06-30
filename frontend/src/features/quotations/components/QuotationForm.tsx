@@ -38,7 +38,7 @@ import { queryKeys } from '@shared/api/queryKeys';
 import { fetchUoms } from '@shared/api/uoms';
 import { useTradeMasterDataOptions } from '@shared/hooks/useTradeMasterDataOptions';
 import { useI18n } from '@shared/i18n';
-import { CHARGE_CATEGORY_GROUPS } from '@shared/lib/chargeCategories';
+import { CHARGE_GROUPS } from '@shared/lib/chargeCategories';
 import { chargeCodeToType, getChargeFields, groupLabelKey, incotermToGroup } from '@shared/lib/quotationCharges';
 
 import { quotationModeOptions, toShippingMode } from '../model/quotationModel';
@@ -82,7 +82,7 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
   // other/arising lines
   const [otherLines, setOtherLines] = useState<OtherLine[]>([]);
   // group filter for "other" section (default ANCILLARY)
-  const [otherGroup, setOtherGroup] = useState<string>('ANCILLARY');
+  const [otherGroup, setOtherGroup] = useState<string>('ANCILLARY_ACCESSORIAL');
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
   // guard: seed source lines only once after chargeCodes load
@@ -110,7 +110,7 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
   }, [chargeCodes]);
 
   const filteredChargeCodeOptions = useMemo(() => {
-    const filtered = chargeCodes.filter((c) => c.category === otherGroup);
+    const filtered = chargeCodes.filter((c) => c.group === otherGroup);
     const unique = Array.from(new Map(filtered.map((c) => [c.charge_code, c])).values());
     return unique.map((c) => ({ label: `${c.charge_code} - ${c.charge_name_en}`, value: c.charge_code }));
   }, [chargeCodes, otherGroup]);
@@ -171,6 +171,7 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
       return;
     }
     seededRef.current = true;
+    let cancelled = false;
 
     // Inline the field-to-code mapping so this effect is self-contained
     const currentShippingMode = toShippingMode(mode);
@@ -201,7 +202,7 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
     const newMandatory: Record<string, MandatoryLineState> = {};
     const newOtherLines: OtherLine[] = [];
     const takenFields = new Set<string>();
-    let firstUnmatchedCategory = 'ANCILLARY';
+    let firstUnmatchedGroup = 'ANCILLARY_ACCESSORIAL';
 
     for (const srcLine of sourceLines) {
       let matched = false;
@@ -224,8 +225,8 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
       }
       if (!matched) {
         const cc = chargeCodes.find((c) => c.charge_code === srcLine.charge_code) ?? null;
-        if (newOtherLines.length === 0 && cc?.category) {
-          firstUnmatchedCategory = cc.category;
+        if (newOtherLines.length === 0 && cc?.group) {
+          firstUnmatchedGroup = cc.group;
         }
         newOtherLines.push({
           uid: nextUid(),
@@ -237,11 +238,18 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
       }
     }
 
-    if (Object.keys(newMandatory).length > 0) setMandatory(newMandatory);
-    if (newOtherLines.length > 0) {
-      setOtherLines(newOtherLines);
-      setOtherGroup(firstUnmatchedCategory);
-    }
+    queueMicrotask(() => {
+      if (cancelled) return;
+      if (Object.keys(newMandatory).length > 0) setMandatory(newMandatory);
+      if (newOtherLines.length > 0) {
+        setOtherLines(newOtherLines);
+        setOtherGroup(firstUnmatchedGroup);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
     // sourceQuotation and incoterm/mode are stable for this component's lifetime — intentionally omitted
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chargeCodes, isRevise]);
@@ -604,7 +612,7 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
               </div>
 
               <Group gap="xs" mt="md" mb="md" wrap="wrap" className="rfq-chip-row">
-                {CHARGE_CATEGORY_GROUPS.map((g) => (
+                {CHARGE_GROUPS.map((g) => (
                   <Chip
                     key={g.value}
                     checked={otherGroup === g.value}

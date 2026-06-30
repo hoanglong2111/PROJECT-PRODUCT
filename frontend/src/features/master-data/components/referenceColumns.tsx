@@ -4,6 +4,7 @@ import type { ChargeCode } from '@shared/api/chargeCodes';
 import type { Currency, Incoterm, Supplier, TransportMode } from '@shared/api/tradeMasterData';
 import type { Uom } from '@shared/api/uoms';
 import { useI18n } from '@shared/i18n';
+import { CHARGE_CATEGORIES, CHARGE_GROUPS } from '@shared/lib/chargeCategories';
 
 import { formatDateTime } from '../model/masterDataModel';
 import { ActiveBadge } from './ActiveBadge';
@@ -110,17 +111,6 @@ export function buildTransportModeColumns(t: T): Array<ReferenceColumn<Transport
       render: (mode) => <Badge color="blue" variant="outline">{mode.mode_type}</Badge>,
     },
     {
-      key: 'scope',
-      label: t('masterData.transportScope'),
-      hint: t('glossary.transportScope'),
-      width: 160,
-      render: (mode) => (
-        <Badge color={mode.is_international ? 'teal' : 'gray'} variant="light">
-          {mode.is_international ? t('masterData.international') : t('masterData.domestic')}
-        </Badge>
-      ),
-    },
-    {
       key: 'description',
       label: t('masterData.description'),
       render: (mode) => (
@@ -158,19 +148,20 @@ export function buildChargeCodeColumns(t: T): Array<ReferenceColumn<ChargeCode>>
       ),
     },
     {
+      key: 'group',
+      label: t('masterData.chargeGroup'),
+      width: 210,
+      render: (chargeCode) => {
+        const labelMap = Object.fromEntries(CHARGE_GROUPS.map((group) => [group.value, t(group.labelKey)]));
+        return <Badge variant="light">{labelMap[chargeCode.group] ?? chargeCode.group}</Badge>;
+      },
+    },
+    {
       key: 'category',
       label: t('masterData.chargeCategory'),
       width: 200,
       render: (chargeCode) => {
-        const labelMap: Record<string, string> = {
-          ORIGIN_EXPORT: t('masterData.chargeCategoryOriginExport'),
-          MAIN_FREIGHT: t('masterData.chargeCategoryMainFreight'),
-          FREIGHT_SURCHARGE: t('masterData.chargeCategoryFreightSurcharge'),
-          DOCUMENTATION: t('masterData.chargeCategoryDocumentation'),
-          DESTINATION_IMPORT: t('masterData.chargeCategoryDestinationImport'),
-          ANCILLARY: t('masterData.chargeCategoryAncillary'),
-          SERVICE_OTHER: t('masterData.chargeCategoryServiceOther'),
-        };
+        const labelMap = Object.fromEntries(CHARGE_CATEGORIES.map((category) => [category.value, t(category.labelKey)]));
         return <Badge variant="outline">{labelMap[chargeCode.category] ?? chargeCode.category}</Badge>;
       },
     },
@@ -249,13 +240,6 @@ export function buildUomColumns(t: T): Array<ReferenceColumn<Uom>> {
       ),
     },
     {
-      key: 'category',
-      label: t('masterData.uomCategory'),
-      hint: t('glossary.uomCategory'),
-      width: 150,
-      render: (uom) => <Badge variant="outline">{uom.category}</Badge>,
-    },
-    {
       key: 'description',
       label: t('masterData.description'),
       render: (uom) => (
@@ -295,20 +279,13 @@ export function buildSupplierColumns(t: T): Array<ReferenceColumn<Supplier>> {
           <Text size="xs" c="dimmed" lineClamp={1}>
             {supplier.supplier_name_en || '-'}
           </Text>
-          <Group gap={4}>
-            {supplier.supplier_roles.map((role) => (
-              <Badge key={role} size="xs" color="gray" variant="outline">
-                {role}
-              </Badge>
-            ))}
-          </Group>
         </Stack>
       ),
     },
     {
-      key: 'country',
+      key: 'type_country',
       label: t('masterData.country'),
-      width: 130,
+      width: 160,
       render: (supplier) => (
         <Stack gap={2}>
           <Badge color="blue" variant="light">
@@ -339,42 +316,13 @@ export function buildSupplierColumns(t: T): Array<ReferenceColumn<Supplier>> {
       render: (supplier) => (
         <Stack gap={2}>
           <Text size="sm">
-            {supplier.default_currency?.currency_code || supplier.default_currency_code || '-'} /{' '}
-            {supplier.default_incoterm?.incoterm_code || supplier.default_incoterm_code || '-'}
+            {supplier.default_currency_code || '-'} / {supplier.default_incoterm_code || '-'}
           </Text>
           <Text size="xs" c="dimmed">
             {supplier.payment_term || '-'}
           </Text>
         </Stack>
       ),
-    },
-    {
-      key: 'transport_modes',
-      label: t('masterData.supplierTransportModes'),
-      hint: t('glossary.supplierTransportModes'),
-      render: (supplier) => {
-        const modes = supplier.supplier_transport_modes ?? [];
-
-        if (modes.length === 0) {
-          return <Text c="dimmed">-</Text>;
-        }
-
-        return (
-          <Group gap={4}>
-            {modes.slice(0, 3).map((mode) => (
-              <Badge key={mode.id} color={mode.is_default ? 'teal' : 'gray'} variant="light">
-                {mode.transport_mode?.mode_code ?? mode.transport_mode_id}
-                {mode.is_default ? ` ${t('masterData.defaultShort')}` : ''}
-              </Badge>
-            ))}
-            {modes.length > 3 ? (
-              <Text size="xs" c="dimmed">
-                +{modes.length - 3}
-              </Text>
-            ) : null}
-          </Group>
-        );
-      },
     },
     {
       key: 'lead_time',

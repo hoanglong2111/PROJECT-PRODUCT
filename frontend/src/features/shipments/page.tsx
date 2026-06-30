@@ -37,6 +37,7 @@ import {
   customsStatuses,
   inTransitStatuses,
   inferShipmentModeFromDeliveryOrder,
+  isDeliveryOrderShipmentEligible,
   shipmentModeOptions,
   type ShipmentWorkbench,
 } from './model/shipmentModel';
@@ -81,12 +82,17 @@ export function Shipments() {
   });
   const shipments = shipmentsQuery.data ?? [];
   const isFetching = shipmentsQuery.isFetching;
+  // Reversed flow: quotation no longer gates the DO, so eligible DOs are not one status.
+  // Fetch broadly and filter client-side with the shared reversed-flow predicate (matches the
+  // backend gate + the DO detail "Create Shipment" button).
   const availableDeliveryOrdersQuery = useQuery({
     enabled: workbench === 'create',
-    queryKey: queryKeys.deliveryOrdersList({ status: 'QUOTATION_CONFIRMED', page: 1, limit: 100 }),
-    queryFn: () => fetchDeliveryOrdersV1({ status: 'QUOTATION_CONFIRMED', page: 1, limit: 100 }),
+    queryKey: queryKeys.deliveryOrdersList({ page: 1, limit: 100 }),
+    queryFn: () => fetchDeliveryOrdersV1({ page: 1, limit: 100 }),
   });
-  const availableDeliveryOrders = availableDeliveryOrdersQuery.data?.data ?? [];
+  const availableDeliveryOrders = (availableDeliveryOrdersQuery.data?.data ?? []).filter(
+    isDeliveryOrderShipmentEligible,
+  );
   const deliveryOrderOptions = availableDeliveryOrders.map((deliveryOrder) => ({
     label: [
       deliveryOrder.do_no,

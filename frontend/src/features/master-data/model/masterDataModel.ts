@@ -1,61 +1,13 @@
-import type {
-  CreateItemPayload,
-  CreateItemTaxProfilePayload,
-  ItemTaxProfile,
-  UpdateItemPayload,
-} from '@shared/api/items';
+import type { CreateItemPayload, UpdateItemPayload } from '@shared/api/items';
 import type { ChargeCodePayload } from '@shared/api/chargeCodes';
-import type {
-  CurrencyPayload,
-  IncotermPayload,
-  SupplierPayload,
-  TransportModePayload,
-} from '@shared/api/tradeMasterData';
+import type { SupplierPayload } from '@shared/api/tradeMasterData';
 import type { CarrierPayload, ForwarderPayload } from '@shared/api/forwarders';
 import type { DepartmentCode, MilestoneCode, TaskTemplatePayload } from '@shared/api/taskTemplates';
 import type { UomPayload } from '@shared/api/uoms';
 
-export type SaveItemGroupInput = {
-  id?: string;
-  payload: {
-    group_code?: string;
-    group_name: string;
-    description?: string;
-    default_hs_code?: string;
-  };
-};
-
 export type SaveItemInput = {
   id?: string;
   payload: CreateItemPayload | UpdateItemPayload;
-  taxProfileId?: string | null;
-  taxPayload?: CreateItemTaxProfilePayload;
-  shouldSaveTaxProfile: boolean;
-};
-
-export type SaveCurrencyInput = {
-  id?: string;
-  payload: CurrencyPayload & {
-    currency_code: string;
-    currency_name: string;
-  };
-};
-
-export type SaveIncotermInput = {
-  id?: string;
-  payload: IncotermPayload & {
-    incoterm_code: string;
-    incoterm_name: string;
-  };
-};
-
-export type SaveTransportModeInput = {
-  id?: string;
-  payload: TransportModePayload & {
-    mode_code: string;
-    mode_name: string;
-    mode_type: string;
-  };
 };
 
 export type SaveChargeCodeInput = {
@@ -73,7 +25,6 @@ export type SaveUomInput = {
   payload: UomPayload & {
     uom_code: string;
     uom_name_en: string;
-    category: string;
   };
 };
 
@@ -106,7 +57,7 @@ export type SaveCarrierInput = {
 export type SaveTaskTemplateInput = {
   id?: string;
   payload: TaskTemplatePayload & {
-    group_code: string;
+    group_code?: string;
     group_name: string;
     task_name: string;
     task_description: string;
@@ -172,7 +123,3 @@ export function formatRate(value: number | string | null | undefined) {
 }
 
 export { formatDateTime } from '@shared/utils/date';
-
-export function getPrimaryTaxProfile(profiles: ItemTaxProfile[]) {
-  return profiles.find((profile) => profile.is_default) ?? profiles[0] ?? null;
-}
