@@ -48,6 +48,16 @@ export function quotationTotal(quotation: Pick<QuotationV1, 'charge_lines'>): nu
   }, 0);
 }
 
+/** Prefer charge-line totals, then fall back to list/detail API totals. */
+export function quotationDisplayTotal(
+  quotation: Pick<QuotationV1, 'charge_lines' | 'grand_total_amount' | 'total_amount'>,
+): number {
+  const lineTotal = quotationTotal(quotation);
+  if (lineTotal > 0) return lineTotal;
+  const apiTotal = Number(quotation.grand_total_amount ?? quotation.total_amount ?? 0);
+  return Number.isFinite(apiTotal) ? apiTotal : 0;
+}
+
 /** Whether a quotation is confirmed and can therefore seed a PO. */
 export function isQuotationConfirmed(quotation: Pick<QuotationV1, 'status'>): boolean {
   return quotation.status === 'CONFIRMED';

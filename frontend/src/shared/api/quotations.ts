@@ -167,6 +167,12 @@ export type CreateQuotationVersionPayload = {
   new_quotation_no?: string | null;
   actor_name?: string | null;
   note?: string | null;
+  status?: QuotationStatusV1;
+  customer_ref?: string | null;
+  incoterm_code?: string | null;
+  mode?: string | null;
+  currency_code?: string;
+  charge_lines?: QuotationChargeLinePayload[];
 };
 
 export type QuotationActionPayload = {
