@@ -13,6 +13,7 @@
 @import './styles/tasks.css';
 @import './styles/lots.css';
 @import './styles/shipments.css';
+@import './styles/quotations.css';
 @import './styles/delivery-orders.css';
 @import './styles/domestic-transport-orders.css';
 @import './styles/login.css';

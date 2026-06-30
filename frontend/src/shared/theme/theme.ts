@@ -1,4 +1,4 @@
-import { createTheme, type CSSVariablesResolver, type MantineColorsTuple } from '@mantine/core';
+import { createTheme, type MantineColorsTuple } from '@mantine/core';
 import { rem } from '@mantine/core';
 import { colorPresets, defaultColorPresetId } from './colorPresets';
 import { eventThemes, defaultEventThemeId } from './eventThemes';
@@ -165,4 +165,3 @@ export function buildCssVariablesResolver(
     dark: buildColorVariables(darkColors, primaryColor),
   });
 }
-

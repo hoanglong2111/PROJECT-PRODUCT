@@ -55,7 +55,7 @@ export function PageLoading({
   }));
 
   return (
-    <Stack gap="lg" aria-busy="true">
+    <Stack gap="lg" aria-busy="true" className="page-loading-layout">
       <Group justify="space-between" align="flex-start" gap="md">
         <div>
           <Title order={1}>{title}</Title>
@@ -75,7 +75,7 @@ export function PageLoading({
         ))}
       </SimpleGrid>
 
-      <Paper withBorder p="md">
+      <Paper withBorder p="md" className="page-loading-filter">
         <SimpleGrid cols={{ base: 1, md: Math.min(columnItems.length, 4) }}>
           {columnItems.slice(0, 4).map((column) => (
             <Skeleton key={column.id} height={38} radius="md" />
@@ -83,7 +83,7 @@ export function PageLoading({
         </SimpleGrid>
       </Paper>
 
-      <Paper withBorder p={0}>
+      <Paper withBorder p={0} className="page-loading-table">
         <ScrollArea>
           <Table miw={920} verticalSpacing="sm">
             <Table.Thead>
@@ -114,7 +114,7 @@ export function PageLoading({
 export function FullPageLoading({ description, title }: { description: string; title: string }) {
   return (
     <Center h="100dvh" p="md">
-      <Paper withBorder p="xl" maw={520} w="100%">
+      <Paper withBorder p="xl" maw={520} w="100%" className="page-state-panel">
         <Stack gap="md" align="center">
           <Skeleton height={44} circle />
           <div>

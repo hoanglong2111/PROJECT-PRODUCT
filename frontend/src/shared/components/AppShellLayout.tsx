@@ -12,10 +12,8 @@ import { useDisclosure } from '@mantine/hooks';
 import {
   IconChecklist,
   IconChevronDown,
-  IconExchange,
   IconFileText,
   IconFileInvoice,
-  IconGitBranch,
   IconLayoutDashboard,
   IconLogout,
   IconSettings,
@@ -187,9 +185,13 @@ export function AppShellLayout() {
         </Group>
       </AppShell.Header>
 
-      <AppShell.Navbar p="md">{links}</AppShell.Navbar>
+      <AppShell.Navbar p="md">
+        <nav className="app-shell-nav" aria-label="Primary navigation">
+          {links}
+        </nav>
+      </AppShell.Navbar>
 
-      <AppShell.Main id="main-content" tabIndex={-1} style={{ outline: 'none' }}>
+      <AppShell.Main id="main-content" tabIndex={-1} className="app-main" style={{ outline: 'none' }}>
         <RouteErrorBoundary>
           <Outlet />
         </RouteErrorBoundary>

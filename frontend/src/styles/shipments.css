@@ -168,6 +168,12 @@
   border-color: var(--kbfe-border-primary);
 }
 
+.shipment-detail-identity {
+  min-width: 0;
+  background: var(--kbfe-surface-elevated);
+  box-shadow: var(--kbfe-shadow-xs);
+}
+
 .shipment-detail-tabs-list {
   flex-wrap: nowrap;
   overflow-x: auto;

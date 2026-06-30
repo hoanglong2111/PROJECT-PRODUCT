@@ -1,9 +1,9 @@
-import { Button, Group, Paper, Stack, Text, Title } from '@mantine/core';
+import { Group, Paper, Stack, Text, Title } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
-import { IconX } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
+import { BackActionButton } from '@shared/components/BackActionButton';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
 import { fetchDeliveryOrders } from '@shared/api/logistics';
 import { queryKeys } from '@shared/api/queryKeys';
@@ -211,9 +211,7 @@ export function DeliveryOrders() {
       ) : (
         <Group justify="space-between" align="center" gap="md" className="dl-page-header">
           <Group gap="xs" align="center">
-            <Button onClick={closeDetail} leftSection={<IconX size={16} />} variant="subtle" size="sm">
-              {t('common.backToList')}
-            </Button>
+            <BackActionButton onClick={closeDetail} />
             <Text c="dimmed" size="sm">·</Text>
             <Text fw={600} size="sm">{selectedDeliveryOrder.order_info.order_number}</Text>
           </Group>

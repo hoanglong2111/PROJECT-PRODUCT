@@ -60,7 +60,7 @@ export type QuotationChargeLineV1 = {
 export type QuotationEventV1 = {
   id: string;
   quotation_id: string;
-  event_type: string;
+  event_type?: string | null;
   old_status: QuotationStatusV1 | string | null;
   new_status: QuotationStatusV1 | string | null;
   actor_name: string | null;

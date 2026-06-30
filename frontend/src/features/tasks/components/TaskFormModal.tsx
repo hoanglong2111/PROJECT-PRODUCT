@@ -1,4 +1,4 @@
-import { Alert, Button, Group, Modal, NumberInput, Select, SimpleGrid, Stack, Text, Textarea, TextInput } from '@mantine/core';
+import { Alert, Badge, Button, Group, Modal, NumberInput, Select, SimpleGrid, Stack, Text, Textarea, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -162,80 +162,140 @@ export function TaskFormModal({
     <Modal
       opened={opened}
       onClose={onClose}
-      size="xl"
+      size="min(96vw, 72rem)"
       title={editing ? t('tasks.editTask') : t('tasks.createTask')}
+      centered
+      classNames={{
+        body: 'task-form-modal-body',
+        content: 'task-form-modal-content',
+      }}
     >
-      <Stack gap="sm" className="task-form-modal-body">
+      <Stack gap="md" className="task-form-shell">
         {mutation.isError ? (
           <Alert color="red" icon={<IconAlertCircle size={18} />}>
             {getApiErrorMessage(mutation.error)}
           </Alert>
         ) : null}
 
-        <SimpleGrid cols={{ base: 1, md: 2 }} spacing="sm">
-          <Select
-            label={t('tasks.sopTemplate')}
-            description={t('tasks.templatePickerHint')}
-            placeholder={t('tasks.templatePickerPlaceholder')}
-            data={templateOptions}
-            searchable
-            clearable
-            value={form.values.taskTemplateId}
-            onChange={onTemplateChange}
-          />
-          <TextInput label={t('common.task')} required {...form.getInputProps('taskName')} />
-        </SimpleGrid>
+        <div className="task-form-topline">
+          <div className="task-form-topline-copy">
+            <Text fw={800}>{editing ? t('tasks.editTask') : t('tasks.createTask')}</Text>
+            <Text size="sm" c="dimmed">
+              {t('tasks.templatePickerHint')}
+            </Text>
+          </div>
+          <Badge variant="light" color={editing ? 'blue' : 'teal'}>
+            {editing ? editing.task_id : t('tasks.sopTemplate')}
+          </Badge>
+        </div>
 
-        {selectedTemplate ? (
-          <Alert variant="light" color="grape" icon={<IconAlertCircle size={16} />}>
-            <Group gap="lg">
-              <Text size="sm">
-                <b>{t('tasks.milestone')}:</b> {milestoneLabel(selectedTemplate.milestone_code)}
-              </Text>
-              <Text size="sm">
-                <b>{t('tasks.department')}:</b> {departmentLabel(selectedTemplate.department)}
-              </Text>
-              <Text size="sm">
-                <b>{t('tasks.sla')}:</b> {templateSlaLabel(selectedTemplate)}
-              </Text>
+        <div className="task-form-layout">
+          <section className="task-form-section task-form-section-main">
+            <Group justify="space-between" gap="sm" className="task-form-section-title">
+              <Text fw={700}>{t('common.task')}</Text>
+              {selectedTemplate?.group_code ? (
+                <Badge size="sm" variant="light" color="grape">
+                  {selectedTemplate.group_code}
+                </Badge>
+              ) : null}
             </Group>
-          </Alert>
-        ) : null}
+            <Stack gap="sm">
+              <Select
+                label={t('tasks.sopTemplate')}
+                placeholder={t('tasks.templatePickerPlaceholder')}
+                data={templateOptions}
+                searchable
+                clearable
+                value={form.values.taskTemplateId}
+                onChange={onTemplateChange}
+              />
+              <TextInput label={t('common.task')} required {...form.getInputProps('taskName')} />
+              <TextInput label="PO / DO" placeholder="PO-KBI-2026-001" {...form.getInputProps('refNo')} />
+            </Stack>
+          </section>
 
-        <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="sm">
-          <Select
-            label={t('common.role')}
-            data={ROLE_VALUES.map((role) => ({ label: taskRoleLabel(role), value: role }))}
-            {...form.getInputProps('role')}
-          />
-          <TextInput label="PO / DO" placeholder="PO-KBI-2026-001" {...form.getInputProps('refNo')} />
-          <TextInput label={t('common.assignee')} {...form.getInputProps('assigneeName')} />
-          <TextInput label={t('tasks.department')} {...form.getInputProps('assigneeDepartment')} />
-          <Select
-            label={t('forms.priority')}
-            data={PRIORITY_VALUES.map((priority) => ({ label: priorityLabel(priority), value: priority }))}
-            {...form.getInputProps('priority')}
-          />
-          <Select
-            label={t('common.status')}
-            data={STATUS_VALUES.map((status) => ({ label: statusLabel(status), value: status }))}
-            {...form.getInputProps('status')}
-          />
-          <DateField label={t('tasks.dueDate')} {...form.getInputProps('dueDate')} />
-          <NumberInput label={t('tasks.progress')} min={0} max={100} suffix="%" {...form.getInputProps('progress')} />
+          <aside className="task-form-template-panel">
+            <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
+              {t('tasks.sopTemplate')}
+            </Text>
+            {selectedTemplate ? (
+              <SimpleGrid cols={{ base: 1, xs: 3 }} spacing="xs" mt="xs" className="task-form-template-facts">
+                <TemplateFact label={t('tasks.milestone')} value={milestoneLabel(selectedTemplate.milestone_code)} />
+                <TemplateFact label={t('tasks.department')} value={departmentLabel(selectedTemplate.department)} />
+                <TemplateFact label={t('tasks.sla')} value={templateSlaLabel(selectedTemplate)} />
+              </SimpleGrid>
+            ) : (
+              <Text size="sm" c="dimmed" mt={6}>
+                {t('tasks.templatePickerPlaceholder')}
+              </Text>
+            )}
+          </aside>
+        </div>
+
+        <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="md" className="task-form-section-grid">
+          <section className="task-form-section">
+            <Text fw={700} mb="sm">{t('common.assignee')}</Text>
+            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
+              <Select
+                label={t('common.role')}
+                data={ROLE_VALUES.map((role) => ({ label: taskRoleLabel(role), value: role }))}
+                {...form.getInputProps('role')}
+              />
+              <TextInput label={t('common.assignee')} {...form.getInputProps('assigneeName')} />
+              <TextInput label={t('tasks.department')} {...form.getInputProps('assigneeDepartment')} />
+              <Select
+                label={t('forms.priority')}
+                data={PRIORITY_VALUES.map((priority) => ({ label: priorityLabel(priority), value: priority }))}
+                {...form.getInputProps('priority')}
+              />
+            </SimpleGrid>
+          </section>
+
+          <section className="task-form-section">
+            <Text fw={700} mb="sm">{t('tasks.progress')}</Text>
+            <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm">
+              <Select
+                label={t('common.status')}
+                data={STATUS_VALUES.map((status) => ({ label: statusLabel(status), value: status }))}
+                {...form.getInputProps('status')}
+              />
+              <DateField label={t('tasks.dueDate')} {...form.getInputProps('dueDate')} />
+              <NumberInput label={t('tasks.progress')} min={0} max={100} suffix="%" {...form.getInputProps('progress')} />
+            </SimpleGrid>
+          </section>
         </SimpleGrid>
 
-        <Textarea label={t('common.notes')} autosize minRows={2} {...form.getInputProps('notes')} />
+        <section className="task-form-section">
+          <Textarea label={t('common.notes')} autosize minRows={3} {...form.getInputProps('notes')} />
+        </section>
 
-        <Group justify="flex-end">
-          <Button variant="subtle" color="gray" onClick={onClose}>
-            {t('common.cancel')}
-          </Button>
-          <Button onClick={handleSave} loading={mutation.isPending} disabled={!form.values.taskName.trim()}>
-            {t('common.save')}
-          </Button>
+        <Group justify="space-between" className="task-form-footer">
+          <Text size="sm" c="dimmed">
+            {t('forms.updateTaskHint')}
+          </Text>
+          <Group gap="xs">
+            <Button variant="subtle" color="gray" onClick={onClose}>
+              {t('common.cancel')}
+            </Button>
+            <Button onClick={handleSave} loading={mutation.isPending} disabled={!form.values.taskName.trim()}>
+              {t('common.save')}
+            </Button>
+          </Group>
         </Group>
       </Stack>
     </Modal>
+  );
+}
+
+function TemplateFact({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="task-form-template-fact">
+      <Text size="xs" c="dimmed" fw={700}>
+        {label}
+      </Text>
+      <Text size="sm" fw={700} lineClamp={1} title={value}>
+        {value}
+      </Text>
+    </div>
   );
 }

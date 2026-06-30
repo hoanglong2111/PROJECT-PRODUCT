@@ -1,10 +1,12 @@
 ﻿import {
   Alert,
+  Badge,
   Button,
   Checkbox,
   Group,
   NumberInput,
   Paper,
+  Progress,
   Select,
   SimpleGrid,
   Stack,
@@ -15,12 +17,11 @@
 import { useForm } from '@mantine/form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { IconAlertTriangle } from '@tabler/icons-react';
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 
 import {
   type DeliveryOrder,
   type LogisticsTask,
-  type Priority,
   type TaskStatus,
   updateDeliveryOrder,
   updateLogisticsTask,
@@ -31,7 +32,6 @@ import { getApiErrorMessage } from '@shared/lib/errors';
 import { findSupplierByCode, useTradeMasterDataOptions } from '@shared/hooks/useTradeMasterDataOptions';
 import { useI18n } from '@shared/i18n';
 
-const priorityValues: Priority[] = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
 const shippingMethodValues: Array<DeliveryOrder['logistics_shipping']['shipping_method']> = ['SEA', 'AIR', 'ROAD'];
 const documentOptions = ['Invoice', 'Packing List', 'B/L', 'CO'];
 const taskStatusValues: TaskStatus[] = ['PENDING', 'TODO', 'IN_PROGRESS', 'WAITING', 'BLOCKED', 'COMPLETED', 'CANCELLED'];
@@ -159,83 +159,118 @@ export function UpdateDeliveryOrderForm({ deliveryOrder }: { deliveryOrder: Deli
     },
   });
 
+  const receivedDocuments =
+    form.values.documentsList.length > 0 ? form.values.documentsList.map((documentName) => documentLabel(documentName)).join(', ') : '-';
+
   return (
-    <Paper withBorder p="md">
-      <Group justify="space-between" mb="sm">
-        <Text fw={700}>{t('forms.updateDo')}</Text>
+    <Paper withBorder p="md" className="delivery-order-update-panel">
+      <Group justify="space-between" align="flex-start" gap="md" mb="sm" className="delivery-order-update-header">
+        <div>
+          <Text fw={700}>{t('forms.updateDo')}</Text>
+          <Text size="sm" c="dimmed">
+            {t('forms.updateDoHint')}
+          </Text>
+        </div>
         <Button size="xs" variant={editing ? 'default' : 'light'} onClick={() => setEditing((value) => !value)} disabled={locked}>
           {editing ? t('common.cancel') : t('common.edit')}
         </Button>
       </Group>
 
-      {locked ? (
-        <Alert color="orange">{t('deliveryOrders.lockedAfterCompleted')}</Alert>
-      ) : editing ? (
+      {locked ? <Alert color="orange">{t('deliveryOrders.lockedAfterCompleted')}</Alert> : null}
+
+      {!locked && editing ? (
         <form
           onSubmit={form.onSubmit(() => {
             mutation.mutate();
           })}
         >
-          <Stack gap="md">
+          <Stack gap="md" className="delivery-order-update-form">
             {mutation.isError ? (
               <Alert color="red" icon={<IconAlertTriangle size={18} />}>
                 {getApiErrorMessage(mutation.error, t('forms.apiUnknownError'))}
               </Alert>
             ) : null}
 
-            <SimpleGrid cols={{ base: 1, sm: 2 }}>
-              <TextInput label={t('forms.itemCode')} {...form.getInputProps('itemCode')} />
-              <TextInput label={t('forms.itemName')} {...form.getInputProps('itemName')} />
-              <NumberInput label={t('forms.quantity')} min={1} thousandSeparator="," {...form.getInputProps('quantity')} />
-              <TextInput label={t('forms.unit')} {...form.getInputProps('unit')} />
-              <Select
-                label={t('forms.supplierCode')}
-                data={supplierOptions}
-                searchable
-                clearable
-                value={form.values.supplierCode}
-                onChange={(value) => {
-                  const matched = findSupplierByCode(suppliers, value);
-                  form.setFieldValue('supplierCode', value || '');
-                  if (matched) {
-                    form.setFieldValue('supplierName', matched.supplier_name);
-                    if (matched.default_currency_code) {
-                      form.setFieldValue('currency', matched.default_currency_code);
-                    }
-                  }
-                }}
-              />
-              <TextInput label={t('forms.supplierName')} {...form.getInputProps('supplierName')} />
-              <Select label={t('forms.shippingMethod')} data={shippingMethodOptions} {...form.getInputProps('shippingMethod')} />
-              <TextInput label={t('forms.shippingLine')} {...form.getInputProps('shippingLine')} />
-              <TextInput label={t('forms.portOfDeparture')} {...form.getInputProps('portOfDeparture')} />
-              <TextInput label={t('forms.portOfDestination')} {...form.getInputProps('portOfDestination')} />
-              <DateField label={t('forms.etdPlanned')} {...form.getInputProps('etdPlanned')} />
-              <DateField label={t('forms.etaPlanned')} {...form.getInputProps('etaPlanned')} />
-              <DateField label={t('forms.plannedWarehouseEntry')} {...form.getInputProps('plannedEntryDate')} />
-              <DateField label={t('forms.actualEntryDate')} {...form.getInputProps('actualEntryDate')} />
-              <TextInput label={t('forms.warehouse')} {...form.getInputProps('warehouseCode')} />
-              <DateField label={t('forms.warehouseDeadline')} {...form.getInputProps('warehouseDeadline')} />
-              <Select label={t('forms.incoterms')} data={incotermOptions} searchable clearable {...form.getInputProps('incoterms')} />
-              <TextInput label={t('forms.trackingNumber')} {...form.getInputProps('trackingNumber')} />
-              <NumberInput label={t('forms.importTaxRate')} min={0} decimalScale={2} suffix="%" {...form.getInputProps('importTaxRate')} />
-              <NumberInput label={t('forms.taxAmount')} min={0} thousandSeparator="," {...form.getInputProps('taxAmount')} />
-              <Select label={t('forms.currency')} data={currencyOptions} searchable clearable {...form.getInputProps('currency')} />
+            <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="md" className="delivery-order-update-section-grid">
+              <Paper withBorder p="md" className="delivery-order-update-section">
+                <Text fw={700} mb="sm">
+                  {t('deliveryOrders.supplierAllocationHeader')}
+                </Text>
+                <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                  <TextInput label={t('forms.itemCode')} {...form.getInputProps('itemCode')} />
+                  <TextInput label={t('forms.itemName')} {...form.getInputProps('itemName')} />
+                  <NumberInput label={t('forms.quantity')} min={1} thousandSeparator="," {...form.getInputProps('quantity')} />
+                  <TextInput label={t('forms.unit')} {...form.getInputProps('unit')} />
+                  <Select
+                    label={t('forms.supplierCode')}
+                    data={supplierOptions}
+                    searchable
+                    clearable
+                    value={form.values.supplierCode}
+                    onChange={(value) => {
+                      const matched = findSupplierByCode(suppliers, value);
+                      form.setFieldValue('supplierCode', value || '');
+                      if (matched) {
+                        form.setFieldValue('supplierName', matched.supplier_name);
+                        if (matched.default_currency_code) {
+                          form.setFieldValue('currency', matched.default_currency_code);
+                        }
+                      }
+                    }}
+                  />
+                  <TextInput label={t('forms.supplierName')} {...form.getInputProps('supplierName')} />
+                </SimpleGrid>
+              </Paper>
+
+              <Paper withBorder p="md" className="delivery-order-update-section">
+                <Text fw={700} mb="sm">
+                  {t('common.route')}
+                </Text>
+                <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                  <Select label={t('forms.shippingMethod')} data={shippingMethodOptions} {...form.getInputProps('shippingMethod')} />
+                  <TextInput label={t('forms.shippingLine')} {...form.getInputProps('shippingLine')} />
+                  <TextInput label={t('forms.portOfDeparture')} {...form.getInputProps('portOfDeparture')} />
+                  <TextInput label={t('forms.portOfDestination')} {...form.getInputProps('portOfDestination')} />
+                  <DateField label={t('forms.etdPlanned')} {...form.getInputProps('etdPlanned')} />
+                  <DateField label={t('forms.etaPlanned')} {...form.getInputProps('etaPlanned')} />
+                </SimpleGrid>
+              </Paper>
+
+              <Paper withBorder p="md" className="delivery-order-update-section">
+                <Text fw={700} mb="sm">
+                  {t('forms.warehouse')}
+                </Text>
+                <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                  <DateField label={t('forms.plannedWarehouseEntry')} {...form.getInputProps('plannedEntryDate')} />
+                  <DateField label={t('forms.actualEntryDate')} {...form.getInputProps('actualEntryDate')} />
+                  <TextInput label={t('forms.warehouse')} {...form.getInputProps('warehouseCode')} />
+                  <DateField label={t('forms.warehouseDeadline')} {...form.getInputProps('warehouseDeadline')} />
+                </SimpleGrid>
+              </Paper>
+
+              <Paper withBorder p="md" className="delivery-order-update-section">
+                <Text fw={700} mb="sm">
+                  {t('common.documents')}
+                </Text>
+                <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                  <Select label={t('forms.incoterms')} data={incotermOptions} searchable clearable {...form.getInputProps('incoterms')} />
+                  <TextInput label={t('forms.trackingNumber')} {...form.getInputProps('trackingNumber')} />
+                  <NumberInput label={t('forms.importTaxRate')} min={0} decimalScale={2} suffix="%" {...form.getInputProps('importTaxRate')} />
+                  <NumberInput label={t('forms.taxAmount')} min={0} thousandSeparator="," {...form.getInputProps('taxAmount')} />
+                  <Select label={t('forms.currency')} data={currencyOptions} searchable clearable {...form.getInputProps('currency')} />
+                </SimpleGrid>
+                <Checkbox.Group label={t('forms.documentsReceived')} mt="md" {...form.getInputProps('documentsList')}>
+                  <Group mt="xs" className="delivery-order-document-checks">
+                    {documentOptions.map((documentName) => (
+                      <Checkbox key={documentName} value={documentName} label={documentLabel(documentName)} />
+                    ))}
+                  </Group>
+                </Checkbox.Group>
+              </Paper>
             </SimpleGrid>
 
-            <Checkbox.Group label={t('forms.documentsReceived')} {...form.getInputProps('documentsList')}>
-              <Group mt="xs">
-                {documentOptions.map((documentName) => (
-                  <Checkbox key={documentName} value={documentName} label={documentLabel(documentName)} />
-                ))}
-              </Group>
-            </Checkbox.Group>
-
             <Textarea label={t('common.notes')} minRows={3} {...form.getInputProps('notes')} />
-            <Group justify="space-between">
-              <Text size="sm" c="dimmed">
-                {t('forms.updateDoHint')}
-              </Text>
+            <Group justify="flex-end">
               <Button type="submit" size="xs" loading={mutation.isPending}>
                 {t('common.save')}
               </Button>
@@ -243,9 +278,15 @@ export function UpdateDeliveryOrderForm({ deliveryOrder }: { deliveryOrder: Deli
           </Stack>
         </form>
       ) : (
-        <Text size="sm" c="dimmed">
-          {t('forms.updateDoHint')}
-        </Text>
+        <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="sm" mt={locked ? 'md' : undefined} className="delivery-order-update-readonly-grid">
+          <UpdateFact label={t('forms.itemCode')} value={form.values.itemCode || '-'} />
+          <UpdateFact label={t('forms.supplierName')} value={form.values.supplierName || '-'} />
+          <UpdateFact
+            label={t('common.route')}
+            value={`${form.values.portOfDeparture || '-'} ${t('deliveryOrders.routeConnector')} ${form.values.portOfDestination || '-'}`}
+          />
+          <UpdateFact label={t('common.documents')} value={receivedDocuments} />
+        </SimpleGrid>
       )}
     </Paper>
   );
@@ -315,40 +356,47 @@ export function UpdateTaskProgressForm({
   });
 
   return (
-    <Paper withBorder p="md">
-      <Group justify="space-between" mb="sm">
-        <Text fw={700}>{t('forms.updateTask')}</Text>
-        <Button size="xs" variant={editing ? 'default' : 'light'} onClick={() => setEditing((value) => !value)} disabled={locked}>
-          {editing ? t('common.cancel') : t('common.edit')}
-        </Button>
+    <Paper withBorder p="md" className="task-progress-update-panel">
+      <Group justify="space-between" align="flex-start" gap="md" mb="sm" className="task-progress-update-header">
+        <div>
+          <Text fw={700}>{t('forms.updateTask')}</Text>
+          <Text size="sm" c="dimmed">
+            {t('forms.updateTaskHint')}
+          </Text>
+        </div>
+        <Group gap="xs" wrap="nowrap">
+          <Badge variant="light">{task.progress}%</Badge>
+          <Button size="xs" variant={editing ? 'default' : 'light'} onClick={() => setEditing((value) => !value)} disabled={locked}>
+            {editing ? t('common.cancel') : t('common.edit')}
+          </Button>
+        </Group>
       </Group>
 
-      {locked ? (
-        <Alert color="orange">{t('tasks.lockedAfterCompleted')}</Alert>
-      ) : editing ? (
+      <Progress value={task.progress} size="sm" radius="xl" mb="md" className="task-progress-bar" />
+
+      {locked ? <Alert color="orange">{t('tasks.lockedAfterCompleted')}</Alert> : null}
+
+      {!locked && editing ? (
         <form
           onSubmit={form.onSubmit(() => {
             mutation.mutate();
           })}
         >
-          <Stack gap="md">
+          <Stack gap="md" className="task-progress-update-form">
             {mutation.isError ? (
               <Alert color="red" icon={<IconAlertTriangle size={18} />}>
                 {getApiErrorMessage(mutation.error, t('forms.apiUnknownError'))}
               </Alert>
             ) : null}
 
-            <SimpleGrid cols={{ base: 1, sm: 2 }}>
+            <SimpleGrid cols={{ base: 1, sm: 2 }} className="task-progress-fields">
               <NumberInput label={t('tasks.progress')} min={0} max={100} suffix="%" {...form.getInputProps('progress')} />
               <Select label={t('common.status')} data={statusOptions} {...form.getInputProps('status')} />
               <DateField label={t('tasks.dueDate')} {...form.getInputProps('dueDate')} />
               <TextInput label={t('tasks.blockedReason')} {...form.getInputProps('blockedReason')} />
             </SimpleGrid>
             <Textarea label={t('common.notes')} minRows={3} {...form.getInputProps('notes')} />
-            <Group justify="space-between">
-              <Text size="sm" c="dimmed">
-                {t('forms.updateTaskHint')}
-              </Text>
+            <Group justify="flex-end">
               <Button type="submit" size="xs" loading={mutation.isPending}>
                 {t('common.save')}
               </Button>
@@ -356,11 +404,40 @@ export function UpdateTaskProgressForm({
           </Stack>
         </form>
       ) : (
-        <Text size="sm" c="dimmed">
-          {t('forms.updateTaskHint')}
-        </Text>
+        <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="sm" mt={locked ? 'md' : undefined} className="task-progress-readonly-grid">
+          <TaskProgressFact label={t('common.status')} value={<Badge variant="light">{statusLabel(task.status)}</Badge>} />
+          <TaskProgressFact label={t('tasks.progress')} value={`${task.progress}%`} />
+          <TaskProgressFact label={t('tasks.dueDate')} value={task.due_date || '-'} />
+          <TaskProgressFact label={t('tasks.blockedReason')} value={task.blocked_reason || '-'} />
+        </SimpleGrid>
       )}
     </Paper>
+  );
+}
+
+function UpdateFact({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="delivery-order-update-fact">
+      <Text size="xs" c="dimmed" fw={700}>
+        {label}
+      </Text>
+      <Text size="sm" fw={600} component="div">
+        {value}
+      </Text>
+    </div>
+  );
+}
+
+function TaskProgressFact({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="task-progress-fact">
+      <Text size="xs" c="dimmed" fw={700}>
+        {label}
+      </Text>
+      <Text size="sm" fw={600} component="div">
+        {value}
+      </Text>
+    </div>
   );
 }
 

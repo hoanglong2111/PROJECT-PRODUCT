@@ -2,9 +2,9 @@ import {
   ActionIcon,
   Badge,
   Button,
-  Drawer,
   Group,
   Loader,
+  Modal,
   Paper,
   Progress,
   ScrollArea,
@@ -223,7 +223,7 @@ export function Tasks() {
     openTaskParam(task.task_id);
   };
 
-  const closeDrawer = () => {
+  const closeTaskDetail = () => {
     setSelectedTask(null);
     closeTaskParam();
   };
@@ -363,9 +363,9 @@ export function Tasks() {
                   />
                 </SimpleGrid>
 
-                <Group className="tasks-filter-toggles" gap="xs" wrap="nowrap">
+                <Group className="tasks-filter-toggles" gap="xs" wrap="wrap">
                   <Button
-                    className="tasks-filter-toggle dl-toggle"
+                    className="tasks-filter-toggle dl-toggle mr-2"
                     variant={requiredOnly ? 'light' : 'subtle'}
                     color={requiredOnly ? 'blue' : 'gray'}
                     onClick={() => setRequiredOnly(!requiredOnly)}
@@ -374,7 +374,7 @@ export function Tasks() {
                     {t('tasks.filterRequiredOnly')}
                   </Button>
                   <Button
-                    className="tasks-filter-toggle dl-toggle"
+                    className="tasks-filter-toggle dl-toggle mr-2"
                     variant={overdueOnly ? 'light' : 'subtle'}
                     color={overdueOnly ? 'orange' : 'gray'}
                     onClick={() => setOverdueOnly(!overdueOnly)}
@@ -502,9 +502,20 @@ export function Tasks() {
         </Tabs.Panel>
       </Tabs>
 
-      <Drawer opened={Boolean(focusedTask && selectedTask)} onClose={closeDrawer} title={t('tasks.detailTitle')} position="right" size="lg">
+      <Modal
+        opened={Boolean(focusedTask && selectedTask)}
+        onClose={closeTaskDetail}
+        title={t('tasks.detailTitle')}
+        centered
+        size="min(96vw, 64rem)"
+        classNames={{
+          body: 'task-detail-modal-body',
+          content: 'task-detail-modal-content',
+          header: 'task-detail-modal-header',
+        }}
+      >
         {selectedTask ? <TaskDetail task={selectedTask} onUpdated={setSelectedTask} onEdit={openEditTask} /> : null}
-      </Drawer>
+      </Modal>
 
       <TaskFormModal
         editing={editingTask}

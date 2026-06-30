@@ -49,7 +49,9 @@
 .delivery-order-detail-links,
 .delivery-order-detail-action-panel,
 .delivery-order-detail-actions,
-.delivery-order-detail-facts > * {
+.delivery-order-detail-facts > *,
+.delivery-order-detail-fact,
+.delivery-order-detail-tabs {
   min-width: 0;
 }
 
@@ -66,8 +68,32 @@
   border-top: 1px solid var(--kbfe-border-primary);
 }
 
-.delivery-order-detail-facts .mantine-Paper-root {
+.delivery-order-detail-fact {
   min-width: 0;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 88%, var(--kbfe-primary-color) 12%);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 94%, var(--kbfe-surface-subtle) 6%);
+}
+
+.delivery-order-detail-tabs-list {
+  flex-wrap: nowrap;
+  gap: 0.375rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  scrollbar-width: none;
+}
+
+.delivery-order-detail-tabs-list::-webkit-scrollbar {
+  display: none;
+}
+
+.delivery-order-detail-tabs-list .mantine-Tabs-tab {
+  flex: 0 0 auto;
+  min-height: 1.875rem;
+  padding-block: 0.25rem;
+  padding-inline: 0.625rem;
+  line-height: 1;
 }
 
 .delivery-order-detail-risk-alert {
@@ -98,8 +124,14 @@
 .delivery-order-ops-risk-copy,
 .delivery-order-ops-risk-row-copy,
 .delivery-order-ops-gate-copy,
-.delivery-order-ops-facts > * {
+.delivery-order-ops-facts > *,
+.delivery-order-task-facts > * {
   min-width: 0;
+}
+
+.delivery-order-ops-facts,
+.delivery-order-task-facts {
+  align-items: stretch;
 }
 
 .delivery-order-ops-hero {
@@ -185,6 +217,62 @@
 .delivery-order-ops-risk-panel span,
 .delivery-order-ops-risk-panel .mantine-Text-root {
   min-width: 0;
+}
+
+.delivery-order-update-panel,
+.delivery-order-update-section {
+  min-width: 0;
+  border-color: var(--kbfe-border-primary) !important;
+  background: var(--kbfe-surface-elevated);
+  box-shadow: var(--kbfe-shadow-xs);
+}
+
+.delivery-order-update-panel {
+  overflow: hidden;
+}
+
+.delivery-order-update-header,
+.delivery-order-update-form,
+.delivery-order-update-section-grid,
+.delivery-order-update-readonly-grid,
+.delivery-order-update-fact {
+  min-width: 0;
+}
+
+.delivery-order-update-section {
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 96%, var(--kbfe-surface-subtle) 4%);
+}
+
+.delivery-order-update-section .mantine-InputWrapper-label {
+  margin-bottom: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.delivery-order-update-section .mantine-Input-input,
+.delivery-order-update-section .mantine-Select-input,
+.delivery-order-update-section .mantine-Textarea-input {
+  min-height: 2.25rem;
+}
+
+.delivery-order-document-checks {
+  align-items: flex-start;
+}
+
+.delivery-order-document-checks .mantine-Checkbox-root {
+  flex: 1 1 9rem;
+}
+
+.delivery-order-update-fact {
+  padding: 0.625rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 86%, transparent);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 92%, var(--kbfe-surface-subtle) 8%);
+}
+
+.delivery-order-update-fact .mantine-Text-root {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 

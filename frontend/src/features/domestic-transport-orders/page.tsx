@@ -1,4 +1,4 @@
-import { Alert, Badge, Button, Drawer, Group, Paper, Select, SimpleGrid, Stack, Text, TextInput, Title } from '@mantine/core';
+import { Alert, Badge, Button, Group, Modal, Paper, Select, SimpleGrid, Stack, Text, TextInput, Title } from '@mantine/core';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   IconCircleCheck,
@@ -333,19 +333,19 @@ export function DomesticTransportOrders() {
         total={total}
       />
 
-      <Drawer
+      <Modal
         classNames={{
-          body: 'dto-detail-drawer-body',
-          content: 'dto-detail-drawer-content',
-          header: 'dto-detail-drawer-header',
+          body: 'dto-detail-modal-body',
+          content: 'dto-detail-modal-content',
+          header: 'dto-detail-modal-header',
         }}
         opened={Boolean(selectedDtoId)}
         onClose={() => {
           setSelectedDtoId(null);
           closeDtoParam();
         }}
-        position="right"
-        size="min(94vw, 58rem)"
+        centered
+        size="min(96vw, 64rem)"
         withCloseButton={false}
       >
         {selectedOrder ? (
@@ -365,7 +365,7 @@ export function DomesticTransportOrders() {
             truckVendorOptions={truckVendorOptions}
           />
         ) : null}
-      </Drawer>
+      </Modal>
 
       {updateMutation.isError || actionMutation.isError ? (
         <Alert color="red" icon={<IconX size={18} />} className="dto-error-alert">

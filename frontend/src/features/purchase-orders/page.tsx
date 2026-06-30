@@ -1,6 +1,6 @@
 import { Badge, Button, Group, Stack, Text, Title } from '@mantine/core';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { IconArrowBackUp, IconPlus, IconTruckDelivery } from '@tabler/icons-react';
+import { IconPlus, IconTruckDelivery } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
@@ -16,6 +16,7 @@ import {
   type Supplier,
 } from '@shared/api/tradeMasterData';
 import { useAuth } from '@shared/auth/useAuth';
+import { BackActionButton } from '@shared/components/BackActionButton';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
 import { useEntityParam } from '@shared/hooks/useEntityParam';
 
@@ -219,9 +220,7 @@ export function PurchaseOrders() {
         </Group>
       ) : (
         <Group justify="space-between" className="purchase-orders-subheader dl-page-header">
-          <Button className="purchase-orders-back-action" leftSection={<IconArrowBackUp size={16} />} variant="subtle" onClick={closeWorkbench}>
-            Back to list
-          </Button>
+          <BackActionButton className="purchase-orders-back-action" onClick={closeWorkbench} />
           <Badge className="purchase-orders-api-badge" leftSection={<IconTruckDelivery size={14} />} variant="light">
             Live API V1
           </Badge>

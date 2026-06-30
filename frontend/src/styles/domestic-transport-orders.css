@@ -20,6 +20,22 @@
   padding: 1rem;
 }
 
+.dto-detail-modal-content {
+  max-height: min(92dvh, 58rem);
+  overflow: hidden;
+  background: var(--kbfe-page-background);
+}
+
+.dto-detail-modal-header {
+  display: none;
+}
+
+.dto-detail-modal-body {
+  max-height: calc(92dvh - 1rem);
+  overflow: auto;
+  padding: 1rem;
+}
+
 .dto-page-hero,
 .dto-filter-panel,
 .dto-list-panel,
@@ -323,12 +339,32 @@
   background: color-mix(in srgb, var(--kbfe-surface-elevated) 92%, var(--kbfe-surface-subtle) 8%);
 }
 
-.dto-action-strip {
-  gap: 0.5rem;
-  padding: 0.625rem;
+.dto-action-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.76fr);
+  gap: 0.75rem;
+  align-items: stretch;
+  min-width: 0;
+  padding: 0.75rem;
   border: 1px solid var(--kbfe-border-primary);
   border-radius: 0.5rem;
-  background: color-mix(in srgb, var(--kbfe-surface-elevated) 91%, var(--kbfe-surface-subtle) 9%);
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 92%, var(--kbfe-surface-subtle) 8%);
+}
+
+.dto-action-group {
+  min-width: 0;
+  padding: 0.625rem;
+  border: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 84%, transparent);
+  border-radius: 0.5rem;
+  background: var(--kbfe-surface-elevated);
+}
+
+.dto-action-group.is-closure {
+  background: color-mix(in srgb, var(--kbfe-primary-color) 6%, var(--kbfe-surface-elevated));
+}
+
+.dto-action-strip {
+  gap: 0.5rem;
 }
 
 .dto-action-strip .mantine-Button-root {
@@ -373,10 +409,30 @@
   background: color-mix(in srgb, var(--kbfe-surface-elevated) 97%, var(--kbfe-surface-subtle) 3%);
 }
 
+.dto-form-workspace,
+.dto-form-section,
 .dto-form-grid > *,
 .dto-lines-header > *,
 .dto-form-header > * {
   min-width: 0;
+}
+
+.dto-form-workspace {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.875rem;
+  align-items: start;
+}
+
+.dto-form-section {
+  padding: 0.875rem;
+  border: 1px solid var(--kbfe-border-primary);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 96%, var(--kbfe-surface-subtle) 4%);
+}
+
+.dto-form-section.is-wide {
+  grid-column: 1 / -1;
 }
 
 .dto-form-grid .mantine-InputWrapper-label {
@@ -530,6 +586,11 @@
   .dto-route-rail {
     grid-template-columns: minmax(0, 1fr) minmax(10rem, 0.65fr) minmax(0, 1fr);
   }
+
+  .dto-action-workbench,
+  .dto-form-workspace {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 48em) {
@@ -548,6 +609,10 @@
 
   .dto-route-line {
     min-height: 2.5rem;
+  }
+
+  .dto-detail-modal-body {
+    padding: 0.75rem;
   }
 
   .dto-filter-actions,

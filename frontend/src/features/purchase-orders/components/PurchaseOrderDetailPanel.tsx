@@ -1,7 +1,7 @@
-import { Alert, Badge, Button, Group, Loader, Modal, Paper, Stack, Text, Title } from '@mantine/core';
+import { Alert, Badge, Button, Group, Loader, Modal, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core';
 import { IconAlertTriangle, IconCircleCheck, IconPencil, IconSend, IconX } from '@tabler/icons-react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 
 import {
   fetchPurchaseOrder,
@@ -14,6 +14,7 @@ import { StatusBadge } from '@shared/components/StatusBadge';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
 import { usePoInvalidation } from '../hooks/usePoInvalidation';
+import { totalPoAmount } from '../model/purchaseOrderModel';
 import { LotPlanningBoard } from './LotPlanningBoard';
 import { PoLinesTable } from './PoLinesTable';
 import { PurchaseOrderConfirmationsPanel } from './PurchaseOrderConfirmationsPanel';
@@ -70,10 +71,14 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
   const canEdit = canManage && order.status === 'DRAFT';
   const canSend = canManage && order.status === 'DRAFT';
   const canConfirm = canManage && order.status === 'SENT';
+  const amount = `${totalPoAmount(lines).toLocaleString()} ${order.currency?.currency_code ?? ''}`.trim();
+  const lotCount = order.lot_summary?.total_lots ?? order.total_lots ?? 0;
+  const containerCount = order.lot_summary?.total_containers ?? order.total_containers ?? 0;
+  const eta = order.logistics_timeline?.unloading_port?.eta ?? order.expected_eta ?? '-';
 
   return (
     <Stack gap="lg">
-      <Paper withBorder p="md" className="purchase-order-detail-hero">
+      <Paper withBorder p={0} className="purchase-order-detail-hero">
         <Group justify="space-between" align="flex-start" className="purchase-order-detail-hero-inner">
           <div className="purchase-order-detail-title">
             <Group gap="xs" className="purchase-order-detail-title-row">
@@ -123,6 +128,12 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
             </Button>
           </Group>
         </Group>
+        <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="sm" className="purchase-order-detail-signal-grid">
+          <PoHeroFact label="Supplier" value={order.supplier?.supplier_name ?? order.supplier_id} />
+          <PoHeroFact label="Lines" value={String(lines.length)} />
+          <PoHeroFact label="Amount" value={amount || '-'} />
+          <PoHeroFact label="LOT / ETA" value={`${lotCount} LOT / ${containerCount} cont / ${eta}`} />
+        </SimpleGrid>
         {sendMutation.isError ? (
           <Alert color="red" icon={<IconAlertTriangle size={18} />} mt="md">
             {getApiErrorMessage(sendMutation.error)}
@@ -178,5 +189,18 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
         }}
       />
     </Stack>
+  );
+}
+
+function PoHeroFact({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="purchase-order-detail-signal">
+      <Text size="xs" c="dimmed" fw={700}>
+        {label}
+      </Text>
+      <Text size="sm" fw={700} component="div">
+        {value}
+      </Text>
+    </div>
   );
 }

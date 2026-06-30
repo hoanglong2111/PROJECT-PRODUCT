@@ -27,6 +27,7 @@ import {
   IconTruckDelivery,
 } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -38,7 +39,6 @@ import {
 } from '@shared/api/deliveryOrders';
 import { queryKeys } from '@shared/api/queryKeys';
 import { DelayBadge } from '@shared/components/DelayBadge';
-import { InfoField } from '@shared/components/InfoField';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { useI18n } from '@shared/i18n';
 import { getApiErrorMessage } from '@shared/lib/errors';
@@ -190,16 +190,16 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
         </div>
 
         <SimpleGrid cols={{ base: 1, sm: 2, xl: 4 }} spacing="sm" className="delivery-order-detail-facts">
-          <InfoField label={t('deliveryOrders.sourcePoLot')} value={`${sourcePoNumber} / ${sourceLotNumber}`} />
-          <InfoField
+          <DeliveryOrderFact label={t('deliveryOrders.sourcePoLot')} value={`${sourcePoNumber} / ${sourceLotNumber}`} />
+          <DeliveryOrderFact
             label={t('common.route')}
             value={`${deliveryOrder.logistics_shipping.port_of_departure || '-'} ${t('deliveryOrders.routeConnector')} ${deliveryOrder.logistics_shipping.port_of_destination || '-'}`}
           />
-          <InfoField
+          <DeliveryOrderFact
             label={t('deliveryOrders.overviewAllocation')}
             value={`${deliveryOrder.source_lines.length} ${t('deliveryOrders.overviewItems')} · ${allocationWeightKg.toLocaleString()} kg · ${containerCount} ${t('deliveryOrders.overviewContainers')}`}
           />
-          <InfoField
+          <DeliveryOrderFact
             label={t('forms.warehouse')}
             value={deliveryOrder.warehouse_tracking.actual_entry_date ?? deliveryOrder.warehouse_tracking.planned_entry_date ?? '-'}
           />
@@ -226,8 +226,8 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
         <UpdateDeliveryOrderForm deliveryOrder={deliveryOrder} />
       </SimpleGrid>
 
-      <Tabs defaultValue="overview">
-        <Tabs.List>
+      <Tabs defaultValue="overview" className="delivery-order-detail-tabs">
+        <Tabs.List className="delivery-order-detail-tabs-list">
           <Tabs.Tab value="overview" leftSection={<IconTruckDelivery size={16} />}>
             {t('deliveryOrders.overview')}
           </Tabs.Tab>
@@ -573,15 +573,15 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
             </Paper>
 
             <SimpleGrid cols={{ base: 1, md: 3 }} className="delivery-order-ops-facts">
-              <InfoField label={t('deliveryOrders.efmsBooking')} value={deliveryOrder.order_info.tracking_number ?? deliveryOrder.order_info.order_number} />
-              <InfoField label={t('deliveryOrders.mblVessel')} value={`${deliveryOrder.logistics_shipping.shipping_line ?? '-'} / ${deliveryOrder.logistics_shipping.vessel_code ?? '-'}`} />
-              <InfoField
+              <DeliveryOrderFact label={t('deliveryOrders.efmsBooking')} value={deliveryOrder.order_info.tracking_number ?? deliveryOrder.order_info.order_number} />
+              <DeliveryOrderFact label={t('deliveryOrders.mblVessel')} value={`${deliveryOrder.logistics_shipping.shipping_line ?? '-'} / ${deliveryOrder.logistics_shipping.vessel_code ?? '-'}`} />
+              <DeliveryOrderFact
                 label={t('deliveryOrders.polPod')}
                 value={`${deliveryOrder.logistics_shipping.port_of_departure} ${t('deliveryOrders.routeConnector')} ${deliveryOrder.logistics_shipping.port_of_destination}`}
               />
-              <InfoField label={t('deliveryOrders.ofAfDebitNote')} value={gates.find((gate) => gate.id === 'documents')?.passed ? t('deliveryOrders.ready') : t('deliveryOrders.waitingDocuments')} />
-              <InfoField label={t('deliveryOrders.finalDebitNote')} value={gates.find((gate) => gate.id === 'finance')?.passed ? t('deliveryOrders.ready') : t('deliveryOrders.waitingOpsGates')} />
-              <InfoField label={t('deliveryOrders.podArchive')} value={deliveryOrder.warehouse_tracking.actual_entry_date ? t('deliveryOrders.ready') : t('deliveryOrders.waitingWarehouse')} />
+              <DeliveryOrderFact label={t('deliveryOrders.ofAfDebitNote')} value={gates.find((gate) => gate.id === 'documents')?.passed ? t('deliveryOrders.ready') : t('deliveryOrders.waitingDocuments')} />
+              <DeliveryOrderFact label={t('deliveryOrders.finalDebitNote')} value={gates.find((gate) => gate.id === 'finance')?.passed ? t('deliveryOrders.ready') : t('deliveryOrders.waitingOpsGates')} />
+              <DeliveryOrderFact label={t('deliveryOrders.podArchive')} value={deliveryOrder.warehouse_tracking.actual_entry_date ? t('deliveryOrders.ready') : t('deliveryOrders.waitingWarehouse')} />
             </SimpleGrid>
           </Stack>
         </Tabs.Panel>
@@ -602,10 +602,10 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
               <Badge color={taskProgress === 100 ? 'teal' : 'orange'}>{t('deliveryOrders.tasksDone', { percent: taskProgress })}</Badge>
             </Group>
             <Progress value={taskProgress} color={taskProgress === 100 ? 'teal' : 'orange'} />
-            <SimpleGrid cols={{ base: 1, sm: 3 }}>
-              <InfoField label={t('tasks.totalTasks')} value={String(deliveryOrder.task_summary.total_tasks)} />
-              <InfoField label={t('tasks.blocked')} value={String(deliveryOrder.task_summary.blocked_tasks)} />
-              <InfoField label={t('deliveryOrders.requiredRemaining')} value={String(deliveryOrder.task_summary.required_tasks_remaining)} />
+            <SimpleGrid cols={{ base: 1, sm: 3 }} className="delivery-order-task-facts">
+              <DeliveryOrderFact label={t('tasks.totalTasks')} value={String(deliveryOrder.task_summary.total_tasks)} />
+              <DeliveryOrderFact label={t('tasks.blocked')} value={String(deliveryOrder.task_summary.blocked_tasks)} />
+              <DeliveryOrderFact label={t('deliveryOrders.requiredRemaining')} value={String(deliveryOrder.task_summary.required_tasks_remaining)} />
             </SimpleGrid>
           </Stack>
         </Tabs.Panel>
@@ -664,5 +664,18 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
         </Stack>
       </Modal>
     </Stack>
+  );
+}
+
+function DeliveryOrderFact({ label, value }: { label: ReactNode; value: ReactNode }) {
+  return (
+    <div className="delivery-order-detail-fact">
+      <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
+        {label}
+      </Text>
+      <Text fw={700} lineClamp={1} title={typeof value === 'string' ? value : undefined}>
+        {value}
+      </Text>
+    </div>
   );
 }

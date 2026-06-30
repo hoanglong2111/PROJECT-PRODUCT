@@ -63,7 +63,7 @@ export function ShipmentDetailView({
   return (
     <Stack gap="lg">
       {/* Identity card */}
-      <Paper withBorder p="lg" className="workbench-section">
+      <Paper withBorder p="md" className="workbench-section shipment-detail-identity">
         <Group justify="space-between" align="flex-start">
           <div>
             <Group gap="xs" mb={4} wrap="nowrap">
@@ -195,9 +195,9 @@ function ShipmentOverviewCard({ shipment, t }: { shipment: ShipmentRecord; t: (k
       <div className="shipment-detail-header">
         <div className="shipment-detail-title">
           <div>
-            <Text fw={800}>{shipment.shipment_number}</Text>
+            <Text fw={800}>{t('shipments.overview')}</Text>
             <Text size="xs" c="dimmed">
-              {shipment.carrier_name || '-'} / {shipment.vessel_voyage || '-'}
+              {shipment.origin_port || '-'} / {shipment.dest_port || '-'}
             </Text>
           </div>
           <Group gap="xs">
@@ -213,7 +213,6 @@ function ShipmentOverviewCard({ shipment, t }: { shipment: ShipmentRecord; t: (k
                 {channelLabel}
               </Badge>
             )}
-            <StatusBadge status={shipment.status} />
           </Group>
         </div>
       </div>
