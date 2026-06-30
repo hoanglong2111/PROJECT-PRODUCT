@@ -1,4 +1,4 @@
-import { Alert, Badge, Button, Group, Modal, NumberInput, Select, SimpleGrid, Stack, Text, Textarea, TextInput } from '@mantine/core';
+import { Alert, Badge, Button, Group, NumberInput, Paper, Select, SimpleGrid, Stack, Text, Textarea, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -59,7 +59,7 @@ const emptyValues: TaskFormValues = {
   notes: '',
 };
 
-export function TaskFormModal({
+export function TaskFormPanel({
   editing,
   onClose,
   onSaved,
@@ -158,18 +158,10 @@ export function TaskFormModal({
     }
   };
 
+  if (!opened) return null;
+
   return (
-    <Modal
-      opened={opened}
-      onClose={onClose}
-      size="min(96vw, 72rem)"
-      title={editing ? t('tasks.editTask') : t('tasks.createTask')}
-      centered
-      classNames={{
-        body: 'task-form-modal-body',
-        content: 'task-form-modal-content',
-      }}
-    >
+    <Paper withBorder p="md" className="task-form-panel task-form-panel-body">
       <Stack gap="md" className="task-form-shell">
         {mutation.isError ? (
           <Alert color="red" icon={<IconAlertCircle size={18} />}>
@@ -283,7 +275,7 @@ export function TaskFormModal({
           </Group>
         </Group>
       </Stack>
-    </Modal>
+    </Paper>
   );
 }
 

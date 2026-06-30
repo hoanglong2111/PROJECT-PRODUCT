@@ -1,4 +1,4 @@
-import { Alert, Button, Group, Modal, Select, SimpleGrid, Stack, Text, TextInput } from '@mantine/core';
+import { Alert, Button, Group, Paper, Select, SimpleGrid, Stack, Text, TextInput } from '@mantine/core';
 import { IconAlertTriangle, IconAnchor } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
@@ -18,7 +18,7 @@ function inferMode(shippingMethod: DeliveryOrder['logistics_shipping']['shipping
   return 'SEA';
 }
 
-export function CreateShipmentFromDoModal({
+export function CreateShipmentFromDoPanel({
   deliveryOrder,
   onClose,
   opened,
@@ -54,7 +54,7 @@ export function CreateShipmentFromDoModal({
     { label: t('shipments.modeOther'), value: 'OTHER' },
   ];
 
-  // Re-seed the form from the DO every time the modal opens so prefilled
+  // Re-seed the form from the DO every time the panel opens so prefilled
   // route/date values follow the currently selected delivery order.
   useEffect(() => {
     if (!opened) return;
@@ -94,13 +94,10 @@ export function CreateShipmentFromDoModal({
     },
   });
 
+  if (!opened) return null;
+
   return (
-    <Modal
-      opened={opened}
-      onClose={onClose}
-      title={t('shipments.createFromDoTitle', { doNumber })}
-      size="lg"
-    >
+    <Paper withBorder p="lg" className="delivery-order-shipment-create-panel">
       <Stack gap="md">
         <Text size="sm" c="dimmed">
           {t('shipments.createFromDoDescription', { poNumber: poNumber || t('shipments.fallbackPo') })}
@@ -143,6 +140,6 @@ export function CreateShipmentFromDoModal({
           </Button>
         </Group>
       </Stack>
-    </Modal>
+    </Paper>
   );
 }

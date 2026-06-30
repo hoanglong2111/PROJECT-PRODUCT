@@ -38,6 +38,7 @@ import {
   markDeliveryOrderReadyForQuotation,
 } from '@shared/api/deliveryOrders';
 import { queryKeys } from '@shared/api/queryKeys';
+import { BackActionButton } from '@shared/components/BackActionButton';
 import { DelayBadge } from '@shared/components/DelayBadge';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { useI18n } from '@shared/i18n';
@@ -46,7 +47,7 @@ import { EntityLink, FlowTagBadge, SourceLineTable, UpdateDeliveryOrderForm, cal
 
 import { getAllocationWeightKg, getContainerCount, shippingIcon } from '../model/deliveryOrderModel';
 import { gateDetail, gateLabel, riskDetail, riskLabel, slaLabel } from '../model/deliveryOrderLabels';
-import { CreateShipmentFromDoModal } from './CreateShipmentFromDoModal';
+import { CreateShipmentFromDoPanel } from './CreateShipmentFromDoPanel';
 import { DocumentUploadPanel } from './DocumentUploadPanel';
 import { OperationalGateSummary } from './OperationalGateSummary';
 
@@ -113,6 +114,31 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
     { ok: deliveryOrder.task_summary.required_tasks_remaining === 0, label: t('deliveryOrders.checklistRequiredClosureTasks') },
     { ok: Boolean(deliveryOrder.warehouse_tracking.actual_entry_date), label: t('deliveryOrders.checklistWarehousePodRecorded') },
   ];
+
+  if (createShipmentOpen) {
+    return (
+      <Stack gap="lg">
+        <Group justify="space-between" align="center" gap="md" className="dl-page-header delivery-order-shipment-create-header">
+          <Group gap="xs" align="center" wrap="wrap">
+            <BackActionButton
+              label={t('common.back')}
+              onClick={() => setCreateShipmentOpen(false)}
+            />
+            <Text c="dimmed" size="sm">/</Text>
+            <Text fw={700} size="sm">
+              {t('shipments.createFromDoTitle', { doNumber: deliveryOrder.order_info.order_number })}
+            </Text>
+          </Group>
+        </Group>
+
+        <CreateShipmentFromDoPanel
+          deliveryOrder={deliveryOrder}
+          opened
+          onClose={() => setCreateShipmentOpen(false)}
+        />
+      </Stack>
+    );
+  }
 
   return (
     <Stack gap="lg">
@@ -613,12 +639,6 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
           <SourceLineTable lines={deliveryOrder.source_lines} />
         </Tabs.Panel>
       </Tabs>
-
-      <CreateShipmentFromDoModal
-        deliveryOrder={deliveryOrder}
-        opened={createShipmentOpen}
-        onClose={() => setCreateShipmentOpen(false)}
-      />
 
       <Modal
         opened={closeConfirmOpen}

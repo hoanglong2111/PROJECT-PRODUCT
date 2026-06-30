@@ -15,8 +15,13 @@
   min-width: 0;
 }
 
+.purchase-order-edit-workbench {
+  min-width: 0;
+}
+
 .purchase-orders-page-header,
 .purchase-orders-subheader,
+.purchase-order-edit-header,
 .purchase-order-detail-hero-inner,
 .purchase-order-detail-title-row,
 .purchase-order-po-lines-header,

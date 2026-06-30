@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import type { ShipmentRecord } from '@shared/api/logistics';
 import type { ShipmentModeV1 } from '@shared/api/shipments';
 import { DateField } from '@shared/components/DateField';
+import { BackActionButton } from '@shared/components/BackActionButton';
 import { EmptyState } from '@shared/components/EmptyState';
 import { EntityLink } from '@entities/logistics';
 import { FilterToolbar } from '@shared/components/FilterToolbar';
@@ -16,7 +17,7 @@ import { useI18n } from '@shared/i18n';
 
 import { channelColor, shipmentModeOptions, type ShipmentChannelFilter } from '../model/shipmentModel';
 import { useShipmentsUiStore } from '../model/shipmentsUiStore';
-import { CreateDtoFromShipmentModal } from './CreateDtoFromShipmentModal';
+import { CreateDtoFromShipmentPanel } from './CreateDtoFromShipmentPanel';
 
 const CHANNEL_LABEL_KEY: Record<'GREEN' | 'YELLOW' | 'RED', string> = {
   GREEN: 'shipments.channelGreen',
@@ -104,6 +105,36 @@ export function ShipmentListView({
       }
       return Array.from(new Set([...current, ...eligibleVisible.map((shipment) => shipment.id)]));
     });
+
+  if (dtoModalOpen) {
+    const title = selectedShipments.length > 1
+      ? t('shipments.createDtoTitle', { count: selectedShipments.length })
+      : t('shipments.createDtoFromShipment', { shipmentNumber: selectedShipments[0]?.shipment_number ?? '' });
+
+    return (
+      <Stack gap="lg">
+        <Group justify="space-between" align="center" gap="md" className="dl-page-header shipment-dto-create-header">
+          <Group gap="xs" align="center" wrap="wrap">
+            <BackActionButton
+              label={t('common.back')}
+              onClick={() => setDtoModalOpen(false)}
+            />
+            <Text c="dimmed" size="sm">/</Text>
+            <Text fw={700} size="sm">
+              {title}
+            </Text>
+          </Group>
+        </Group>
+
+        <CreateDtoFromShipmentPanel
+          opened
+          shipments={selectedShipments}
+          onClose={() => setDtoModalOpen(false)}
+          onCreated={() => setSelectedIds([])}
+        />
+      </Stack>
+    );
+  }
 
   return (
     <>
@@ -399,12 +430,6 @@ export function ShipmentListView({
         />
       </Paper>
 
-      <CreateDtoFromShipmentModal
-        opened={dtoModalOpen}
-        shipments={selectedShipments}
-        onClose={() => setDtoModalOpen(false)}
-        onCreated={() => setSelectedIds([])}
-      />
     </>
   );
 }

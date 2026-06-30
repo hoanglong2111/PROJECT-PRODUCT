@@ -42,13 +42,24 @@
   white-space: nowrap;
 }
 
-.task-form-modal-body .mantine-InputWrapper-label {
+.task-form-panel {
+  min-width: 0;
+  border-color: var(--kbfe-border-primary) !important;
+  background: var(--kbfe-surface-elevated);
+  box-shadow: var(--kbfe-shadow-xs);
+}
+
+.task-workbench-header {
+  min-width: 0;
+}
+
+.task-form-panel-body .mantine-InputWrapper-label {
   margin-bottom: 0.25rem;
   font-size: 0.8125rem;
   font-weight: 700;
 }
 
-.task-form-modal-body .mantine-InputWrapper-description {
+.task-form-panel-body .mantine-InputWrapper-description {
   min-height: 1rem;
   margin-bottom: 0.25rem;
   color: var(--kbfe-text-secondary);
@@ -56,22 +67,10 @@
   line-height: 1.2;
 }
 
-.task-form-modal-body .mantine-Input-input,
-.task-form-modal-body .mantine-Select-input,
-.task-form-modal-body .mantine-Textarea-input {
+.task-form-panel-body .mantine-Input-input,
+.task-form-panel-body .mantine-Select-input,
+.task-form-panel-body .mantine-Textarea-input {
   min-height: 2.25rem;
-}
-
-.task-form-modal-content,
-.task-detail-modal-content {
-  max-height: min(92dvh, 58rem);
-  overflow: hidden;
-}
-
-.task-form-modal-body,
-.task-detail-modal-body {
-  max-height: calc(92dvh - 4.5rem);
-  overflow: auto;
 }
 
 .task-form-shell,

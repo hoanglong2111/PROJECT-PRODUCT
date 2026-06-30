@@ -37,6 +37,25 @@
   box-shadow: var(--kbfe-shadow-xs);
 }
 
+.delivery-order-shipment-create-panel {
+  width: 100%;
+  overflow: hidden;
+  border-color: var(--kbfe-border-primary) !important;
+  background: var(--kbfe-surface-elevated);
+  box-shadow: var(--kbfe-shadow-xs);
+}
+
+.delivery-order-shipment-create-panel .mantine-InputWrapper-label {
+  margin-bottom: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.delivery-order-shipment-create-panel .mantine-Input-input,
+.delivery-order-shipment-create-panel .mantine-Select-input {
+  min-height: 2.25rem;
+}
+
 .delivery-order-detail-hero-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.55fr) minmax(18rem, 0.85fr);

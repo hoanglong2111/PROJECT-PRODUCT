@@ -1,5 +1,4 @@
 import {
-  ActionIcon,
   Badge,
   Button,
   Group,
@@ -13,9 +12,8 @@ import {
   Textarea,
   TextInput,
   Title,
-  Tooltip,
 } from '@mantine/core';
-import { IconCheck, IconClipboardCheck, IconFileCheck, IconTruckDelivery, IconX } from '@tabler/icons-react';
+import { IconCheck, IconClipboardCheck, IconFileCheck, IconTruckDelivery } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 
 import type { DomesticTransportOrderAction, DomesticTransportOrderV1 } from '@shared/api/domesticTransportOrders';
@@ -34,7 +32,6 @@ export function DomesticTransportOrderDetail({
   isFetching,
   onAction,
   onChange,
-  onClose,
   onSave,
   order,
   saving,
@@ -45,7 +42,6 @@ export function DomesticTransportOrderDetail({
   isFetching: boolean;
   onAction: (action: DomesticTransportOrderAction) => void;
   onChange: (form: FormState) => void;
-  onClose: () => void;
   onSave: () => void;
   order: DomesticTransportOrderV1;
   saving: boolean;
@@ -138,11 +134,6 @@ export function DomesticTransportOrderDetail({
             </div>
             <Group gap="xs" className="dto-detail-actions">
               {order.shipment ? <EntityLink compact id={order.shipment.shipment_no} type="shp" /> : null}
-              <Tooltip label={t('domesticTransportOrders.closeDetail')}>
-                <ActionIcon aria-label={t('domesticTransportOrders.closeDetail')} variant="subtle" onClick={onClose}>
-                  <IconX size={16} />
-                </ActionIcon>
-              </Tooltip>
             </Group>
           </Group>
 
@@ -190,8 +181,8 @@ export function DomesticTransportOrderDetail({
               </Group>
             </div>
             <div className="dto-action-group is-closure">
-              <Text className="metric-label" size="xs" fw={700} tt="uppercase">{t('deliveryOrders.closure')}</Text>
-              <Group gap="xs" mt={6} className="dto-action-strip">
+              <Text className="metric-label dto-closure-label" size="xs" fw={700} tt="uppercase">{t('deliveryOrders.closure')}</Text>
+              <Group gap="xs" className="dto-action-strip dto-closure-actions">
                 {closureActions.map((action) => (
                   <Button
                     key={action.action}
@@ -287,6 +278,7 @@ export function DomesticTransportOrderDetail({
                     <TextInput label={t('domesticTransportOrders.vehiclePlate')} value={form.vehiclePlate} disabled={isClosed} onChange={(event) => onChange({ ...form, vehiclePlate: event.currentTarget.value })} />
                     <TextInput label={t('domesticTransportOrders.driver')} value={form.driverName} disabled={isClosed} onChange={(event) => onChange({ ...form, driverName: event.currentTarget.value })} />
                     <TextInput label={t('domesticTransportOrders.driverPhone')} value={form.driverPhone} disabled={isClosed} onChange={(event) => onChange({ ...form, driverPhone: event.currentTarget.value })} />
+                    <TextInput label={t('domesticTransportOrders.driverIdentityNo')} value={form.driverIdentityNo} disabled={isClosed} onChange={(event) => onChange({ ...form, driverIdentityNo: event.currentTarget.value })} />
                   </SimpleGrid>
                 </section>
 

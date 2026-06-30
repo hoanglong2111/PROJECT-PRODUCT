@@ -20,22 +20,6 @@
   padding: 1rem;
 }
 
-.dto-detail-modal-content {
-  max-height: min(92dvh, 58rem);
-  overflow: hidden;
-  background: var(--kbfe-page-background);
-}
-
-.dto-detail-modal-header {
-  display: none;
-}
-
-.dto-detail-modal-body {
-  max-height: calc(92dvh - 1rem);
-  overflow: auto;
-  padding: 1rem;
-}
-
 .dto-page-hero,
 .dto-filter-panel,
 .dto-list-panel,
@@ -341,11 +325,11 @@
 
 .dto-action-workbench {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.76fr);
-  gap: 0.75rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
   align-items: stretch;
   min-width: 0;
-  padding: 0.75rem;
+  padding: 0.625rem;
   border: 1px solid var(--kbfe-border-primary);
   border-radius: 0.5rem;
   background: color-mix(in srgb, var(--kbfe-surface-elevated) 92%, var(--kbfe-surface-subtle) 8%);
@@ -353,14 +337,26 @@
 
 .dto-action-group {
   min-width: 0;
-  padding: 0.625rem;
+  padding: 0.55rem 0.625rem;
   border: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 84%, transparent);
   border-radius: 0.5rem;
   background: var(--kbfe-surface-elevated);
 }
 
 .dto-action-group.is-closure {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   background: color-mix(in srgb, var(--kbfe-primary-color) 6%, var(--kbfe-surface-elevated));
+}
+
+.dto-closure-label {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.dto-closure-actions {
+  flex: 0 0 auto;
 }
 
 .dto-action-strip {
@@ -609,10 +605,6 @@
 
   .dto-route-line {
     min-height: 2.5rem;
-  }
-
-  .dto-detail-modal-body {
-    padding: 0.75rem;
   }
 
   .dto-filter-actions,

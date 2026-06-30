@@ -71,6 +71,7 @@ export type DomesticTransportOrderV1 = {
   vehicle_plate: string | null;
   driver_name: string | null;
   driver_phone: string | null;
+  driver_identity_no?: string | null;
   scheduled_pickup_at: string | null;
   actual_pickup_at: string | null;
   scheduled_delivery_at: string | null;
@@ -121,6 +122,7 @@ export type CreateDomesticTransportOrderPayload = {
   vehicle_plate?: string | null;
   driver_name?: string | null;
   driver_phone?: string | null;
+  driver_identity_no?: string | null;
   container_ids?: string[];
   container_no?: string[] | string | null;
   scheduled_pickup_at?: string | null;
@@ -137,6 +139,7 @@ export type UpdateDomesticTransportOrderPayload = Partial<
     | 'destination'
     | 'driver_name'
     | 'driver_phone'
+    | 'driver_identity_no'
     | 'note'
     | 'origin'
     | 'pod_document_ref'

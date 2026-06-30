@@ -1,4 +1,4 @@
-import { Alert, Badge, Button, Group, Loader, Modal, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core';
+import { Alert, Badge, Button, Group, Loader, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core';
 import { IconAlertTriangle, IconCircleCheck, IconPencil, IconSend, IconX } from '@tabler/icons-react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { type ReactNode, useState } from 'react';
@@ -9,6 +9,7 @@ import {
   sendPurchaseOrder,
 } from '@shared/api/purchaseOrders';
 import { queryKeys } from '@shared/api/queryKeys';
+import { BackActionButton } from '@shared/components/BackActionButton';
 import { PageError } from '@shared/components/PageFeedback';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { getApiErrorMessage } from '@shared/lib/errors';
@@ -75,6 +76,35 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
   const lotCount = order.lot_summary?.total_lots ?? order.total_lots ?? 0;
   const containerCount = order.lot_summary?.total_containers ?? order.total_containers ?? 0;
   const eta = order.logistics_timeline?.unloading_port?.eta ?? order.expected_eta ?? '-';
+
+  if (editOpen) {
+    return (
+      <Stack gap="lg" className="purchase-order-edit-workbench">
+        <Group justify="space-between" align="center" gap="md" className="dl-page-header purchase-order-edit-header">
+          <Group gap="xs" align="center" wrap="wrap">
+            <BackActionButton
+              label="Back"
+              onClick={() => setEditOpen(false)}
+            />
+            <Text c="dimmed" size="sm">/</Text>
+            <Text fw={700} size="sm">
+              Edit PO {order.po_no}
+            </Text>
+          </Group>
+        </Group>
+
+        <PurchaseOrderForm
+          mode="edit"
+          order={order}
+          onCancel={() => setEditOpen(false)}
+          onSaved={() => {
+            setEditOpen(false);
+            invalidatePo();
+          }}
+        />
+      </Stack>
+    );
+  }
 
   return (
     <Stack gap="lg">
@@ -166,18 +196,6 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
       ) : (
         <LotPlanningBoard planning={planningQuery.data} canManage={canManage} />
       )}
-
-      <Modal opened={editOpen} onClose={() => setEditOpen(false)} title="Edit PO" size="xl">
-        <PurchaseOrderForm
-          mode="edit"
-          order={order}
-          onCancel={() => setEditOpen(false)}
-          onSaved={() => {
-            setEditOpen(false);
-            invalidatePo();
-          }}
-        />
-      </Modal>
 
       <SupplierConfirmationModal
         order={order}

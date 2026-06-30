@@ -36,6 +36,26 @@
   box-shadow: var(--kbfe-shadow-xs);
 }
 
+.shipment-dto-create-panel {
+  width: 100%;
+  overflow: hidden;
+  border-color: var(--kbfe-border-primary) !important;
+  background: var(--kbfe-surface-elevated);
+  box-shadow: var(--kbfe-shadow-xs);
+}
+
+.shipment-dto-create-panel .mantine-InputWrapper-label {
+  margin-bottom: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.shipment-dto-create-panel .mantine-Input-input,
+.shipment-dto-create-panel .mantine-Select-input,
+.shipment-dto-create-panel .mantine-Textarea-input {
+  min-height: 2.25rem;
+}
+
 .shipment-create-command,
 .shipment-create-layout,
 .shipment-create-source,
