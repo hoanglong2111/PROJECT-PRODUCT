@@ -441,8 +441,22 @@ are entered normally so the PO line → LOT logic is untouched).
 # 10. Shipment UI Rules
 
 Quotation no longer gates the DO, so the old `QUOTATION_CONFIRMED` gate is removed.
-Frontend shows **Create Shipment** for any DO that has no linked shipment yet and is not
-`CANCELLED` / `CLOSED` / `ASSIGNED_TO_SHIPMENT`.
+A shipment can be created from any DO that is **eligible**:
+
+```txt
+eligible  =  no linked shipment yet  AND  status ∉ { CANCELLED, CLOSED, ASSIGNED_TO_SHIPMENT }
+```
+
+This single predicate (`isDeliveryOrderShipmentEligible`, `features/shipments/model/shipmentModel.ts`)
+is the source of truth and must back **both** create entry points — do not re-inline the rule per call
+site (that drift previously left one path filtering on the dead `QUOTATION_CONFIRMED` status):
+
+1. **DO detail** → the "Create Shipment" action (`CreateShipmentFromDoPanel`) shows for an eligible DO.
+2. **Shipments tab → Create** → the "Linked DO" picker lists eligible DOs (fetch DOs, filter client-side
+   with the same predicate; no `status` query filter).
+
+Creating a shipment flips its DO to `ASSIGNED_TO_SHIPMENT` (so it drops out of both pickers). The backend
+`createShipmentFromDeliveryOrder` enforces the same gate.
 
 Shipment has 10 milestones:
 

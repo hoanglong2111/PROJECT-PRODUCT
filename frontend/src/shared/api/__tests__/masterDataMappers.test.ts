@@ -1,28 +1,25 @@
 import { describe, expect, it } from 'vitest';
 
+import { normalizeChargeCode } from '../chargeCodes';
 import { normalizeCarrier, normalizeForwarder } from '../forwarders';
 import { normalizeItem } from '../items';
 import { normalizeTaskTemplate } from '../taskTemplates';
 import { normalizeSupplier } from '../tradeMasterData';
 
 describe('master data mappers', () => {
-  it('normalizes item canonical fields from legacy names', () => {
+  it('normalizes item fields with sensible defaults', () => {
     const item = normalizeItem({
-      id: 'item_legacy',
-      item_code: 'LEG-001',
-      item_name: 'Legacy Item',
-      item_group_id: null,
-      unit: 'PCS',
-      origin_country: 'CN',
-      customs_profiles: [{ id: 'icp_1', item_id: 'item_legacy', hs_code: '84089090' }],
+      id: 'item_001',
+      item_code: 'ITM-001',
+      item_name: 'Test Item',
+      customs_profiles: [{ id: 'icp_1', item_id: 'item_001', hs_code: '84089090' }],
     });
 
-    expect(item.base_uom).toBe('PCS');
-    expect(item.unit).toBe('PCS');
-    expect(item.country_of_origin).toBe('CN');
-    expect(item.origin_country).toBe('CN');
+    expect(item.item_name_en).toBe('Test Item');
     expect(item.hs_code).toBe('84089090');
-    expect(item.item_name_en).toBe('Legacy Item');
+    expect(item.is_active).toBe(true);
+    expect(item.uom_conversion).toBe(1);
+    expect(item.customs_profiles).toHaveLength(1);
   });
 
   it('normalizes supplier canonical fields from legacy names without deriving current roles', () => {
@@ -52,6 +49,29 @@ describe('master data mappers', () => {
     expect(supplier.contact_name).toBe('Li Wei');
     expect(supplier.lead_time_production_days).toBe(25);
     expect(supplier.lead_time_days).toBe(25);
+  });
+
+  it('normalizes charge-code group separately from row category', () => {
+    const chargeCode = normalizeChargeCode({
+      id: 'chg_pre',
+      charge_code: 'PRE',
+      charge_name_en: 'Pre-carriage',
+      charge_name_vn: '',
+      category: 'ORIGIN_EXPORT',
+      default_uom: 'CNTR',
+      sea_fcl: true,
+      sea_lcl: false,
+      air: false,
+      road: false,
+      rail: true,
+      rev_cost: 'BOTH',
+      taxable: true,
+      description: null,
+      is_active: true,
+    } as Parameters<typeof normalizeChargeCode>[0]);
+
+    expect(chargeCode.group).toBe('ORIGIN_EXPORT');
+    expect(chargeCode.category).toBe('SERVICE');
   });
 
   it('keeps forwarder, carrier, and task template nullable fields stable', () => {

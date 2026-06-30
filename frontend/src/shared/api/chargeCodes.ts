@@ -8,14 +8,24 @@ type ApiMessageResponse<T> = {
 
 export type ChargeCodeCategory =
   | 'ORIGIN'
-  | 'EXPORT'
   | 'CUSTOMS'
   | 'DOCUMENTATION'
   | 'FREIGHT'
+  | 'SURCHARGE'
   | 'DESTINATION'
-  | 'IMPORT'
-  | 'INSURANCE'
-  | 'MISC'
+  | 'DISBURSEMENT'
+  | 'ANCILLARY'
+  | 'SERVICE'
+  | string;
+
+export type ChargeGroup =
+  | 'ORIGIN_EXPORT'
+  | 'MAIN_FREIGHT'
+  | 'FREIGHT_SURCHARGE'
+  | 'DOCUMENTATION_FILING'
+  | 'DESTINATION_IMPORT'
+  | 'ANCILLARY_ACCESSORIAL'
+  | 'SERVICE_OTHER'
   | string;
 
 export type ChargeRevCost = 'REVENUE' | 'COST' | 'BOTH';
@@ -25,6 +35,7 @@ export type ChargeCode = {
   charge_code: string;
   charge_name_en: string;
   charge_name_vn: string;
+  group: ChargeGroup;
   category: ChargeCodeCategory;
   default_uom: string;
   sea_fcl: boolean;
@@ -46,6 +57,7 @@ export type ChargeCodePayload = {
   charge_code?: string;
   charge_name_en?: string;
   charge_name_vn?: string;
+  group?: ChargeGroup;
   category?: ChargeCodeCategory;
   default_uom?: string;
   sea_fcl?: boolean;
@@ -63,10 +75,14 @@ function unwrapData<T>(response: { data: { data: T } }) {
   return response.data.data;
 }
 
-function normalizeChargeCode(chargeCode: ChargeCode): ChargeCode {
+export function normalizeChargeCode(chargeCode: ChargeCode): ChargeCode {
+  const group = chargeCode.group ?? legacyGroupFromCategory(chargeCode.category);
+
   return {
     ...chargeCode,
     charge_name_vn: chargeCode.charge_name_vn ?? '',
+    group,
+    category: normalizeChargeCategory(chargeCode.category),
     default_uom: chargeCode.default_uom ?? 'SHPT',
     sea_fcl: chargeCode.sea_fcl === true,
     sea_lcl: chargeCode.sea_lcl === true,
@@ -78,6 +94,52 @@ function normalizeChargeCode(chargeCode: ChargeCode): ChargeCode {
     description: chargeCode.description ?? null,
     is_active: chargeCode.is_active !== false,
   };
+}
+
+function normalizeChargeCategory(category: ChargeCodeCategory): ChargeCodeCategory {
+  const value = String(category || '').toUpperCase();
+  const valid = new Set([
+    'ORIGIN',
+    'CUSTOMS',
+    'DOCUMENTATION',
+    'FREIGHT',
+    'SURCHARGE',
+    'DESTINATION',
+    'DISBURSEMENT',
+    'ANCILLARY',
+    'SERVICE',
+  ]);
+
+  return valid.has(value) ? (value as ChargeCodeCategory) : 'SERVICE';
+}
+
+function legacyGroupFromCategory(category: ChargeCodeCategory): ChargeGroup {
+  const value = String(category || '').toUpperCase();
+  const legacyGroups = new Set([
+    'ORIGIN_EXPORT',
+    'MAIN_FREIGHT',
+    'FREIGHT_SURCHARGE',
+    'DOCUMENTATION_FILING',
+    'DESTINATION_IMPORT',
+    'ANCILLARY_ACCESSORIAL',
+    'SERVICE_OTHER',
+    'DOCUMENTATION',
+    'ANCILLARY',
+  ]);
+
+  if (!legacyGroups.has(value)) {
+    return 'SERVICE_OTHER';
+  }
+
+  if (value === 'DOCUMENTATION') {
+    return 'DOCUMENTATION_FILING';
+  }
+
+  if (value === 'ANCILLARY') {
+    return 'ANCILLARY_ACCESSORIAL';
+  }
+
+  return value as ChargeGroup;
 }
 
 function normalizePaginatedResponse<T>(
@@ -101,7 +163,7 @@ export async function fetchChargeCode(id: string) {
 }
 
 export async function createChargeCode(
-  payload: Required<Pick<ChargeCodePayload, 'charge_code' | 'charge_name_en' | 'category' | 'default_uom'>> & ChargeCodePayload,
+  payload: Required<Pick<ChargeCodePayload, 'charge_code' | 'charge_name_en' | 'group' | 'category' | 'default_uom'>> & ChargeCodePayload,
 ) {
   const response = await apiClient.post<ApiMessageResponse<ChargeCode>>('/charge-codes', payload);
   return normalizeChargeCode(unwrapData(response));

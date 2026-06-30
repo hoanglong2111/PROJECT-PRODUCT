@@ -1,4 +1,4 @@
-import { Alert, Button, Group, Modal, NumberInput, Select, SimpleGrid, Stack, Textarea, TextInput } from '@mantine/core';
+import { Alert, Autocomplete, Button, Group, Modal, NumberInput, Select, SimpleGrid, Stack, Textarea, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -31,7 +31,7 @@ type TaskTemplateFormValues = {
   milestoneCode: string | null;
   slaHours: string;
   slaText: string;
-  department: string | null;
+  department: string;
   assigneeCode: string;
   relatedDocuments: string;
   note: string;
@@ -46,7 +46,7 @@ const emptyValues: TaskTemplateFormValues = {
   milestoneCode: null,
   slaHours: '',
   slaText: '',
-  department: null,
+  department: '',
   assigneeCode: '',
   relatedDocuments: '',
   note: '',
@@ -114,25 +114,24 @@ export function TaskTemplateModal({
   const slaHoursNumber = optionalNumber(form.values.slaHours);
   const hasInvalidSlaHours = form.values.slaHours.trim().length > 0 && slaHoursNumber === undefined;
   const isSaveDisabled =
-    !form.values.groupCode.trim() ||
     !form.values.groupName.trim() ||
     !form.values.taskName.trim() ||
     !form.values.taskDescription.trim() ||
-    !form.values.department ||
+    !form.values.department.trim() ||
     sortOrderNumber === undefined ||
     hasInvalidSlaHours;
 
   const mutation = useMutation({
     mutationFn: () => {
       const payload: SaveTaskTemplateInput['payload'] = {
-        group_code: form.values.groupCode.trim().toUpperCase(),
+        group_code: form.values.groupCode.trim().toUpperCase() || undefined,
         group_name: form.values.groupName.trim(),
         task_name: form.values.taskName.trim(),
         task_description: form.values.taskDescription.trim(),
         milestone_code: form.values.milestoneCode,
         sla_hours: slaHoursNumber ?? null,
         sla_text: optionalString(form.values.slaText) ?? null,
-        department: form.values.department ?? '',
+        department: form.values.department,
         assignee_code: optionalString(form.values.assigneeCode) ?? null,
         related_documents: optionalString(form.values.relatedDocuments) ?? '',
         note: optionalString(form.values.note) ?? null,
@@ -166,7 +165,7 @@ export function TaskTemplateModal({
           </Alert>
         ) : null}
         <SimpleGrid cols={{ base: 1, sm: 2 }}>
-          <TextInput label={t('masterData.groupCode')} required {...form.getInputProps('groupCode')} />
+          <TextInput label={t('masterData.groupCode')} {...form.getInputProps('groupCode')} />
           <TextInput label={t('masterData.groupName')} required {...form.getInputProps('groupName')} />
           <NumberInput
             label={t('masterData.sortOrder')}
@@ -181,11 +180,10 @@ export function TaskTemplateModal({
             value={form.values.milestoneCode ?? 'none'}
             onChange={(value) => form.setFieldValue('milestoneCode', value === 'none' ? null : value)}
           />
-          <Select
+          <Autocomplete
             label={t('masterData.department')}
-            data={departmentOptions}
+            data={Object.keys(DEPARTMENTS)}
             required
-            searchable
             {...form.getInputProps('department')}
           />
           <TextInput label={t('masterData.assigneeCode')} {...form.getInputProps('assigneeCode')} />

@@ -763,6 +763,31 @@
   min-width: 0;
 }
 
+.rfq-version-item {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  color: inherit;
+  text-align: left;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease;
+}
+
+.rfq-version-item:hover:not(:disabled),
+.rfq-version-item:focus-visible {
+  border-color: color-mix(in srgb, var(--kbfe-primary-color) 24%, var(--kbfe-border-primary));
+  background: var(--kbfe-row-hover-background);
+  outline: none;
+}
+
+.rfq-version-item:disabled {
+  cursor: default;
+}
+
 .rfq-timeline-dot {
   width: 0.5rem;
   height: 0.5rem;

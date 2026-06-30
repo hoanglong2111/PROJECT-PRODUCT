@@ -13,6 +13,7 @@ import {
 import { queryKeys } from '@shared/api/queryKeys';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { useI18n } from '@shared/i18n';
+import { CHARGE_CATEGORIES, CHARGE_GROUPS } from '@shared/lib/chargeCategories';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
 import { optionalString } from '../model/masterDataModel';
@@ -21,6 +22,7 @@ type ChargeCodeFormValues = {
   code: string;
   nameEn: string;
   nameVn: string;
+  group: string;
   category: string;
   defaultUom: string | null;
   seaFcl: boolean;
@@ -38,7 +40,8 @@ const emptyValues: ChargeCodeFormValues = {
   code: '',
   nameEn: '',
   nameVn: '',
-  category: 'MAIN_FREIGHT',
+  group: 'MAIN_FREIGHT',
+  category: 'FREIGHT',
   defaultUom: 'SHPT',
   seaFcl: false,
   seaLcl: false,
@@ -74,6 +77,7 @@ export function ChargeCodeModal({
           code: editing.charge_code,
           nameEn: editing.charge_name_en,
           nameVn: editing.charge_name_vn ?? '',
+          group: editing.group,
           category: editing.category,
           defaultUom: editing.default_uom,
           seaFcl: editing.sea_fcl,
@@ -97,6 +101,7 @@ export function ChargeCodeModal({
         charge_code: form.values.code.trim().toUpperCase(),
         charge_name_en: form.values.nameEn.trim(),
         charge_name_vn: form.values.nameVn.trim(),
+        group: form.values.group,
         category: form.values.category,
         default_uom: form.values.defaultUom || 'SHPT',
         sea_fcl: form.values.seaFcl,
@@ -121,7 +126,7 @@ export function ChargeCodeModal({
   });
 
   const handleSave = () => {
-    if (!form.values.code.trim() || !form.values.nameEn.trim() || !form.values.category || !form.values.defaultUom) {
+    if (!form.values.code.trim() || !form.values.nameEn.trim() || !form.values.group || !form.values.category || !form.values.defaultUom) {
       return;
     }
     mutation.mutate();
@@ -143,16 +148,15 @@ export function ChargeCodeModal({
         <SimpleGrid cols={{ base: 1, sm: 2 }}>
           <TextInput label={t('masterData.chargeCode')} required {...form.getInputProps('code')} />
           <Select
+            label={t('masterData.chargeGroup')}
+            data={CHARGE_GROUPS.map((group) => ({ label: t(group.labelKey), value: group.value }))}
+            required
+            searchable
+            {...form.getInputProps('group')}
+          />
+          <Select
             label={t('masterData.chargeCategory')}
-            data={[
-              { label: t('masterData.chargeCategoryOriginExport'), value: 'ORIGIN_EXPORT' },
-              { label: t('masterData.chargeCategoryMainFreight'), value: 'MAIN_FREIGHT' },
-              { label: t('masterData.chargeCategoryFreightSurcharge'), value: 'FREIGHT_SURCHARGE' },
-              { label: t('masterData.chargeCategoryDocumentation'), value: 'DOCUMENTATION' },
-              { label: t('masterData.chargeCategoryDestinationImport'), value: 'DESTINATION_IMPORT' },
-              { label: t('masterData.chargeCategoryAncillary'), value: 'ANCILLARY' },
-              { label: t('masterData.chargeCategoryServiceOther'), value: 'SERVICE_OTHER' },
-            ]}
+            data={CHARGE_CATEGORIES.map((category) => ({ label: t(category.labelKey), value: category.value }))}
             required
             searchable
             {...form.getInputProps('category')}
@@ -198,7 +202,7 @@ export function ChargeCodeModal({
           <Button
             onClick={handleSave}
             loading={mutation.isPending}
-            disabled={!form.values.code.trim() || !form.values.nameEn.trim() || !form.values.category || !form.values.defaultUom}
+            disabled={!form.values.code.trim() || !form.values.nameEn.trim() || !form.values.group || !form.values.category || !form.values.defaultUom}
           >
             {t('common.save')}
           </Button>

@@ -125,7 +125,13 @@ export function ForwarderModal({
   });
 
   const handleSave = () => {
-    if (!form.values.code.trim() || !form.values.name.trim() || !form.values.type || !form.values.contactPerson.trim()) {
+    if (
+      !form.values.code.trim() ||
+      !form.values.name.trim() ||
+      !form.values.type ||
+      !form.values.contactPerson.trim() ||
+      !form.values.contactEmail.trim()
+    ) {
       return;
     }
 
@@ -162,7 +168,7 @@ export function ForwarderModal({
           />
           <TextInput label={t('masterData.country')} {...form.getInputProps('country')} />
           <TextInput label={t('masterData.contactPerson')} required {...form.getInputProps('contactPerson')} />
-          <TextInput label={t('masterData.contactEmail')} {...form.getInputProps('contactEmail')} />
+          <TextInput label={t('masterData.contactEmail')} required {...form.getInputProps('contactEmail')} />
           <TextInput label={t('masterData.contactPhone')} {...form.getInputProps('contactPhone')} />
           <Switch label={t('masterData.isPrimary')} mt="xl" {...form.getInputProps('isPrimary', { type: 'checkbox' })} />
         </SimpleGrid>
@@ -174,7 +180,7 @@ export function ForwarderModal({
           <Button
             onClick={handleSave}
             loading={mutation.isPending}
-            disabled={!form.values.code.trim() || !form.values.name.trim() || !form.values.type || !form.values.contactPerson.trim()}
+            disabled={!form.values.code.trim() || !form.values.name.trim() || !form.values.type || !form.values.contactPerson.trim() || !form.values.contactEmail.trim()}
           >
             {t('common.save')}
           </Button>

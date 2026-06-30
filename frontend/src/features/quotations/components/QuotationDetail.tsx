@@ -68,6 +68,7 @@ export function QuotationDetail({ quotation, onBack, onRevise, onInspectVersion 
     enabled: quotation.status === 'REJECTED',
   });
   const versions = (versionsQuery.data ?? []).sort((a, b) => b.version - a.version);
+  const isLatestKnownVersion = versions.length === 0 || versions[0]?.id === quotation.id;
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: queryKeys.quotations });
@@ -205,6 +206,7 @@ export function QuotationDetail({ quotation, onBack, onRevise, onInspectVersion 
                       const quantity = Number(line.quantity ?? 0);
                       const unitPrice = Number(line.unit_price ?? 0);
                       const taxAmount = Number(line.tax_amount ?? 0);
+                      const lineTotal = Number(line.total_amount ?? line.amount ?? 0);
 
                       return (
                       <Table.Tr key={line.id}>
@@ -225,7 +227,7 @@ export function QuotationDetail({ quotation, onBack, onRevise, onInspectVersion 
                           {Number.isFinite(taxAmount) ? formatAmount(taxAmount) : '-'}
                         </Table.Td>
                         <Table.Td ta="right" className="tabular-nums">
-                          {formatAmount(Number(line.total_amount ?? line.amount ?? 0))}
+                          {Number.isFinite(lineTotal) ? formatAmount(lineTotal) : '-'}
                         </Table.Td>
                       </Table.Tr>
                       );
@@ -280,7 +282,7 @@ export function QuotationDetail({ quotation, onBack, onRevise, onInspectVersion 
                 </Button>
               ) : status === 'REJECTED' ? (
                 <Stack gap="sm">
-                  {onRevise ? (
+                  {onRevise && (!versionsQuery.isSuccess || isLatestKnownVersion) ? (
                     <Button
                       fullWidth
                       leftSection={<IconEdit size={16} />}
@@ -369,7 +371,7 @@ export function QuotationDetail({ quotation, onBack, onRevise, onInspectVersion 
             </div>
           </Paper>
 
-          {status === 'REJECTED' && versions.length > 1 ? (
+          {status === 'REJECTED' && (versionsQuery.isPending || versionsQuery.isError || versions.length > 1) ? (
             <Paper withBorder p={0} className="rfq-timeline-panel">
               <div className="rfq-panel-head">
                 <div>
@@ -382,18 +384,16 @@ export function QuotationDetail({ quotation, onBack, onRevise, onInspectVersion 
               <div className="rfq-timeline-list">
                 {versionsQuery.isPending ? (
                   <Text c="dimmed" size="sm">{t('common.loading')}</Text>
+                ) : versionsQuery.isError ? (
+                  <Text c="red" size="sm">{t('quotations.errorDescription')}</Text>
                 ) : (
                   versions.map((v) => (
-                    <div
-                      className="rfq-timeline-item"
+                    <button
+                      className="rfq-timeline-item rfq-version-item"
+                      disabled={!onInspectVersion || v.id === quotation.id}
                       key={v.id}
-                      style={{ cursor: onInspectVersion ? 'pointer' : undefined }}
                       onClick={() => onInspectVersion?.(v)}
-                      role={onInspectVersion ? 'button' : undefined}
-                      tabIndex={onInspectVersion ? 0 : undefined}
-                      onKeyDown={(e) => {
-                        if (onInspectVersion && (e.key === 'Enter' || e.key === ' ')) onInspectVersion(v);
-                      }}
+                      type="button"
                     >
                       <span className="rfq-timeline-dot" aria-hidden="true" />
                       <div>
@@ -409,7 +409,7 @@ export function QuotationDetail({ quotation, onBack, onRevise, onInspectVersion 
                         </Text>
                         <Text size="xs" c="dimmed">{formatDateTime(v.create_at)}</Text>
                       </div>
-                    </div>
+                    </button>
                   ))
                 )}
               </div>

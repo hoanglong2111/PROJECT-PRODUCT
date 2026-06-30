@@ -201,6 +201,17 @@ for mutations): `/currencies`, `/incoterms`, `/transport-modes`, `/suppliers`,
 `/task-templates`, `/options`. These are part of the contract but use the legacy
 envelope above; handle their shapes separately from the `/v1` envelope.
 
+Charge code DTOs expose two independent taxonomy fields: `group` is the seven-section
+macro group (`ORIGIN_EXPORT`, `MAIN_FREIGHT`, `FREIGHT_SURCHARGE`,
+`DOCUMENTATION_FILING`, `DESTINATION_IMPORT`, `ANCILLARY_ACCESSORIAL`,
+`SERVICE_OTHER`), while `category` is the row category (`ORIGIN`, `CUSTOMS`,
+`DOCUMENTATION`, `FREIGHT`, `SURCHARGE`, `DESTINATION`, `DISBURSEMENT`,
+`ANCILLARY`, `SERVICE`). UOM DTOs are the 26 freight billing codes currently in
+`06_UOM.html` and do not include `category`. Incoterms include the supplier-doc set
+`EXW`, `FOB`, `CIF`, `DDP`, plus quotation-required `FCA` and `CFR`. Transport modes
+are `SEA`, `AIR`, `ROAD`, and `RAIL`; FCL/LCL is modeled on charge-code
+applicability, and `is_international` is not part of the DTO.
+
 ---
 
 ## 5. Dev-only scaffolding — NOT part of the contract

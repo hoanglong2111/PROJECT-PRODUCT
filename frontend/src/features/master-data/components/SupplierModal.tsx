@@ -1,8 +1,8 @@
-import { Alert, Button, Group, Modal, MultiSelect, Select, SimpleGrid, Stack, Switch, Textarea, TextInput } from '@mantine/core';
+import { Alert, Autocomplete, Button, Group, Modal, Select, SimpleGrid, Stack, Switch, Textarea, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 
 import { queryKeys } from '@shared/api/queryKeys';
 import { createSupplier, updateSupplier, type Supplier } from '@shared/api/tradeMasterData';
@@ -17,18 +17,14 @@ type SupplierFormValues = {
   name: string;
   nameEn: string;
   supplierType: string | null;
-  roles: string[];
   country: string;
   city: string;
-  address: string;
   contactPerson: string;
   contactEmail: string;
   contactPhone: string;
   paymentTerm: string;
-  currencyId: string | null;
-  incotermId: string | null;
-  transportModeIds: string[];
-  defaultTransportModeId: string | null;
+  currencyCode: string;
+  incotermCode: string;
   leadTimeProductionDays: string;
   bankInfo: string;
   note: string;
@@ -40,18 +36,14 @@ const emptyValues: SupplierFormValues = {
   name: '',
   nameEn: '',
   supplierType: null,
-  roles: ['SUPPLIER'],
   country: '',
   city: '',
-  address: '',
   contactPerson: '',
   contactEmail: '',
   contactPhone: '',
   paymentTerm: '',
-  currencyId: null,
-  incotermId: null,
-  transportModeIds: [],
-  defaultTransportModeId: null,
+  currencyCode: '',
+  incotermCode: '',
   leadTimeProductionDays: '',
   bankInfo: '',
   note: '',
@@ -72,6 +64,23 @@ const paymentTermOptions = [
   { label: 'LC', value: 'LC' },
 ];
 
+const currencyCodeOptions = [
+  { label: 'USD', value: 'USD' },
+  { label: 'EUR', value: 'EUR' },
+  { label: 'CNY', value: 'CNY' },
+  { label: 'KRW', value: 'KRW' },
+  { label: 'VND', value: 'VND' },
+];
+
+const incotermCodeOptions = [
+  { label: 'EXW', value: 'EXW' },
+  { label: 'FCA', value: 'FCA' },
+  { label: 'FOB', value: 'FOB' },
+  { label: 'CFR', value: 'CFR' },
+  { label: 'CIF', value: 'CIF' },
+  { label: 'DDP', value: 'DDP' },
+];
+
 function hintedLabel(label: string, hint: string) {
   return (
     <Group gap={4} component="span" wrap="nowrap">
@@ -82,19 +91,13 @@ function hintedLabel(label: string, hint: string) {
 }
 
 export function SupplierModal({
-  currencyOptions,
   editing,
-  incotermOptions,
   onClose,
   opened,
-  transportModeOptions,
 }: {
-  currencyOptions: Array<{ label: string; value: string }>;
   editing: Supplier | null;
-  incotermOptions: Array<{ label: string; value: string }>;
   onClose: () => void;
   opened: boolean;
-  transportModeOptions: Array<{ label: string; value: string }>;
 }) {
   const { t } = useI18n();
   const queryClient = useQueryClient();
@@ -106,24 +109,19 @@ export function SupplierModal({
       form.setValues(emptyValues);
       return;
     }
-    const supplierTransportModes = editing.supplier_transport_modes ?? [];
     form.setValues({
       code: editing.supplier_code,
       name: editing.supplier_name,
       nameEn: editing.supplier_name_en ?? '',
       supplierType: editing.supplier_type ?? null,
-      roles: editing.supplier_roles.length > 0 ? editing.supplier_roles : ['SUPPLIER'],
       country: editing.country ?? '',
       city: editing.city ?? '',
-      address: editing.address ?? '',
       contactPerson: editing.contact_person ?? editing.contact_name ?? '',
       contactEmail: editing.contact_email ?? '',
       contactPhone: editing.contact_phone ?? '',
       paymentTerm: editing.payment_term ?? '',
-      currencyId: editing.default_currency_id ?? editing.default_currency?.id ?? null,
-      incotermId: editing.default_incoterm_id ?? editing.default_incoterm?.id ?? null,
-      transportModeIds: supplierTransportModes.map((mode) => mode.transport_mode_id),
-      defaultTransportModeId: supplierTransportModes.find((mode) => mode.is_default)?.transport_mode_id ?? null,
+      currencyCode: editing.default_currency_code ?? '',
+      incotermCode: editing.default_incoterm_code ?? '',
       leadTimeProductionDays:
         editing.lead_time_production_days !== null && editing.lead_time_production_days !== undefined
           ? String(editing.lead_time_production_days)
@@ -135,11 +133,6 @@ export function SupplierModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opened, editing]);
 
-  const defaultTransportModeOptions = useMemo(
-    () => transportModeOptions.filter((option) => form.values.transportModeIds.includes(option.value)),
-    [transportModeOptions, form.values.transportModeIds],
-  );
-
   const mutation = useMutation({
     mutationFn: () => {
       const payload = {
@@ -147,18 +140,14 @@ export function SupplierModal({
         supplier_name: form.values.name.trim(),
         supplier_name_en: optionalString(form.values.nameEn),
         supplier_type: form.values.supplierType,
-        supplier_roles: form.values.roles.length > 0 ? form.values.roles : ['SUPPLIER'],
         country: optionalString(form.values.country),
         city: optionalString(form.values.city),
-        address: optionalString(form.values.address),
         contact_person: optionalString(form.values.contactPerson),
         contact_email: optionalString(form.values.contactEmail),
         contact_phone: optionalString(form.values.contactPhone),
-        payment_term: optionalString(form.values.paymentTerm),
-        default_currency_id: form.values.currencyId || null,
-        default_incoterm_id: form.values.incotermId || null,
-        transport_mode_ids: form.values.transportModeIds,
-        default_transport_mode_id: form.values.defaultTransportModeId || null,
+        payment_term: form.values.paymentTerm || null,
+        default_currency_code: form.values.currencyCode || null,
+        default_incoterm_code: form.values.incotermCode || null,
         lead_time_production_days: optionalNumber(form.values.leadTimeProductionDays),
         bank_info: optionalString(form.values.bankInfo),
         note: optionalString(form.values.note),
@@ -175,8 +164,19 @@ export function SupplierModal({
     },
   });
 
+  const isSaveDisabled =
+    !form.values.code.trim() ||
+    !form.values.name.trim() ||
+    !form.values.supplierType ||
+    !form.values.contactPerson.trim() ||
+    !form.values.contactEmail.trim() ||
+    !form.values.paymentTerm.trim() ||
+    !form.values.currencyCode.trim() ||
+    !form.values.incotermCode.trim() ||
+    !form.values.leadTimeProductionDays.trim();
+
   const handleSave = () => {
-    if (!form.values.code.trim() || !form.values.name.trim() || !form.values.supplierType) return;
+    if (isSaveDisabled) return;
     mutation.mutate();
   };
 
@@ -218,75 +218,36 @@ export function SupplierModal({
             required
             {...form.getInputProps('supplierType')}
           />
-          <MultiSelect
-            label={t('masterData.supplierRoles')}
-            data={[
-              { label: t('masterData.supplierRoleSupplier'), value: 'SUPPLIER' },
-              { label: t('masterData.supplierRoleShipper'), value: 'SHIPPER' },
-              { label: t('masterData.supplierRoleVendor'), value: 'VENDOR' },
-              { label: t('masterData.supplierRoleForwarder'), value: 'FORWARDER' },
-              { label: t('masterData.supplierRoleTruckingVendor'), value: 'TRUCKING_VENDOR' },
-              { label: t('masterData.supplierRoleCustomsBroker'), value: 'CUSTOMS_BROKER' },
-            ]}
-            searchable
-            required
-            {...form.getInputProps('roles')}
-          />
-          <TextInput label={t('masterData.country')} {...form.getInputProps('country')} />
+          <TextInput label={t('masterData.country')} required {...form.getInputProps('country')} />
           <TextInput label={t('masterData.city')} {...form.getInputProps('city')} />
-          <TextInput label={t('masterData.contactPerson')} {...form.getInputProps('contactPerson')} />
-          <TextInput label={t('masterData.contactEmail')} {...form.getInputProps('contactEmail')} />
+          <TextInput label={t('masterData.contactPerson')} required {...form.getInputProps('contactPerson')} />
+          <TextInput label={t('masterData.contactEmail')} required {...form.getInputProps('contactEmail')} />
           <TextInput label={t('masterData.contactPhone')} {...form.getInputProps('contactPhone')} />
-          <Select
+          <Autocomplete
             label={hintedLabel(t('masterData.paymentTerm'), t('glossary.paymentTerm'))}
-            data={paymentTermOptions}
-            value={form.values.paymentTerm || null}
-            onChange={(value) => form.setFieldValue('paymentTerm', value || '')}
-            searchable
-            clearable
+            data={paymentTermOptions.map((o) => o.value)}
+            required
+            {...form.getInputProps('paymentTerm')}
           />
-          <Select
+          <Autocomplete
             label={t('masterData.defaultCurrency')}
-            data={currencyOptions}
-            searchable
-            clearable
-            {...form.getInputProps('currencyId')}
+            data={currencyCodeOptions.map((o) => o.value)}
+            required
+            {...form.getInputProps('currencyCode')}
           />
-          <Select
+          <Autocomplete
             label={hintedLabel(t('masterData.defaultIncoterm'), t('glossary.incoterm'))}
-            data={incotermOptions}
-            searchable
-            clearable
-            {...form.getInputProps('incotermId')}
-          />
-          <MultiSelect
-            label={hintedLabel(t('masterData.supplierTransportModes'), t('glossary.supplierTransportModes'))}
-            value={form.values.transportModeIds}
-            onChange={(values) => {
-              form.setFieldValue('transportModeIds', values);
-              if (form.values.defaultTransportModeId && !values.includes(form.values.defaultTransportModeId)) {
-                form.setFieldValue('defaultTransportModeId', null);
-              }
-            }}
-            data={transportModeOptions}
-            searchable
-            clearable
-          />
-          <Select
-            label={hintedLabel(t('masterData.defaultTransportMode'), t('glossary.supplierTransportModes'))}
-            data={defaultTransportModeOptions}
-            searchable
-            clearable
-            disabled={form.values.transportModeIds.length === 0}
-            {...form.getInputProps('defaultTransportModeId')}
+            data={incotermCodeOptions.map((o) => o.value)}
+            required
+            {...form.getInputProps('incotermCode')}
           />
           <TextInput
             label={hintedLabel(t('masterData.leadTimeProductionDays'), t('glossary.leadTimeDays'))}
             type="number"
+            required
             {...form.getInputProps('leadTimeProductionDays')}
           />
         </SimpleGrid>
-        <Textarea label={t('masterData.address')} autosize minRows={3} {...form.getInputProps('address')} />
         <SimpleGrid cols={{ base: 1, sm: 2 }}>
           <Textarea label={t('masterData.bankInfo')} autosize minRows={3} {...form.getInputProps('bankInfo')} />
           <Textarea label={t('masterData.note')} autosize minRows={3} {...form.getInputProps('note')} />
@@ -299,12 +260,7 @@ export function SupplierModal({
           <Button
             onClick={handleSave}
             loading={mutation.isPending}
-            disabled={
-              !form.values.code.trim() ||
-              !form.values.name.trim() ||
-              !form.values.supplierType ||
-              form.values.roles.length === 0
-            }
+            disabled={isSaveDisabled}
           >
             {t('common.save')}
           </Button>

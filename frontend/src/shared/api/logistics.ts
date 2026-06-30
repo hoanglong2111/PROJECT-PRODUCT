@@ -615,7 +615,7 @@ function mapV1PurchaseOrderLine(line: PurchaseOrderLineV1): PurchaseOrderLineIte
     hs_code: customsProfile?.hs_code ?? undefined,
     id: line.id,
     item_code: item?.item_code ?? line.item_id,
-    item_group: item?.item_group?.group_name,
+    item_group: undefined,
     item_id: line.item_id,
     item_name: item?.item_name ?? line.item_description ?? '',
     lot_number: null,
@@ -959,8 +959,8 @@ function transportModeIdFromShippingMethod(
   shippingMethod: DeliveryOrder['logistics_shipping']['shipping_method'] | undefined,
 ) {
   if (shippingMethod === 'AIR') return 'tm_air';
-  if (shippingMethod === 'ROAD') return 'tm_trucking';
-  if (shippingMethod === 'SEA') return 'tm_sea_fcl';
+  if (shippingMethod === 'ROAD') return 'tm_road';
+  if (shippingMethod === 'SEA') return 'tm_sea';
   return undefined;
 }
 

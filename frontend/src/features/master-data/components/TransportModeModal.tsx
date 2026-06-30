@@ -17,7 +17,6 @@ type TransportModeFormValues = {
   name: string;
   modeType: string;
   description: string;
-  isInternational: boolean;
   isActive: boolean;
 };
 
@@ -26,7 +25,6 @@ const emptyValues: TransportModeFormValues = {
   name: '',
   modeType: 'SEA',
   description: '',
-  isInternational: true,
   isActive: true,
 };
 
@@ -61,7 +59,6 @@ export function TransportModeModal({
           name: editing.mode_name,
           modeType: editing.mode_type,
           description: editing.description ?? '',
-          isInternational: editing.is_international,
           isActive: editing.is_active,
         }
         : emptyValues,
@@ -76,7 +73,6 @@ export function TransportModeModal({
         mode_name: form.values.name.trim(),
         mode_type: form.values.modeType.trim().toUpperCase(),
         description: optionalString(form.values.description),
-        is_international: form.values.isInternational,
         is_active: form.values.isActive,
       };
       return editing ? updateTransportMode(editing.id, payload) : createTransportMode(payload);
@@ -127,9 +123,6 @@ export function TransportModeModal({
               { label: t('masterData.transportModeTypeAir'), value: 'AIR' },
               { label: t('masterData.transportModeTypeRoad'), value: 'ROAD' },
               { label: t('masterData.transportModeTypeRail'), value: 'RAIL' },
-              { label: t('masterData.transportModeTypeMultimodal'), value: 'MULTIMODAL' },
-              { label: t('masterData.transportModeTypeFcl'), value: 'FCL' },
-              { label: t('masterData.transportModeTypeLcl'), value: 'LCL' },
             ]}
             searchable
             required
@@ -138,13 +131,7 @@ export function TransportModeModal({
           />
         </SimpleGrid>
         <Textarea label={t('masterData.description')} autosize minRows={3} {...form.getInputProps('description')} />
-        <SimpleGrid cols={{ base: 1, sm: 2 }}>
-          <Switch
-            label={hintedLabel(t('masterData.international'), t('glossary.transportScope'))}
-            {...form.getInputProps('isInternational', { type: 'checkbox' })}
-          />
-          <Switch label={t('masterData.active')} {...form.getInputProps('isActive', { type: 'checkbox' })} />
-        </SimpleGrid>
+        <Switch label={t('masterData.active')} {...form.getInputProps('isActive', { type: 'checkbox' })} />
         <Group justify="flex-end">
           <Button variant="subtle" color="gray" onClick={onClose}>
             {t('common.cancel')}

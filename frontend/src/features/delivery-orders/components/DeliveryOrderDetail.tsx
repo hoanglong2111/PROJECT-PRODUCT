@@ -103,7 +103,9 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
       : null;
   const canCancel = deliveryOrder.order_info.status === 'DRAFT';
   // Reversed flow: quotation no longer gates the DO. A shipment can be created from
-  // any DO that has no shipment yet and is not terminal/assigned.
+  // any DO that has no shipment yet and is not terminal/assigned. This mirrors the shared
+  // `isDeliveryOrderShipmentEligible` predicate (shipments/model/shipmentModel.ts) and the backend gate;
+  // it stays inline here because this view consumes the legacy `DeliveryOrder` shape (order_info.status).
   const canCreateShipment =
     !deliveryOrder.linked_shipment_number &&
     !['CANCELLED', 'CLOSED', 'ASSIGNED_TO_SHIPMENT'].includes(deliveryOrder.order_info.status);

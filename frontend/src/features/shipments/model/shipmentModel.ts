@@ -47,6 +47,26 @@ export const CONTAINER_TYPE_OPTIONS = ['20GP', '40GP', '40HC', '45HC', '20RF', '
   (value) => ({ label: value, value }),
 );
 
+/**
+ * DO statuses from which a shipment can no longer be created. Mirrors the backend gate in
+ * `createShipmentFromDeliveryOrder` and FE_rule §10 (reversed flow: quotation no longer gates the DO).
+ */
+export const SHIPMENT_BLOCKED_DO_STATUSES = ['CANCELLED', 'CLOSED', 'ASSIGNED_TO_SHIPMENT'] as const;
+
+/**
+ * Reversed-flow eligibility for creating a shipment from a DO: the DO must have no linked shipment yet
+ * and not be terminal/already-assigned. Single source of truth shared by the Shipments-tab DO picker and
+ * the DO detail "Create Shipment" gate so they cannot drift.
+ */
+export function isDeliveryOrderShipmentEligible(deliveryOrder: DeliveryOrderV1): boolean {
+  return (
+    !deliveryOrder.linked_shipment_number &&
+    !SHIPMENT_BLOCKED_DO_STATUSES.includes(
+      deliveryOrder.status as (typeof SHIPMENT_BLOCKED_DO_STATUSES)[number],
+    )
+  );
+}
+
 export function inferShipmentModeFromDeliveryOrder(deliveryOrder: DeliveryOrderV1): ShipmentModeV1 {
   const modeType = deliveryOrder.transport_mode?.mode_type?.toUpperCase();
   if (modeType === 'AIR') return 'AIR';

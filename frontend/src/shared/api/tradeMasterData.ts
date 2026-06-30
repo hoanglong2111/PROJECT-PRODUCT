@@ -76,7 +76,6 @@ export type TransportMode = {
   mode_name: string;
   mode_type: string;
   description: string | null;
-  is_international: boolean;
   is_active: boolean;
   create_at?: string;
   update_at?: string;
@@ -89,7 +88,6 @@ export type TransportModePayload = {
   mode_name?: string;
   mode_type?: string;
   description?: string | null;
-  is_international?: boolean;
   is_active?: boolean;
 };
 
@@ -178,7 +176,6 @@ export type SupplierListParams = ListParams & {
 
 export type TransportModeListParams = ListParams & {
   mode_type?: string;
-  is_international?: boolean;
 };
 
 export type MasterDataOption = {
@@ -230,7 +227,6 @@ function normalizeTransportMode(mode: TransportMode): TransportMode {
     ...mode,
     mode_type: modeType,
     description: mode.description ?? null,
-    is_international: mode.is_international ?? modeType !== 'ROAD',
     is_active: mode.is_active !== false,
   };
 }
