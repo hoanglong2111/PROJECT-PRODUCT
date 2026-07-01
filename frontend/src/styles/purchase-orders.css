@@ -1509,3 +1509,33 @@
     text-align: left;
   }
 }
+
+/* PO execution detail — control header (2-tier, sticky) */
+.purchase-order-control-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--kbfe-space-sm);
+  padding: var(--kbfe-space-sm) var(--kbfe-space-md);
+  border: 1px solid var(--kbfe-border-primary);
+  border-radius: var(--mantine-radius-md);
+  background: var(--kbfe-surface-elevated);
+  box-shadow: var(--kbfe-shadow-sm);
+}
+
+.purchase-order-control-identity {
+  min-width: 0;
+}
+
+.purchase-order-control-title-row {
+  row-gap: 4px;
+}
+
+.purchase-order-control-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}

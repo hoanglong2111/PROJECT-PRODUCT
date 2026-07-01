@@ -1,7 +1,7 @@
-import { Alert, Badge, Button, Group, Loader, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core';
-import { IconAlertTriangle, IconCircleCheck, IconPencil, IconSend, IconX } from '@tabler/icons-react';
+import { Alert, Group, Loader, Paper, SimpleGrid, Stack, Text } from '@mantine/core';
+import { IconAlertTriangle } from '@tabler/icons-react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useRef, useState } from 'react';
 
 import {
   fetchPurchaseOrder,
@@ -11,12 +11,12 @@ import {
 import { queryKeys } from '@shared/api/queryKeys';
 import { BackActionButton } from '@shared/components/BackActionButton';
 import { PageError } from '@shared/components/PageFeedback';
-import { StatusBadge } from '@shared/components/StatusBadge';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
 import { usePoInvalidation } from '../hooks/usePoInvalidation';
 import { totalPoAmount } from '../model/purchaseOrderModel';
 import { LotPlanningBoard } from './LotPlanningBoard';
+import { PoControlHeader } from './PoControlHeader';
 import { PoLinesTable } from './PoLinesTable';
 import { PurchaseOrderConfirmationsPanel } from './PurchaseOrderConfirmationsPanel';
 import { PurchaseOrderDetailInfo } from './PurchaseOrderDetailInfo';
@@ -42,6 +42,8 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
     mutationFn: () => sendPurchaseOrder(id),
     onSuccess: invalidatePo,
   });
+
+  const lotBoardRef = useRef<HTMLDivElement>(null);
 
   if (detailQuery.isLoading) {
     return (
@@ -108,56 +110,20 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
 
   return (
     <Stack gap="lg">
+      <PoControlHeader
+        order={order}
+        canEdit={canEdit}
+        canSend={canSend}
+        canConfirm={canConfirm}
+        sendPending={sendMutation.isPending}
+        onEdit={() => setEditOpen(true)}
+        onSend={() => sendMutation.mutate()}
+        onConfirm={() => setConfirmOpen(true)}
+        onClose={onClose}
+        onCreateDo={() => lotBoardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+      />
+
       <Paper withBorder p={0} className="purchase-order-detail-hero">
-        <Group justify="space-between" align="flex-start" className="purchase-order-detail-hero-inner">
-          <div className="purchase-order-detail-title">
-            <Group gap="xs" className="purchase-order-detail-title-row">
-              <Title order={3}>{order.po_no}</Title>
-              <StatusBadge status={order.status} />
-              <Badge size="sm" variant="light" className="purchase-order-nowrap-badge">
-                {order.po_type || 'STANDARD'}
-              </Badge>
-              <Badge size="sm" variant="light" color="blue" className="purchase-order-nowrap-badge">
-                Contract {order.contract_no}
-              </Badge>
-            </Group>
-            <Text c="dimmed" size="sm" mt={4}>
-              {order.supplier?.supplier_name ?? order.supplier_id}
-            </Text>
-          </div>
-          <Group gap="xs" wrap="nowrap" className="purchase-order-detail-actions">
-            <Button className="purchase-order-action-button" variant="subtle" leftSection={<IconX size={16} />} onClick={onClose}>
-              Close
-            </Button>
-            <Button
-              className="purchase-order-action-button"
-              variant="light"
-              leftSection={<IconPencil size={16} />}
-              disabled={!canEdit}
-              onClick={() => setEditOpen(true)}
-            >
-              Edit
-            </Button>
-            <Button
-              className="purchase-order-action-button"
-              leftSection={<IconSend size={16} />}
-              loading={sendMutation.isPending}
-              disabled={!canSend}
-              onClick={() => sendMutation.mutate()}
-            >
-              Send PO
-            </Button>
-            <Button
-              className="purchase-order-action-button"
-              color="teal"
-              leftSection={<IconCircleCheck size={16} />}
-              disabled={!canConfirm}
-              onClick={() => setConfirmOpen(true)}
-            >
-              Confirm
-            </Button>
-          </Group>
-        </Group>
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="sm" className="purchase-order-detail-signal-grid">
           <PoHeroFact label="Supplier" value={order.supplier?.supplier_name ?? order.supplier_id} />
           <PoHeroFact label="Lines" value={String(lines.length)} />
@@ -182,20 +148,22 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
 
       <PurchaseOrderConfirmationsPanel purchaseOrderId={id} />
 
-      {planningQuery.isLoading ? (
-        <Paper withBorder p="lg">
-          <Group justify="center">
-            <Loader size="sm" />
-            <Text c="dimmed">Loading LOT planning...</Text>
-          </Group>
-        </Paper>
-      ) : planningQuery.isError || !planningQuery.data ? (
-        <Alert color="red" icon={<IconAlertTriangle size={18} />}>
-          {getApiErrorMessage(planningQuery.error)}
-        </Alert>
-      ) : (
-        <LotPlanningBoard planning={planningQuery.data} canManage={canManage} />
-      )}
+      <div ref={lotBoardRef}>
+        {planningQuery.isLoading ? (
+          <Paper withBorder p="lg">
+            <Group justify="center">
+              <Loader size="sm" />
+              <Text c="dimmed">Loading LOT planning...</Text>
+            </Group>
+          </Paper>
+        ) : planningQuery.isError || !planningQuery.data ? (
+          <Alert color="red" icon={<IconAlertTriangle size={18} />}>
+            {getApiErrorMessage(planningQuery.error)}
+          </Alert>
+        ) : (
+          <LotPlanningBoard planning={planningQuery.data} canManage={canManage} />
+        )}
+      </div>
 
       <SupplierConfirmationModal
         order={order}
