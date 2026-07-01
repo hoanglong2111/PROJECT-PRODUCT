@@ -1539,3 +1539,26 @@
   flex-wrap: wrap;
   justify-content: flex-end;
 }
+
+/* PO execution detail — summary strip cards */
+.purchase-order-summary-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--kbfe-space-sm) var(--kbfe-space-md);
+  border: 1px solid var(--kbfe-border-primary);
+  border-radius: var(--mantine-radius-md);
+  background: var(--kbfe-surface-elevated);
+  box-shadow: var(--kbfe-shadow-sm);
+}
+
+.purchase-order-summary-fulfillment {
+  flex-wrap: wrap;
+  row-gap: 6px;
+}
+
+.purchase-order-summary-stat {
+  display: flex;
+  flex-direction: column;
+  min-width: 44px;
+}
