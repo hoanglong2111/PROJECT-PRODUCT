@@ -1,4 +1,5 @@
 import type { DomesticTransportOrderStatusV1 } from '@shared/api/domesticTransportOrders';
+import { formatMoney } from '@shared/utils/money';
 
 export type FormState = {
   actualDeliveryAt: string;
@@ -79,6 +80,12 @@ export function formatNumber(value: unknown) {
   const number = Number(value);
   if (!Number.isFinite(number)) return '-';
   return number.toLocaleString();
+}
+
+export function formatDtoMoney(amount: unknown, currencyCode: string | null | undefined) {
+  const number = Number(amount);
+  if (!Number.isFinite(number)) return '-';
+  return formatMoney(number, currencyCode || 'VND');
 }
 
 export function formatContainers(value: string[] | string | null | undefined) {

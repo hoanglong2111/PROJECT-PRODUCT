@@ -24,7 +24,7 @@ import { InfoField } from '@shared/components/InfoField';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { useI18n } from '@shared/i18n';
 
-import { formatDateTime, formatNumber, type FormState } from '../model/domesticTransportOrderModel';
+import { formatDateTime, formatDtoMoney, formatNumber, type FormState } from '../model/domesticTransportOrderModel';
 
 export function DomesticTransportOrderDetail({
   actionPending,
@@ -250,7 +250,7 @@ export function DomesticTransportOrderDetail({
             </Paper>
             <InfoField
               label={t('domesticTransportOrders.quoteAmount')}
-              value={order.quote_amount != null ? `${formatNumber(order.quote_amount)} ${order.quote_currency ?? ''}`.trim() : '-'}
+              value={order.quote_amount != null ? formatDtoMoney(order.quote_amount, order.quote_currency) : '-'}
             />
           </SimpleGrid>
         </Tabs.Panel>

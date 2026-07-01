@@ -26,6 +26,7 @@ export type ListParams = {
   page?: number;
   limit?: number;
   q?: string;
+  is_active?: boolean;
 };
 
 export type ItemCategory = 'NVL' | 'BTP' | 'TP' | 'CCDC' | 'DONG_GOI';

@@ -19,6 +19,7 @@ export type ShipmentStatusV1 =
   | 'CANCELLED';
 
 export type ShipmentModeV1 = 'SEA' | 'AIR' | 'ROAD' | 'RAIL' | 'MULTIMODAL' | 'TRUCKING' | 'OTHER';
+export type ShipmentLoadTypeV1 = 'FCL' | 'LCL' | 'FTL' | 'LTL';
 export type ShipmentCustomsChannelV1 = 'GREEN' | 'YELLOW' | 'RED';
 
 export type ShipmentMilestoneCodeV1 =
@@ -151,6 +152,7 @@ export type ShipmentV1 = {
   forwarder_id: string | null;
   carrier: string | null;
   mode: ShipmentModeV1;
+  load_type: ShipmentLoadTypeV1 | null;
   vessel_flight: string | null;
   voyage_no: string | null;
   bl_awb_no: string | null;
@@ -205,6 +207,7 @@ export type CreateShipmentFromDeliveryOrderPayload = {
   forwarder_id?: string | null;
   carrier?: string | null;
   mode?: ShipmentModeV1;
+  load_type?: ShipmentLoadTypeV1 | null;
   vessel_flight?: string | null;
   voyage_no?: string | null;
   bl_awb_no?: string | null;
@@ -229,6 +232,7 @@ export type UpdateShipmentPayload = Partial<
     | 'etd'
     | 'forwarder_id'
     | 'gross_weight'
+    | 'load_type'
     | 'mode'
     | 'net_weight'
     | 'notes'

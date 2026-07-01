@@ -42,6 +42,7 @@ export type Forwarder = {
   contact_email: string | null;
   contact_phone: string | null;
   is_primary: boolean;
+  is_active?: boolean;
   note: string | null;
   create_at?: string;
   update_at?: string;
@@ -58,6 +59,7 @@ export type ForwarderPayload = {
   contact_email?: string | null;
   contact_phone?: string | null;
   is_primary?: boolean;
+  is_active?: boolean;
   note?: string | null;
 };
 
@@ -70,6 +72,7 @@ export type Carrier = {
   service_route_note: string | null;
   contact_booking: string | null;
   contact_email: string | null;
+  is_active?: boolean;
   note: string | null;
   create_at?: string;
   update_at?: string;
@@ -85,6 +88,7 @@ export type CarrierPayload = {
   service_route_note?: string | null;
   contact_booking?: string | null;
   contact_email?: string | null;
+  is_active?: boolean;
   note?: string | null;
 };
 
@@ -109,6 +113,7 @@ export function normalizeForwarder(forwarder: Forwarder): Forwarder {
     contact_email: forwarder.contact_email ?? null,
     contact_phone: forwarder.contact_phone ?? null,
     is_primary: forwarder.is_primary === true,
+    is_active: forwarder.is_active !== false,
     note: forwarder.note ?? null,
   };
 }
@@ -120,6 +125,7 @@ export function normalizeCarrier(carrier: Carrier): Carrier {
     service_route_note: carrier.service_route_note ?? null,
     contact_booking: carrier.contact_booking ?? null,
     contact_email: carrier.contact_email ?? null,
+    is_active: carrier.is_active !== false,
     note: carrier.note ?? null,
   };
 }

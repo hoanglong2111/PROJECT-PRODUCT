@@ -87,6 +87,7 @@ import {
   type ShipmentCostV1,
   type ShipmentDocumentStatusV1,
   type ShipmentDocumentV1,
+  type ShipmentLoadTypeV1,
   type ShipmentMilestoneCodeV1,
   type ShipmentMilestoneV1,
   type ShipmentModeV1,
@@ -428,6 +429,7 @@ export type CreateShipmentPayload = {
   doNumber: string;
   poNumber?: string;
   shippingMode: ShipmentModeV1;
+  loadType?: ShipmentLoadTypeV1 | null;
   carrierName?: string | null;
   vesselVoyage?: string | null;
   voyageNo?: string | null;
@@ -1135,6 +1137,15 @@ function normalizeShipmentMode(mode: ShipmentModeV1 | string | null | undefined)
   return 'SEA';
 }
 
+function inferLoadTypeFromMode(mode: ShipmentModeV1 | string | null | undefined): ShipmentLoadTypeV1 | null {
+  const normalized = String(mode ?? '').toUpperCase();
+  if (normalized.includes('FCL')) return 'FCL';
+  if (normalized.includes('LCL')) return 'LCL';
+  if (normalized.includes('FTL')) return 'FTL';
+  if (normalized.includes('LTL')) return 'LTL';
+  return null;
+}
+
 function mapV1ShipmentMilestone(milestone: ShipmentMilestoneV1): ShipmentMilestone {
   return {
     actual_date: milestone.actual_at ?? milestone.actual_date ?? milestone.done_at ?? null,
@@ -1175,7 +1186,11 @@ function mapV1ShipmentCost(cost: ShipmentCostV1): ShipmentCost {
   };
 }
 
-function mapV1Shipment(shipment: ShipmentV1): ShipmentRecord {
+type ShipmentRecordWithQuotation = ShipmentRecord & {
+  final_quotation?: QuotationV1 | null;
+};
+
+function mapV1Shipment(shipment: ShipmentV1): ShipmentRecordWithQuotation {
   const deliveryOrder = shipment.delivery_order;
   const purchaseOrder = deliveryOrder?.purchase_order;
   const vesselParts = [shipment.vessel_flight, shipment.voyage_no].filter(Boolean);
@@ -1196,6 +1211,7 @@ function mapV1Shipment(shipment: ShipmentV1): ShipmentRecord {
     do_number: deliveryOrder ? deliveryOrderNo(deliveryOrder) : shipment.delivery_order_id,
     documents: (shipment.documents ?? []).map(mapV1ShipmentDocument),
     costs: (shipment.costs ?? []).map(mapV1ShipmentCost),
+    final_quotation: shipment.final_quotation ?? null,
     etd: dateOnly(shipment.etd),
     eta: dateOnly(shipment.eta),
     atd: dateOnly(shipment.atd),
@@ -1208,6 +1224,7 @@ function mapV1Shipment(shipment: ShipmentV1): ShipmentRecord {
     po_tasks: [],
     shipment_number: shipment.shipment_no,
     shipping_mode: normalizeShipmentMode(shipment.mode),
+    load_type: shipment.load_type ?? inferLoadTypeFromMode(shipment.mode),
     status: shipment.status as ShipmentStatus,
     vessel_voyage: vesselParts.join(' / '),
   };
@@ -1218,6 +1235,7 @@ function buildUiShipment(payload: {
   doNumber: string;
   poNumber: string;
   shippingMode: ShipmentModeV1;
+  loadType?: ShipmentLoadTypeV1 | null;
   carrierName?: string | null;
   vesselVoyage?: string | null;
   originPort?: string | null;
@@ -1232,6 +1250,7 @@ function buildUiShipment(payload: {
     po_number: payload.poNumber,
     status: 'BOOKED',
     shipping_mode: payload.shippingMode,
+    load_type: payload.loadType ?? null,
     carrier_name: payload.carrierName || '',
     vessel_voyage: payload.vesselVoyage || '',
     origin_port: payload.originPort || '',
@@ -1378,6 +1397,7 @@ export async function createShipment(payload: CreateShipmentPayload) {
     delivery_order_id: deliveryOrderId,
     eta: payload.eta ?? null,
     etd: payload.etd ?? null,
+    load_type: payload.loadType ?? null,
     mode: payload.shippingMode,
     notes: payload.notes ?? null,
     pod: payload.destPort ?? null,
@@ -1398,6 +1418,7 @@ export async function updateShipment(shipmentNumberOrId: string, payload: Partia
     customs_channel: payload.customs?.stream,
     eta: payload.eta || null,
     etd: payload.etd || null,
+    load_type: payload.load_type,
     mode: payload.shipping_mode,
     pod: payload.dest_port,
     pol: payload.origin_port,
