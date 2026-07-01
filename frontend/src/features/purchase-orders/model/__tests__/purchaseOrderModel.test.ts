@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { PurchaseOrderLineV1, PurchaseOrderV1 } from '@shared/api/purchaseOrders';
 
 import { mapStatusFilterToApi } from '../poStageConfig';
-import { deriveContractNo, getPoLineReceiptState, resolvePoStage } from '../purchaseOrderModel';
+import { deriveContractNo, getPoFulfillment, getPoLineReceiptState, resolvePoStage } from '../purchaseOrderModel';
 
 describe('resolvePoStage', () => {
   it('keeps cancelled purchase orders in the cancelled stage first', () => {
@@ -128,6 +128,35 @@ describe('getPoLineReceiptState', () => {
   });
   it('returns full (no negative shortfall) when received exceeds shipped', () => {
     expect(getPoLineReceiptState(poLine({ qty_shipped: 100, qty_received: 120 }))).toEqual({ state: 'full', shortfall: 0 });
+  });
+});
+
+describe('getPoFulfillment', () => {
+  it('returns all zeros for no lines', () => {
+    expect(getPoFulfillment([])).toEqual({
+      ordered: 0, confirmed: 0, lotted: 0, shipped: 0, received: 0, lottedLines: 0, totalLines: 0,
+    });
+  });
+
+  it('sums quantities across lines and counts fully-lotted lines', () => {
+    const lines = [
+      poLine({ qty_ordered: 100, qty_confirmed: 100, qty_lotted: 100, qty_shipped: 0, qty_received: 0 }),
+      poLine({ qty_ordered: 240, qty_confirmed: 240, qty_lotted: 240, qty_shipped: 0, qty_received: 0 }),
+    ];
+    expect(getPoFulfillment(lines)).toEqual({
+      ordered: 340, confirmed: 340, lotted: 340, shipped: 0, received: 0, lottedLines: 2, totalLines: 2,
+    });
+  });
+
+  it('does not count a partially-lotted line as fully lotted', () => {
+    const lines = [
+      poLine({ qty_ordered: 100, qty_confirmed: 100, qty_lotted: 60 }),
+      poLine({ qty_ordered: 50, qty_confirmed: 50, qty_lotted: 50 }),
+    ];
+    const result = getPoFulfillment(lines);
+    expect(result.lottedLines).toBe(1);
+    expect(result.totalLines).toBe(2);
+    expect(result.lotted).toBe(110);
   });
 });
 
