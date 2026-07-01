@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import type { ChargeCode } from '@shared/api/chargeCodes';
 import type { Uom } from '@shared/api/uoms';
 import { useI18n } from '@shared/i18n';
+import { formatMoney } from '@shared/utils/money';
 
 export type ChargeLineState = {
   chargeCode: string | null;
@@ -74,9 +75,7 @@ export function QuotationFeeTable({
       {rows.map((row) => {
         const total = Number(row.state.quantity) * Number(row.state.unitPrice);
         const showTotal = row.enabled && Number.isFinite(total) && Number(row.state.unitPrice) > 0;
-        const formattedTotal = showTotal
-          ? `${new Intl.NumberFormat('en-US').format(Math.round(total))}${currency ? ` ${currency}` : ''}`
-          : '-';
+        const formattedTotal = showTotal ? formatMoney(total, currency) : '-';
 
         return (
           <div className="rfq-fee-row" data-disabled={showToggle && !row.enabled ? 'true' : undefined} key={row.key}>

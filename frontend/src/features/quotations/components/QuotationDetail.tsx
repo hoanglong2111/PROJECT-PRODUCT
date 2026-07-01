@@ -19,15 +19,14 @@ import { BackActionButton } from '@shared/components/BackActionButton';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { useI18n } from '@shared/i18n';
 import { formatDate, formatDateTime } from '@shared/utils/date';
+import { formatMoney, roundToMinorUnits } from '@shared/utils/money';
 
 import { quotationDisplayTotal } from '../model/quotationModel';
 
-function formatAmount(amount: number): string {
-  return new Intl.NumberFormat('en-US').format(Math.round(amount));
-}
-
-function formatMoney(amount: number, currency: string | null | undefined): string {
-  return `${formatAmount(amount)} ${currency ?? ''}`.trim();
+function formatAmount(amount: number, currency: string | null | undefined): string {
+  return new Intl.NumberFormat(undefined, {
+    maximumFractionDigits: 6,
+  }).format(roundToMinorUnits(amount, currency));
 }
 
 function formatChargeDescription(value?: string | null): string {
@@ -217,17 +216,17 @@ export function QuotationDetail({ quotation, onBack, onRevise, onInspectVersion 
                           ) : null}
                         </Table.Td>
                         <Table.Td ta="right" className="tabular-nums">
-                          {Number.isFinite(quantity) ? formatAmount(quantity) : '-'}
+                          {Number.isFinite(quantity) ? new Intl.NumberFormat().format(quantity) : '-'}
                         </Table.Td>
                         <Table.Td>{line.unit ?? '—'}</Table.Td>
                         <Table.Td ta="right" className="tabular-nums">
-                          {Number.isFinite(unitPrice) ? formatAmount(unitPrice) : '-'}
+                          {Number.isFinite(unitPrice) ? formatAmount(unitPrice, quotation.currency_code) : '-'}
                         </Table.Td>
                         <Table.Td ta="right" className="tabular-nums">
-                          {Number.isFinite(taxAmount) ? formatAmount(taxAmount) : '-'}
+                          {Number.isFinite(taxAmount) ? formatAmount(taxAmount, quotation.currency_code) : '-'}
                         </Table.Td>
                         <Table.Td ta="right" className="tabular-nums">
-                          {Number.isFinite(lineTotal) ? formatAmount(lineTotal) : '-'}
+                          {Number.isFinite(lineTotal) ? formatAmount(lineTotal, quotation.currency_code) : '-'}
                         </Table.Td>
                       </Table.Tr>
                       );

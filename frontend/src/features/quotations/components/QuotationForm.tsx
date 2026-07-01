@@ -39,7 +39,8 @@ import { fetchUoms } from '@shared/api/uoms';
 import { useTradeMasterDataOptions } from '@shared/hooks/useTradeMasterDataOptions';
 import { useI18n } from '@shared/i18n';
 import { CHARGE_GROUPS } from '@shared/lib/chargeCategories';
-import { chargeCodeToType, getChargeFields, groupLabelKey, incotermToGroup } from '@shared/lib/quotationCharges';
+import { chargeCodeToChargeType, incotermChargeGroups, modeToChargeFlag } from '@shared/lib/quotationCharges';
+import { formatMoney } from '@shared/utils/money';
 
 import { quotationModeOptions, toShippingMode } from '../model/quotationModel';
 import {
@@ -59,6 +60,12 @@ type MandatoryLineState = ChargeLineState & { enabled: boolean };
 
 type OtherLine = ChargeLineState & { uid: string };
 
+type SuggestedChargeSection = {
+  id: string;
+  titleKey: (typeof CHARGE_GROUPS)[number]['labelKey'];
+  charges: ChargeCode[];
+};
+
 let uidCounter = 0;
 function nextUid() {
   return `other-${++uidCounter}`;
@@ -67,7 +74,7 @@ function nextUid() {
 const EMPTY_CHARGE_CODES: ChargeCode[] = [];
 
 export function QuotationForm({ onCancel, onCreated, sourceQuotation }: QuotationFormProps) {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const queryClient = useQueryClient();
   const { incotermOptions, currencyOptions } = useTradeMasterDataOptions();
   const isRevise = Boolean(sourceQuotation);
@@ -77,7 +84,7 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
   const [mode, setMode] = useState<string | null>(sourceQuotation?.mode ?? 'SEA_FCL');
   const [currency, setCurrency] = useState<string | null>(sourceQuotation?.currency_code ?? 'USD');
 
-  // mandatory: keyed by catalog field.code
+  // mandatory: keyed by real Charge Code master data charge_code
   const [mandatory, setMandatory] = useState<Record<string, MandatoryLineState>>({});
   // other/arising lines
   const [otherLines, setOtherLines] = useState<OtherLine[]>([]);
@@ -88,15 +95,35 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
   // guard: seed source lines only once after chargeCodes load
   const seededRef = useRef(false);
 
-  const group = incotermToGroup(incoterm);
   const shippingMode = toShippingMode(mode);
-  const sections = useMemo(() => getChargeFields(group, shippingMode), [group, shippingMode]);
 
   const chargeCodesQuery = useQuery({
     queryKey: queryKeys.chargeCodes({ page: 1, limit: 200, is_active: true }),
     queryFn: () => fetchChargeCodes({ page: 1, limit: 200, is_active: true }),
   });
   const chargeCodes = chargeCodesQuery.data?.data ?? EMPTY_CHARGE_CODES;
+
+  const includedGroups = useMemo(() => incotermChargeGroups(incoterm), [incoterm]);
+  const modeFlag = modeToChargeFlag(shippingMode);
+  const suggestedChargeCodes = useMemo(() => {
+    const included = new Set(includedGroups);
+    return chargeCodes.filter((chargeCode) => chargeCode.is_active && included.has(chargeCode.group) && chargeCode[modeFlag] === true);
+  }, [chargeCodes, includedGroups, modeFlag]);
+  const suggestedChargeCodeSet = useMemo(
+    () => new Set(suggestedChargeCodes.map((chargeCode) => chargeCode.charge_code)),
+    [suggestedChargeCodes],
+  );
+  const sections = useMemo<SuggestedChargeSection[]>(() => {
+    const included = new Set(includedGroups);
+    return CHARGE_GROUPS.filter((group) => included.has(group.value))
+      .map((group) => ({
+        id: group.value,
+        titleKey: group.labelKey,
+        charges: suggestedChargeCodes.filter((chargeCode) => chargeCode.group === group.value),
+      }))
+      // Drop in-scope groups that the transport-mode filter leaves empty so no "0/0" accordion renders.
+      .filter((section) => section.charges.length > 0);
+  }, [includedGroups, suggestedChargeCodes]);
 
   const uomsQuery = useQuery({
     queryKey: queryKeys.uoms({ limit: 200, is_active: true }),
@@ -119,49 +146,14 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
     return chargeCodes.find((c) => c.charge_code === code) ?? null;
   }
 
-  function defaultCodeForField(fieldCode: string, chargeType: QuotationChargeLinePayload['charge_type']) {
-    const fieldMap: Record<string, string> = {
-      ORIGIN_PER_BL: 'EXD',
-      ORIGIN_MAIN: 'PRE',
-      DO_FEE: 'DOF',
-      HANDLING: 'HDL',
-      THC: 'DTH',
-      CFS: 'DTL',
-      CIC: 'DPC',
-      EMC_EMF: 'LSS',
-      CLEANING: 'CLN',
-      CUSTOMS: 'IMC',
-      TRUCKING: 'LMD',
-      LOWERING: 'LOL',
-      UNLOADING: 'HDL',
-    };
-    if (fieldCode === 'CARRIER_FREIGHT') {
-      if (shippingMode === 'AIR') return 'AFR';
-      if (shippingMode === 'LCL') return 'OFL';
-      return 'OFR';
-    }
-    const typeMap: Partial<Record<QuotationChargeLinePayload['charge_type'], string>> = {
-      AIR_FREIGHT: 'AFR',
-      OCEAN_FREIGHT: shippingMode === 'LCL' ? 'OFL' : 'OFR',
-      ORIGIN_CHARGE: 'PRE',
-      CUSTOMS_FEE: 'IMC',
-      TRUCKING: 'LMD',
-      DO_FEE: 'DOF',
-      HANDLING: 'HDL',
-    };
-    const code = fieldMap[fieldCode] ?? typeMap[chargeType] ?? 'HDL';
-    return chargeCodes.some((c) => c.charge_code === code) ? code : (chargeCodes[0]?.charge_code ?? null);
-  }
-
   const getMandatoryLine = useCallback(
-    (fieldCode: string, chargeType: QuotationChargeLinePayload['charge_type']): MandatoryLineState => {
-      if (mandatory[fieldCode]) return mandatory[fieldCode];
-      const defaultCode = defaultCodeForField(fieldCode, chargeType);
-      const cc = findChargeCode(defaultCode);
-      return { enabled: false, ...seedLineState(cc), chargeCode: defaultCode };
+    (chargeCode: string): MandatoryLineState => {
+      if (mandatory[chargeCode]) return mandatory[chargeCode];
+      const cc = findChargeCode(chargeCode);
+      return { enabled: false, ...seedLineState(cc), chargeCode };
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [mandatory, chargeCodes, shippingMode],
+    [mandatory, chargeCodes],
   );
 
   // Seed revise mode lines once, after chargeCodes load from the query.
@@ -173,67 +165,34 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
     seededRef.current = true;
     let cancelled = false;
 
-    // Inline the field-to-code mapping so this effect is self-contained
-    const currentShippingMode = toShippingMode(mode);
-    const currentSections = getChargeFields(incotermToGroup(incoterm), currentShippingMode);
-    const allFields = currentSections.flatMap((s) => s.fields);
-
-    function getExpectedCode(fieldCode: string, chargeType: QuotationChargeLinePayload['charge_type']): string | null {
-      const fieldMap: Record<string, string> = {
-        ORIGIN_PER_BL: 'EXD', ORIGIN_MAIN: 'PRE', DO_FEE: 'DOF', HANDLING: 'HDL',
-        THC: 'DTH', CFS: 'DTL', CIC: 'DPC', EMC_EMF: 'LSS', CLEANING: 'CLN',
-        CUSTOMS: 'IMC', TRUCKING: 'LMD', LOWERING: 'LOL', UNLOADING: 'HDL',
-      };
-      if (fieldCode === 'CARRIER_FREIGHT') {
-        if (currentShippingMode === 'AIR') return 'AFR';
-        if (currentShippingMode === 'LCL') return 'OFL';
-        return 'OFR';
-      }
-      const typeMap: Partial<Record<QuotationChargeLinePayload['charge_type'], string>> = {
-        AIR_FREIGHT: 'AFR',
-        OCEAN_FREIGHT: currentShippingMode === 'LCL' ? 'OFL' : 'OFR',
-        ORIGIN_CHARGE: 'PRE', CUSTOMS_FEE: 'IMC', TRUCKING: 'LMD', DO_FEE: 'DOF', HANDLING: 'HDL',
-      };
-      const code = fieldMap[fieldCode] ?? typeMap[chargeType] ?? 'HDL';
-      return chargeCodes.some((c) => c.charge_code === code) ? code : (chargeCodes[0]?.charge_code ?? null);
-    }
-
     const sourceLines = sourceQuotation.charge_lines;
     const newMandatory: Record<string, MandatoryLineState> = {};
     const newOtherLines: OtherLine[] = [];
-    const takenFields = new Set<string>();
+    const takenSuggestedCodes = new Set<string>();
     let firstUnmatchedGroup = 'ANCILLARY_ACCESSORIAL';
 
     for (const srcLine of sourceLines) {
-      let matched = false;
-      for (const field of allFields) {
-        if (takenFields.has(field.code)) continue;
-        const expectedCode = getExpectedCode(field.code, field.charge_type);
-        if (expectedCode === srcLine.charge_code) {
-          takenFields.add(field.code);
-          const cc = chargeCodes.find((c) => c.charge_code === srcLine.charge_code) ?? null;
-          newMandatory[field.code] = {
-            enabled: true,
-            chargeCode: srcLine.charge_code ?? null,
-            quantity: String(srcLine.quantity ?? 1),
-            unit: srcLine.unit ?? cc?.default_uom ?? null,
-            unitPrice: String(srcLine.unit_price ?? 0),
-          };
-          matched = true;
-          break;
-        }
-      }
-      if (!matched) {
-        const cc = chargeCodes.find((c) => c.charge_code === srcLine.charge_code) ?? null;
+      const code = srcLine.charge_code ?? null;
+      const cc = chargeCodes.find((candidate) => candidate.charge_code === code) ?? null;
+      if (code && suggestedChargeCodeSet.has(code) && !takenSuggestedCodes.has(code)) {
+        takenSuggestedCodes.add(code);
+        newMandatory[code] = {
+          enabled: true,
+          chargeCode: code,
+          quantity: String(srcLine.quantity ?? 1),
+          unit: srcLine.unit ?? cc?.default_uom ?? null,
+          unitPrice: srcLine.unit_price == null ? '' : String(srcLine.unit_price),
+        };
+      } else {
         if (newOtherLines.length === 0 && cc?.group) {
           firstUnmatchedGroup = cc.group;
         }
         newOtherLines.push({
           uid: nextUid(),
-          chargeCode: srcLine.charge_code ?? null,
+          chargeCode: code,
           quantity: String(srcLine.quantity ?? 1),
           unit: srcLine.unit ?? cc?.default_uom ?? null,
-          unitPrice: String(srcLine.unit_price ?? 0),
+          unitPrice: srcLine.unit_price == null ? '' : String(srcLine.unit_price),
         });
       }
     }
@@ -252,30 +211,21 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
     };
     // sourceQuotation and incoterm/mode are stable for this component's lifetime — intentionally omitted
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chargeCodes, isRevise]);
+  }, [chargeCodes, isRevise, suggestedChargeCodeSet]);
 
-  function updateMandatory(fieldCode: string, patch: Partial<MandatoryLineState>) {
+  function updateMandatory(chargeCode: string, patch: Partial<MandatoryLineState>) {
     setMandatory((prev) => ({
       ...prev,
-      [fieldCode]: { ...getMandatoryLine(fieldCode, 'HANDLING'), ...prev[fieldCode], ...patch },
+      [chargeCode]: { ...getMandatoryLine(chargeCode), ...prev[chargeCode], ...patch },
     }));
   }
 
-  function toggleMandatory(fieldCode: string, chargeType: QuotationChargeLinePayload['charge_type'], enabled: boolean) {
-    const current = getMandatoryLine(fieldCode, chargeType);
-    if (enabled && !current.chargeCode) {
-      const defaultCode = defaultCodeForField(fieldCode, chargeType);
-      const cc = findChargeCode(defaultCode);
-      setMandatory((prev) => ({
-        ...prev,
-        [fieldCode]: { ...seedLineState(cc), chargeCode: defaultCode, enabled: true },
-      }));
-    } else {
-      setMandatory((prev) => ({
-        ...prev,
-        [fieldCode]: { ...current, enabled },
-      }));
-    }
+  function toggleMandatory(chargeCode: string, enabled: boolean) {
+    const current = getMandatoryLine(chargeCode);
+    setMandatory((prev) => ({
+      ...prev,
+      [chargeCode]: { ...current, enabled },
+    }));
   }
 
   function addOtherLine() {
@@ -315,10 +265,10 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
     };
 
     const mandatoryTotals = sections
-      .flatMap((s) => s.fields)
+      .flatMap((s) => s.charges)
       .reduce<{ subtotal: number; estimatedTax: number }>(
-        (running, field) => {
-          const line = getMandatoryLine(field.code, field.charge_type);
+        (running, chargeCode) => {
+          const line = getMandatoryLine(chargeCode.charge_code);
           if (!line.enabled) return running;
           return addLine(running, line);
         },
@@ -335,31 +285,30 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
   }, [sections, otherLines, getMandatoryLine, chargeCodes]);
   const subtotal = totals.subtotal;
   const feeProgress = useMemo(() => {
-    const fields = sections.flatMap((section) => section.fields);
+    const charges = sections.flatMap((section) => section.charges);
     return {
-      selected: fields.filter((field) => getMandatoryLine(field.code, field.charge_type).enabled).length,
-      total: fields.length,
+      selected: charges.filter((chargeCode) => getMandatoryLine(chargeCode.charge_code).enabled).length,
+      total: charges.length,
     };
   }, [sections, getMandatoryLine]);
 
   const canSubmit = Boolean(incoterm && mode && currency && subtotal > 0);
-  const formatCurrencyAmount = (amount: number) =>
-    `${new Intl.NumberFormat('en-US').format(Math.round(amount))} ${currency ?? ''}`.trim();
+  const formatCurrencyAmount = (amount: number) => formatMoney(amount, currency);
 
   function buildChargeLines(): QuotationChargeLinePayload[] {
     const mandatoryLines: QuotationChargeLinePayload[] = sections
-      .flatMap((s) => s.fields)
-      .flatMap((field) => {
-        const line = getMandatoryLine(field.code, field.charge_type);
+      .flatMap((s) => s.charges)
+      .flatMap((chargeCode) => {
+        const line = getMandatoryLine(chargeCode.charge_code);
         if (!line.enabled || !(Number(line.unitPrice) > 0)) return [];
         const cc = findChargeCode(line.chargeCode);
         const entry: QuotationChargeLinePayload = {
           line_no: 0,
-          charge_type: field.charge_type,
+          charge_type: chargeCodeToChargeType(cc ?? chargeCode, shippingMode),
           charge_code: line.chargeCode ?? cc?.charge_code,
-          description: cc?.charge_name_en ?? t(field.labelKey),
+          description: cc?.charge_name_en ?? chargeCode.charge_name_en,
           quantity: Number(line.quantity) || 1,
-          unit: line.unit ?? cc?.default_uom ?? field.unit,
+          unit: line.unit ?? cc?.default_uom ?? chargeCode.default_uom,
           unit_price: Number(line.unitPrice),
           tax_rate: cc?.taxable ? 10 : 0,
           note: cc ? `Rev/Cost: ${cc.rev_cost}` : null,
@@ -373,7 +322,7 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
         const cc = findChargeCode(line.chargeCode);
         const entry: QuotationChargeLinePayload = {
           line_no: 0,
-          charge_type: chargeCodeToType(line.chargeCode ?? ''),
+          charge_type: cc ? chargeCodeToChargeType(cc, shippingMode) : 'OTHER',
           charge_code: line.chargeCode,
           description: cc?.charge_name_en ?? line.chargeCode ?? '',
           quantity: Number(line.quantity) || 1,
@@ -419,6 +368,15 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
   const formTitle = isRevise ? t('quotations.reviseTitle') : t('quotations.formTitle');
   const formSubtitle = isRevise ? t('quotations.reviseSubtitle') : t('quotations.formSubtitle');
   const submitLabel = isRevise ? t('quotations.actionResubmit') : t('quotations.create');
+  const includedGroupNames = CHARGE_GROUPS.filter((group) => includedGroups.includes(group.value))
+    .map((group) => t(group.labelKey))
+    .join(', ');
+  const scopeSummary = t('quotations.incotermScopeHint', {
+    count: includedGroups.length,
+    groups: includedGroupNames || '-',
+  });
+  const chargeName = (chargeCode: ChargeCode) =>
+    language === 'vi' && chargeCode.charge_name_vn ? chargeCode.charge_name_vn : chargeCode.charge_name_en;
 
   return (
     <Stack gap="md" className="rfq-form">
@@ -454,7 +412,7 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
                     {t('quotations.incotermsGroup')}
                   </Text>
                   <Text size="sm" fw={800}>
-                    {t(groupLabelKey(group))}
+                    {incoterm ?? '-'}
                   </Text>
                 </div>
               </div>
@@ -490,7 +448,7 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
               <div className="rfq-section-head">
                 <Text fw={800}>{t('quotations.setupSection')}</Text>
                 <Text size="xs" c="dimmed">
-                  {t('quotations.incotermsGroup')}: {t(groupLabelKey(group))}
+                  {scopeSummary}
                 </Text>
               </div>
 
@@ -536,12 +494,12 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
 
               <div className="rfq-charge-board">
                 {sections.map((section, index) => {
-                  const rows: FeeRow[] = section.fields.map((field) => {
-                    const line = getMandatoryLine(field.code, field.charge_type);
+                  const rows: FeeRow[] = section.charges.map((chargeCode) => {
+                    const line = getMandatoryLine(chargeCode.charge_code);
                     return {
-                      key: field.code,
-                      label: t(field.labelKey),
-                      subLabel: line.chargeCode,
+                      key: chargeCode.charge_code,
+                      label: chargeName(chargeCode),
+                      subLabel: `${chargeCode.charge_code} / ${chargeCode.default_uom}`,
                       state: line,
                       enabled: line.enabled,
                     };
@@ -592,10 +550,7 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
                             chargeCodeOptions={chargeCodeOptions}
                             uoms={uoms}
                             currency={currency}
-                            onToggle={(key, enabled) => {
-                              const field = section.fields.find((candidate) => candidate.code === key);
-                              if (field) toggleMandatory(key, field.charge_type, enabled);
-                            }}
+                            onToggle={toggleMandatory}
                             onChange={updateMandatory}
                           />
                         </div>
