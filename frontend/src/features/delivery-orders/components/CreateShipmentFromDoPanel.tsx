@@ -7,10 +7,12 @@ import { useNavigate } from 'react-router-dom';
 import { DateField } from '@shared/components/DateField';
 import type { DeliveryOrder } from '@shared/api/logistics';
 import { createShipment } from '@shared/api/logistics';
-import type { ShipmentModeV1 } from '@shared/api/shipments';
+import type { ShipmentLoadTypeV1, ShipmentModeV1 } from '@shared/api/shipments';
 import { queryKeys } from '@shared/api/queryKeys';
+import { useTradeMasterDataOptions } from '@shared/hooks/useTradeMasterDataOptions';
 import { useI18n } from '@shared/i18n';
 import { getApiErrorMessage } from '@shared/lib/errors';
+import { loadTypeForMode } from '@features/shipments/model/shipmentModel';
 
 function inferMode(shippingMethod: DeliveryOrder['logistics_shipping']['shipping_method']): ShipmentModeV1 {
   if (shippingMethod === 'AIR') return 'AIR';
@@ -30,6 +32,7 @@ export function CreateShipmentFromDoPanel({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { t } = useI18n();
+  const { transportModes } = useTradeMasterDataOptions();
 
   const shipping = deliveryOrder.logistics_shipping;
   const doNumber = deliveryOrder.order_info.order_number;
@@ -37,6 +40,7 @@ export function CreateShipmentFromDoPanel({
 
   const [shipmentNumber, setShipmentNumber] = useState('');
   const [mode, setMode] = useState<ShipmentModeV1>(inferMode(shipping.shipping_method));
+  const [loadType, setLoadType] = useState<ShipmentLoadTypeV1 | null>(loadTypeForMode(inferMode(shipping.shipping_method))[0]?.value ?? null);
   const [carrier, setCarrier] = useState('');
   const [vesselVoyage, setVesselVoyage] = useState('');
   const [blAwbNo, setBlAwbNo] = useState('');
@@ -44,22 +48,30 @@ export function CreateShipmentFromDoPanel({
   const [destPort, setDestPort] = useState(shipping.port_of_destination ?? '');
   const [etd, setEtd] = useState(shipping.etd_planned ?? '');
   const [eta, setEta] = useState(shipping.eta_planned ?? '');
-  const shipmentModeOptions: Array<{ label: string; value: ShipmentModeV1 }> = [
-    { label: t('shipments.modeSea'), value: 'SEA' },
-    { label: t('shipments.modeAir'), value: 'AIR' },
-    { label: t('shipments.modeRoad'), value: 'ROAD' },
-    { label: t('shipments.modeRail'), value: 'RAIL' },
-    { label: t('shipments.modeMultimodal'), value: 'MULTIMODAL' },
-    { label: t('shipments.modeTrucking'), value: 'TRUCKING' },
-    { label: t('shipments.modeOther'), value: 'OTHER' },
-  ];
+  const validShipmentModes = new Set(['SEA', 'AIR', 'ROAD', 'RAIL', 'MULTIMODAL', 'TRUCKING', 'OTHER']);
+  const currentMode = inferMode(shipping.shipping_method);
+  const shipmentModeOptions = transportModes
+    .filter((transportMode) => validShipmentModes.has(transportMode.mode_code))
+    .map((transportMode) => ({
+      label: `${transportMode.mode_code} - ${transportMode.mode_name}`,
+      value: transportMode.mode_code as ShipmentModeV1,
+    }));
+  if (!shipmentModeOptions.some((option) => option.value === currentMode)) {
+    shipmentModeOptions.unshift({ label: t(`shipments.mode${currentMode.slice(0, 1)}${currentMode.slice(1).toLowerCase()}`), value: currentMode });
+  }
+  const loadTypeOptions = loadTypeForMode(mode).map((option) => ({
+    label: t(option.labelKey),
+    value: option.value,
+  }));
 
   // Re-seed the form from the DO every time the panel opens so prefilled
   // route/date values follow the currently selected delivery order.
   useEffect(() => {
     if (!opened) return;
     setShipmentNumber('');
-    setMode(inferMode(shipping.shipping_method));
+    const inferredMode = inferMode(shipping.shipping_method);
+    setMode(inferredMode);
+    setLoadType(loadTypeForMode(inferredMode)[0]?.value ?? null);
     setCarrier('');
     setVesselVoyage('');
     setBlAwbNo('');
@@ -77,6 +89,7 @@ export function CreateShipmentFromDoPanel({
         poNumber: poNumber || undefined,
         shipmentNumber: shipmentNumber.trim() || undefined,
         shippingMode: mode,
+        loadType,
         carrierName: carrier.trim() || undefined,
         vesselVoyage: vesselVoyage.trim() || undefined,
         blAwbNo: blAwbNo.trim() || undefined,
@@ -114,8 +127,25 @@ export function CreateShipmentFromDoPanel({
             label={t('shipments.shipmentMode')}
             data={shipmentModeOptions}
             value={mode}
-            onChange={(value) => setMode((value as ShipmentModeV1 | null) ?? 'SEA')}
+            onChange={(value) => {
+              const nextMode = (value as ShipmentModeV1 | null) ?? currentMode;
+              const nextLoadTypes = loadTypeForMode(nextMode);
+              setMode(nextMode);
+              setLoadType((current) => (
+                current && nextLoadTypes.some((option) => option.value === current)
+                  ? current
+                  : nextLoadTypes[0]?.value ?? null
+              ));
+            }}
           />
+          {loadTypeOptions.length > 0 ? (
+            <Select
+              label={t('shipments.loadType')}
+              data={loadTypeOptions}
+              value={loadType}
+              onChange={(value) => setLoadType(value as ShipmentLoadTypeV1 | null)}
+            />
+          ) : null}
           <TextInput label={t('quotations.carrier')} placeholder={t('shipments.carrierPlaceholder')} value={carrier} onChange={(event) => setCarrier(event.currentTarget.value)} />
           <TextInput label={t('shipments.vesselVoyage')} value={vesselVoyage} onChange={(event) => setVesselVoyage(event.currentTarget.value)} />
           <TextInput label={t('shipments.blAwb')} value={blAwbNo} onChange={(event) => setBlAwbNo(event.currentTarget.value)} />

@@ -3,10 +3,12 @@ import type { ShipmentModeV1 } from '@shared/api/shipments';
 import type { DeliveryOrderV1 } from '@shared/api/deliveryOrders';
 import type { CustomsDeclarationChannelV1, CustomsDeclarationLineV1, CustomsDeclarationStatusV1 } from '@shared/api/customsDeclarations';
 import type { MessageKey } from '@shared/i18n';
+import { convertToBase, sumMoney } from '@shared/utils/money';
 
 export type ShipmentTab = 'all' | 'in_transit' | 'customs' | 'delivered';
 export type ShipmentWorkbench = 'list' | 'create' | 'detail';
 export type ShipmentChannelFilter = 'all' | 'GREEN' | 'YELLOW' | 'RED';
+export type ShipmentLoadType = 'FCL' | 'LCL' | 'FTL' | 'LTL';
 
 export const inTransitStatuses = new Set<ShipmentRecord['status']>([
   'BOOKED',
@@ -29,7 +31,7 @@ export const customsStatuses = new Set<ShipmentRecord['status']>([
 
 /** Total landed cost normalized to the base currency (VND) via each line's exchange_rate. */
 export function landedCostTotal(costs: ShipmentCost[]): number {
-  return costs.reduce((sum, cost) => sum + cost.amount * cost.exchange_rate, 0);
+  return sumMoney(costs.map((cost) => convertToBase(cost.amount, cost.exchange_rate)), 'VND');
 }
 
 export const shipmentModeOptions: Array<{ labelKey: MessageKey; value: ShipmentModeV1 }> = [
@@ -43,9 +45,27 @@ export const shipmentModeOptions: Array<{ labelKey: MessageKey; value: ShipmentM
 ];
 
 /** Standard container type codes selectable when declaring a shipment container. */
-export const CONTAINER_TYPE_OPTIONS = ['20GP', '40GP', '40HC', '45HC', '20RF', '40RF', 'LCL'].map(
+export const CONTAINER_TYPE_OPTIONS = ['20GP', '40GP', '40HC', '45HC', '20RF', '40RF'].map(
   (value) => ({ label: value, value }),
 );
+
+export const LOAD_TYPE_OPTIONS: Array<{ labelKey: MessageKey; value: ShipmentLoadType }> = [
+  { labelKey: 'shipments.loadTypeFcl', value: 'FCL' },
+  { labelKey: 'shipments.loadTypeLcl', value: 'LCL' },
+  { labelKey: 'shipments.loadTypeFtl', value: 'FTL' },
+  { labelKey: 'shipments.loadTypeLtl', value: 'LTL' },
+];
+
+export function loadTypeForMode(mode: ShipmentModeV1 | string | null | undefined) {
+  const normalized = String(mode ?? '').toUpperCase();
+  if (normalized === 'SEA' || normalized.startsWith('SEA_')) {
+    return LOAD_TYPE_OPTIONS.filter((option) => option.value === 'FCL' || option.value === 'LCL');
+  }
+  if (normalized === 'ROAD' || normalized === 'TRUCKING') {
+    return LOAD_TYPE_OPTIONS.filter((option) => option.value === 'FTL' || option.value === 'LTL');
+  }
+  return [];
+}
 
 /**
  * DO statuses from which a shipment can no longer be created. Mirrors the backend gate in

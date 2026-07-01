@@ -204,6 +204,11 @@ function ShipmentOverviewCard({ shipment, t }: { shipment: ShipmentRecord; t: (k
             <Badge color="blue" variant="light">
               {shipment.shipping_mode}
             </Badge>
+            {shipment.load_type ? (
+              <Badge color="cyan" variant="light">
+                {shipment.load_type}
+              </Badge>
+            ) : null}
             {hasChannel ? (
               <Badge color={channelColor(channel)} variant="filled">
                 {channelLabel}
@@ -249,7 +254,7 @@ function ShipmentOverviewCard({ shipment, t }: { shipment: ShipmentRecord; t: (k
                   <IconShip size={18} />
                 </div>
                 <Badge size="xs" color={hasChannel ? channelColor(channel) : 'gray'} variant="light">
-                  {shipment.shipping_mode}
+                  {[shipment.shipping_mode, shipment.load_type].filter(Boolean).join(' / ')}
                 </Badge>
               </div>
               <span className="shipment-route-dot" />
@@ -298,7 +303,7 @@ function ShipmentOverviewCard({ shipment, t }: { shipment: ShipmentRecord; t: (k
             icon={<IconFileInvoice size={18} />}
             label={t('shipments.blAwb')}
             value={shipment.bl_awb_no || '-'}
-            meta={`${shipment.shipping_mode} · ${t('shipments.port')}: ${shipment.dest_port || '-'}`}
+            meta={`${[shipment.shipping_mode, shipment.load_type].filter(Boolean).join(' / ')} · ${t('shipments.port')}: ${shipment.dest_port || '-'}`}
           />
         </div>
       </div>
