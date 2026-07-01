@@ -15,11 +15,12 @@ import { optionalString } from '../model/masterDataModel';
 type IncotermFormValues = {
   code: string;
   name: string;
+  nameVn: string;
   description: string;
   isActive: boolean;
 };
 
-const emptyValues: IncotermFormValues = { code: '', name: '', description: '', isActive: true };
+const emptyValues: IncotermFormValues = { code: '', name: '', nameVn: '', description: '', isActive: true };
 
 function hintedLabel(label: string, hint: string) {
   return (
@@ -50,6 +51,7 @@ export function IncotermModal({
         ? {
           code: editing.incoterm_code,
           name: editing.incoterm_name,
+          nameVn: editing.incoterm_name_vn,
           description: editing.description ?? '',
           isActive: editing.is_active,
         }
@@ -63,6 +65,7 @@ export function IncotermModal({
       const payload = {
         incoterm_code: form.values.code.trim().toUpperCase(),
         incoterm_name: form.values.name.trim(),
+        incoterm_name_vn: form.values.nameVn.trim(),
         description: optionalString(form.values.description),
         is_active: form.values.isActive,
       };
@@ -101,6 +104,7 @@ export function IncotermModal({
             {...form.getInputProps('code')}
           />
           <TextInput label={t('masterData.incotermName')} required {...form.getInputProps('name')} />
+          <TextInput label={t('masterData.incotermNameVn')} {...form.getInputProps('nameVn')} />
         </SimpleGrid>
         <Textarea label={t('masterData.description')} autosize minRows={3} {...form.getInputProps('description')} />
         <Switch label={t('masterData.active')} {...form.getInputProps('isActive', { type: 'checkbox' })} />

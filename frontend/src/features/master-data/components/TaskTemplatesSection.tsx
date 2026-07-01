@@ -14,7 +14,8 @@ import {
   TextInput,
   Tooltip,
 } from '@mantine/core';
-import { IconAlertCircle, IconPencil, IconPlus, IconRefresh, IconSearch, IconTrash } from '@tabler/icons-react';
+import { useDebouncedValue } from '@mantine/hooks';
+import { IconAlertCircle, IconPencil, IconPlus, IconSearch, IconTrash } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
@@ -33,8 +34,12 @@ import { getApiErrorMessage } from '@shared/lib/errors';
 import {
   getDepartmentLabel,
   getMilestoneLabel,
+  getStatusFilterOptions,
   optionalString,
+  selectValueToStatus,
+  statusToSelectValue,
 } from '../model/masterDataModel';
+import { ActiveBadge } from './ActiveBadge';
 
 type TaskTemplateGroup = {
   key: string;
@@ -81,33 +86,45 @@ function groupTaskTemplates(templates: TaskTemplate[]) {
 export function TaskTemplatesSection({
   canManage,
   departmentFilter,
+  hasActiveFilters,
   milestoneFilter,
   onAdd,
+  onClearFilters,
   onDelete,
   onDepartmentFilterChange,
   onEdit,
   onMilestoneFilterChange,
+  onStatusFilterChange,
+  statusFilter,
 }: {
   canManage: boolean;
   departmentFilter: string | null;
+  hasActiveFilters: boolean;
   milestoneFilter: string | null;
   onAdd: () => void;
+  onClearFilters: () => void;
   onDelete: (template: TaskTemplate) => void;
   onDepartmentFilterChange: (value: string | null) => void;
   onEdit: (template: TaskTemplate) => void;
   onMilestoneFilterChange: (value: string | null) => void;
+  onStatusFilterChange: (value: boolean | null) => void;
+  statusFilter: boolean | null;
 }) {
   const { t } = useI18n();
   const [search, setSearch] = useState('');
+  const [debouncedSearch] = useDebouncedValue(search, 250);
+  const hasSearch = search.trim().length > 0;
+  const showClearFilters = hasActiveFilters || hasSearch;
   const params = useMemo(
     () => ({
       page: 1,
       limit: 100,
-      q: optionalString(search),
+      q: optionalString(debouncedSearch),
       milestone_code: milestoneFilter ?? undefined,
       department: departmentFilter ?? undefined,
+      is_active: statusFilter ?? undefined,
     }),
-    [departmentFilter, milestoneFilter, search],
+    [debouncedSearch, departmentFilter, milestoneFilter, statusFilter],
   );
 
   const taskTemplatesQuery = useQuery({
@@ -115,11 +132,11 @@ export function TaskTemplatesSection({
     queryFn: () => fetchTaskTemplates(params),
   });
 
-  const templates = taskTemplatesQuery.data?.data ?? [];
+  const templates = useMemo(() => taskTemplatesQuery.data?.data ?? [], [taskTemplatesQuery.data?.data]);
   const groupedTemplates = useMemo(() => groupTaskTemplates(templates), [templates]);
   const milestoneOptions = useMemo(
     () => [
-      { label: t('masterData.allMilestones'), value: 'all' },
+      { label: t('common.all'), value: 'ALL' },
       ...Object.keys(MILESTONE_CODES).map((code) => ({
         label: getMilestoneLabel(code, t),
         value: code,
@@ -129,7 +146,7 @@ export function TaskTemplatesSection({
   );
   const departmentOptions = useMemo(
     () => [
-      { label: t('masterData.allDepartments'), value: 'all' },
+      { label: t('common.all'), value: 'ALL' },
       ...Object.keys(DEPARTMENTS).map((code) => ({
         label: getDepartmentLabel(code, t),
         value: code,
@@ -137,53 +154,65 @@ export function TaskTemplatesSection({
     ],
     [t],
   );
+  const handleClearFilters = () => {
+    setSearch('');
+    onClearFilters();
+  };
 
   return (
     <Stack gap="md">
-      <Group justify="space-between" align="end" gap="md" className="dl-filter-row">
-        <TextInput
-          className="dl-filter-search"
-          label={t('masterData.taskTemplatesTitle')}
-          placeholder={t('masterData.searchTaskTemplates')}
-          leftSection={<IconSearch size={16} />}
-          value={search}
-          onChange={(event) => setSearch(event.currentTarget.value)}
-          style={{ flex: 1 }}
-        />
-        <Select
-          label={t('masterData.milestoneCode')}
-          data={milestoneOptions}
-          value={milestoneFilter ?? 'all'}
-          onChange={(value) => onMilestoneFilterChange(value === 'all' ? null : value)}
-          w={260}
-        />
-        <Select
-          label={t('masterData.department')}
-          data={departmentOptions}
-          value={departmentFilter ?? 'all'}
-          onChange={(value) => onDepartmentFilterChange(value === 'all' ? null : value)}
-          w={240}
-        />
-        <Group gap="xs">
-          {taskTemplatesQuery.isFetching ? <Loader size="sm" /> : null}
-          {canManage ? (
-            <Button leftSection={<IconPlus size={16} />} onClick={onAdd}>
-              {t('masterData.addTaskTemplate')}
-            </Button>
-          ) : null}
-          <Tooltip label={t('masterData.refresh')}>
-            <ActionIcon
-              aria-label={t('masterData.refresh')}
-              variant="light"
-              onClick={() => {
-                void taskTemplatesQuery.refetch();
-              }}
-            >
-              <IconRefresh size={18} />
-            </ActionIcon>
-          </Tooltip>
+      <Paper withBorder p="md" className="dl-filter-panel">
+        <Group align="flex-end" gap="sm" wrap="wrap" className="dl-filter-row">
+          <TextInput
+            className="dl-filter-search"
+            label={t('masterData.taskTemplatesTitle')}
+            placeholder={t('masterData.searchTaskTemplates')}
+            leftSection={<IconSearch size={16} />}
+            value={search}
+            onChange={(event) => setSearch(event.currentTarget.value)}
+          />
+          <Select
+            className="md-filter-select"
+            label={t('common.status')}
+            data={getStatusFilterOptions(t)}
+            value={statusToSelectValue(statusFilter)}
+            onChange={(value) => onStatusFilterChange(selectValueToStatus(value))}
+            w={170}
+          />
+          <Select
+            className="md-filter-select"
+            label={t('masterData.milestoneCode')}
+            data={milestoneOptions}
+            value={milestoneFilter ?? 'ALL'}
+            onChange={(value) => onMilestoneFilterChange(value === 'ALL' ? null : value)}
+            w={240}
+          />
+          <Select
+            className="md-filter-select"
+            label={t('masterData.department')}
+            data={departmentOptions}
+            value={departmentFilter ?? 'ALL'}
+            onChange={(value) => onDepartmentFilterChange(value === 'ALL' ? null : value)}
+            w={220}
+          />
+          <Group gap="xs" wrap="nowrap" align="flex-end" ml="auto" className="md-filter-tail">
+            {taskTemplatesQuery.isFetching ? <Loader size="sm" /> : null}
+            <Text size="sm" c="dimmed" className="md-filter-count">
+              {t('common.shown', { count: templates.length })}
+            </Text>
+            {canManage ? (
+              <Button leftSection={<IconPlus size={16} />} onClick={onAdd}>
+                {t('masterData.addTaskTemplate')}
+              </Button>
+            ) : null}
+            {showClearFilters ? (
+              <Button variant="subtle" onClick={handleClearFilters}>
+                {t('masterData.clearFilters')}
+              </Button>
+            ) : null}
+          </Group>
         </Group>
-      </Group>
+      </Paper>
 
       {taskTemplatesQuery.isError ? (
         <Alert color="red" icon={<IconAlertCircle size={18} />}>
@@ -202,7 +231,11 @@ export function TaskTemplatesSection({
         </Paper>
       ) : groupedTemplates.length === 0 ? (
         <Paper withBorder p={0}>
-          <EmptyState title={t('masterData.noTaskTemplates')} description={t('masterData.noTaskTemplatesDescription')} />
+          <EmptyState
+            title={showClearFilters ? t('masterData.noFilteredResults') : t('masterData.noTaskTemplates')}
+            description={showClearFilters ? t('masterData.noFilteredResultsDescription') : t('masterData.noTaskTemplatesDescription')}
+            action={showClearFilters ? { label: t('masterData.clearFilters'), onClick: handleClearFilters } : undefined}
+          />
         </Paper>
       ) : (
         <Stack gap="md">
@@ -218,32 +251,29 @@ export function TaskTemplatesSection({
                 </Badge>
               </Group>
               <ScrollArea className="data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
-                <Table miw={1180} verticalSpacing="sm" highlightOnHover>
+                <Table stickyHeader verticalSpacing="sm" highlightOnHover style={{ tableLayout: 'fixed', width: '100%' }}>
                   <Table.Thead>
                     <Table.Tr>
                       <Table.Th style={{ width: 80 }}>
                         <HeaderLabel label={t('masterData.sortOrder')} />
                       </Table.Th>
-                      <Table.Th style={{ minWidth: 280 }}>
+                      <Table.Th>
                         <HeaderLabel label={t('masterData.taskTemplate')} />
                       </Table.Th>
-                      <Table.Th style={{ width: 210 }}>
+                      <Table.Th style={{ width: 180 }}>
                         <HeaderLabel label={t('masterData.milestoneCode')} />
                       </Table.Th>
-                      <Table.Th style={{ width: 150 }}>
+                      <Table.Th style={{ width: 120 }}>
                         <HeaderLabel label={t('masterData.sla')} />
                       </Table.Th>
-                      <Table.Th style={{ width: 180 }}>
+                      <Table.Th style={{ width: 160 }}>
                         <HeaderLabel label={t('masterData.department')} />
                       </Table.Th>
-                      <Table.Th style={{ width: 130 }}>
+                      <Table.Th style={{ width: 220 }}>
                         <HeaderLabel label={t('masterData.assigneeCode')} />
                       </Table.Th>
-                      <Table.Th style={{ minWidth: 240 }}>
-                        <HeaderLabel label={t('masterData.relatedDocuments')} />
-                      </Table.Th>
                       {canManage ? (
-                        <Table.Th style={{ width: 112 }}>
+                        <Table.Th style={{ width: 80 }}>
                           {t('masterData.actions')}
                         </Table.Th>
                       ) : null}
@@ -253,7 +283,7 @@ export function TaskTemplatesSection({
                     {group.templates.map((template) => (
                       <Table.Tr key={template.id}>
                         <Table.Td>{template.sort_order}</Table.Td>
-                        <Table.Td>
+                        <Table.Td className="md-cell-clamp">
                           <Stack gap={3}>
                             <Text fw={700}>{template.task_name}</Text>
                             <Text size="sm" c="dimmed" lineClamp={2}>
@@ -264,6 +294,7 @@ export function TaskTemplatesSection({
                                 {template.note}
                               </Text>
                             ) : null}
+                            <ActiveBadge active={template.is_active !== false} />
                           </Stack>
                         </Table.Td>
                         <Table.Td>
@@ -277,11 +308,13 @@ export function TaskTemplatesSection({
                             {getDepartmentLabel(template.department, t)}
                           </Badge>
                         </Table.Td>
-                        <Table.Td>{template.assignee_code || '-'}</Table.Td>
-                        <Table.Td>
-                          <Text size="sm" lineClamp={2}>
-                            {template.related_documents || '-'}
-                          </Text>
+                        <Table.Td className="md-cell-clamp">
+                          <Stack gap={2}>
+                            <Text size="sm" lineClamp={1}>{template.assignee_code || '-'}</Text>
+                            <Text size="xs" c="dimmed" lineClamp={2}>
+                              {template.related_documents || '-'}
+                            </Text>
+                          </Stack>
                         </Table.Td>
                         {canManage ? (
                           <Table.Td>

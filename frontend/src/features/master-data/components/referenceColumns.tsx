@@ -1,4 +1,4 @@
-import { Badge, Group, Stack, Text } from '@mantine/core';
+import { Badge, Group, Stack, Text, Tooltip } from '@mantine/core';
 
 import type { ChargeCode } from '@shared/api/chargeCodes';
 import type { Currency, Incoterm, Supplier, TransportMode } from '@shared/api/tradeMasterData';
@@ -6,11 +6,15 @@ import type { Uom } from '@shared/api/uoms';
 import { useI18n } from '@shared/i18n';
 import { CHARGE_CATEGORIES, CHARGE_GROUPS } from '@shared/lib/chargeCategories';
 
-import { formatDateTime } from '../model/masterDataModel';
+import { formatDateTime, getSupplierTypeLabel } from '../model/masterDataModel';
 import { ActiveBadge } from './ActiveBadge';
 import type { ReferenceColumn } from './ReferenceDataPanel';
 
 type T = ReturnType<typeof useI18n>['t'];
+
+function applicabilityLabel(label: string, active: boolean) {
+  return `${label}: ${active ? 'applicable' : 'not applicable'}`;
+}
 
 export function buildCurrencyColumns(t: T): Array<ReferenceColumn<Currency>> {
   return [
@@ -20,7 +24,9 @@ export function buildCurrencyColumns(t: T): Array<ReferenceColumn<Currency>> {
       render: (currency) => (
         <Group gap="xs" wrap="nowrap">
           <Badge variant="light">{currency.currency_code}</Badge>
-          <Text fw={600}>{currency.currency_name}</Text>
+          <Text fw={600} lineClamp={1}>
+            {currency.currency_name}
+          </Text>
         </Group>
       ),
     },
@@ -41,13 +47,13 @@ export function buildCurrencyColumns(t: T): Array<ReferenceColumn<Currency>> {
     {
       key: 'status',
       label: t('common.status'),
-      width: 140,
+      width: 80,
       render: (currency) => <ActiveBadge active={currency.is_active} />,
     },
     {
       key: 'updated',
       label: t('masterData.updatedAt'),
-      width: 170,
+      width: 150,
       render: (currency) => formatDateTime(currency.update_at),
     },
   ];
@@ -59,13 +65,22 @@ export function buildIncotermColumns(t: T): Array<ReferenceColumn<Incoterm>> {
       key: 'code',
       label: t('masterData.incotermCode'),
       hint: t('glossary.incoterm'),
-      width: 150,
+      width: 130,
       render: (incoterm) => <Badge variant="light">{incoterm.incoterm_code}</Badge>,
     },
     {
       key: 'name',
       label: t('masterData.incotermName'),
-      render: (incoterm) => <Text fw={600}>{incoterm.incoterm_name}</Text>,
+      render: (incoterm) => (
+        <Stack gap={4}>
+          <Text fw={600} lineClamp={1}>
+            {incoterm.incoterm_name}
+          </Text>
+          <Text size="xs" c="dimmed" lineClamp={1}>
+            {incoterm.incoterm_name_vn || '-'}
+          </Text>
+        </Stack>
+      ),
     },
     {
       key: 'description',
@@ -79,14 +94,8 @@ export function buildIncotermColumns(t: T): Array<ReferenceColumn<Incoterm>> {
     {
       key: 'status',
       label: t('common.status'),
-      width: 140,
+      width: 80,
       render: (incoterm) => <ActiveBadge active={incoterm.is_active} />,
-    },
-    {
-      key: 'updated',
-      label: t('masterData.updatedAt'),
-      width: 170,
-      render: (incoterm) => formatDateTime(incoterm.update_at),
     },
   ];
 }
@@ -99,7 +108,9 @@ export function buildTransportModeColumns(t: T): Array<ReferenceColumn<Transport
       render: (mode) => (
         <Stack gap={2}>
           <Badge variant="light">{mode.mode_code}</Badge>
-          <Text fw={600}>{mode.mode_name}</Text>
+          <Text fw={600} lineClamp={1}>
+            {mode.mode_name}
+          </Text>
         </Stack>
       ),
     },
@@ -122,13 +133,16 @@ export function buildTransportModeColumns(t: T): Array<ReferenceColumn<Transport
     {
       key: 'status',
       label: t('common.status'),
-      width: 140,
+      width: 80,
       render: (mode) => <ActiveBadge active={mode.is_active} />,
     },
   ];
 }
 
 export function buildChargeCodeColumns(t: T): Array<ReferenceColumn<ChargeCode>> {
+  const groupLabelMap = Object.fromEntries(CHARGE_GROUPS.map((group) => [group.value, t(group.labelKey)]));
+  const categoryLabelMap = Object.fromEntries(CHARGE_CATEGORIES.map((category) => [category.value, t(category.labelKey)]));
+
   return [
     {
       key: 'identity',
@@ -148,62 +162,24 @@ export function buildChargeCodeColumns(t: T): Array<ReferenceColumn<ChargeCode>>
       ),
     },
     {
-      key: 'group',
+      key: 'classification',
       label: t('masterData.chargeGroup'),
-      width: 210,
-      render: (chargeCode) => {
-        const labelMap = Object.fromEntries(CHARGE_GROUPS.map((group) => [group.value, t(group.labelKey)]));
-        return <Badge variant="light">{labelMap[chargeCode.group] ?? chargeCode.group}</Badge>;
-      },
+      width: 180,
+      render: (chargeCode) => (
+        <Stack gap={4}>
+          <Badge variant="light">{groupLabelMap[chargeCode.group] ?? chargeCode.group}</Badge>
+          <Badge variant="outline">{categoryLabelMap[chargeCode.category] ?? chargeCode.category}</Badge>
+        </Stack>
+      ),
     },
     {
-      key: 'category',
-      label: t('masterData.chargeCategory'),
-      width: 200,
-      render: (chargeCode) => {
-        const labelMap = Object.fromEntries(CHARGE_CATEGORIES.map((category) => [category.value, t(category.labelKey)]));
-        return <Badge variant="outline">{labelMap[chargeCode.category] ?? chargeCode.category}</Badge>;
-      },
-    },
-    {
-      key: 'uom',
+      key: 'billing',
       label: t('masterData.defaultUom'),
       hint: t('glossary.defaultUom'),
-      width: 120,
-      render: (chargeCode) => <Badge color="gray" variant="light">{chargeCode.default_uom}</Badge>,
-    },
-    {
-      key: 'applicability',
-      label: t('masterData.transportApplicability'),
-      render: (chargeCode) => {
-        const modes = [
-          chargeCode.sea_fcl ? 'FCL' : null,
-          chargeCode.sea_lcl ? 'LCL' : null,
-          chargeCode.air ? 'AIR' : null,
-          chargeCode.road ? 'ROAD' : null,
-          chargeCode.rail ? 'RAIL' : null,
-        ].filter(Boolean);
-
-        return modes.length > 0 ? (
-          <Group gap={4}>
-            {modes.map((mode) => (
-              <Badge key={mode} size="xs" color="blue" variant="light">
-                {mode}
-              </Badge>
-            ))}
-          </Group>
-        ) : (
-          <Text c="dimmed">-</Text>
-        );
-      },
-    },
-    {
-      key: 'commercial',
-      label: t('masterData.revCost'),
-      hint: t('glossary.revCost'),
       width: 140,
       render: (chargeCode) => (
-        <Stack gap={2}>
+        <Stack gap={4}>
+          <Badge color="gray" variant="light">{chargeCode.default_uom}</Badge>
           <Badge color="teal" variant="light">{chargeCode.rev_cost}</Badge>
           <Text size="xs" c="dimmed">
             {chargeCode.taxable ? t('masterData.taxable') : t('masterData.nonTaxable')}
@@ -212,9 +188,39 @@ export function buildChargeCodeColumns(t: T): Array<ReferenceColumn<ChargeCode>>
       ),
     },
     {
+      key: 'scope',
+      label: t('masterData.transportApplicability'),
+      width: 150,
+      render: (chargeCode) => {
+        const modes = [
+          { key: 'sea_fcl', label: t('masterData.seaFcl'), short: 'F', active: chargeCode.sea_fcl },
+          { key: 'sea_lcl', label: t('masterData.seaLcl'), short: 'L', active: chargeCode.sea_lcl },
+          { key: 'air', label: t('masterData.air'), short: 'A', active: chargeCode.air },
+          { key: 'road', label: t('masterData.road'), short: 'D', active: chargeCode.road },
+          { key: 'rail', label: t('masterData.rail'), short: 'R', active: chargeCode.rail },
+        ];
+
+        return (
+          <div className="md-scope-row">
+            {modes.map((mode) => (
+              <Tooltip key={mode.key} label={applicabilityLabel(mode.label, mode.active)}>
+                <span
+                  aria-label={applicabilityLabel(mode.label, mode.active)}
+                  className={`md-scope-dot ${mode.active ? 'is-on' : 'is-off'}`}
+                  role="img"
+                >
+                  {mode.short}
+                </span>
+              </Tooltip>
+            ))}
+          </div>
+        );
+      },
+    },
+    {
       key: 'status',
       label: t('common.status'),
-      width: 140,
+      width: 80,
       render: (chargeCode) => <ActiveBadge active={chargeCode.is_active} />,
     },
   ];
@@ -251,13 +257,13 @@ export function buildUomColumns(t: T): Array<ReferenceColumn<Uom>> {
     {
       key: 'status',
       label: t('common.status'),
-      width: 140,
+      width: 80,
       render: (uom) => <ActiveBadge active={uom.is_active} />,
     },
     {
       key: 'updated',
       label: t('masterData.updatedAt'),
-      width: 170,
+      width: 150,
       render: (uom) => formatDateTime(uom.update_at),
     },
   ];
@@ -279,31 +285,28 @@ export function buildSupplierColumns(t: T): Array<ReferenceColumn<Supplier>> {
           <Text size="xs" c="dimmed" lineClamp={1}>
             {supplier.supplier_name_en || '-'}
           </Text>
-        </Stack>
-      ),
-    },
-    {
-      key: 'type_country',
-      label: t('masterData.country'),
-      width: 160,
-      render: (supplier) => (
-        <Stack gap={2}>
-          <Badge color="blue" variant="light">
-            {supplier.supplier_type || '-'}
-          </Badge>
           <Text size="xs" c="dimmed">
-            {[supplier.country, supplier.city].filter(Boolean).join(' / ') || '-'}
+            {t('masterData.leadTimeProductionDays')}: {supplier.lead_time_production_days ?? '-'}
           </Text>
         </Stack>
       ),
     },
     {
-      key: 'contact',
+      key: 'typeContact',
       label: t('masterData.contact'),
+      width: 220,
       render: (supplier) => (
-        <Stack gap={2}>
-          <Text size="sm">{supplier.contact_person || supplier.contact_name || '-'}</Text>
+        <Stack gap={3}>
+          <Badge color="blue" variant="light">
+            {getSupplierTypeLabel(supplier.supplier_type, t)}
+          </Badge>
           <Text size="xs" c="dimmed">
+            {[supplier.country, supplier.city].filter(Boolean).join(' / ') || '-'}
+          </Text>
+          <Text size="sm" lineClamp={1}>
+            {supplier.contact_person || supplier.contact_name || '-'}
+          </Text>
+          <Text size="xs" c="dimmed" lineClamp={2}>
             {[supplier.contact_email, supplier.contact_phone].filter(Boolean).join(' | ') || '-'}
           </Text>
         </Stack>
@@ -313,6 +316,7 @@ export function buildSupplierColumns(t: T): Array<ReferenceColumn<Supplier>> {
       key: 'terms',
       label: t('masterData.defaultTerms'),
       hint: t('glossary.paymentTerm'),
+      width: 160,
       render: (supplier) => (
         <Stack gap={2}>
           <Text size="sm">
@@ -325,16 +329,9 @@ export function buildSupplierColumns(t: T): Array<ReferenceColumn<Supplier>> {
       ),
     },
     {
-      key: 'lead_time',
-      label: t('masterData.leadTimeProductionDays'),
-      hint: t('glossary.leadTimeDays'),
-      width: 150,
-      render: (supplier) => supplier.lead_time_production_days ?? '-',
-    },
-    {
       key: 'status',
       label: t('common.status'),
-      width: 140,
+      width: 80,
       render: (supplier) => <ActiveBadge active={supplier.is_active} />,
     },
   ];

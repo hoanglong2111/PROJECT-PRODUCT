@@ -122,4 +122,68 @@ export function formatRate(value: number | string | null | undefined) {
   return formatted === '-' ? formatted : `${formatted}%`;
 }
 
+const supplierTypeLabelKeys: Record<string, string> = {
+  OVERSEAS_SEA: 'masterData.supplierTypeOverseasSea',
+  OVERSEAS_AIR: 'masterData.supplierTypeOverseasAir',
+  DOMESTIC: 'masterData.supplierTypeDomestic',
+};
+
+const itemCategoryLabelKeys: Record<string, string> = {
+  NVL: 'masterData.itemCategoryNvl',
+  BTP: 'masterData.itemCategoryBtp',
+  TP: 'masterData.itemCategoryTp',
+  CCDC: 'masterData.itemCategoryCcdc',
+  DONG_GOI: 'masterData.itemCategoryDongGoi',
+};
+
+const itemTypeLabelKeys: Record<string, string> = {
+  RAW: 'masterData.itemTypeRaw',
+  SEMI: 'masterData.itemTypeSemi',
+  FG: 'masterData.itemTypeFg',
+  CONSUMABLE: 'masterData.itemTypeConsumable',
+  PACKAGING: 'masterData.itemTypePackaging',
+};
+
+export const SUPPLIER_TYPE_VALUES = Object.keys(supplierTypeLabelKeys);
+export const ITEM_CATEGORY_VALUES = Object.keys(itemCategoryLabelKeys);
+export const ITEM_TYPE_VALUES = Object.keys(itemTypeLabelKeys);
+
+function localizedValue(value: string | null | undefined, labelKeys: Record<string, string>, t: (key: string) => string) {
+  if (!value) return '-';
+  const labelKey = labelKeys[value];
+  return labelKey ? t(labelKey) : value;
+}
+
+export function getSupplierTypeLabel(value: string | null | undefined, t: (key: string) => string) {
+  return localizedValue(value, supplierTypeLabelKeys, t);
+}
+
+// Status filter shared as a labeled Select (All / Active / Inactive), matching the
+// other master-data filters so every control reads the same way.
+export const STATUS_FILTER_ALL = 'ALL';
+
+export function statusToSelectValue(value: boolean | null | undefined): string {
+  return value === true ? 'active' : value === false ? 'inactive' : STATUS_FILTER_ALL;
+}
+
+export function selectValueToStatus(value: string | null): boolean | null {
+  return value === 'active' ? true : value === 'inactive' ? false : null;
+}
+
+export function getStatusFilterOptions(t: (key: string) => string) {
+  return [
+    { value: STATUS_FILTER_ALL, label: t('common.all') },
+    { value: 'active', label: t('masterData.activeStatus') },
+    { value: 'inactive', label: t('masterData.inactiveStatus') },
+  ];
+}
+
+export function getItemCategoryLabel(value: string | null | undefined, t: (key: string) => string) {
+  return localizedValue(value, itemCategoryLabelKeys, t);
+}
+
+export function getItemTypeLabel(value: string | null | undefined, t: (key: string) => string) {
+  return localizedValue(value, itemTypeLabelKeys, t);
+}
+
 export { formatDateTime } from '@shared/utils/date';
