@@ -1,11 +1,12 @@
 import { Badge, Group, Paper, Text } from '@mantine/core';
-import { IconBuildingWarehouse, IconCalendarStats, IconPlaneDeparture, IconShip } from '@tabler/icons-react';
+import { IconBuildingWarehouse, IconCalendarStats, IconCoins, IconFileInvoice, IconPlaneDeparture, IconShip, IconTruckDelivery } from '@tabler/icons-react';
+import type { ReactNode } from 'react';
 
-import type { PurchaseOrderV1 } from '@shared/api/purchaseOrders';
+import type { PurchaseOrderLineV1, PurchaseOrderV1 } from '@shared/api/purchaseOrders';
 
-import { dateOnly, getDateDelayDays } from '../model/purchaseOrderModel';
+import { dateOnly, getDateDelayDays, totalPoAmount } from '../model/purchaseOrderModel';
 
-export function PurchaseOrderDetailInfo({ order }: { order: PurchaseOrderV1 }) {
+export function PurchaseOrderDetailInfo({ lines, order }: { lines: PurchaseOrderLineV1[]; order: PurchaseOrderV1 }) {
   const loadingPort = order.logistics_timeline?.loading_port;
   const unloadingPort = order.logistics_timeline?.unloading_port;
   const warehouse = order.logistics_timeline?.warehouse;
@@ -18,6 +19,7 @@ export function PurchaseOrderDetailInfo({ order }: { order: PurchaseOrderV1 }) {
   const etdDelayDays = getDateDelayDays(plannedEtd, actualAtd);
   const etaDelayDays = getDateDelayDays(plannedEta, actualAta);
   const currencyCode = order.currency?.currency_code ?? '-';
+  const amount = `${totalPoAmount(lines).toLocaleString()} ${order.currency?.currency_code ?? ''}`.trim();
   const maxDelayDays = Math.max(etdDelayDays ?? 0, etaDelayDays ?? 0);
   const hasAnyActualDate = Boolean(actualAtd || actualAta);
   const routeStatus = !hasAnyActualDate
@@ -29,18 +31,43 @@ export function PurchaseOrderDetailInfo({ order }: { order: PurchaseOrderV1 }) {
 
   return (
     <Paper withBorder p={0} className="purchase-order-detail-card">
-      <div className="purchase-order-detail-header w-full">
-        <Text fw={800}>Commercial &amp; logistics</Text>
-        <Text size="xs" c="dimmed">
-          Terms and logistics timing for this purchase order.
-        </Text>
-      </div>
+      <Group justify="space-between" align="flex-start" className="purchase-order-detail-header w-full">
+        <div>
+          <Text fw={800}>Commercial overview</Text>
+          <Text size="xs" c="dimmed">
+            Terms, value, and logistics timing for this purchase order.
+          </Text>
+        </div>
+        <div className="purchase-order-amount-block">
+          <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
+            Amount
+          </Text>
+          <Text fw={900} size="lg" className="tabular-nums" title={amount}>
+            {amount || '-'}
+          </Text>
+        </div>
+      </Group>
 
       <div className="purchase-order-detail-layout">
-        <div className="purchase-order-commercial-chips">
-          <CommercialChip label="Financial" value={currencyCode} meta={`Rate ${order.exchange_rate ?? '-'}`} />
-          <CommercialChip label="Trade" value={order.incoterm?.incoterm_code ?? '-'} meta={order.payment_term || '-'} />
-          <CommercialChip label="Transport" value={transportMode} meta={order.po_type || '-'} />
+        <div className="purchase-order-commercial-panel">
+          <InfoCard
+            icon={<IconCoins size={18} />}
+            label="Financial"
+            value={currencyCode}
+            meta={`Exchange rate: ${order.exchange_rate ?? '-'}`}
+          />
+          <InfoCard
+            icon={<IconFileInvoice size={18} />}
+            label="Trade terms"
+            value={order.incoterm?.incoterm_code ?? '-'}
+            meta={`Payment: ${order.payment_term || '-'}`}
+          />
+          <InfoCard
+            icon={<IconTruckDelivery size={18} />}
+            label="Transport"
+            value={transportMode}
+            meta={order.po_type || '-'}
+          />
         </div>
 
         <LogisticsRouteTimeline
@@ -56,22 +83,35 @@ export function PurchaseOrderDetailInfo({ order }: { order: PurchaseOrderV1 }) {
         />
       </div>
 
+      {order.notes ? (
+        <div className="purchase-order-detail-notes">
+          <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
+            Notes
+          </Text>
+          <Text size="sm">{order.notes}</Text>
+        </div>
+      ) : null}
     </Paper>
   );
 }
 
-function CommercialChip({ label, meta, value }: { label: string; meta: string; value: string }) {
+function InfoCard({ icon, label, meta, value }: { icon: ReactNode; label: string; meta: string; value: string }) {
   return (
-    <div className="purchase-order-commercial-chip">
-      <Text className="metric-label" size="xs" tt="uppercase" fw={700} c="dimmed">
-        {label}
-      </Text>
-      <Text fw={800} size="sm" lineClamp={1} title={value}>
-        {value || '-'}
-      </Text>
-      <Text size="xs" c="dimmed" lineClamp={1} title={meta}>
-        {meta || '-'}
-      </Text>
+    <div className="purchase-order-info-item">
+      <Group gap="sm" wrap="nowrap" align="flex-start">
+        <div className="purchase-order-info-icon">{icon}</div>
+        <div className="purchase-order-info-content">
+          <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
+            {label}
+          </Text>
+          <Text fw={800} lineClamp={1} title={value}>
+            {value || '-'}
+          </Text>
+          <Text size="xs" c="dimmed" lineClamp={1} title={meta}>
+            {meta || '-'}
+          </Text>
+        </div>
+      </Group>
     </div>
   );
 }

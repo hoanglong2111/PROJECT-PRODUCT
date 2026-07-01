@@ -1,7 +1,7 @@
-import { Alert, Group, Loader, Paper, Stack, Text } from '@mantine/core';
+import { Alert, Group, Loader, Paper, SimpleGrid, Stack, Text } from '@mantine/core';
 import { IconAlertTriangle } from '@tabler/icons-react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { useRef, useState } from 'react';
+import { type ReactNode, useRef, useState } from 'react';
 
 import {
   fetchPurchaseOrder,
@@ -14,9 +14,9 @@ import { PageError } from '@shared/components/PageFeedback';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
 import { usePoInvalidation } from '../hooks/usePoInvalidation';
+import { totalPoAmount } from '../model/purchaseOrderModel';
 import { LotPlanningBoard } from './LotPlanningBoard';
 import { PoControlHeader } from './PoControlHeader';
-import { PoExecutionSummary } from './PoExecutionSummary';
 import { PoLinesTable } from './PoLinesTable';
 import { PurchaseOrderConfirmationsPanel } from './PurchaseOrderConfirmationsPanel';
 import { PurchaseOrderDetailInfo } from './PurchaseOrderDetailInfo';
@@ -74,6 +74,10 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
   const canEdit = canManage && order.status === 'DRAFT';
   const canSend = canManage && order.status === 'DRAFT';
   const canConfirm = canManage && order.status === 'SENT';
+  const amount = `${totalPoAmount(lines).toLocaleString()} ${order.currency?.currency_code ?? ''}`.trim();
+  const lotCount = order.lot_summary?.total_lots ?? order.total_lots ?? 0;
+  const containerCount = order.lot_summary?.total_containers ?? order.total_containers ?? 0;
+  const eta = order.logistics_timeline?.unloading_port?.eta ?? order.expected_eta ?? '-';
 
   if (editOpen) {
     return (
@@ -119,20 +123,26 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
         onCreateDo={() => lotBoardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
       />
 
-      <PoExecutionSummary order={order} lines={lines} />
+      <Paper withBorder p={0} className="purchase-order-detail-hero">
+        <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="sm" className="purchase-order-detail-signal-grid">
+          <PoHeroFact label="Supplier" value={order.supplier?.supplier_name ?? order.supplier_id} />
+          <PoHeroFact label="Lines" value={String(lines.length)} />
+          <PoHeroFact label="Amount" value={amount || '-'} />
+          <PoHeroFact label="LOT / ETA" value={`${lotCount} LOT / ${containerCount} cont / ${eta}`} />
+        </SimpleGrid>
+        {sendMutation.isError ? (
+          <Alert color="red" icon={<IconAlertTriangle size={18} />} mt="md">
+            {getApiErrorMessage(sendMutation.error)}
+          </Alert>
+        ) : null}
+        {!canConfirm ? (
+          <Text size="xs" c="dimmed" mt="xs">
+            Supplier confirmation is enabled only after the PO is sent.
+          </Text>
+        ) : null}
+      </Paper>
 
-      {sendMutation.isError ? (
-        <Alert color="red" icon={<IconAlertTriangle size={18} />}>
-          {getApiErrorMessage(sendMutation.error)}
-        </Alert>
-      ) : null}
-      {!canConfirm ? (
-        <Text size="xs" c="dimmed">
-          Supplier confirmation is enabled only after the PO is sent.
-        </Text>
-      ) : null}
-
-      <PurchaseOrderDetailInfo order={order} />
+      <PurchaseOrderDetailInfo lines={lines} order={order} />
 
       <div className="purchase-order-detail-workspace">
         <div className="purchase-order-detail-workspace-lines">
@@ -158,16 +168,6 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
 
       <div className="purchase-order-detail-supporting">
         <PurchaseOrderConfirmationsPanel purchaseOrderId={id} />
-        {order.notes ? (
-          <Paper withBorder p="md" className="purchase-order-notes-card">
-            <Text className="metric-label" size="xs" tt="uppercase" fw={700} c="dimmed">
-              Notes
-            </Text>
-            <Text size="sm" mt={4}>
-              {order.notes}
-            </Text>
-          </Paper>
-        ) : null}
       </div>
 
       <SupplierConfirmationModal
@@ -180,5 +180,18 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
         }}
       />
     </Stack>
+  );
+}
+
+function PoHeroFact({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="purchase-order-detail-signal">
+      <Text size="xs" c="dimmed" fw={700}>
+        {label}
+      </Text>
+      <Text size="sm" fw={700} component="div">
+        {value}
+      </Text>
+    </div>
   );
 }
