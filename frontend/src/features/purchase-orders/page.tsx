@@ -1,6 +1,6 @@
-import { Badge, Button, Group, Stack, Text, Title } from '@mantine/core';
+import { Button, Group, Stack, Text, Title } from '@mantine/core';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { IconPlus, IconTruckDelivery } from '@tabler/icons-react';
+import { IconPlus } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
@@ -221,9 +221,6 @@ export function PurchaseOrders() {
       ) : (
         <Group justify="space-between" className="purchase-orders-subheader dl-page-header">
           <BackActionButton className="purchase-orders-back-action" onClick={closeWorkbench} />
-          <Badge className="purchase-orders-api-badge" leftSection={<IconTruckDelivery size={14} />} variant="light">
-            Live API V1
-          </Badge>
         </Group>
       )}
 

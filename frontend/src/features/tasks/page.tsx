@@ -2,6 +2,7 @@ import {
   ActionIcon,
   Badge,
   Button,
+  Drawer,
   Group,
   Loader,
   Paper,
@@ -257,49 +258,7 @@ export function Tasks() {
     );
   }
 
-  if (taskFormOpened) {
-    return (
-      <Stack gap="lg">
-        <Group justify="space-between" align="center" gap="md" className="dl-page-header task-workbench-header">
-          <Group gap="xs" align="center" wrap="wrap">
-            <BackActionButton label={t('common.back')} onClick={closeTaskForm} />
-            <Text c="dimmed" size="sm">/</Text>
-            <Text fw={700} size="sm">
-              {editingTask ? t('tasks.editTask') : t('tasks.createTask')}
-            </Text>
-          </Group>
-        </Group>
 
-        <TaskFormPanel
-          editing={editingTask}
-          opened={taskFormOpened}
-          onClose={closeTaskForm}
-          onSaved={(saved) => {
-            setSelectedTask(saved);
-            openTaskParam(saved.task_id);
-          }}
-        />
-      </Stack>
-    );
-  }
-
-  if (selectedTask) {
-    return (
-      <Stack gap="lg">
-        <Group justify="space-between" align="center" gap="md" className="dl-page-header task-workbench-header">
-          <Group gap="xs" align="center" wrap="wrap">
-            <BackActionButton label={t('common.back')} onClick={closeTaskDetail} />
-            <Text c="dimmed" size="sm">/</Text>
-            <Text fw={700} size="sm">
-              {selectedTask.task_id}
-            </Text>
-          </Group>
-        </Group>
-
-        <TaskDetail task={selectedTask} onUpdated={setSelectedTask} onEdit={openEditTask} />
-      </Stack>
-    );
-  }
 
   return (
     <Stack gap="lg">
@@ -552,6 +511,44 @@ export function Tasks() {
         </Tabs.Panel>
       </Tabs>
 
+      <Drawer
+        opened={taskFormOpened}
+        onClose={closeTaskForm}
+        position="right"
+        size="60rem"
+        title={
+          <Text fw={700}>
+            {editingTask ? t('tasks.editTask') : t('tasks.createTask')}
+          </Text>
+        }
+      >
+        <TaskFormPanel
+          editing={editingTask}
+          opened={taskFormOpened}
+          onClose={closeTaskForm}
+          onSaved={(saved) => {
+            closeTaskForm();
+            setSelectedTask(saved);
+            openTaskParam(saved.task_id);
+          }}
+        />
+      </Drawer>
+
+      <Drawer
+        opened={!!selectedTask}
+        onClose={closeTaskDetail}
+        position="right"
+        size="60rem"
+        title={
+          <Text fw={700}>
+            {selectedTask?.task_id}
+          </Text>
+        }
+      >
+        {selectedTask && (
+          <TaskDetail task={selectedTask} onUpdated={setSelectedTask} onEdit={openEditTask} />
+        )}
+      </Drawer>
     </Stack>
   );
 }

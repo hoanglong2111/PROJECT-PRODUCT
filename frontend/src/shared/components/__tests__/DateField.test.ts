@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatDateTypingInput, parseDateInput } from '../DateField';
+import {
+  formatDateTypingInput,
+  fromPickerDateTimeValue,
+  getPickerTimeValue,
+  parseDateInput,
+  toPickerDateTimeValue,
+} from '../DateField';
 
 describe('formatDateTypingInput', () => {
   it('formats raw digits into YYYY/MM/DD while the user types', () => {
@@ -39,5 +45,22 @@ describe('parseDateInput', () => {
     expect(parseDateInput('')).toBeNull();
     expect(parseDateInput('   ')).toBeNull();
     expect(parseDateInput('abc')).toBeNull();
+  });
+});
+
+describe('DateTimeField value conversion', () => {
+  it('splits native datetime-local form values into editable date and time values', () => {
+    expect(toPickerDateTimeValue('2026-06-20T09:30')).toBe('2026-06-20');
+    expect(getPickerTimeValue('2026-06-20T09:30')).toBe('09:30');
+  });
+
+  it('combines editable date and time values back into native datetime-local form values', () => {
+    expect(fromPickerDateTimeValue('2026-06-20', '09:30')).toBe('2026-06-20T09:30');
+  });
+
+  it('keeps empty or invalid values empty', () => {
+    expect(toPickerDateTimeValue('')).toBeNull();
+    expect(getPickerTimeValue('')).toBe('');
+    expect(fromPickerDateTimeValue(null, '09:30')).toBe('');
   });
 });

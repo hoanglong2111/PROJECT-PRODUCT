@@ -1,4 +1,4 @@
-import { DateInput, type DateInputProps } from '@mantine/dates';
+import { DateInput, DateTimePicker, type DateInputProps, type DateTimePickerProps } from '@mantine/dates';
 import { IconCalendar } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
@@ -17,6 +17,8 @@ dayjs.extend(customParseFormat);
  */
 
 const DISPLAY_FORMAT = 'YYYY/MM/DD';
+const DATETIME_FORM_FORMAT = 'YYYY-MM-DDTHH:mm';
+const TIME_FORMAT = 'HH:mm';
 
 /** Formats accepted when the user types by hand (lenient on separators / single digits). */
 const ACCEPTED_INPUT_FORMATS = [
@@ -45,6 +47,27 @@ export function parseDateInput(input: string): string | null {
   const normalized = /^\d{8}$/.test(trimmed) ? formatDateTypingInput(trimmed) : trimmed;
   const parsed = dayjs(normalized, ACCEPTED_INPUT_FORMATS, true);
   return parsed.isValid() ? parsed.format('YYYY-MM-DD') : null;
+}
+
+export function toPickerDateTimeValue(input: string | null | undefined): string | null {
+  if (!input) return null;
+
+  const parsed = dayjs(input);
+  return parsed.isValid() ? parsed.format('YYYY-MM-DD') : null;
+}
+
+export function getPickerTimeValue(input: string | null | undefined): string {
+  if (!input) return '';
+
+  const parsed = dayjs(input);
+  return parsed.isValid() ? parsed.format(TIME_FORMAT) : '';
+}
+
+export function fromPickerDateTimeValue(dateValue: string | null, timeValue: string): string {
+  if (!dateValue) return '';
+
+  const parsed = dayjs(`${dateValue}T${timeValue || '00:00'}`);
+  return parsed.isValid() ? parsed.format(DATETIME_FORM_FORMAT) : '';
 }
 
 export type DateFieldProps = Omit<
@@ -96,6 +119,51 @@ export function DateField({
       leftSection={leftSection ?? <IconCalendar size={16} stroke={1.5} />}
       popoverProps={{ position: 'bottom-start', withinPortal: true, shadow: 'md', ...popoverProps }}
       className={['kbfe-date-field', className].filter(Boolean).join(' ')}
+    />
+  );
+}
+
+export type DateTimeFieldProps = Omit<
+  DateTimePickerProps,
+  'value' | 'defaultValue' | 'onChange'
+> & {
+  value?: string | null;
+  onChange?: (value: string) => void;
+};
+
+export function DateTimeField({
+  value = null,
+  onChange,
+  className,
+  disabled,
+  label,
+  ...rest
+}: DateTimeFieldProps) {
+  const dateValue = value ? new Date(value) : null;
+
+  return (
+    <DateTimePicker
+      {...rest}
+      label={label}
+      value={dateValue}
+      disabled={disabled}
+      onChange={(nextDate) => {
+        if (!nextDate) {
+          onChange?.('');
+          return;
+        }
+        onChange?.(dayjs(nextDate).format(DATETIME_FORM_FORMAT));
+      }}
+      className={['kbfe-datetime-field', className].filter(Boolean).join(' ')}
+      valueFormat="YYYY/MM/DD HH:mm"
+      leftSection={<IconCalendar size={16} stroke={1.5} />}
+      popoverProps={{ position: 'bottom-start', withinPortal: true, shadow: 'md' }}
+      timePickerProps={{
+        withDropdown: true,
+        popoverProps: { withinPortal: true },
+        format: '12h',
+      }}
+      clearable
     />
   );
 }

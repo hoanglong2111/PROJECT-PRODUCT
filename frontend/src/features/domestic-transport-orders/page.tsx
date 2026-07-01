@@ -1,4 +1,4 @@
-import { Alert, Badge, Button, Group, Paper, Select, SimpleGrid, Stack, Text, TextInput, Title } from '@mantine/core';
+import { Alert, Badge, Button, Drawer, Group, Paper, Select, SimpleGrid, Stack, Text, TextInput, Title } from '@mantine/core';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   IconCircleCheck,
@@ -242,89 +242,6 @@ export function DomesticTransportOrders() {
     );
   }
 
-  if (dtoModalOpen) {
-    const createTitle = selectedShipment
-      ? t('shipments.createDtoFromShipment', { shipmentNumber: selectedShipment.shipment_number })
-      : t('domesticTransportOrders.create');
-
-    return (
-      <Stack gap="lg" className="dto-page">
-        <Group justify="space-between" align="center" gap="md" className="dl-page-header dto-create-page-header">
-          <Group gap="xs" align="center" wrap="wrap">
-            <BackActionButton
-              label={t('common.back')}
-              onClick={() => setDtoModalOpen(false)}
-            />
-            <Text c="dimmed" size="sm">/</Text>
-            <Text fw={700} size="sm">
-              {createTitle}
-            </Text>
-          </Group>
-        </Group>
-
-        <CreateDtoFromShipmentPanel
-          opened
-          shipments={selectedShipment ? [selectedShipment] : []}
-          onClose={() => setDtoModalOpen(false)}
-          onCreated={() => {
-            refreshOrder();
-            void ordersQuery.refetch();
-            setSelectedShipmentId(null);
-          }}
-        />
-      </Stack>
-    );
-  }
-
-  if (selectedDtoId) {
-    return (
-      <Stack gap="lg" className="dto-page">
-        <Group justify="space-between" align="center" gap="md" className="dl-page-header dto-detail-page-header">
-          <Group gap="xs" align="center" wrap="wrap">
-            <BackActionButton
-              label={t('common.back')}
-              onClick={() => {
-                setSelectedDtoId(null);
-                closeDtoParam();
-              }}
-            />
-            <Text c="dimmed" size="sm">/</Text>
-            <Text fw={700} size="sm">
-              {selectedOrder?.dto_no ?? t('domesticTransportOrders.detailTitle')}
-            </Text>
-            {detailQuery.isFetching ? <Badge variant="light">{t('common.loading')}</Badge> : null}
-          </Group>
-        </Group>
-
-        {updateMutation.isError || actionMutation.isError ? (
-          <Alert color="red" icon={<IconX size={18} />} className="dto-error-alert">
-            {getErrorMessage(updateMutation.error ?? actionMutation.error, t('domesticTransportOrders.requestFailed'))}
-          </Alert>
-        ) : null}
-
-        {selectedOrder ? (
-          <DomesticTransportOrderDetail
-            actionPending={actionMutation.isPending}
-            form={form}
-            isFetching={detailQuery.isFetching}
-            onAction={(action) => actionMutation.mutate(action)}
-            onChange={setForm}
-            onSave={() => updateMutation.mutate()}
-            order={selectedOrder}
-            saving={updateMutation.isPending}
-            truckVendorOptions={truckVendorOptions}
-          />
-        ) : (
-          <PageLoading
-            title={t('domesticTransportOrders.detailTitle')}
-            description={t('domesticTransportOrders.loadingDescription')}
-            metricCount={3}
-          />
-        )}
-      </Stack>
-    );
-  }
-
   return (
     <Stack gap="lg" className="dto-page">
       <Paper withBorder p="lg" className="dto-page-hero">
@@ -425,6 +342,76 @@ export function DomesticTransportOrders() {
         </Alert>
       ) : null}
 
+      <Drawer
+        opened={dtoModalOpen}
+        onClose={() => setDtoModalOpen(false)}
+        position="right"
+        size="xl"
+        title={
+          <Text fw={700}>
+            {selectedShipment
+              ? t('shipments.createDtoFromShipment', { shipmentNumber: selectedShipment.shipment_number })
+              : t('domesticTransportOrders.create')}
+          </Text>
+        }
+      >
+        <CreateDtoFromShipmentPanel
+          opened={dtoModalOpen}
+          shipments={selectedShipment ? [selectedShipment] : []}
+          onClose={() => setDtoModalOpen(false)}
+          onCreated={() => {
+            refreshOrder();
+            void ordersQuery.refetch();
+            setSelectedShipmentId(null);
+          }}
+        />
+      </Drawer>
+
+      <Drawer
+        opened={!!selectedDtoId}
+        onClose={() => {
+          setSelectedDtoId(null);
+          closeDtoParam();
+        }}
+        position="right"
+        size="85rem"
+        title={
+          <Group gap="xs" align="center">
+            <Text fw={700}>
+              {selectedOrder?.dto_no ?? t('domesticTransportOrders.detailTitle')}
+            </Text>
+            {detailQuery.isFetching ? <Badge variant="light">{t('common.loading')}</Badge> : null}
+          </Group>
+        }
+      >
+        <Stack gap="lg" style={{ minHeight: '100%' }}>
+          {updateMutation.isError || actionMutation.isError ? (
+            <Alert color="red" icon={<IconX size={18} />} className="dto-error-alert">
+              {getErrorMessage(updateMutation.error ?? actionMutation.error, t('domesticTransportOrders.requestFailed'))}
+            </Alert>
+          ) : null}
+
+          {selectedOrder ? (
+            <DomesticTransportOrderDetail
+              actionPending={actionMutation.isPending}
+              form={form}
+              isFetching={detailQuery.isFetching}
+              onAction={(action) => actionMutation.mutate(action)}
+              onChange={setForm}
+              onSave={() => updateMutation.mutate()}
+              order={selectedOrder}
+              saving={updateMutation.isPending}
+              truckVendorOptions={truckVendorOptions}
+            />
+          ) : (
+            <PageLoading
+              title={t('domesticTransportOrders.detailTitle')}
+              description={t('domesticTransportOrders.loadingDescription')}
+              metricCount={3}
+            />
+          )}
+        </Stack>
+      </Drawer>
     </Stack>
   );
 }

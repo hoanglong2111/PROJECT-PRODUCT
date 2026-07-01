@@ -1,4 +1,4 @@
-/* Themed calendar for the shared <DateField> (Mantine DateInput).
+/* Themed calendar for the shared <DateField>/<DateTimeField> (Mantine DateInput).
    The popover/calendar is portaled to <body>, so these rules target the global
    Mantine date class names directly rather than scoping under the input wrapper.
    All colors come from the eye-comfort --kbfe-* tokens (theme-aware, no pure black/white). */
@@ -119,4 +119,17 @@
 .mantine-DateInput-yearsListControl[data-selected] {
   background: var(--kbfe-primary-color);
   color: var(--kbfe-primary-contrast);
+}
+
+.kbfe-datetime-field {
+  width: 100%;
+}
+
+.kbfe-datetime-field-date {
+  flex: 1 1 8.5rem;
+  min-width: 0;
+}
+
+.kbfe-datetime-field-time {
+  flex: 0 0 5.75rem;
 }
