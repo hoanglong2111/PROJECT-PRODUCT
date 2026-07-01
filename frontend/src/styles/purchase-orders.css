@@ -1562,3 +1562,21 @@
   flex-direction: column;
   min-width: 44px;
 }
+
+/* PO execution detail — compact commercial chip row */
+.purchase-order-commercial-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kbfe-space-sm);
+}
+
+.purchase-order-commercial-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 140px;
+  padding: 6px var(--kbfe-space-sm);
+  border: 1px solid var(--kbfe-border-primary);
+  border-radius: var(--mantine-radius-sm);
+  background: color-mix(in srgb, var(--kbfe-border-primary) 5%, transparent);
+}

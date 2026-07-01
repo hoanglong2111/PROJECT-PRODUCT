@@ -132,7 +132,7 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
         </Text>
       ) : null}
 
-      <PurchaseOrderDetailInfo order={order} lines={lines} />
+      <PurchaseOrderDetailInfo order={order} />
 
       <PoLinesTable lines={lines} currencyCode={order.currency?.currency_code ?? ''} />
 
