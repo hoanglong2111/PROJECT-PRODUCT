@@ -1580,3 +1580,34 @@
   border-radius: var(--mantine-radius-sm);
   background: color-mix(in srgb, var(--kbfe-border-primary) 5%, transparent);
 }
+
+/* PO execution detail — PO lines ∥ LOT board workspace.
+   Single column by default; two columns only on very wide content so the
+   dense PO-lines table keeps enough width. */
+.purchase-order-detail-workspace {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--kbfe-space-md);
+  align-items: start;
+}
+
+.purchase-order-detail-workspace-lines,
+.purchase-order-detail-workspace-lots {
+  min-width: 0;
+}
+
+@media (min-width: 1500px) {
+  .purchase-order-detail-workspace {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+.purchase-order-detail-supporting {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kbfe-space-md);
+}
+
+.purchase-order-notes-card {
+  background: var(--kbfe-surface-elevated);
+}

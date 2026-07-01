@@ -134,25 +134,40 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
 
       <PurchaseOrderDetailInfo order={order} />
 
-      <PoLinesTable lines={lines} currencyCode={order.currency?.currency_code ?? ''} />
+      <div className="purchase-order-detail-workspace">
+        <div className="purchase-order-detail-workspace-lines">
+          <PoLinesTable lines={lines} currencyCode={order.currency?.currency_code ?? ''} />
+        </div>
+        <div className="purchase-order-detail-workspace-lots" ref={lotBoardRef}>
+          {planningQuery.isLoading ? (
+            <Paper withBorder p="lg">
+              <Group justify="center">
+                <Loader size="sm" />
+                <Text c="dimmed">Loading LOT planning...</Text>
+              </Group>
+            </Paper>
+          ) : planningQuery.isError || !planningQuery.data ? (
+            <Alert color="red" icon={<IconAlertTriangle size={18} />}>
+              {getApiErrorMessage(planningQuery.error)}
+            </Alert>
+          ) : (
+            <LotPlanningBoard planning={planningQuery.data} canManage={canManage} />
+          )}
+        </div>
+      </div>
 
-      <PurchaseOrderConfirmationsPanel purchaseOrderId={id} />
-
-      <div ref={lotBoardRef}>
-        {planningQuery.isLoading ? (
-          <Paper withBorder p="lg">
-            <Group justify="center">
-              <Loader size="sm" />
-              <Text c="dimmed">Loading LOT planning...</Text>
-            </Group>
+      <div className="purchase-order-detail-supporting">
+        <PurchaseOrderConfirmationsPanel purchaseOrderId={id} />
+        {order.notes ? (
+          <Paper withBorder p="md" className="purchase-order-notes-card">
+            <Text className="metric-label" size="xs" tt="uppercase" fw={700} c="dimmed">
+              Notes
+            </Text>
+            <Text size="sm" mt={4}>
+              {order.notes}
+            </Text>
           </Paper>
-        ) : planningQuery.isError || !planningQuery.data ? (
-          <Alert color="red" icon={<IconAlertTriangle size={18} />}>
-            {getApiErrorMessage(planningQuery.error)}
-          </Alert>
-        ) : (
-          <LotPlanningBoard planning={planningQuery.data} canManage={canManage} />
-        )}
+        ) : null}
       </div>
 
       <SupplierConfirmationModal

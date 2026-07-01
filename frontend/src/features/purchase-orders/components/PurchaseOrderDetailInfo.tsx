@@ -56,14 +56,6 @@ export function PurchaseOrderDetailInfo({ order }: { order: PurchaseOrderV1 }) {
         />
       </div>
 
-      {order.notes ? (
-        <div className="purchase-order-detail-notes">
-          <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
-            Notes
-          </Text>
-          <Text size="sm">{order.notes}</Text>
-        </div>
-      ) : null}
     </Paper>
   );
 }
