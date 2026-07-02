@@ -119,10 +119,10 @@ export function TransportModeModal({
           <Select
             label={hintedLabel(t('masterData.transportModeType'), t('glossary.transportModeType'))}
             data={[
-              { label: t('masterData.transportModeTypeSea'), value: 'SEA' },
-              { label: t('masterData.transportModeTypeAir'), value: 'AIR' },
-              { label: t('masterData.transportModeTypeRoad'), value: 'ROAD' },
-              { label: t('masterData.transportModeTypeRail'), value: 'RAIL' },
+              { label: 'SEA', value: 'SEA' },
+              { label: 'AIR', value: 'AIR' },
+              { label: 'ROAD', value: 'ROAD' },
+              { label: 'RAIL', value: 'RAIL' },
             ]}
             searchable
             required
