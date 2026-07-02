@@ -293,6 +293,25 @@ export function getPurchaseOrderSummary(purchaseOrders: PurchaseOrderV1[]) {
   );
 }
 
+// Display-only aggregation of per-line fulfillment quantities for the PO
+// execution summary. Quantities are summed as raw numbers; units may differ
+// per line (SET/PCS…), so this is a signal, not an accounting total.
+export function getPoFulfillment(lines: PurchaseOrderLineV1[]) {
+  return (lines ?? []).reduce(
+    (acc, line) => {
+      acc.ordered += toNumber(line.qty_ordered);
+      acc.confirmed += toNumber(line.qty_confirmed);
+      acc.lotted += toNumber(line.qty_lotted);
+      acc.shipped += toNumber(line.qty_shipped);
+      acc.received += toNumber(line.qty_received);
+      acc.totalLines += 1;
+      if (getPoLineLotState(line) === 'full') acc.lottedLines += 1;
+      return acc;
+    },
+    { ordered: 0, confirmed: 0, lotted: 0, shipped: 0, received: 0, lottedLines: 0, totalLines: 0 },
+  );
+}
+
 export function getPoLineLotState(line: PurchaseOrderLineV1) {
   const lottedQty = toNumber(line.qty_lotted);
   const targetQty = toNumber(line.qty_confirmed) || toNumber(line.qty_ordered);

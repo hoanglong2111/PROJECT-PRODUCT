@@ -178,9 +178,9 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
 
       <PurchaseOrderDetailInfo order={order} lines={lines} />
 
-      <PoLinesTable lines={lines} currencyCode={order.currency?.currency_code ?? ''} />
-
       <PurchaseOrderConfirmationsPanel purchaseOrderId={id} />
+
+      <PoLinesTable lines={lines} currencyCode={order.currency?.currency_code ?? ''} />
 
       {planningQuery.isLoading ? (
         <Paper withBorder p="lg">
@@ -210,7 +210,7 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
   );
 }
 
-function PoHeroFact({ label, value }: { label: string; value: ReactNode }) {
+function PoHeroFact({ label, value }: { label: ReactNode; value: ReactNode }) {
   return (
     <div className="purchase-order-detail-signal">
       <Text size="xs" c="dimmed" fw={700}>

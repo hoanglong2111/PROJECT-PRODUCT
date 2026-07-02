@@ -106,11 +106,11 @@
   text-overflow: ellipsis;
 }
 
-.purchase-order-detail-hero > .mantine-Alert-root {
+.purchase-order-detail-hero>.mantine-Alert-root {
   margin: 0 1rem 1rem;
 }
 
-.purchase-order-detail-hero > .mantine-Text-root {
+.purchase-order-detail-hero>.mantine-Text-root {
   margin: -0.25rem 1rem 1rem;
 }
 
@@ -147,7 +147,7 @@
   min-width: 0;
 }
 
-.purchase-order-form-core-grid > * {
+.purchase-order-form-core-grid>* {
   min-width: 0;
 }
 
@@ -354,7 +354,7 @@
   background: color-mix(in srgb, var(--kbfe-surface-elevated) 96%, var(--kbfe-surface-subtle) 4%);
 }
 
-.purchase-order-line-field-group > .mantine-Text-root:first-child {
+.purchase-order-line-field-group>.mantine-Text-root:first-child {
   margin-bottom: 0.5rem;
 }
 
@@ -542,7 +542,7 @@
   opacity: 0.5;
 }
 
-.purchase-order-filter-primary > * {
+.purchase-order-filter-primary>* {
   min-width: 0;
 }
 
@@ -859,12 +859,29 @@
 /* Column widths as percentages summing to 100% so the row fills the panel width
    exactly — no single flexible column hoarding the slack into a big middle gap.
    table-layout: fixed reads these from the header row; the Item column truncates. */
-.po-lines-table .col-toggle { width: 3.5%; }
-.po-lines-table .col-no { width: 4%; }
-.po-lines-table .col-item { width: 28%; }
-.po-lines-table .col-qty { width: 8.4%; }
-.po-lines-table .col-status { width: 9%; }
-.po-lines-table .col-amount { width: 13.5%; }
+.po-lines-table .col-toggle {
+  width: 3.5%;
+}
+
+.po-lines-table .col-no {
+  width: 4%;
+}
+
+.po-lines-table .col-item {
+  width: 28%;
+}
+
+.po-lines-table .col-qty {
+  width: 8.4%;
+}
+
+.po-lines-table .col-status {
+  width: 9%;
+}
+
+.po-lines-table .col-amount {
+  width: 13.5%;
+}
 
 /* The five fulfillment-quantity columns (Ordered → Received) belong together but
    read as a cramped wall of numbers side by side. A faint tinted band sets the
@@ -903,28 +920,28 @@
   transition: background-color 120ms ease;
 }
 
-.po-line-row > td {
+.po-line-row>td {
   padding: 0.4rem 0.5rem;
   vertical-align: top;
   border-bottom: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 55%, transparent);
 }
 
-.po-line-row:hover > td {
+.po-line-row:hover>td {
   background: var(--kbfe-row-hover-background);
 }
 
-.po-line-row.is-open > td {
+.po-line-row.is-open>td {
   background: var(--kbfe-row-selected-background);
   border-bottom-color: transparent;
 }
 
 /* Lot-state rail on the left edge of every row — so status reads at a glance
    even on narrow screens where the Status column is hidden. */
-.po-line-row > td.col-toggle {
+.po-line-row>td.col-toggle {
   position: relative;
 }
 
-.po-line-row > td.col-toggle::before {
+.po-line-row>td.col-toggle::before {
   content: "";
   position: absolute;
   left: 0;
@@ -934,9 +951,17 @@
   background: var(--mantine-color-gray-4);
 }
 
-.po-line-row.is-full > td.col-toggle::before { background: var(--mantine-color-teal-5); }
-.po-line-row.is-partial > td.col-toggle::before { background: var(--mantine-color-orange-5); }
-.po-line-row.is-needs-lot > td.col-toggle::before { background: var(--mantine-color-red-5); }
+.po-line-row.is-full>td.col-toggle::before {
+  background: var(--mantine-color-teal-5);
+}
+
+.po-line-row.is-partial>td.col-toggle::before {
+  background: var(--mantine-color-orange-5);
+}
+
+.po-line-row.is-needs-lot>td.col-toggle::before {
+  background: var(--mantine-color-red-5);
+}
 
 .po-line-row-toggle {
   display: inline-flex;
@@ -1059,7 +1084,7 @@
 }
 
 /* Expanded detail row — customs/pricing plus the full pipeline fallback. */
-.po-line-detail-row > td {
+.po-line-detail-row>td {
   padding: 0;
 }
 
@@ -1067,14 +1092,14 @@
   position: relative;
 }
 
-.po-line-detail-row.is-open > td {
+.po-line-detail-row.is-open>td {
   border-bottom: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 55%, transparent);
   background: color-mix(in srgb, var(--kbfe-primary-color) 4%, var(--kbfe-surface-elevated));
 }
 
-.po-line-detail-row.is-open.is-full > td::before,
-.po-line-detail-row.is-open.is-partial > td::before,
-.po-line-detail-row.is-open.is-needs-lot > td::before {
+.po-line-detail-row.is-open.is-full>td::before,
+.po-line-detail-row.is-open.is-partial>td::before,
+.po-line-detail-row.is-open.is-needs-lot>td::before {
   content: "";
   position: absolute;
   left: 0;
@@ -1084,9 +1109,17 @@
   background: var(--mantine-color-gray-4);
 }
 
-.po-line-detail-row.is-open.is-full > td::before { background: var(--mantine-color-teal-5); }
-.po-line-detail-row.is-open.is-partial > td::before { background: var(--mantine-color-orange-5); }
-.po-line-detail-row.is-open.is-needs-lot > td::before { background: var(--mantine-color-red-5); }
+.po-line-detail-row.is-open.is-full>td::before {
+  background: var(--mantine-color-teal-5);
+}
+
+.po-line-detail-row.is-open.is-partial>td::before {
+  background: var(--mantine-color-orange-5);
+}
+
+.po-line-detail-row.is-open.is-needs-lot>td::before {
+  background: var(--mantine-color-red-5);
+}
 
 .po-line-detail {
   display: flex;
@@ -1304,6 +1337,7 @@
   color: var(--kbfe-primary-color);
   background: color-mix(in srgb, var(--kbfe-primary-color) 12%, transparent);
 }
+
 @media (max-width: 62em) {
 
   .purchase-order-detail-layout {
@@ -1375,16 +1409,27 @@
     display: none;
   }
 
-  .po-lines-table .col-item { width: 33%; }
-  .po-lines-table .col-qty { width: 9%; }
-  .po-lines-table .col-status { width: 11.5%; }
-  .po-lines-table .col-amount { width: 21%; }
+  .po-lines-table .col-item {
+    width: 33%;
+  }
+
+  .po-lines-table .col-qty {
+    width: 9%;
+  }
+
+  .po-lines-table .col-status {
+    width: 11.5%;
+  }
+
+  .po-lines-table .col-amount {
+    width: 21%;
+  }
 
   .po-line-detail-pipeline {
     display: grid;
   }
 
-  .po-line-detail-pipeline + .po-line-card-meta {
+  .po-line-detail-pipeline+.po-line-card-meta {
     padding-top: 0.6rem;
     border-top: 1px dashed color-mix(in srgb, var(--kbfe-border-primary) 70%, transparent);
   }
@@ -1475,11 +1520,25 @@
     display: none;
   }
 
-  .po-lines-table .col-toggle { width: 4%; }
-  .po-lines-table .col-no { width: 5%; }
-  .po-lines-table .col-item { width: 38%; }
-  .po-lines-table .col-qty { width: 13%; }
-  .po-lines-table .col-amount { width: 27%; }
+  .po-lines-table .col-toggle {
+    width: 4%;
+  }
+
+  .po-lines-table .col-no {
+    width: 5%;
+  }
+
+  .po-lines-table .col-item {
+    width: 38%;
+  }
+
+  .po-lines-table .col-qty {
+    width: 13%;
+  }
+
+  .po-lines-table .col-amount {
+    width: 27%;
+  }
 
   .purchase-order-form-actions {
     width: 100%;
@@ -1508,4 +1567,61 @@
   .purchase-order-route-node.is-right {
     text-align: left;
   }
+}
+
+/* PO execution detail — control header (2-tier, sticky) */
+.purchase-order-control-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--kbfe-space-sm);
+  padding: var(--kbfe-space-sm) var(--kbfe-space-md);
+  border: 1px solid var(--kbfe-border-primary);
+  border-radius: var(--mantine-radius-md);
+  background: var(--kbfe-surface-elevated);
+  box-shadow: var(--kbfe-shadow-sm);
+}
+
+.purchase-order-control-identity {
+  min-width: 0;
+}
+
+.purchase-order-control-title-row {
+  row-gap: 4px;
+}
+
+.purchase-order-control-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* PO execution detail — PO lines ∥ LOT board workspace.
+   Single column by default; two columns only on very wide content so the
+   dense PO-lines table keeps enough width. */
+.purchase-order-detail-workspace {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--kbfe-space-md);
+  align-items: start;
+}
+
+.purchase-order-detail-workspace-lines,
+.purchase-order-detail-workspace-lots {
+  min-width: 0;
+}
+
+@media (min-width: 1500px) {
+  .purchase-order-detail-workspace {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+.purchase-order-detail-supporting {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kbfe-space-md);
 }
