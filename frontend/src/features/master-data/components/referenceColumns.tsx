@@ -17,6 +17,7 @@ import {
   getForwarderTypeLabel,
   getItemCategoryLabel,
   getItemTypeLabel,
+  getRevCostLabel,
   getSupplierTypeLabel,
 } from '../model/masterDataModel';
 import type { ReferenceColumn } from './ReferenceDataPanel';
@@ -45,12 +46,6 @@ function revCostColor(value: string) {
   if (value === 'REVENUE') return 'blue';
   if (value === 'COST') return 'orange';
   return 'teal';
-}
-
-function revCostLabel(value: string, t: T) {
-  if (value === 'REVENUE') return t('masterData.revCostRevenue');
-  if (value === 'COST') return t('masterData.revCostCost');
-  return t('masterData.revCostBoth');
 }
 
 export function buildItemColumns(t: T): Array<ReferenceColumn<Item>> {
@@ -251,8 +246,8 @@ export function buildTransportModeColumns(t: T): Array<ReferenceColumn<Transport
 }
 
 export function buildChargeCodeColumns(t: T): Array<ReferenceColumn<ChargeCode>> {
-  const groupLabelMap = Object.fromEntries(CHARGE_GROUPS.map((group) => [group.value, t(group.labelKey)]));
-  const categoryLabelMap = Object.fromEntries(CHARGE_CATEGORIES.map((category) => [category.value, t(category.labelKey)]));
+  const groupLabelMap = Object.fromEntries(CHARGE_GROUPS.map((group) => [group.value, group.docLabel]));
+  const categoryLabelMap = Object.fromEntries(CHARGE_CATEGORIES.map((category) => [category.value, category.docLabel]));
 
   return [
     {
@@ -296,7 +291,7 @@ export function buildChargeCodeColumns(t: T): Array<ReferenceColumn<ChargeCode>>
       label: t('masterData.revCost'),
       width: 92,
       render: (chargeCode) => (
-        <Tooltip label={revCostLabel(chargeCode.rev_cost, t)}>
+        <Tooltip label={getRevCostLabel(chargeCode.rev_cost)}>
           <Badge color={revCostColor(chargeCode.rev_cost)} variant="light">
             {revCostShort(chargeCode.rev_cost)}
           </Badge>

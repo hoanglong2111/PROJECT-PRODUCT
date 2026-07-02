@@ -16,7 +16,7 @@ import { useI18n } from '@shared/i18n';
 import { CHARGE_CATEGORIES, CHARGE_GROUPS } from '@shared/lib/chargeCategories';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
-import { optionalString } from '../model/masterDataModel';
+import { getRevCostLabel, optionalString } from '../model/masterDataModel';
 
 type ChargeCodeFormValues = {
   code: string;
@@ -149,14 +149,14 @@ export function ChargeCodeModal({
           <TextInput label={t('masterData.chargeCode')} required {...form.getInputProps('code')} />
           <Select
             label={t('masterData.chargeGroup')}
-            data={CHARGE_GROUPS.map((group) => ({ label: t(group.labelKey), value: group.value }))}
+            data={CHARGE_GROUPS.map((group) => ({ label: group.docLabel, value: group.value }))}
             required
             searchable
             {...form.getInputProps('group')}
           />
           <Select
             label={t('masterData.chargeCategory')}
-            data={CHARGE_CATEGORIES.map((category) => ({ label: t(category.labelKey), value: category.value }))}
+            data={CHARGE_CATEGORIES.map((category) => ({ label: category.docLabel, value: category.value }))}
             required
             searchable
             {...form.getInputProps('category')}
@@ -174,9 +174,9 @@ export function ChargeCodeModal({
           <Select
             label={<HeaderLabel label={t('masterData.revCost')} hint={t('glossary.revCost')} />}
             data={[
-              { label: t('masterData.revCostRevenue'), value: 'REVENUE' },
-              { label: t('masterData.revCostCost'), value: 'COST' },
-              { label: t('masterData.revCostBoth'), value: 'BOTH' },
+              { label: getRevCostLabel('REVENUE'), value: 'REVENUE' },
+              { label: getRevCostLabel('COST'), value: 'COST' },
+              { label: getRevCostLabel('BOTH'), value: 'BOTH' },
             ]}
             required
             {...form.getInputProps('revCost')}

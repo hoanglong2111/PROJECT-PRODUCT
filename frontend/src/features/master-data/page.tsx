@@ -55,6 +55,7 @@ import { useMasterDataStore } from './model/masterDataStore';
 import {
   getItemCategoryLabel,
   getItemTypeLabel,
+  getRevCostLabel,
   getSupplierTypeLabel,
   ITEM_CATEGORY_VALUES,
   ITEM_TYPE_VALUES,
@@ -212,7 +213,7 @@ export function MasterData() {
   const chargeCategoryOptions = useMemo(
     () => [
       { label: t('common.all'), value: 'ALL' },
-      ...CHARGE_CATEGORIES.map((category) => ({ label: t(category.labelKey), value: category.value })),
+      ...CHARGE_CATEGORIES.map((category) => ({ label: category.docLabel, value: category.value })),
     ],
     [t],
   );
@@ -220,7 +221,7 @@ export function MasterData() {
     () => [
       { label: `${t('common.all')} (${chargeCodeTotal})`, value: 'ALL' },
       ...CHARGE_GROUPS.map((group) => ({
-        label: `${t(group.labelKey)} (${chargeGroupCounts[group.value] ?? 0})`,
+        label: `${group.docLabel} (${chargeGroupCounts[group.value] ?? 0})`,
         value: group.value,
       })),
     ],
@@ -229,9 +230,9 @@ export function MasterData() {
   const chargeRevCostOptions = useMemo(
     () => [
       { label: t('common.all'), value: 'ALL' },
-      { label: t('masterData.revCostRevenue'), value: 'REVENUE' },
-      { label: t('masterData.revCostCost'), value: 'COST' },
-      { label: t('masterData.revCostBoth'), value: 'BOTH' },
+      { label: getRevCostLabel('REVENUE'), value: 'REVENUE' },
+      { label: getRevCostLabel('COST'), value: 'COST' },
+      { label: getRevCostLabel('BOTH'), value: 'BOTH' },
     ],
     [t],
   );
