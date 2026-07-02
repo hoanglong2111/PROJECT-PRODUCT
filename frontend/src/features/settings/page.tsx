@@ -4,6 +4,7 @@ import {
   Badge,
   Button,
   Group,
+  Modal,
   Paper,
   PasswordInput,
   Select,
@@ -16,16 +17,18 @@ import {
   Title,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { IconBulb, IconPalette, IconPlus, IconSettings, IconShieldLock, IconUserCircle, IconUsers } from '@tabler/icons-react';
+import { useDebouncedValue, useDisclosure } from '@mantine/hooks';
+import { IconBulb, IconPalette, IconPlus, IconSearch, IconSettings, IconShieldLock, IconUserCircle, IconUsers } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 import { createUser, fetchUsers, type CreateUserPayload } from '@shared/api/system';
 import { queryKeys } from '@shared/api/queryKeys';
-import { APP_ROLES } from '@shared/auth/types';
+import { APP_ROLES, type AppRole } from '@shared/auth/types';
 import { useCan } from '@shared/auth/useCan';
 import { useAuth } from '@shared/auth/useAuth';
+import { EmptyState } from '@shared/components/EmptyState';
 import { ListPagination, useListPagination } from '@shared/components/ListPagination';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
 import { useI18n } from '@shared/i18n';
@@ -45,6 +48,7 @@ import {
   ColorPresetGrid,
   DensityCard,
   EventThemeCard,
+  FineTuneCard,
   LanguageCard,
   ThemePreview,
   VisualThemeCard,
@@ -59,14 +63,21 @@ export function Settings() {
   const { user } = useAuth();
   const {
     appearanceMode,
+    colorIntensity,
     colorPreset,
+    contrastLevel,
     density,
+    dimLevel,
     eventTheme,
     language,
+    resetFineTune,
     resolvedColorScheme,
     setAppearanceMode,
+    setColorIntensity,
     setColorPreset,
+    setContrastLevel,
     setDensity,
+    setDimLevel,
     setEventTheme,
     setLanguage,
     setVisualTheme,
@@ -86,6 +97,27 @@ export function Settings() {
     enabled: canManageUsers,
   });
   const users = usersQuery.data ?? [];
+
+  const [search, setSearch] = useState('');
+  const [debouncedSearch] = useDebouncedValue(search, 250);
+  const [roleFilter, setRoleFilter] = useState<AppRole | null>(null);
+  const [createModalOpened, createModalHandlers] = useDisclosure(false);
+
+  const filteredUsers = useMemo(() => {
+    const query = debouncedSearch.trim().toLowerCase();
+    return users.filter((account) => {
+      const matchesQuery =
+        query.length === 0 ||
+        account.fullName.toLowerCase().includes(query) ||
+        account.email.toLowerCase().includes(query) ||
+        account.position.toLowerCase().includes(query);
+      const matchesRole = !roleFilter || account.role === roleFilter;
+      return matchesQuery && matchesRole;
+    });
+  }, [debouncedSearch, roleFilter, users]);
+
+  const hasActiveFilters = debouncedSearch.trim().length > 0 || roleFilter !== null;
+
   const {
     page,
     pageCount,
@@ -93,7 +125,7 @@ export function Settings() {
     pageStart,
     setPage,
     visibleItems: visibleUsers,
-  } = useListPagination(users);
+  } = useListPagination(filteredUsers, [debouncedSearch, roleFilter]);
 
   const form = useForm<CreateUserForm>({
     initialValues: {
@@ -120,6 +152,7 @@ export function Settings() {
     onSuccess: async (createdUser) => {
       setMessage(t('settings.createdAccount', { email: createdUser.email }));
       form.reset();
+      createModalHandlers.close();
       await queryClient.invalidateQueries({ queryKey: queryKeys.users });
     },
   });
@@ -190,6 +223,17 @@ export function Settings() {
         <Tabs.Panel value="preferences" pt="lg">
           <Stack gap="lg">
             <ThemePreview />
+
+            <FineTuneCard
+              colorIntensity={colorIntensity}
+              contrastLevel={contrastLevel}
+              dimLevel={dimLevel}
+              onChangeColorIntensity={setColorIntensity}
+              onChangeContrastLevel={setContrastLevel}
+              onChangeDimLevel={setDimLevel}
+              onReset={resetFineTune}
+              visualTheme={visualTheme}
+            />
 
             <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="lg">
               <ColorPresetGrid
@@ -309,100 +353,149 @@ export function Settings() {
                   <Alert color="red">{t('settings.createAccountError')}</Alert>
                 ) : null}
 
-                <div className="settings-accounts-layout">
-                  <Paper withBorder p="md" className="dl-data-panel settings-account-create-panel">
-                    <form
-                      onSubmit={form.onSubmit((values) => {
-                        setMessage(null);
-                        createUserMutation.mutate({
-                          avatarUrl: values.avatarUrl.trim() || null,
-                          department: values.department.trim(),
-                          email: values.email.trim().toLowerCase(),
-                          fullName: values.fullName.trim(),
-                          password: values.password,
-                          position: values.position.trim(),
-                          role: values.role,
-                        });
-                      })}
-                    >
-                      <Stack gap="sm">
-                        <Group gap="sm" className="settings-account-create-title">
-                          <IconPlus size={18} />
-                          <Text fw={700}>{t('settings.createAccount')}</Text>
-                        </Group>
-                        <SimpleGrid cols={{ base: 1, sm: 2, lg: 1 }} spacing="sm">
-                          <TextInput label={t('settings.fullName')} placeholder="Nguyen Van A" {...form.getInputProps('fullName')} />
-                          <TextInput label="Email" placeholder="user@kbfe.local" {...form.getInputProps('email')} />
-                          <PasswordInput label={t('common.password')} placeholder={t('settings.passwordMin')} {...form.getInputProps('password')} />
-                          <Select label={t('common.role')} data={roleOptions} {...form.getInputProps('role')} />
-                          <TextInput label={t('common.position')} placeholder="PIC Manager" {...form.getInputProps('position')} />
-                          <TextInput label={t('common.department')} placeholder="Purchasing" {...form.getInputProps('department')} />
-                        </SimpleGrid>
-                        <TextInput label={t('settings.avatarUrl')} placeholder="https://example.com/avatar.png" {...form.getInputProps('avatarUrl')} />
-                        <Button type="submit" loading={createUserMutation.isPending} fullWidth>
-                          {t('settings.createAccount')}
-                        </Button>
-                      </Stack>
-                    </form>
-                  </Paper>
+                <Modal
+                  opened={createModalOpened}
+                  onClose={createModalHandlers.close}
+                  title={t('settings.createAccount')}
+                  size="lg"
+                >
+                  <form
+                    onSubmit={form.onSubmit((values) => {
+                      setMessage(null);
+                      createUserMutation.mutate({
+                        avatarUrl: values.avatarUrl.trim() || null,
+                        department: values.department.trim(),
+                        email: values.email.trim().toLowerCase(),
+                        fullName: values.fullName.trim(),
+                        password: values.password,
+                        position: values.position.trim(),
+                        role: values.role,
+                      });
+                    })}
+                  >
+                    <Stack gap="sm">
+                      <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
+                        <TextInput label={t('settings.fullName')} placeholder="Nguyen Van A" {...form.getInputProps('fullName')} />
+                        <TextInput label="Email" placeholder="user@kbfe.local" {...form.getInputProps('email')} />
+                        <PasswordInput label={t('common.password')} placeholder={t('settings.passwordMin')} {...form.getInputProps('password')} />
+                        <Select label={t('common.role')} data={roleOptions} {...form.getInputProps('role')} />
+                        <TextInput label={t('common.position')} placeholder="PIC Manager" {...form.getInputProps('position')} />
+                        <TextInput label={t('common.department')} placeholder="Purchasing" {...form.getInputProps('department')} />
+                      </SimpleGrid>
+                      <TextInput label={t('settings.avatarUrl')} placeholder="https://example.com/avatar.png" {...form.getInputProps('avatarUrl')} />
+                      <Button type="submit" loading={createUserMutation.isPending} fullWidth>
+                        {t('settings.createAccount')}
+                      </Button>
+                    </Stack>
+                  </form>
+                </Modal>
 
-                  <Paper withBorder p="md" className="dl-data-panel settings-accounts-table-panel">
-                    <Group justify="space-between" mb="sm" className="dl-data-panel-header">
+                <Paper withBorder p="md" className="dl-data-panel settings-accounts-table-panel">
+                  <Group justify="space-between" mb="sm" className="dl-data-panel-header" wrap="wrap">
+                    <Group gap="sm">
                       <Text fw={700}>{t('settings.accounts')}</Text>
-                      <Badge variant="light">{t('common.users', { count: users.length })}</Badge>
+                      <Badge variant="light">
+                        {hasActiveFilters
+                          ? `${filteredUsers.length}/${users.length}`
+                          : t('common.users', { count: users.length })}
+                      </Badge>
                     </Group>
-                    <Table.ScrollContainer minWidth={780}>
-                      <Table highlightOnHover verticalSpacing="sm">
-                        <Table.Thead>
-                          <Table.Tr>
-                            <Table.Th>{t('common.account')}</Table.Th>
-                            <Table.Th>{t('common.role')}</Table.Th>
-                            <Table.Th>{t('common.department')}</Table.Th>
-                            <Table.Th>{t('common.position')}</Table.Th>
-                            <Table.Th>{t('common.email')}</Table.Th>
-                          </Table.Tr>
-                        </Table.Thead>
-                        <Table.Tbody>
-                          {visibleUsers.map((account) => (
-                            <Table.Tr
-                              className={highlightedAccount === account.id ? 'settings-account-row-highlight' : undefined}
-                              key={account.id}
-                            >
-                              <Table.Td>
-                                <Group gap="sm" wrap="nowrap">
-                                  <Avatar src={account.avatarUrl} radius="xl" size={32}>
-                                    {account.fullName
-                                      .split(' ')
-                                      .filter(Boolean)
-                                      .slice(0, 2)
-                                      .map((word) => word[0])
-                                      .join('')
-                                      .toUpperCase()}
-                                  </Avatar>
-                                  <Text fw={600}>{account.fullName}</Text>
-                                </Group>
-                              </Table.Td>
-                              <Table.Td>
-                                <Badge variant="light">{roleLabel(account.role)}</Badge>
-                              </Table.Td>
-                              <Table.Td>{departmentLabel(account.department)}</Table.Td>
-                              <Table.Td>{account.position}</Table.Td>
-                              <Table.Td>{account.email}</Table.Td>
-                            </Table.Tr>
-                          ))}
-                        </Table.Tbody>
-                      </Table>
-                    </Table.ScrollContainer>
-                    <ListPagination
-                      page={page}
-                      pageCount={pageCount}
-                      pageEnd={pageEnd}
-                      pageStart={pageStart}
-                      setPage={setPage}
-                      total={users.length}
+                    <Button leftSection={<IconPlus size={16} />} onClick={createModalHandlers.open}>
+                      {t('settings.createAccount')}
+                    </Button>
+                  </Group>
+
+                  <Group gap="sm" mb="md" wrap="wrap" className="dl-filter-panel">
+                    <TextInput
+                      leftSection={<IconSearch size={16} />}
+                      placeholder={t('settings.searchAccounts')}
+                      value={search}
+                      onChange={(event) => setSearch(event.currentTarget.value)}
+                      style={{ flex: '1 1 16rem' }}
                     />
-                  </Paper>
-                </div>
+                    <Select
+                      placeholder={t('settings.filterByRole')}
+                      data={roleOptions}
+                      value={roleFilter}
+                      onChange={(value) => setRoleFilter(value as AppRole | null)}
+                      clearable
+                      style={{ flex: '0 1 14rem' }}
+                    />
+                  </Group>
+
+                  {users.length === 0 ? (
+                    <EmptyState
+                      title={t('settings.noAccountsYet')}
+                      description={t('settings.noAccountsYetDescription')}
+                      action={{ label: t('settings.createAccount'), onClick: createModalHandlers.open }}
+                    />
+                  ) : filteredUsers.length === 0 ? (
+                    <EmptyState
+                      title={t('settings.noAccountsFound')}
+                      description={t('settings.noAccountsFoundDescription')}
+                      action={{
+                        label: t('settings.clearFilters'),
+                        onClick: () => {
+                          setSearch('');
+                          setRoleFilter(null);
+                        },
+                      }}
+                    />
+                  ) : (
+                    <>
+                      <Table.ScrollContainer minWidth={780}>
+                        <Table highlightOnHover verticalSpacing="sm">
+                          <Table.Thead>
+                            <Table.Tr>
+                              <Table.Th>{t('common.account')}</Table.Th>
+                              <Table.Th>{t('common.role')}</Table.Th>
+                              <Table.Th>{t('common.department')}</Table.Th>
+                              <Table.Th>{t('common.position')}</Table.Th>
+                              <Table.Th>{t('common.email')}</Table.Th>
+                            </Table.Tr>
+                          </Table.Thead>
+                          <Table.Tbody>
+                            {visibleUsers.map((account) => (
+                              <Table.Tr
+                                className={highlightedAccount === account.id ? 'settings-account-row-highlight' : undefined}
+                                key={account.id}
+                              >
+                                <Table.Td>
+                                  <Group gap="sm" wrap="nowrap">
+                                    <Avatar src={account.avatarUrl} radius="xl" size={32}>
+                                      {account.fullName
+                                        .split(' ')
+                                        .filter(Boolean)
+                                        .slice(0, 2)
+                                        .map((word) => word[0])
+                                        .join('')
+                                        .toUpperCase()}
+                                    </Avatar>
+                                    <Text fw={600}>{account.fullName}</Text>
+                                  </Group>
+                                </Table.Td>
+                                <Table.Td>
+                                  <Badge variant="light">{roleLabel(account.role)}</Badge>
+                                </Table.Td>
+                                <Table.Td>{departmentLabel(account.department)}</Table.Td>
+                                <Table.Td>{account.position}</Table.Td>
+                                <Table.Td>{account.email}</Table.Td>
+                              </Table.Tr>
+                            ))}
+                          </Table.Tbody>
+                        </Table>
+                      </Table.ScrollContainer>
+                      <ListPagination
+                        page={page}
+                        pageCount={pageCount}
+                        pageEnd={pageEnd}
+                        pageStart={pageStart}
+                        setPage={setPage}
+                        total={filteredUsers.length}
+                      />
+                    </>
+                  )}
+                </Paper>
               </Stack>
             )}
           </Tabs.Panel>

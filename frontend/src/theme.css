@@ -1,18 +1,18 @@
 :root,
 html[data-kbfe-resolved-color-scheme='light'][data-kbfe-visual-theme='standard'] {
-  --kbfe-background-primary: #f7f8f6;
+  --kbfe-background-primary-base: #f7f8f6;
   /* Eye-comfort: avoid pure #fff surfaces (glare) — a hair off-white keeps it
      crisp without the harsh light bounce. Text softened off near-black so the
      light↔dark contrast isn't a fatiguing ~16:1 (still ~13:1, well above AA). */
-  --kbfe-background-secondary: #fbfcfa;
-  --kbfe-surface-elevated: rgba(251, 252, 250, 0.92);
-  --kbfe-text-primary: #1b232e;
-  --kbfe-text-secondary: #4b5563;
-  --kbfe-border-primary: #dde3de;
-  --kbfe-border-strong: #b9c3bb;
-  --kbfe-primary-color: #0d9488;
+  --kbfe-background-secondary-base: #fbfcfa;
+  --kbfe-surface-elevated-base: rgba(251, 252, 250, 0.92);
+  --kbfe-text-primary-base: #1b232e;
+  --kbfe-text-secondary-base: #4b5563;
+  --kbfe-border-primary-base: #dde3de;
+  --kbfe-border-strong-base: #b9c3bb;
+  --kbfe-primary-color-base: #0d9488;
   --kbfe-primary-contrast: #ffffff;
-  --kbfe-hover-background: #eef7f5;
+  --kbfe-hover-background-base: #eef7f5;
   --kbfe-page-background: linear-gradient(180deg, rgba(245, 248, 250, 0.95), rgba(251, 252, 250, 0.94)), #f7f8f6;
   --kbfe-risk-background: #fff7f7;
   --kbfe-risk-border: #fecaca;
@@ -33,16 +33,16 @@ html[data-kbfe-resolved-color-scheme='dark'][data-kbfe-visual-theme='standard'] 
      near-white text causes halation (text appears to glow/smear, worst for
      astigmatism); a slightly-lifted ground + slightly-dimmed text keeps it
      legible while killing the glow. */
-  --kbfe-background-primary: #0f141d;
-  --kbfe-background-secondary: #161e2b;
-  --kbfe-surface-elevated: rgba(26, 33, 47, 0.9);
-  --kbfe-text-primary: #e7ebf2;
-  --kbfe-text-secondary: #cbd5e1;
-  --kbfe-border-primary: #253044;
-  --kbfe-border-strong: #3b4c66;
-  --kbfe-primary-color: #2dd4bf;
+  --kbfe-background-primary-base: #0f141d;
+  --kbfe-background-secondary-base: #161e2b;
+  --kbfe-surface-elevated-base: rgba(26, 33, 47, 0.9);
+  --kbfe-text-primary-base: #e7ebf2;
+  --kbfe-text-secondary-base: #cbd5e1;
+  --kbfe-border-primary-base: #253044;
+  --kbfe-border-strong-base: #3b4c66;
+  --kbfe-primary-color-base: #2dd4bf;
   --kbfe-primary-contrast: #042f2e;
-  --kbfe-hover-background: #1f2937;
+  --kbfe-hover-background-base: #1f2937;
   --kbfe-page-background: linear-gradient(180deg, rgba(22, 30, 43, 0.97), rgba(15, 20, 29, 0.94)), #0f141d;
   --kbfe-risk-background: #2a1216;
   --kbfe-risk-border: #7f1d1d;
@@ -59,16 +59,16 @@ html[data-kbfe-resolved-color-scheme='dark'][data-kbfe-visual-theme='standard'] 
 }
 
 html[data-kbfe-resolved-color-scheme='light'][data-kbfe-visual-theme='high-contrast'] {
-  --kbfe-background-primary: #ffffff;
-  --kbfe-background-secondary: #ffffff;
-  --kbfe-surface-elevated: #ffffff;
-  --kbfe-text-primary: #000000;
-  --kbfe-text-secondary: #1f2937;
-  --kbfe-border-primary: #000000;
-  --kbfe-border-strong: #000000;
-  --kbfe-primary-color: #003d80;
+  --kbfe-background-primary-base: #ffffff;
+  --kbfe-background-secondary-base: #ffffff;
+  --kbfe-surface-elevated-base: #ffffff;
+  --kbfe-text-primary-base: #000000;
+  --kbfe-text-secondary-base: #1f2937;
+  --kbfe-border-primary-base: #000000;
+  --kbfe-border-strong-base: #000000;
+  --kbfe-primary-color-base: #003d80;
   --kbfe-primary-contrast: #ffffff;
-  --kbfe-hover-background: #e6f0ff;
+  --kbfe-hover-background-base: #e6f0ff;
   --kbfe-page-background: #ffffff;
   --kbfe-risk-background: #fff0f0;
   --kbfe-risk-border: #8b0000;
@@ -85,16 +85,16 @@ html[data-kbfe-resolved-color-scheme='light'][data-kbfe-visual-theme='high-contr
 }
 
 html[data-kbfe-resolved-color-scheme='dark'][data-kbfe-visual-theme='high-contrast'] {
-  --kbfe-background-primary: #000000;
-  --kbfe-background-secondary: #0a0a0a;
-  --kbfe-surface-elevated: #0a0a0a;
-  --kbfe-text-primary: #ffffff;
-  --kbfe-text-secondary: #f3f4f6;
-  --kbfe-border-primary: #ffffff;
-  --kbfe-border-strong: #ffffff;
-  --kbfe-primary-color: #ffd400;
+  --kbfe-background-primary-base: #000000;
+  --kbfe-background-secondary-base: #0a0a0a;
+  --kbfe-surface-elevated-base: #0a0a0a;
+  --kbfe-text-primary-base: #ffffff;
+  --kbfe-text-secondary-base: #f3f4f6;
+  --kbfe-border-primary-base: #ffffff;
+  --kbfe-border-strong-base: #ffffff;
+  --kbfe-primary-color-base: #ffd400;
   --kbfe-primary-contrast: #000000;
-  --kbfe-hover-background: #1f1f1f;
+  --kbfe-hover-background-base: #1f1f1f;
   --kbfe-page-background: #000000;
   --kbfe-risk-background: #2b0000;
   --kbfe-risk-border: #ffb4b4;
@@ -110,64 +110,21 @@ html[data-kbfe-resolved-color-scheme='dark'][data-kbfe-visual-theme='high-contra
   --kbfe-shadow-lg: none;
 }
 
-html[data-kbfe-resolved-color-scheme='light'][data-kbfe-visual-theme='blue-sight'] {
-  --kbfe-background-primary: #fbf4ea;
-  --kbfe-background-secondary: #fff8ef;
-  --kbfe-surface-elevated: rgba(255, 248, 239, 0.92);
-  --kbfe-text-primary: #23201d;
-  --kbfe-text-secondary: #5c5148;
-  --kbfe-border-primary: #d8cdbd;
-  --kbfe-border-strong: #baa994;
-  --kbfe-primary-color: #0f766e;
-  --kbfe-primary-contrast: #ffffff;
-  --kbfe-hover-background: #f1eadf;
-  --kbfe-page-background: linear-gradient(180deg, rgba(251, 244, 234, 0.98), rgba(255, 248, 239, 0.94)), #fbf4ea;
-  --kbfe-risk-background: #fff1ed;
-  --kbfe-risk-border: #f4b6a6;
-  --kbfe-flow-background: #edf6f2;
-  --kbfe-flow-border: #a9cdbf;
-  --kbfe-ops-background: #eef8f5;
-  --kbfe-ops-border: #9fcabf;
-  --kbfe-ops-risk-background: #fff3df;
-  --kbfe-ops-risk-border: #e0bd80;
-  --kbfe-card-shadow-hover: 0 6px 16px rgba(59, 47, 34, 0.08);
-}
-
-html[data-kbfe-resolved-color-scheme='dark'][data-kbfe-visual-theme='blue-sight'] {
-  --kbfe-background-primary: #061220;
-  --kbfe-background-secondary: #0b1b2e;
-  --kbfe-surface-elevated: rgba(11, 27, 46, 0.9);
-  --kbfe-text-primary: #eaf4ff;
-  --kbfe-text-secondary: #a9c2d8;
-  --kbfe-border-primary: #1e3a5f;
-  --kbfe-border-strong: #2c5b88;
-  --kbfe-primary-color: #38bdf8;
-  --kbfe-primary-contrast: #031827;
-  --kbfe-hover-background: #10263d;
-  --kbfe-page-background: linear-gradient(180deg, rgba(6, 18, 32, 0.98), rgba(8, 27, 46, 0.96)), #061220;
-  --kbfe-risk-background: #30191e;
-  --kbfe-risk-border: #a04758;
-  --kbfe-flow-background: #0b2038;
-  --kbfe-flow-border: #2c69a0;
-  --kbfe-ops-background: #082f49;
-  --kbfe-ops-border: #0ea5e9;
-  --kbfe-ops-risk-background: #2b1f0e;
-  --kbfe-ops-risk-border: #b9812f;
-  --kbfe-card-shadow-hover: 0 6px 20px rgba(0, 0, 0, 0.34);
-}
-
-html[data-kbfe-resolved-color-scheme='light'][data-kbfe-visual-theme='yellow-sight'] {
-  --kbfe-background-primary: #f6ebcb;
-  --kbfe-background-secondary: #fff4d6;
-  --kbfe-surface-elevated: rgba(255, 244, 214, 0.92);
-  --kbfe-text-primary: #2a2118;
-  --kbfe-text-secondary: #66523c;
-  --kbfe-border-primary: #d7bd82;
-  --kbfe-border-strong: #a98643;
-  --kbfe-primary-color: #9a6700;
-  --kbfe-primary-contrast: #fff8e6;
-  --kbfe-hover-background: #ead9ad;
-  --kbfe-page-background: linear-gradient(180deg, rgba(246, 235, 203, 0.98), rgba(255, 244, 214, 0.95)), #f6ebcb;
+/* Eye Comfort Mode — merges the former Blue Sight + Yellow Sight themes into a
+   single warm reading palette (paper-like cream in light, warm brown in dark)
+   that avoids both harsh cool blues and glare-y pure white/black. */
+html[data-kbfe-resolved-color-scheme='light'][data-kbfe-visual-theme='eye-comfort'] {
+  --kbfe-background-primary-base: #f8efdd;
+  --kbfe-background-secondary-base: #fdf6e7;
+  --kbfe-surface-elevated-base: rgba(253, 246, 231, 0.92);
+  --kbfe-text-primary-base: #26201a;
+  --kbfe-text-secondary-base: #5f5342;
+  --kbfe-border-primary-base: #d8c6a3;
+  --kbfe-border-strong-base: #b1996e;
+  --kbfe-primary-color-base: #8a5a17;
+  --kbfe-primary-contrast: #fff7e4;
+  --kbfe-hover-background-base: #efe3c8;
+  --kbfe-page-background: linear-gradient(180deg, rgba(248, 239, 221, 0.98), rgba(253, 246, 231, 0.95)), #f8efdd;
   --kbfe-risk-background: #ffe9d6;
   --kbfe-risk-border: #d3895d;
   --kbfe-flow-background: #f3e7c3;
@@ -176,21 +133,21 @@ html[data-kbfe-resolved-color-scheme='light'][data-kbfe-visual-theme='yellow-sig
   --kbfe-ops-border: #b79e5f;
   --kbfe-ops-risk-background: #ffe8bd;
   --kbfe-ops-risk-border: #c48a2c;
-  --kbfe-card-shadow-hover: 0 6px 16px rgba(91, 62, 18, 0.1);
+  --kbfe-card-shadow-hover: 0 6px 16px rgba(91, 62, 18, 0.09);
 }
 
-html[data-kbfe-resolved-color-scheme='dark'][data-kbfe-visual-theme='yellow-sight'] {
-  --kbfe-background-primary: #20160c;
-  --kbfe-background-secondary: #2b1d0f;
-  --kbfe-surface-elevated: rgba(43, 29, 15, 0.9);
-  --kbfe-text-primary: #ffe8b0;
-  --kbfe-text-secondary: #d6b777;
-  --kbfe-border-primary: #6b4a1f;
-  --kbfe-border-strong: #9a6b2b;
-  --kbfe-primary-color: #f59e0b;
-  --kbfe-primary-contrast: #20160c;
-  --kbfe-hover-background: #3a2814;
-  --kbfe-page-background: linear-gradient(180deg, rgba(32, 22, 12, 0.98), rgba(43, 29, 15, 0.96)), #20160c;
+html[data-kbfe-resolved-color-scheme='dark'][data-kbfe-visual-theme='eye-comfort'] {
+  --kbfe-background-primary-base: #211a10;
+  --kbfe-background-secondary-base: #2a2214;
+  --kbfe-surface-elevated-base: rgba(42, 34, 20, 0.9);
+  --kbfe-text-primary-base: #f2e3c2;
+  --kbfe-text-secondary-base: #cdb488;
+  --kbfe-border-primary-base: #5c4a26;
+  --kbfe-border-strong-base: #8a6f38;
+  --kbfe-primary-color-base: #e8a33d;
+  --kbfe-primary-contrast: #241a0b;
+  --kbfe-hover-background-base: #382d18;
+  --kbfe-page-background: linear-gradient(180deg, rgba(33, 26, 16, 0.98), rgba(42, 34, 20, 0.96)), #211a10;
   --kbfe-risk-background: #381b12;
   --kbfe-risk-border: #b86f45;
   --kbfe-flow-background: #2d2413;
@@ -243,6 +200,29 @@ html {
   --kbfe-z-sticky: 10;
   --kbfe-z-overlay: 40;
   --kbfe-z-skip-link: 60;
+
+  /* --- Visual fine-tune derivation layer ---------------------------------
+     Sliders in Settings write --kbfe-user-intensity/-dim/-contrast (0..1) as
+     inline styles on <html>. We derive the final theme tokens here from the
+     per-theme "-base" values above, instead of using CSS filter (which would
+     break position:fixed inside the AppShell header). High-contrast mode pins
+     these back to their raw base values further below so accessibility is
+     never degraded by the sliders. */
+  --kbfe-dim-pct: calc(var(--kbfe-user-dim, 0) * 22%);
+  --kbfe-background-primary: color-mix(in srgb, var(--kbfe-background-primary-base), #000 var(--kbfe-dim-pct));
+  --kbfe-background-secondary: color-mix(in srgb, var(--kbfe-background-secondary-base), #000 var(--kbfe-dim-pct));
+  --kbfe-surface-elevated: color-mix(in srgb, var(--kbfe-surface-elevated-base), #000 var(--kbfe-dim-pct));
+  --kbfe-hover-background: color-mix(in srgb, var(--kbfe-hover-background-base), #000 var(--kbfe-dim-pct));
+
+  --kbfe-soften-pct: calc((1 - var(--kbfe-user-contrast, 1)) * 40%);
+  --kbfe-text-primary: color-mix(in srgb, var(--kbfe-text-primary-base), var(--kbfe-background-primary-base) var(--kbfe-soften-pct));
+  --kbfe-text-secondary: color-mix(in srgb, var(--kbfe-text-secondary-base), var(--kbfe-background-primary-base) var(--kbfe-soften-pct));
+  --kbfe-border-primary: color-mix(in srgb, var(--kbfe-border-primary-base), var(--kbfe-background-primary-base) var(--kbfe-soften-pct));
+  --kbfe-border-strong: color-mix(in srgb, var(--kbfe-border-strong-base), var(--kbfe-background-primary-base) var(--kbfe-soften-pct));
+
+  --kbfe-desat-pct: calc((1 - var(--kbfe-user-intensity, 1)) * 55%);
+  --kbfe-primary-color: color-mix(in srgb, var(--kbfe-primary-color-base), var(--kbfe-text-secondary-base) var(--kbfe-desat-pct));
+
   /* Subtle surface + shadow tokens, derived from the theme-aware base vars. */
   --kbfe-surface-subtle: color-mix(in srgb, var(--kbfe-surface-elevated) 92%, var(--kbfe-border-primary) 8%);
   --kbfe-shadow-xs: var(--kbfe-shadow-sm);
@@ -255,20 +235,21 @@ html {
   --kbfe-icon-border: color-mix(in srgb, var(--kbfe-primary-color) 18%, var(--kbfe-border-primary));
   --kbfe-icon-color: color-mix(in srgb, var(--kbfe-primary-color) 72%, var(--kbfe-text-primary));
   --kbfe-chart-grid: color-mix(in srgb, var(--kbfe-border-primary) 52%, transparent);
-  --kbfe-status-blue: color-mix(in srgb, var(--mantine-color-blue-6) 72%, var(--kbfe-text-primary));
-  --kbfe-status-blue-bg: color-mix(in srgb, var(--mantine-color-blue-6) 10%, var(--kbfe-surface-elevated));
-  --kbfe-status-orange: color-mix(in srgb, var(--mantine-color-orange-7) 72%, var(--kbfe-text-primary));
-  --kbfe-status-orange-bg: color-mix(in srgb, var(--mantine-color-orange-6) 10%, var(--kbfe-surface-elevated));
-  --kbfe-status-teal: color-mix(in srgb, var(--mantine-color-teal-6) 72%, var(--kbfe-text-primary));
-  --kbfe-status-teal-bg: color-mix(in srgb, var(--mantine-color-teal-6) 10%, var(--kbfe-surface-elevated));
-  --kbfe-status-yellow: color-mix(in srgb, var(--mantine-color-yellow-7) 74%, var(--kbfe-text-primary));
-  --kbfe-status-yellow-bg: color-mix(in srgb, var(--mantine-color-yellow-5) 12%, var(--kbfe-surface-elevated));
-  --kbfe-status-red: color-mix(in srgb, var(--mantine-color-red-6) 74%, var(--kbfe-text-primary));
-  --kbfe-status-red-bg: color-mix(in srgb, var(--mantine-color-red-6) 10%, var(--kbfe-surface-elevated));
-  --kbfe-status-cyan: color-mix(in srgb, var(--mantine-color-cyan-7) 72%, var(--kbfe-text-primary));
-  --kbfe-status-cyan-bg: color-mix(in srgb, var(--mantine-color-cyan-6) 10%, var(--kbfe-surface-elevated));
+  --kbfe-status-blue: color-mix(in srgb, color-mix(in srgb, var(--mantine-color-blue-6), var(--kbfe-text-secondary-base) var(--kbfe-desat-pct)) 72%, var(--kbfe-text-primary));
+  --kbfe-status-blue-bg: color-mix(in srgb, color-mix(in srgb, var(--mantine-color-blue-6), var(--kbfe-text-secondary-base) var(--kbfe-desat-pct)) calc(10% * var(--kbfe-user-intensity, 1)), var(--kbfe-surface-elevated));
+  --kbfe-status-orange: color-mix(in srgb, color-mix(in srgb, var(--mantine-color-orange-7), var(--kbfe-text-secondary-base) var(--kbfe-desat-pct)) 72%, var(--kbfe-text-primary));
+  --kbfe-status-orange-bg: color-mix(in srgb, color-mix(in srgb, var(--mantine-color-orange-6), var(--kbfe-text-secondary-base) var(--kbfe-desat-pct)) calc(10% * var(--kbfe-user-intensity, 1)), var(--kbfe-surface-elevated));
+  --kbfe-status-teal: color-mix(in srgb, color-mix(in srgb, var(--mantine-color-teal-6), var(--kbfe-text-secondary-base) var(--kbfe-desat-pct)) 72%, var(--kbfe-text-primary));
+  --kbfe-status-teal-bg: color-mix(in srgb, color-mix(in srgb, var(--mantine-color-teal-6), var(--kbfe-text-secondary-base) var(--kbfe-desat-pct)) calc(10% * var(--kbfe-user-intensity, 1)), var(--kbfe-surface-elevated));
+  --kbfe-status-yellow: color-mix(in srgb, color-mix(in srgb, var(--mantine-color-yellow-7), var(--kbfe-text-secondary-base) var(--kbfe-desat-pct)) 74%, var(--kbfe-text-primary));
+  --kbfe-status-yellow-bg: color-mix(in srgb, color-mix(in srgb, var(--mantine-color-yellow-5), var(--kbfe-text-secondary-base) var(--kbfe-desat-pct)) calc(12% * var(--kbfe-user-intensity, 1)), var(--kbfe-surface-elevated));
+  --kbfe-status-red: color-mix(in srgb, color-mix(in srgb, var(--mantine-color-red-6), var(--kbfe-text-secondary-base) var(--kbfe-desat-pct)) 74%, var(--kbfe-text-primary));
+  --kbfe-status-red-bg: color-mix(in srgb, color-mix(in srgb, var(--mantine-color-red-6), var(--kbfe-text-secondary-base) var(--kbfe-desat-pct)) calc(10% * var(--kbfe-user-intensity, 1)), var(--kbfe-surface-elevated));
+  --kbfe-status-cyan: color-mix(in srgb, color-mix(in srgb, var(--mantine-color-cyan-7), var(--kbfe-text-secondary-base) var(--kbfe-desat-pct)) 72%, var(--kbfe-text-primary));
+  --kbfe-status-cyan-bg: color-mix(in srgb, color-mix(in srgb, var(--mantine-color-cyan-6), var(--kbfe-text-secondary-base) var(--kbfe-desat-pct)) calc(10% * var(--kbfe-user-intensity, 1)), var(--kbfe-surface-elevated));
   --kbfe-status-gray: color-mix(in srgb, var(--mantine-color-gray-7) 80%, var(--kbfe-text-primary));
   --kbfe-status-gray-bg: color-mix(in srgb, var(--mantine-color-gray-6) 10%, var(--kbfe-surface-elevated));
+
   --mantine-color-body: var(--kbfe-background-primary);
   --mantine-color-text: var(--kbfe-text-primary);
   --mantine-color-default: var(--kbfe-background-secondary);
@@ -310,7 +291,33 @@ html {
   --mantine-h6-font-weight: var(--kbfe-font-weight-semibold);
 }
 
+/* Eye Comfort Mode: re-anchor status/chart colors on warmer hues so charts and
+   badges don't clash with the warm surface (indigo/amber/brown instead of the
+   default cool blue/cyan mix). */
+html[data-kbfe-visual-theme='eye-comfort'] {
+  --kbfe-chart-grid: color-mix(in srgb, var(--kbfe-border-primary) 60%, transparent);
+  --kbfe-status-blue: color-mix(in srgb, var(--mantine-color-indigo-7) 70%, var(--kbfe-text-primary));
+  --kbfe-status-blue-bg: color-mix(in srgb, var(--mantine-color-indigo-6) 10%, var(--kbfe-surface-elevated));
+  --kbfe-status-cyan: color-mix(in srgb, var(--mantine-color-grape-7) 68%, var(--kbfe-text-primary));
+  --kbfe-status-cyan-bg: color-mix(in srgb, var(--mantine-color-grape-6) 10%, var(--kbfe-surface-elevated));
+  --kbfe-status-teal: color-mix(in srgb, var(--mantine-color-lime-7) 68%, var(--kbfe-text-primary));
+  --kbfe-status-teal-bg: color-mix(in srgb, var(--mantine-color-lime-6) 10%, var(--kbfe-surface-elevated));
+}
+
+/* Accessibility guard: the fine-tune sliders (intensity/dim/contrast) must
+   never be able to weaken High Contrast mode. Pin every derived token back to
+   its raw theme value here; this selector's higher specificity beats the
+   plain `html { }` derivation block above regardless of source order. */
 html[data-kbfe-visual-theme='high-contrast'] {
+  --kbfe-background-primary: var(--kbfe-background-primary-base);
+  --kbfe-background-secondary: var(--kbfe-background-secondary-base);
+  --kbfe-surface-elevated: var(--kbfe-surface-elevated-base);
+  --kbfe-hover-background: var(--kbfe-hover-background-base);
+  --kbfe-text-primary: var(--kbfe-text-primary-base);
+  --kbfe-text-secondary: var(--kbfe-text-secondary-base);
+  --kbfe-border-primary: var(--kbfe-border-primary-base);
+  --kbfe-border-strong: var(--kbfe-border-strong-base);
+  --kbfe-primary-color: var(--kbfe-primary-color-base);
   --kbfe-row-hover-background: var(--kbfe-hover-background);
   --kbfe-row-selected-background: var(--kbfe-hover-background);
   --kbfe-code-background: var(--kbfe-surface-elevated);
@@ -361,94 +368,94 @@ html[data-kbfe-density='compact'] {
    Light values apply in light/auto mode; dark values in dark mode. */
 html[data-kbfe-color-preset='teal']:not([data-kbfe-resolved-color-scheme='dark']),
 html[data-kbfe-color-preset='teal'][data-kbfe-resolved-color-scheme='light'] {
-  --kbfe-primary-color: #0d9488;
+  --kbfe-primary-color-base: #0d9488;
   --kbfe-primary-contrast: #ffffff;
 }
 html[data-kbfe-color-preset='teal'][data-kbfe-resolved-color-scheme='dark'] {
-  --kbfe-primary-color: #2dd4bf;
+  --kbfe-primary-color-base: #2dd4bf;
   --kbfe-primary-contrast: #042f2e;
 }
 
 html[data-kbfe-color-preset='ocean']:not([data-kbfe-resolved-color-scheme='dark']),
 html[data-kbfe-color-preset='ocean'][data-kbfe-resolved-color-scheme='light'] {
-  --kbfe-primary-color: #3182ce;
+  --kbfe-primary-color-base: #3182ce;
   --kbfe-primary-contrast: #ffffff;
 }
 html[data-kbfe-color-preset='ocean'][data-kbfe-resolved-color-scheme='dark'] {
-  --kbfe-primary-color: #63b3ed;
+  --kbfe-primary-color-base: #63b3ed;
   --kbfe-primary-contrast: #1a365d;
 }
 
 html[data-kbfe-color-preset='forest']:not([data-kbfe-resolved-color-scheme='dark']),
 html[data-kbfe-color-preset='forest'][data-kbfe-resolved-color-scheme='light'] {
-  --kbfe-primary-color: #38a169;
+  --kbfe-primary-color-base: #38a169;
   --kbfe-primary-contrast: #ffffff;
 }
 html[data-kbfe-color-preset='forest'][data-kbfe-resolved-color-scheme='dark'] {
-  --kbfe-primary-color: #68d391;
+  --kbfe-primary-color-base: #68d391;
   --kbfe-primary-contrast: #1c4532;
 }
 
 html[data-kbfe-color-preset='sunset']:not([data-kbfe-resolved-color-scheme='dark']),
 html[data-kbfe-color-preset='sunset'][data-kbfe-resolved-color-scheme='light'] {
-  --kbfe-primary-color: #dd6b20;
+  --kbfe-primary-color-base: #dd6b20;
   /* Light sunset is too bright for white label text — use a deep brown (its own
      darkest shade) so filled-button text reads. */
   --kbfe-primary-contrast: #4a2410;
 }
 html[data-kbfe-color-preset='sunset'][data-kbfe-resolved-color-scheme='dark'] {
-  --kbfe-primary-color: #f6ad55;
+  --kbfe-primary-color-base: #f6ad55;
   --kbfe-primary-contrast: #652b19;
 }
 
 html[data-kbfe-color-preset='midnight']:not([data-kbfe-resolved-color-scheme='dark']),
 html[data-kbfe-color-preset='midnight'][data-kbfe-resolved-color-scheme='light'] {
-  --kbfe-primary-color: #5a67d8;
+  --kbfe-primary-color-base: #5a67d8;
   --kbfe-primary-contrast: #ffffff;
 }
 html[data-kbfe-color-preset='midnight'][data-kbfe-resolved-color-scheme='dark'] {
-  --kbfe-primary-color: #a3bffa;
+  --kbfe-primary-color-base: #a3bffa;
   --kbfe-primary-contrast: #342d5e;
 }
 
 html[data-kbfe-color-preset='lavender']:not([data-kbfe-resolved-color-scheme='dark']),
 html[data-kbfe-color-preset='lavender'][data-kbfe-resolved-color-scheme='light'] {
-  --kbfe-primary-color: #805ad5;
+  --kbfe-primary-color-base: #805ad5;
   --kbfe-primary-contrast: #ffffff;
 }
 html[data-kbfe-color-preset='lavender'][data-kbfe-resolved-color-scheme='dark'] {
-  --kbfe-primary-color: #b794f4;
+  --kbfe-primary-color-base: #b794f4;
   --kbfe-primary-contrast: #322659;
 }
 
 html[data-kbfe-color-preset='rose']:not([data-kbfe-resolved-color-scheme='dark']),
 html[data-kbfe-color-preset='rose'][data-kbfe-resolved-color-scheme='light'] {
-  --kbfe-primary-color: #d53f8c;
+  --kbfe-primary-color-base: #d53f8c;
   --kbfe-primary-contrast: #ffffff;
 }
 html[data-kbfe-color-preset='rose'][data-kbfe-resolved-color-scheme='dark'] {
-  --kbfe-primary-color: #f687b3;
+  --kbfe-primary-color-base: #f687b3;
   --kbfe-primary-contrast: #521b41;
 }
 
 html[data-kbfe-color-preset='amber']:not([data-kbfe-resolved-color-scheme='dark']),
 html[data-kbfe-color-preset='amber'][data-kbfe-resolved-color-scheme='light'] {
-  --kbfe-primary-color: #d69e2e;
+  --kbfe-primary-color-base: #d69e2e;
   /* Light amber (gold) + white text is the worst offender (~2:1) — use deep
      brown so filled-button text reads. */
   --kbfe-primary-contrast: #4a330a;
 }
 html[data-kbfe-color-preset='amber'][data-kbfe-resolved-color-scheme='dark'] {
-  --kbfe-primary-color: #ecc94b;
+  --kbfe-primary-color-base: #ecc94b;
   --kbfe-primary-contrast: #5f370e;
 }
 
 html[data-kbfe-color-preset='slate']:not([data-kbfe-resolved-color-scheme='dark']),
 html[data-kbfe-color-preset='slate'][data-kbfe-resolved-color-scheme='light'] {
-  --kbfe-primary-color: #4a5568;
+  --kbfe-primary-color-base: #4a5568;
   --kbfe-primary-contrast: #ffffff;
 }
 html[data-kbfe-color-preset='slate'][data-kbfe-resolved-color-scheme='dark'] {
-  --kbfe-primary-color: #a0aec0;
+  --kbfe-primary-color-base: #a0aec0;
   --kbfe-primary-contrast: #171923;
 }

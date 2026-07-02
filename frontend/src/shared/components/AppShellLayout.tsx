@@ -1,4 +1,5 @@
 import {
+  ActionIcon,
   AppShell,
   Avatar,
   Burger,
@@ -6,13 +7,17 @@ import {
   Menu,
   NavLink,
   Text,
+  Tooltip,
   UnstyledButton,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
   IconChevronDown,
   IconLogout,
+  IconMoon,
   IconSettings,
+  IconSun,
+  IconSunMoon,
   IconUserCircle,
 } from '@tabler/icons-react';
 import { Link, NavLink as RouterNavLink, Outlet, useLocation } from 'react-router-dom';
@@ -20,6 +25,8 @@ import { Link, NavLink as RouterNavLink, Outlet, useLocation } from 'react-route
 import { useAuth } from '@shared/auth/useAuth';
 import { useI18n } from '@shared/i18n';
 import { workspaceModules } from '@shared/navigation/workspaceModules';
+import { useWorkspacePreferences } from '@shared/preferences/WorkspacePreferencesContext';
+import { GbFlag, VnFlag } from './FlagIcon';
 import { GlobalSearch } from './GlobalSearch';
 import { RouteErrorBoundary } from './PageFeedback';
 
@@ -29,6 +36,7 @@ export function AppShellLayout() {
   const location = useLocation();
   const { can, logout, user } = useAuth();
   const { roleLabel, t } = useI18n();
+  const { appearanceMode, language, resolvedColorScheme, setAppearanceMode, setLanguage } = useWorkspacePreferences();
 
   const links = workspaceModules
     .filter((item) => can(item.capability))
@@ -73,6 +81,40 @@ export function AppShellLayout() {
           <GlobalSearch />
 
           <Group gap="xs" wrap="nowrap">
+            <Tooltip label={appearanceMode === 'auto' ? t('shell.appearanceAuto') : t('shell.toggleColorScheme')}>
+              <ActionIcon
+                variant="subtle"
+                size="lg"
+                aria-label={appearanceMode === 'auto' ? t('shell.appearanceAuto') : t('shell.toggleColorScheme')}
+                onClick={() =>
+                  appearanceMode === 'auto'
+                    ? setAppearanceMode('light')
+                    : setAppearanceMode(resolvedColorScheme === 'dark' ? 'light' : 'dark')
+                }
+              >
+                {appearanceMode === 'auto' ? (
+                  <IconSunMoon size={18} />
+                ) : resolvedColorScheme === 'dark' ? (
+                  <IconSun size={18} />
+                ) : (
+                  <IconMoon size={18} />
+                )}
+              </ActionIcon>
+            </Tooltip>
+            <Tooltip label={t('shell.toggleLanguage')}>
+              <UnstyledButton
+                className="language-toggle"
+                aria-label={t('shell.toggleLanguage')}
+                onClick={() => setLanguage(language === 'vi' ? 'en' : 'vi')}
+              >
+                <Group gap={6} wrap="nowrap">
+                  {language === 'vi' ? <VnFlag size={16} /> : <GbFlag size={16} />}
+                  <Text size="sm" fw={700} span>
+                    {language === 'vi' ? 'VN' : 'EN'}
+                  </Text>
+                </Group>
+              </UnstyledButton>
+            </Tooltip>
             {user ? (
               <Menu shadow="md" width={280} position="bottom-end">
                 <Menu.Target>

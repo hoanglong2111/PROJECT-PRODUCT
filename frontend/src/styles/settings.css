@@ -12,38 +12,9 @@
   transition: border-color 150ms ease;
 }
 
-.settings-accounts-layout {
-  display: grid;
-  grid-template-columns: minmax(18rem, 0.68fr) minmax(0, 1.62fr);
-  gap: var(--kbfe-space-md);
-  align-items: start;
-  min-width: 0;
-}
-
-.settings-account-create-panel,
-.settings-accounts-table-panel,
-.settings-account-create-title {
-  min-width: 0;
-}
-
-.settings-account-create-panel {
-  position: sticky;
-  top: calc(var(--app-header-height, 4rem) + var(--kbfe-space-md));
-}
-
-.settings-account-create-panel .mantine-InputWrapper-label {
-  margin-bottom: 0.25rem;
-  font-size: 0.8125rem;
-  font-weight: 700;
-}
-
-.settings-account-create-panel .mantine-Input-input,
-.settings-account-create-panel .mantine-Select-input {
-  min-height: 2.25rem;
-}
-
 .settings-accounts-table-panel {
   overflow: hidden;
+  min-width: 0;
 }
 
 .settings-swatch-card {
@@ -202,12 +173,3 @@
   flex-grow: 1.5;
 }
 
-@media (max-width: 62em) {
-  .settings-accounts-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .settings-account-create-panel {
-    position: static;
-  }
-}
