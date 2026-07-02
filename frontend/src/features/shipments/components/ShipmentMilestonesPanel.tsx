@@ -3,6 +3,7 @@ import { IconCircleCheckFilled, IconCircleDot, IconClockHour4, IconRoute } from 
 import { useMemo, useState } from 'react';
 
 import { DateField } from '@shared/components/DateField';
+import { DateTimeText } from '@shared/components/DateTimeText';
 import type { ShipmentRecord } from '@shared/api/logistics';
 import type { ShipmentMilestoneCodeV1 } from '@shared/api/shipments';
 
@@ -200,7 +201,7 @@ export function ShipmentMilestonesPanel({
             {lastCompleted ? t(MILESTONE_LABEL_KEYS[lastCompleted.milestone_code as ShipmentMilestoneCodeV1]) : '-'}
           </Text>
           <Text size="xs" c="dimmed">
-            {lastCompleted ? formatMilestoneDate(lastCompleted.actual_date) : '-'}
+            {lastCompleted ? <DateTimeText value={lastCompleted.actual_date} size="xs" c="dimmed" /> : '-'}
           </Text>
         </div>
 
@@ -293,9 +294,14 @@ export function ShipmentMilestonesPanel({
                             </Group>
                             <Group gap={6} wrap="nowrap">
                               <Text size="xs" c={state === 'completed' ? 'teal' : 'dimmed'} lineClamp={1}>
-                                {state === 'completed'
-                                  ? t('shipments.milestoneDone', { date: formatMilestoneDate(milestone.actual_date) })
-                                  : t('shipments.milestonePlanned', { date: formatMilestoneDate(milestone.planned_date) })}
+                                {state === 'completed' ? (
+                                  <>
+                                    {t('shipments.milestoneDone', { date: '' }).trim()}{' '}
+                                    <DateTimeText value={milestone.actual_date} size="xs" c="teal" />
+                                  </>
+                                ) : (
+                                  t('shipments.milestonePlanned', { date: formatMilestoneDate(milestone.planned_date) })
+                                )}
                               </Text>
                               {state === 'completed' ? (
                                 <Badge size="xs" variant="light" color={milestone.source && milestone.source !== 'MANUAL' ? 'teal' : 'gray'}>

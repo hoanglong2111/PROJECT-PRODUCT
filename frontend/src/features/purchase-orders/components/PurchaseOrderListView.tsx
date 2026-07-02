@@ -28,6 +28,7 @@ import {
 
 import type { PurchaseOrderV1 } from '@shared/api/purchaseOrders';
 import { DateField } from '@shared/components/DateField';
+import { DateTimeText } from '@shared/components/DateTimeText';
 import { EmptyState } from '@shared/components/EmptyState';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { ListPagination } from '@shared/components/ListPagination';
@@ -247,7 +248,7 @@ export function PurchaseOrderListView({
                         Contract {order.contract_no}
                       </Text>
                       <Text size="xs" c="dimmed">
-                        Created {dateOnly(order.create_at)}
+                        Created <DateTimeText value={order.create_at} size="xs" c="dimmed" />
                       </Text>
                     </Table.Td>
                     <Table.Td className="table-cell-truncate purchase-order-list-supplier-cell" style={{ maxWidth: '20rem' }}>

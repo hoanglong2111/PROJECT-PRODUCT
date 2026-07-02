@@ -15,9 +15,10 @@ import {
   type QuotationV1,
 } from '@shared/api/quotations';
 import { queryKeys } from '@shared/api/queryKeys';
+import { DateTimeText } from '@shared/components/DateTimeText';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { useI18n } from '@shared/i18n';
-import { formatDate, formatDateTime } from '@shared/utils/date';
+import { formatDate } from '@shared/utils/date';
 import { formatMoney, roundToMinorUnits } from '@shared/utils/money';
 
 import { quotationDisplayTotal } from '../model/quotationModel';
@@ -142,7 +143,7 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
           <Fact label={t('quotations.mode')} value={quotation.mode ?? '—'} />
           <Fact label={t('quotations.currency')} value={quotation.currency_code ?? '—'} />
           <Fact label={t('quotations.validUntil')} value={formatDate(quotation.valid_until)} />
-          <Fact label={t('quotations.createdAt')} value={formatDateTime(quotation.create_at)} />
+          <Fact label={t('quotations.createdAt')} value={<DateTimeText value={quotation.create_at} showZone />} />
         </div>
       </Paper>
 
@@ -403,7 +404,7 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
                         <Text size="xs" c="dimmed" className="tabular-nums">
                           {formatMoney(quotationDisplayTotal(v), v.currency_code)}
                         </Text>
-                        <Text size="xs" c="dimmed">{formatDateTime(v.create_at)}</Text>
+                        <DateTimeText value={v.create_at} size="xs" c="dimmed" />
                       </div>
                     </button>
                   ))
@@ -416,9 +417,7 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
             <div className="rfq-panel-head">
               <div>
                 <Text fw={800}>{t('quotations.lifecycle')}</Text>
-                <Text size="xs" c="dimmed">
-                  {formatDateTime(quotation.update_at)}
-                </Text>
+                <DateTimeText value={quotation.update_at} size="xs" c="dimmed" showZone />
               </div>
             </div>
             <div className="rfq-timeline-list">
@@ -430,9 +429,7 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
                     <span className="rfq-timeline-dot" aria-hidden="true" />
                     <div>
                       <Text fw={700} size="sm">{formatEventType(event.event_type)}</Text>
-                      <Text size="xs" c="dimmed">
-                        {formatDateTime(event.event_at)}
-                      </Text>
+                      <DateTimeText value={event.event_at} size="xs" c="dimmed" />
                       {event.old_status || event.new_status ? (
                         <Text size="xs" c="dimmed">
                           {event.old_status ? statusLabel(event.old_status) : '—'} →{' '}

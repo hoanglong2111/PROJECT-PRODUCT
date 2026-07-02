@@ -6,12 +6,12 @@ import type { Carrier, Forwarder } from '@shared/api/forwarders';
 import type { Item } from '@shared/api/items';
 import type { Currency, Incoterm, Supplier, TransportMode } from '@shared/api/tradeMasterData';
 import type { Uom } from '@shared/api/uoms';
+import { DateTimeText } from '@shared/components/DateTimeText';
 import { StatusToggle } from '@shared/components/StatusToggle';
 import { useI18n } from '@shared/i18n';
 import { CHARGE_CATEGORIES, CHARGE_GROUPS } from '@shared/lib/chargeCategories';
 
 import {
-  formatDateTime,
   formatDecimal,
   getCarrierTypeLabel,
   getForwarderTypeLabel,
@@ -164,7 +164,7 @@ export function buildCurrencyColumns(t: T): Array<ReferenceColumn<Currency>> {
       key: 'updated',
       label: t('masterData.updatedAt'),
       width: 150,
-      render: (currency) => formatDateTime(currency.update_at),
+      render: (currency) => <DateTimeText value={currency.update_at} />,
     },
   ];
 }
@@ -412,7 +412,7 @@ export function buildUomColumns(t: T): Array<ReferenceColumn<Uom>> {
       key: 'updated',
       label: t('masterData.updatedAt'),
       width: 150,
-      render: (uom) => formatDateTime(uom.update_at),
+      render: (uom) => <DateTimeText value={uom.update_at} />,
     },
   ];
 }

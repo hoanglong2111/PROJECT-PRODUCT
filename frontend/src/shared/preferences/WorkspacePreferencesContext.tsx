@@ -22,6 +22,7 @@ type WorkspacePreferencesContextValue = {
   language: WorkspaceLanguage;
   resetFineTune: () => void;
   resolvedColorScheme: ResolvedColorScheme;
+  sidebarCollapsed: boolean;
   setAppearanceMode: (appearanceMode: AppearanceMode) => void;
   setColorIntensity: (value: number) => void;
   setColorPreset: (preset: ColorPresetId) => void;
@@ -31,6 +32,7 @@ type WorkspacePreferencesContextValue = {
   setEventTheme: (theme: EventThemeId) => void;
   setLanguage: (language: WorkspaceLanguage) => void;
   setVisualTheme: (visualTheme: VisualTheme) => void;
+  toggleSidebar: () => void;
   visualTheme: VisualTheme;
 };
 
@@ -38,6 +40,7 @@ const LANGUAGE_STORAGE_KEY = 'kbfe.preferences.language';
 const APPEARANCE_MODE_STORAGE_KEY = 'kbfe.preferences.appearance-mode';
 const VISUAL_THEME_STORAGE_KEY = 'kbfe.preferences.visual-theme';
 const DENSITY_STORAGE_KEY = 'kbfe.preferences.density';
+const SIDEBAR_COLLAPSED_STORAGE_KEY = 'kbfe.preferences.sidebar-collapsed';
 const COLOR_PRESET_STORAGE_KEY = 'kbfe.preferences.color-preset';
 const EVENT_THEME_STORAGE_KEY = 'kbfe.preferences.event-theme';
 const LEGACY_EVENT_THEME_STORAGE_KEY = 'kbfe.preferences.event-theme-legacy';
@@ -120,6 +123,14 @@ function readStoredDensity(): DensityPreference {
   return 'standard';
 }
 
+function readStoredSidebarCollapsed(): boolean {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  return window.localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === 'true';
+}
+
 const VALID_COLOR_PRESETS: ColorPresetId[] = [
   'teal', 'ocean', 'forest', 'sunset', 'midnight', 'lavender', 'rose', 'amber', 'slate',
 ];
@@ -172,6 +183,7 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
   const [appearanceMode, setAppearanceModeState] = useState<AppearanceMode>(readStoredAppearanceMode);
   const [visualTheme, setVisualThemeState] = useState<VisualTheme>(readStoredVisualTheme);
   const [density, setDensityState] = useState<DensityPreference>(readStoredDensity);
+  const [sidebarCollapsed, setSidebarCollapsedState] = useState<boolean>(readStoredSidebarCollapsed);
   const [colorPreset, setColorPresetState] = useState<ColorPresetId>(readStoredColorPreset);
   const [eventTheme, setEventThemeState] = useState<EventThemeId>(readStoredEventTheme);
   const [colorIntensity, setColorIntensityState] = useState<number>(() =>
@@ -262,6 +274,16 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
     }
   };
 
+  const toggleSidebar = () => {
+    setSidebarCollapsedState((current) => {
+      const nextCollapsed = !current;
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, String(nextCollapsed));
+      }
+      return nextCollapsed;
+    });
+  };
+
   const setColorPreset = (nextPreset: ColorPresetId) => {
     setColorPresetState(nextPreset);
     if (typeof window !== 'undefined') {
@@ -318,6 +340,7 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
       language,
       resetFineTune,
       resolvedColorScheme,
+      sidebarCollapsed,
       setAppearanceMode,
       setColorIntensity,
       setColorPreset,
@@ -327,6 +350,7 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
       setEventTheme,
       setLanguage,
       setVisualTheme,
+      toggleSidebar,
       visualTheme,
     }),
     [
@@ -339,6 +363,7 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
       eventTheme,
       language,
       resolvedColorScheme,
+      sidebarCollapsed,
       visualTheme,
     ],
   );

@@ -14,7 +14,6 @@ import { queryKeys } from '@shared/api/queryKeys';
 import { AttachmentList, DocumentCard, DocumentStatusBadge, type DocumentFile } from '@shared/components/documents';
 import { getApiErrorMessage } from '@shared/lib/errors';
 import { useI18n } from '@shared/i18n';
-import { formatDateTime } from '@shared/utils/date';
 
 const ACCEPT = 'application/pdf,image/png,image/jpeg,image/webp,image/gif';
 
@@ -27,7 +26,7 @@ function toDocumentFile(doc: DeliveryOrderDocumentV1): DocumentFile {
     id: doc.id,
     fileName: doc.file_name ?? doc.document_no ?? doc.document_type,
     href: doc.file_url ?? undefined,
-    dateLabel: doc.received_at ? formatDateTime(doc.received_at) : undefined,
+    dateValue: doc.received_at,
   };
 }
 

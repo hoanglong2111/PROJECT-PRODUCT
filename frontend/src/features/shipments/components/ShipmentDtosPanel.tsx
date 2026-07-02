@@ -23,10 +23,10 @@ import {
 } from '@shared/api/domesticTransportOrders';
 import type { ShipmentRecord } from '@shared/api/logistics';
 import { queryKeys } from '@shared/api/queryKeys';
+import { DateTimeText } from '@shared/components/DateTimeText';
 import { EmptyState } from '@shared/components/EmptyState';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { useI18n } from '@shared/i18n';
-import { formatDate } from '@shared/utils/date';
 
 import { fetchShipmentContainers } from '@shared/api/shipmentContainers';
 import { resolveShipmentDelivery, type ShipmentDeliveryState } from '../model/deliveryReconciliation';
@@ -93,7 +93,12 @@ export function ShipmentDtosPanel({ shipment }: { shipment: ShipmentRecord }) {
           <div><Text size="xs" c="dimmed">{t('shipments.dtosContainer')}</Text><Text fw={700} className="tabular-nums">{summary.totalContainers}</Text></div>
           <div><Text size="xs" c="dimmed">{t('shipments.dtosAllocated')}</Text><Text fw={700} className="tabular-nums">{summary.allocated}</Text></div>
           <div><Text size="xs" c="dimmed">{t('shipments.dtosDelivered')}</Text><Text fw={700} className="tabular-nums">{summary.delivered}</Text></div>
-          <div><Text size="xs" c="dimmed">{t('shipments.dtosLatestPod')}</Text><Text fw={700}>{summary.latestPodAt ? formatDate(summary.latestPodAt) : '-'}</Text></div>
+          <div>
+            <Text size="xs" c="dimmed">{t('shipments.dtosLatestPod')}</Text>
+            <Text fw={700}>
+              {summary.latestPodAt ? <DateTimeText value={summary.latestPodAt} /> : '-'}
+            </Text>
+          </div>
         </SimpleGrid>
       </Paper>
 
@@ -125,7 +130,7 @@ export function ShipmentDtosPanel({ shipment }: { shipment: ShipmentRecord }) {
                       <Text size="xs" c="dimmed">{dto.destination ?? '-'}</Text>
                     </Table.Td>
                     <Table.Td>
-                      <Text size="xs">{formatDate(dto.scheduled_pickup_at)}</Text>
+                      <DateTimeText value={dto.scheduled_pickup_at} size="xs" />
                     </Table.Td>
                     <Table.Td><StatusBadge status={dto.status} /></Table.Td>
                     <Table.Td>

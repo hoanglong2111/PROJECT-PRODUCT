@@ -42,11 +42,12 @@ import type {
 import { EmptyState } from '@shared/components/EmptyState';
 import { EntityLink } from '@entities/logistics';
 import { DateTimeField } from '@shared/components/DateField';
+import { DateTimeText } from '@shared/components/DateTimeText';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { useI18n } from '@shared/i18n';
 
-import { formatDateTime, formatDtoMoney, formatNumber, type FormState } from '../model/domesticTransportOrderModel';
+import { formatNumber, type FormState } from '../model/domesticTransportOrderModel';
 
 export function DomesticTransportOrderDetail({
   actionPending,
@@ -79,7 +80,7 @@ export function DomesticTransportOrderDetail({
     ? `${formatNumber(order.quote_amount)} ${order.quote_currency ?? ''}`.trim()
     : '-';
   const deliveryDisplay = order.actual_delivery_at
-    ? formatDateTime(order.actual_delivery_at)
+    ? <DateTimeText value={order.actual_delivery_at} showZone />
     : t('domesticTransportOrders.notDelivered');
   const workflowActions: Array<{
     action: DomesticTransportOrderAction;
@@ -175,7 +176,7 @@ export function DomesticTransportOrderDetail({
               <Text fw={700} lineClamp={1} title={order.origin ?? '-'}>
                 {order.origin ?? '-'}
               </Text>
-              <Text size="xs" c="dimmed">{formatDateTime(order.scheduled_pickup_at)}</Text>
+              <DateTimeText value={order.scheduled_pickup_at} size="xs" c="dimmed" />
             </div>
             <div className="dto-route-line">
               <div className="dto-route-middle">
@@ -189,7 +190,7 @@ export function DomesticTransportOrderDetail({
               <Text fw={700} lineClamp={1} title={order.destination ?? '-'}>
                 {order.destination ?? '-'}
               </Text>
-              <Text size="xs" c="dimmed">{formatDateTime(order.scheduled_delivery_at)}</Text>
+              <DateTimeText value={order.scheduled_delivery_at} size="xs" c="dimmed" />
             </div>
           </div>
 
@@ -267,7 +268,7 @@ export function DomesticTransportOrderDetail({
                   icon={<IconMapPin size={16} />}
                   label={t('domesticTransportOrders.pickup')}
                   primary={order.origin ?? '-'}
-                  secondary={formatDateTime(order.scheduled_pickup_at)}
+                  secondary={<DateTimeText value={order.scheduled_pickup_at} />}
                 />
                 <OverviewRoutePoint
                   icon={<IconBox size={16} />}
@@ -280,7 +281,11 @@ export function DomesticTransportOrderDetail({
                   icon={<IconCalendarCheck size={16} />}
                   label={t('domesticTransportOrders.delivery')}
                   primary={deliveryDisplay}
-                  secondary={`${t('domesticTransportOrders.planned')}: ${formatDateTime(order.scheduled_delivery_at)}`}
+                  secondary={(
+                    <>
+                      {t('domesticTransportOrders.planned')}: <DateTimeText value={order.scheduled_delivery_at} />
+                    </>
+                  )}
                 />
               </div>
 
@@ -494,9 +499,12 @@ function OverviewRoutePoint({
   align?: 'right';
   icon: ReactNode;
   label: string;
-  primary: string;
-  secondary: string;
+  primary: ReactNode;
+  secondary: ReactNode;
 }) {
+  const primaryTitle = typeof primary === 'string' ? primary : undefined;
+  const secondaryTitle = typeof secondary === 'string' ? secondary : undefined;
+
   return (
     <div className={align === 'right' ? 'dto-overview-route-point is-right' : 'dto-overview-route-point'}>
       <ThemeIcon size="sm" radius="md" variant="light">
@@ -504,8 +512,8 @@ function OverviewRoutePoint({
       </ThemeIcon>
       <div>
         <Text className="metric-label dto-detail-kicker" size="xs" fw={700} tt="uppercase">{label}</Text>
-        <Text fw={800} lineClamp={1} title={primary}>{primary}</Text>
-        <Text size="xs" c="dimmed" lineClamp={1} title={secondary}>{secondary}</Text>
+        <Text fw={800} lineClamp={1} title={primaryTitle}>{primary}</Text>
+        <Text size="xs" c="dimmed" lineClamp={1} title={secondaryTitle}>{secondary}</Text>
       </div>
     </div>
   );

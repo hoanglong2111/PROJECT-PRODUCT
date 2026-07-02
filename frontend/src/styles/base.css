@@ -35,19 +35,24 @@ body::before {
   z-index: var(--kbfe-z-background-texture);
   content: "";
   pointer-events: none;
+  /* Soft dot-grid — one dot per 22px cell. Lighter and calmer than a line grid;
+     the ::after spotlight still gives the top a gentle glow. No mask: it spans
+     the full viewport so it stays visible on tall/scrolled screens. */
+  background-image:
+    radial-gradient(circle at center, var(--kbfe-decorative-dot-color) 1px, transparent 1.6px);
+  background-size: 22px 22px;
+  opacity: 0.6;
+}
+
+body::after {
+  position: fixed;
+  inset: 0;
+  z-index: var(--kbfe-z-background-texture);
+  content: "";
+  pointer-events: none;
   background:
-    repeating-linear-gradient(
-      0deg,
-      color-mix(in srgb, var(--kbfe-border-primary) 20%, transparent) 0 1px,
-      transparent 1px 18px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--kbfe-border-primary) 16%, transparent) 0 1px,
-      transparent 1px 18px
-    );
-  opacity: 0.16;
-  mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.72) 36%, transparent 100%);
+    radial-gradient(60% 45% at 50% 0%, var(--kbfe-decorative-spotlight) 0%, transparent 70%),
+    radial-gradient(70% 65% at 50% 100%, var(--kbfe-decorative-vignette) 0%, transparent 72%);
 }
 
 .mantine-AppShell-root {
@@ -170,7 +175,8 @@ html[data-kbfe-resolved-color-scheme='light'] .mantine-NavLink-root[data-active]
   font-size: 0.875rem;
 }
 
-html[data-kbfe-visual-theme='high-contrast'] body::before {
+html[data-kbfe-visual-theme='high-contrast'] body::before,
+html[data-kbfe-visual-theme='high-contrast'] body::after {
   display: none;
 }
 
@@ -212,9 +218,5 @@ h6 {
 
   .mantine-NavLink-root:hover {
     transform: none;
-  }
-
-  body::before {
-    display: none;
   }
 }

@@ -1717,6 +1717,8 @@ export const en = {
   'shell.toggleColorScheme': 'Toggle dark mode',
   'shell.appearanceAuto': 'Auto mode — click for light mode',
   'shell.toggleLanguage': 'Switch language',
+  'shell.collapseSidebar': 'Collapse sidebar',
+  'shell.expandSidebar': 'Expand sidebar',
 
   'tasks.blocked': 'Blocked',
   'tasks.blockedReason': 'Blocked reason',
@@ -3492,6 +3494,8 @@ export const vi: Record<MessageKey, string> = {
   'shell.toggleColorScheme': 'Chuyển chế độ tối/sáng',
   'shell.appearanceAuto': 'Đang tự động — nhấn để chuyển sang chế độ sáng',
   'shell.toggleLanguage': 'Chuyển ngôn ngữ',
+  'shell.collapseSidebar': 'Thu gọn thanh bên',
+  'shell.expandSidebar': 'Mở rộng thanh bên',
 
   'tasks.blocked': 'Bị chặn',
   'tasks.blockedReason': 'Lý do bị chặn',

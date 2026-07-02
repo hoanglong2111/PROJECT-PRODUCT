@@ -225,6 +225,14 @@ html {
 
   /* Subtle surface + shadow tokens, derived from the theme-aware base vars. */
   --kbfe-surface-subtle: color-mix(in srgb, var(--kbfe-surface-elevated) 92%, var(--kbfe-border-primary) 8%);
+  --kbfe-decorative-dot-color: color-mix(in srgb, var(--kbfe-border-strong) 42%, transparent);
+  /* Frosted chrome surface: translucent so the fixed background grid reads
+     through the navbar/header. Pinned opaque in high-contrast mode below. Only
+     the app chrome uses this; dense cards, menus, and modals keep the opaque
+     --kbfe-surface-elevated so they never show page content through them. */
+  --kbfe-glass-surface: color-mix(in srgb, var(--kbfe-surface-elevated) 72%, transparent);
+  --kbfe-decorative-spotlight: color-mix(in srgb, var(--kbfe-primary-color) 9%, transparent);
+  --kbfe-decorative-vignette: transparent;
   --kbfe-shadow-xs: var(--kbfe-shadow-sm);
   --kbfe-row-hover-background: color-mix(in srgb, var(--kbfe-primary-color) 6%, var(--kbfe-surface-elevated));
   --kbfe-row-selected-background: color-mix(in srgb, var(--kbfe-primary-color) 10%, var(--kbfe-surface-elevated));
@@ -304,6 +312,11 @@ html[data-kbfe-visual-theme='eye-comfort'] {
   --kbfe-status-teal-bg: color-mix(in srgb, var(--mantine-color-lime-6) 10%, var(--kbfe-surface-elevated));
 }
 
+html[data-kbfe-resolved-color-scheme='dark'] {
+  --kbfe-decorative-spotlight: color-mix(in srgb, var(--kbfe-primary-color) 12%, transparent);
+  --kbfe-decorative-vignette: color-mix(in srgb, #000000 18%, transparent);
+}
+
 /* Accessibility guard: the fine-tune sliders (intensity/dim/contrast) must
    never be able to weaken High Contrast mode. Pin every derived token back to
    its raw theme value here; this selector's higher specificity beats the
@@ -312,6 +325,7 @@ html[data-kbfe-visual-theme='high-contrast'] {
   --kbfe-background-primary: var(--kbfe-background-primary-base);
   --kbfe-background-secondary: var(--kbfe-background-secondary-base);
   --kbfe-surface-elevated: var(--kbfe-surface-elevated-base);
+  --kbfe-glass-surface: var(--kbfe-surface-elevated);
   --kbfe-hover-background: var(--kbfe-hover-background-base);
   --kbfe-text-primary: var(--kbfe-text-primary-base);
   --kbfe-text-secondary: var(--kbfe-text-secondary-base);

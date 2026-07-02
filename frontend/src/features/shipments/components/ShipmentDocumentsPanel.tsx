@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 import type { ShipmentRecord } from '@shared/api/logistics';
 import type { ShipmentDocumentPayload } from '@shared/api/shipments';
+import { DateTimeText } from '@shared/components/DateTimeText';
 import { DocumentCard, DocumentStatusBadge } from '@shared/components/documents';
 
 export function ShipmentDocumentsPanel({
@@ -113,9 +114,16 @@ export function ShipmentDocumentsPanel({
               badge={<DocumentStatusBadge status={doc.status} />}
             >
                 {hasFile ? (
-                  <Text size="xs" c="blue" style={{ textDecoration: 'underline', cursor: 'pointer' }}>
-                    {doc.file_name}
-                  </Text>
+                  <>
+                    <Text size="xs" c="blue" style={{ textDecoration: 'underline', cursor: 'pointer' }}>
+                      {doc.file_name}
+                    </Text>
+                    {doc.uploaded_at ? (
+                      <Text size="xs" c="dimmed">
+                        {t('deliveryOrders.received')}: <DateTimeText value={doc.uploaded_at} size="xs" c="dimmed" />
+                      </Text>
+                    ) : null}
+                  </>
                 ) : (
                   <Text size="xs" c="dimmed" fs="italic">
                     {t('shipments.noFileUploaded')}
