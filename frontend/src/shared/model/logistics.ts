@@ -878,6 +878,7 @@ export type ShipmentRecord = {
   po_number: string;
   status: ShipmentStatus;
   shipping_mode: Gd1ShipmentMode;
+  load_type?: 'FCL' | 'LCL' | 'FTL' | 'LTL' | null;
   carrier_name: string;
   vessel_voyage: string;
   origin_port: string;

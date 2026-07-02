@@ -55,6 +55,7 @@ export type Incoterm = {
   id: string;
   incoterm_code: string;
   incoterm_name: string;
+  incoterm_name_vn: string;
   description: string | null;
   is_active: boolean;
   create_at?: string;
@@ -66,6 +67,7 @@ export type Incoterm = {
 export type IncotermPayload = {
   incoterm_code?: string;
   incoterm_name?: string;
+  incoterm_name_vn?: string;
   description?: string | null;
   is_active?: boolean;
 };
@@ -231,6 +233,15 @@ function normalizeTransportMode(mode: TransportMode): TransportMode {
   };
 }
 
+function normalizeIncoterm(incoterm: Incoterm): Incoterm {
+  return {
+    ...incoterm,
+    incoterm_name_vn: incoterm.incoterm_name_vn ?? '',
+    description: incoterm.description ?? null,
+    is_active: incoterm.is_active !== false,
+  };
+}
+
 export function normalizeSupplier(supplier: Supplier): Supplier {
   const legacySupplier = supplier as Supplier & {
     email?: string | null;
@@ -269,7 +280,7 @@ export function normalizeSupplier(supplier: Supplier): Supplier {
     default_currency_id: supplier.default_currency_id ?? supplier.default_currency?.id ?? null,
     default_incoterm_id: supplier.default_incoterm_id ?? supplier.default_incoterm?.id ?? null,
     default_currency: supplier.default_currency ? normalizeCurrency(supplier.default_currency) : null,
-    default_incoterm: supplier.default_incoterm ?? null,
+    default_incoterm: supplier.default_incoterm ? normalizeIncoterm(supplier.default_incoterm) : null,
     supplier_transport_modes: transportModes.map((mode) => ({
       ...mode,
       is_default: mode.is_default === true,
@@ -367,27 +378,27 @@ export async function deleteCurrency(id: string) {
 
 export async function fetchIncoterms(params: ListParams = {}) {
   const response = await apiClient.get<PaginatedResponse<Incoterm>>('/incoterms', { params });
-  return response.data;
+  return normalizePaginatedResponse(response.data, normalizeIncoterm);
 }
 
 export async function fetchIncoterm(id: string) {
   const response = await apiClient.get<{ data: Incoterm }>(`/incoterms/${id}`);
-  return unwrapData(response);
+  return normalizeIncoterm(unwrapData(response));
 }
 
 export async function createIncoterm(payload: Required<Pick<IncotermPayload, 'incoterm_code' | 'incoterm_name'>> & IncotermPayload) {
   const response = await apiClient.post<ApiMessageResponse<Incoterm>>('/incoterms', payload);
-  return unwrapData(response);
+  return normalizeIncoterm(unwrapData(response));
 }
 
 export async function updateIncoterm(id: string, payload: IncotermPayload) {
   const response = await apiClient.patch<ApiMessageResponse<Incoterm>>(`/incoterms/${id}`, payload);
-  return unwrapData(response);
+  return normalizeIncoterm(unwrapData(response));
 }
 
 export async function deleteIncoterm(id: string) {
   const response = await apiClient.delete<ApiMessageResponse<Incoterm>>(`/incoterms/${id}`);
-  return unwrapData(response);
+  return normalizeIncoterm(unwrapData(response));
 }
 
 export async function fetchTransportModes(params: TransportModeListParams = {}) {

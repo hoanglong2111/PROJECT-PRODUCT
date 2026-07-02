@@ -67,6 +67,7 @@ export type TaskTemplate = {
   related_documents: string;
   note: string | null;
   sort_order: number;
+  is_active?: boolean;
   create_at?: string;
   update_at?: string;
   delete_at?: string | null;
@@ -86,6 +87,7 @@ export type TaskTemplatePayload = {
   related_documents?: string;
   note?: string | null;
   sort_order?: number;
+  is_active?: boolean;
 };
 
 export type TaskTemplateListParams = ListParams & {
@@ -106,6 +108,7 @@ export function normalizeTaskTemplate(template: TaskTemplate): TaskTemplate {
     assignee_code: template.assignee_code ?? null,
     note: template.note ?? null,
     sort_order: Number(template.sort_order ?? 0),
+    is_active: template.is_active !== false,
   };
 }
 

@@ -156,6 +156,7 @@ exact request/response types.)
 - `GET /v1/shipments` · `GET|PATCH /v1/shipments/:id`
 - `POST /v1/shipments/from-delivery-order` — quotation no longer lives on the DO, so the old `QUOTATION_CONFIRMED` gate is dropped; only `CANCELLED`/`CLOSED`/`ASSIGNED_TO_SHIPMENT` DOs are blocked. Booking info (carrier/BL/vessel) is captured on the shipment here.
 - `POST /v1/shipments/:id/cancel`
+- Shipment create/update payloads carry `mode` plus nullable `load_type` (`FCL`/`LCL` for sea, `FTL`/`LTL` for road).
 - `GET /v1/shipments/:id/lines`
 - `GET /v1/shipments/:id/milestones`
 - `POST /v1/shipments/:id/milestones/:code/done`
@@ -207,10 +208,13 @@ macro group (`ORIGIN_EXPORT`, `MAIN_FREIGHT`, `FREIGHT_SURCHARGE`,
 `SERVICE_OTHER`), while `category` is the row category (`ORIGIN`, `CUSTOMS`,
 `DOCUMENTATION`, `FREIGHT`, `SURCHARGE`, `DESTINATION`, `DISBURSEMENT`,
 `ANCILLARY`, `SERVICE`). UOM DTOs are the 26 freight billing codes currently in
-`06_UOM.html` and do not include `category`. Incoterms include the supplier-doc set
-`EXW`, `FOB`, `CIF`, `DDP`, plus quotation-required `FCA` and `CFR`. Transport modes
-are `SEA`, `AIR`, `ROAD`, and `RAIL`; FCL/LCL is modeled on charge-code
-applicability, and `is_international` is not part of the DTO.
+`06_UOM.html` and do not include `category`. Currency DTOs are identity/display data
+only; exchange rates are transactional and do not belong to the currency master.
+Incoterm DTOs include `incoterm_code`, `incoterm_name`, `incoterm_name_vn`,
+`description`, and `is_active`; seeded codes are the supplier-doc set `EXW`, `FOB`,
+`CIF`, `DDP`, plus quotation-required `FCA` and `CFR`. Transport modes are `SEA`,
+`AIR`, `ROAD`, and `RAIL`; FCL/LCL is modeled on shipment `load_type` and
+charge-code applicability, and `is_international` is not part of the DTO.
 
 ---
 

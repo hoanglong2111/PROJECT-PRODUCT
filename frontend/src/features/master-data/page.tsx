@@ -1,4 +1,4 @@
-import { Alert, Badge, Chip, Group, Paper, Select, Stack, Tabs, Text, Title } from '@mantine/core';
+import { Alert, Badge, Group, Select, Stack, Tabs, Text, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -12,7 +12,7 @@ import {
   IconRulerMeasure,
   IconTruckDelivery,
 } from '@tabler/icons-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import {
   deleteChargeCode,
@@ -48,12 +48,19 @@ import {
 } from '@shared/api/tradeMasterData';
 import { deleteUom, fetchUoms, type Uom } from '@shared/api/uoms';
 import { useCan } from '@shared/auth/useCan';
-import { LIST_PAGE_SIZE } from '@shared/components/ListPagination';
 import { useI18n } from '@shared/i18n';
 import { CHARGE_CATEGORIES, CHARGE_GROUPS } from '@shared/lib/chargeCategories';
 import { useMasterDataStore } from './model/masterDataStore';
 
-import { optionalString } from './model/masterDataModel';
+import {
+  getItemCategoryLabel,
+  getItemTypeLabel,
+  getRevCostLabel,
+  getSupplierTypeLabel,
+  ITEM_CATEGORY_VALUES,
+  ITEM_TYPE_VALUES,
+  SUPPLIER_TYPE_VALUES,
+} from './model/masterDataModel';
 import { CarrierModal } from './components/CarrierModal';
 import { CarriersSection } from './components/CarriersSection';
 import { ChargeCodeModal } from './components/ChargeCodeModal';
@@ -61,13 +68,14 @@ import { CurrencyModal } from './components/CurrencyModal';
 import { ForwarderModal } from './components/ForwarderModal';
 import { ForwardersSection } from './components/ForwardersSection';
 import { IncotermModal } from './components/IncotermModal';
-import { ItemCatalogSection } from './components/ItemCatalogSection';
 import { ItemModal } from './components/ItemModal';
+import { FILTER_SELECT_WIDTH } from './components/MasterDataToolbar';
 import { ReferenceDataPanel } from './components/ReferenceDataPanel';
 import {
   buildChargeCodeColumns,
   buildCurrencyColumns,
   buildIncotermColumns,
+  buildItemColumns,
   buildSupplierColumns,
   buildTransportModeColumns,
   buildUomColumns,
@@ -81,6 +89,17 @@ import { UomModal } from './components/UomModal';
 // Charge codes total ~79; fetch all so the group switcher counts and filtering
 // operate over the whole set rather than a single 20-row page.
 const CHARGE_CODE_FETCH_LIMIT = 500;
+// Suppliers/items (and other client-filtered reference lists) also filter attributes
+// client-side, so they must load the whole set — otherwise a client filter (or the
+// always-on type filter) would only see the first server page and hide the rest.
+const REFERENCE_FETCH_LIMIT = 500;
+const CHARGE_MODES = [
+  { value: 'sea_fcl', labelKey: 'masterData.seaFcl' },
+  { value: 'sea_lcl', labelKey: 'masterData.seaLcl' },
+  { value: 'air', labelKey: 'masterData.air' },
+  { value: 'road', labelKey: 'masterData.road' },
+  { value: 'rail', labelKey: 'masterData.rail' },
+];
 
 export function MasterData() {
   const { t } = useI18n();
@@ -88,15 +107,59 @@ export function MasterData() {
   const canManageMasterData = useCan('masterData.manage');
   const {
     activeTab,
-    itemPage,
-    itemSearch,
+    carrierStatusFilter,
+    carrierTypeFilter,
+    chargeCategoryFilter,
+    chargeCodeModeFilter,
+    chargeCodeRevCostFilter,
+    chargeCodeStatusFilter,
+    chargeGroupFilter,
+    clearCarrierFilters,
+    clearChargeCodeFilters,
+    clearCurrencyFilters,
+    clearForwarderFilters,
+    clearIncotermFilters,
+    clearItemFilters,
+    clearSupplierFilters,
+    clearTaskTemplateFilters,
+    clearTransportModeFilters,
+    clearUomFilters,
+    currencyStatusFilter,
+    forwarderStatusFilter,
+    forwarderTypeFilter,
+    incotermStatusFilter,
+    itemCategoryFilter,
+    itemStatusFilter,
+    itemTypeFilter,
     setActiveTab,
-    setItemPage,
-    setItemSearch,
+    setCarrierStatusFilter,
+    setCarrierTypeFilter,
+    setChargeCategoryFilter,
+    setChargeCodeModeFilter,
+    setChargeCodeRevCostFilter,
+    setChargeCodeStatusFilter,
+    setChargeGroupFilter,
+    setCurrencyStatusFilter,
+    setForwarderStatusFilter,
+    setForwarderTypeFilter,
+    setIncotermStatusFilter,
+    setItemCategoryFilter,
+    setItemStatusFilter,
+    setItemTypeFilter,
+    setSupplierStatusFilter,
+    setSupplierTypeFilter,
     setTaskTemplateDepartmentFilter,
     setTaskTemplateMilestoneFilter,
+    setTaskTemplateStatusFilter,
+    setTransportModeStatusFilter,
+    setUomStatusFilter,
+    supplierStatusFilter,
+    supplierTypeFilter,
     taskTemplateDepartmentFilter,
     taskTemplateMilestoneFilter,
+    taskTemplateStatusFilter,
+    transportModeStatusFilter,
+    uomStatusFilter,
   } = useMasterDataStore();
 
   const [itemModalOpened, itemModalHandlers] = useDisclosure(false);
@@ -120,23 +183,6 @@ export function MasterData() {
   const [editingForwarder, setEditingForwarder] = useState<Forwarder | null>(null);
   const [editingCarrier, setEditingCarrier] = useState<Carrier | null>(null);
   const [editingTaskTemplate, setEditingTaskTemplate] = useState<TaskTemplate | null>(null);
-  const [chargeGroup, setChargeGroup] = useState<string | null>(null);
-  const [chargeCategory, setChargeCategory] = useState<string | null>(null);
-
-  const itemListParams = useMemo(
-    () => ({
-      page: itemPage,
-      limit: LIST_PAGE_SIZE,
-      q: optionalString(itemSearch),
-    }),
-    [itemPage, itemSearch],
-  );
-
-  const itemsQuery = useQuery({
-    queryKey: queryKeys.items(itemListParams),
-    queryFn: () => fetchItems(itemListParams),
-    enabled: activeTab === 'items',
-  });
 
   const uomOptionsQuery = useQuery({
     queryKey: queryKeys.uoms({ page: 1, limit: 100, is_active: true }),
@@ -167,20 +213,69 @@ export function MasterData() {
   const chargeCategoryOptions = useMemo(
     () => [
       { label: t('common.all'), value: 'ALL' },
-      ...CHARGE_CATEGORIES.map((category) => ({ label: t(category.labelKey), value: category.value })),
+      ...CHARGE_CATEGORIES.map((category) => ({ label: category.docLabel, value: category.value })),
+    ],
+    [t],
+  );
+  const chargeGroupOptions = useMemo(
+    () => [
+      { label: `${t('common.all')} (${chargeCodeTotal})`, value: 'ALL' },
+      ...CHARGE_GROUPS.map((group) => ({
+        label: `${group.docLabel} (${chargeGroupCounts[group.value] ?? 0})`,
+        value: group.value,
+      })),
+    ],
+    [chargeCodeTotal, chargeGroupCounts, t],
+  );
+  const chargeRevCostOptions = useMemo(
+    () => [
+      { label: t('common.all'), value: 'ALL' },
+      { label: getRevCostLabel('REVENUE'), value: 'REVENUE' },
+      { label: getRevCostLabel('COST'), value: 'COST' },
+      { label: getRevCostLabel('BOTH'), value: 'BOTH' },
+    ],
+    [t],
+  );
+  const chargeModeOptions = useMemo(
+    () => [
+      { label: t('common.all'), value: 'ALL' },
+      ...CHARGE_MODES.map((mode) => ({ label: t(mode.labelKey), value: mode.value })),
+    ],
+    [t],
+  );
+  const supplierTypeOptions = useMemo(
+    () => [
+      { label: t('common.all'), value: 'ALL' },
+      ...SUPPLIER_TYPE_VALUES.map((value) => ({ label: getSupplierTypeLabel(value, t), value })),
+    ],
+    [t],
+  );
+  const itemCategoryOptions = useMemo(
+    () => [
+      { label: t('common.all'), value: 'ALL' },
+      ...ITEM_CATEGORY_VALUES.map((value) => ({ label: getItemCategoryLabel(value, t), value })),
+    ],
+    [t],
+  );
+  const itemTypeOptions = useMemo(
+    () => [
+      { label: t('common.all'), value: 'ALL' },
+      ...ITEM_TYPE_VALUES.map((value) => ({ label: getItemTypeLabel(value, t), value })),
     ],
     [t],
   );
   const chargeCodeFilter = useMemo(
-    () => (chargeGroup || chargeCategory
+    () => (chargeGroupFilter || chargeCategoryFilter || chargeCodeRevCostFilter || chargeCodeModeFilter || chargeCodeStatusFilter !== null
       ? (chargeCode: ChargeCode) =>
-        (!chargeGroup || chargeCode.group === chargeGroup) &&
-        (!chargeCategory || chargeCode.category === chargeCategory)
+        (!chargeGroupFilter || chargeCode.group === chargeGroupFilter) &&
+        (!chargeCategoryFilter || chargeCode.category === chargeCategoryFilter) &&
+        (!chargeCodeRevCostFilter || chargeCode.rev_cost === chargeCodeRevCostFilter) &&
+        (!chargeCodeModeFilter || chargeCode[chargeCodeModeFilter as keyof Pick<ChargeCode, 'sea_fcl' | 'sea_lcl' | 'air' | 'road' | 'rail'>] === true) &&
+        (chargeCodeStatusFilter === null || chargeCode.is_active === chargeCodeStatusFilter)
       : undefined),
-    [chargeCategory, chargeGroup],
+    [chargeCategoryFilter, chargeCodeModeFilter, chargeCodeRevCostFilter, chargeCodeStatusFilter, chargeGroupFilter],
   );
 
-  const items = itemsQuery.data?.data ?? [];
   const uomOptions = useMemo(
     () =>
       (uomOptionsQuery.data?.data ?? []).map((uom) => ({
@@ -189,17 +284,6 @@ export function MasterData() {
       })),
     [uomOptionsQuery.data],
   );
-
-  const itemTotal = itemsQuery.data?.total ?? 0;
-  const itemPageCount = Math.max(1, itemsQuery.data?.pagination.totalPages ?? 1);
-  const itemPageStart = itemTotal === 0 ? 0 : (itemPage - 1) * LIST_PAGE_SIZE + 1;
-  const itemPageEnd = Math.min(itemTotal, itemPage * LIST_PAGE_SIZE);
-
-  useEffect(() => {
-    if (itemPage > itemPageCount) {
-      setItemPage(itemPageCount);
-    }
-  }, [itemPage, itemPageCount]);
 
   const invalidateTradeMasterData = (queryKey: readonly unknown[]) => {
     void Promise.all([
@@ -326,11 +410,27 @@ export function MasterData() {
     if (!window.confirm(t('masterData.confirmDeleteTaskTemplate'))) return;
     deleteTaskTemplateMutation.mutate(template.id);
   };
-  const handleDeleteItem = (id: string) => {
+  const handleDeleteItem = (item: Item) => {
     if (!window.confirm(t('masterData.confirmDeleteItem'))) return;
-    deleteItemMutation.mutate(id);
+    deleteItemMutation.mutate(item.id);
   };
 
+  const hasSupplierFilters = supplierStatusFilter !== null || supplierTypeFilter !== null;
+  const hasItemFilters = itemStatusFilter !== null || itemCategoryFilter !== null || itemTypeFilter !== null;
+  const hasForwarderFilters = forwarderStatusFilter !== null || forwarderTypeFilter !== null;
+  const hasCarrierFilters = carrierStatusFilter !== null || carrierTypeFilter !== null;
+  const hasTaskTemplateFilters = taskTemplateStatusFilter !== null || taskTemplateDepartmentFilter !== null || taskTemplateMilestoneFilter !== null;
+  const hasCurrencyFilters = currencyStatusFilter !== null;
+  const hasIncotermFilters = incotermStatusFilter !== null;
+  const hasTransportModeFilters = transportModeStatusFilter !== null;
+  const hasChargeCodeFilters = chargeCodeStatusFilter !== null ||
+    chargeGroupFilter !== null ||
+    chargeCategoryFilter !== null ||
+    chargeCodeRevCostFilter !== null ||
+    chargeCodeModeFilter !== null;
+  const hasUomFilters = uomStatusFilter !== null;
+
+  const itemColumns = useMemo(() => buildItemColumns(t), [t]);
   const currencyColumns = useMemo(() => buildCurrencyColumns(t), [t]);
   const incotermColumns = useMemo(() => buildIncotermColumns(t), [t]);
   const transportModeColumns = useMemo(() => buildTransportModeColumns(t), [t]);
@@ -362,7 +462,7 @@ export function MasterData() {
 
       <Tabs value={activeTab} onChange={(val) => setActiveTab((val || 'suppliers') as typeof activeTab)}>
         <Group align="center" gap="md" wrap="wrap">
-          <Group align="center" gap="xs">
+          <div className="md-tab-group">
             <Tabs.List>
               <Tabs.Tab value="items" leftSection={<IconFileCode size={16} />}>
                 {t('masterData.tabItems')}
@@ -377,11 +477,8 @@ export function MasterData() {
                 {t('masterData.tabTaskTemplates')}
               </Tabs.Tab>
             </Tabs.List>
-          </Group>
-          <Text c="dimmed" fw={700}>
-            |
-          </Text>
-          <Group align="center" gap="xs">
+          </div>
+          <div className="md-tab-group">
             <Tabs.List>
               <Tabs.Tab value="currencies" leftSection={<IconCash size={16} />}>
                 {t('masterData.tabCurrencies')}
@@ -399,28 +496,51 @@ export function MasterData() {
                 {t('masterData.tabUoms')}
               </Tabs.Tab>
             </Tabs.List>
-          </Group>
+          </div>
         </Group>
 
         <Tabs.Panel value="items" pt="md">
-          <ItemCatalogSection
+          <ReferenceDataPanel
+            addLabel={t('masterData.addItem')}
             canManage={canManageMasterData}
-            deleteItemIsPending={deleteItemMutation.isPending}
-            error={itemsQuery.error}
-            isError={itemsQuery.isError}
-            isLoading={itemsQuery.isLoading}
-            items={items}
-            onAddItem={openAddItem}
-            onDeleteItem={handleDeleteItem}
-            onEditItem={openEditItem}
-            onSearchChange={setItemSearch}
-            page={itemPage}
-            pageCount={itemPageCount}
-            pageEnd={itemPageEnd}
-            pageStart={itemPageStart}
-            search={itemSearch}
-            setPage={setItemPage}
-            total={itemTotal}
+            title={t('masterData.itemCatalogTitle')}
+            searchPlaceholder={t('masterData.searchItems')}
+            emptyTitle={t('masterData.noItems')}
+            emptyDescription={t('masterData.noItemsDescription')}
+            columns={itemColumns}
+            queryKey={queryKeys.items}
+            fetcher={({ search, ...params }) => fetchItems({ ...params, q: search })}
+            pageSize={REFERENCE_FETCH_LIMIT}
+            statusFilter={itemStatusFilter}
+            onStatusFilterChange={setItemStatusFilter}
+            hasActiveFilters={hasItemFilters}
+            onClearFilters={clearItemFilters}
+            clientFilter={(item) =>
+              (!itemCategoryFilter || item.item_category === itemCategoryFilter) &&
+              (!itemTypeFilter || item.item_type === itemTypeFilter)}
+            toolbarExtra={(
+              <>
+                <Select
+                  className="md-filter-select"
+                  label={t('masterData.itemCategory')}
+                  data={itemCategoryOptions}
+                  value={itemCategoryFilter ?? 'ALL'}
+                  onChange={(value) => setItemCategoryFilter(value === 'ALL' ? null : value)}
+                  w={FILTER_SELECT_WIDTH}
+                />
+                <Select
+                  className="md-filter-select"
+                  label={t('masterData.itemType')}
+                  data={itemTypeOptions}
+                  value={itemTypeFilter ?? 'ALL'}
+                  onChange={(value) => setItemTypeFilter(value === 'ALL' ? null : value)}
+                  w={FILTER_SELECT_WIDTH}
+                />
+              </>
+            )}
+            onAdd={openAddItem}
+            onEdit={openEditItem}
+            onDelete={handleDeleteItem}
           />
         </Tabs.Panel>
 
@@ -435,6 +555,22 @@ export function MasterData() {
             columns={supplierColumns}
             queryKey={queryKeys.suppliers}
             fetcher={fetchSuppliers}
+            pageSize={REFERENCE_FETCH_LIMIT}
+            statusFilter={supplierStatusFilter}
+            onStatusFilterChange={setSupplierStatusFilter}
+            hasActiveFilters={hasSupplierFilters}
+            onClearFilters={clearSupplierFilters}
+            clientFilter={(supplier) => !supplierTypeFilter || supplier.supplier_type === supplierTypeFilter}
+            toolbarExtra={(
+              <Select
+                className="md-filter-select"
+                label={t('masterData.supplierType')}
+                data={supplierTypeOptions}
+                value={supplierTypeFilter ?? 'ALL'}
+                onChange={(value) => setSupplierTypeFilter(value === 'ALL' ? null : value)}
+                w={FILTER_SELECT_WIDTH}
+              />
+            )}
             onAdd={openAddSupplier}
             onEdit={openEditSupplier}
             onDelete={handleDeleteSupplier}
@@ -445,15 +581,27 @@ export function MasterData() {
           <Stack gap="md">
             <ForwardersSection
               canManage={canManageMasterData}
+              hasActiveFilters={hasForwarderFilters}
               onAdd={openAddForwarder}
+              onClearFilters={clearForwarderFilters}
               onDelete={handleDeleteForwarder}
               onEdit={openEditForwarder}
+              onStatusFilterChange={setForwarderStatusFilter}
+              onTypeFilterChange={setForwarderTypeFilter}
+              statusFilter={forwarderStatusFilter}
+              typeFilter={forwarderTypeFilter}
             />
             <CarriersSection
               canManage={canManageMasterData}
+              hasActiveFilters={hasCarrierFilters}
               onAdd={openAddCarrier}
+              onClearFilters={clearCarrierFilters}
               onDelete={handleDeleteCarrier}
               onEdit={openEditCarrier}
+              onStatusFilterChange={setCarrierStatusFilter}
+              onTypeFilterChange={setCarrierTypeFilter}
+              statusFilter={carrierStatusFilter}
+              typeFilter={carrierTypeFilter}
             />
           </Stack>
         </Tabs.Panel>
@@ -462,12 +610,16 @@ export function MasterData() {
           <TaskTemplatesSection
             canManage={canManageMasterData}
             departmentFilter={taskTemplateDepartmentFilter}
+            hasActiveFilters={hasTaskTemplateFilters}
             milestoneFilter={taskTemplateMilestoneFilter}
             onAdd={openAddTaskTemplate}
+            onClearFilters={clearTaskTemplateFilters}
             onDelete={handleDeleteTaskTemplate}
             onDepartmentFilterChange={setTaskTemplateDepartmentFilter}
             onEdit={openEditTaskTemplate}
             onMilestoneFilterChange={setTaskTemplateMilestoneFilter}
+            onStatusFilterChange={setTaskTemplateStatusFilter}
+            statusFilter={taskTemplateStatusFilter}
           />
         </Tabs.Panel>
 
@@ -482,6 +634,10 @@ export function MasterData() {
             columns={currencyColumns}
             queryKey={queryKeys.currencies}
             fetcher={fetchCurrencies}
+            statusFilter={currencyStatusFilter}
+            onStatusFilterChange={setCurrencyStatusFilter}
+            hasActiveFilters={hasCurrencyFilters}
+            onClearFilters={clearCurrencyFilters}
             onAdd={openAddCurrency}
             onEdit={openEditCurrency}
             onDelete={handleDeleteCurrency}
@@ -499,6 +655,10 @@ export function MasterData() {
             columns={incotermColumns}
             queryKey={queryKeys.incoterms}
             fetcher={fetchIncoterms}
+            statusFilter={incotermStatusFilter}
+            onStatusFilterChange={setIncotermStatusFilter}
+            hasActiveFilters={hasIncotermFilters}
+            onClearFilters={clearIncotermFilters}
             onAdd={openAddIncoterm}
             onEdit={openEditIncoterm}
             onDelete={handleDeleteIncoterm}
@@ -516,6 +676,10 @@ export function MasterData() {
             columns={transportModeColumns}
             queryKey={queryKeys.transportModes}
             fetcher={fetchTransportModes}
+            statusFilter={transportModeStatusFilter}
+            onStatusFilterChange={setTransportModeStatusFilter}
+            hasActiveFilters={hasTransportModeFilters}
+            onClearFilters={clearTransportModeFilters}
             onAdd={openAddTransportMode}
             onEdit={openEditTransportMode}
             onDelete={handleDeleteTransportMode}
@@ -523,49 +687,63 @@ export function MasterData() {
         </Tabs.Panel>
 
         <Tabs.Panel value="chargeCodes" pt="md">
-          <Stack gap="md">
-            <Paper withBorder p="md">
-              <Chip.Group
-                multiple={false}
-                value={chargeGroup ?? 'ALL'}
-                onChange={(value) => setChargeGroup(value === 'ALL' ? null : (value as string))}
-              >
-                <Group gap="xs">
-                  <Chip value="ALL" variant="outline">
-                    {t('common.all')} ({chargeCodeTotal})
-                  </Chip>
-                  {CHARGE_GROUPS.map((g) => (
-                    <Chip key={g.value} value={g.value} variant="outline">
-                      {t(g.labelKey)} ({chargeGroupCounts[g.value] ?? 0})
-                    </Chip>
-                  ))}
-                </Group>
-              </Chip.Group>
-              <Select
-                mt="md"
-                label={t('masterData.chargeCategory')}
-                data={chargeCategoryOptions}
-                value={chargeCategory ?? 'ALL'}
-                onChange={(value) => setChargeCategory(value === 'ALL' ? null : value)}
-              />
-            </Paper>
-            <ReferenceDataPanel
-              addLabel={t('masterData.addChargeCode')}
-              canManage={canManageMasterData}
-              title={t('masterData.chargeCodesTitle')}
-              searchPlaceholder={t('masterData.searchChargeCodes')}
-              emptyTitle={t('masterData.noChargeCodes')}
-              emptyDescription={t('masterData.noChargeCodesDescription')}
-              columns={chargeCodeColumns}
-              queryKey={queryKeys.chargeCodes}
-              fetcher={fetchChargeCodes}
-              pageSize={CHARGE_CODE_FETCH_LIMIT}
-              onAdd={openAddChargeCode}
-              onEdit={openEditChargeCode}
-              onDelete={handleDeleteChargeCode}
-              clientFilter={chargeCodeFilter}
-            />
-          </Stack>
+          <ReferenceDataPanel
+            addLabel={t('masterData.addChargeCode')}
+            canManage={canManageMasterData}
+            title={t('masterData.chargeCodesTitle')}
+            searchPlaceholder={t('masterData.searchChargeCodes')}
+            emptyTitle={t('masterData.noChargeCodes')}
+            emptyDescription={t('masterData.noChargeCodesDescription')}
+            columns={chargeCodeColumns}
+            queryKey={queryKeys.chargeCodes}
+            fetcher={fetchChargeCodes}
+            pageSize={CHARGE_CODE_FETCH_LIMIT}
+            statusFilter={chargeCodeStatusFilter}
+            statusFilterClientSide
+            onStatusFilterChange={setChargeCodeStatusFilter}
+            hasActiveFilters={hasChargeCodeFilters}
+            onClearFilters={clearChargeCodeFilters}
+            onAdd={openAddChargeCode}
+            onEdit={openEditChargeCode}
+            onDelete={handleDeleteChargeCode}
+            clientFilter={chargeCodeFilter}
+            toolbarExtra={(
+              <>
+                <Select
+                  className="md-filter-select"
+                  label={t('masterData.chargeGroup')}
+                  data={chargeGroupOptions}
+                  value={chargeGroupFilter ?? 'ALL'}
+                  onChange={(value) => setChargeGroupFilter(value === 'ALL' ? null : value)}
+                  w={FILTER_SELECT_WIDTH}
+                />
+                <Select
+                  className="md-filter-select"
+                  label={t('masterData.chargeCategory')}
+                  data={chargeCategoryOptions}
+                  value={chargeCategoryFilter ?? 'ALL'}
+                  onChange={(value) => setChargeCategoryFilter(value === 'ALL' ? null : value)}
+                  w={FILTER_SELECT_WIDTH}
+                />
+                <Select
+                  className="md-filter-select"
+                  label={t('masterData.revCost')}
+                  data={chargeRevCostOptions}
+                  value={chargeCodeRevCostFilter ?? 'ALL'}
+                  onChange={(value) => setChargeCodeRevCostFilter(value === 'ALL' ? null : value)}
+                  w={FILTER_SELECT_WIDTH}
+                />
+                <Select
+                  className="md-filter-select"
+                  label={t('masterData.filterMode')}
+                  data={chargeModeOptions}
+                  value={chargeCodeModeFilter ?? 'ALL'}
+                  onChange={(value) => setChargeCodeModeFilter(value === 'ALL' ? null : value)}
+                  w={FILTER_SELECT_WIDTH}
+                />
+              </>
+            )}
+          />
         </Tabs.Panel>
 
         <Tabs.Panel value="uoms" pt="md">
@@ -579,6 +757,10 @@ export function MasterData() {
             columns={uomColumns}
             queryKey={queryKeys.uoms}
             fetcher={fetchUoms}
+            statusFilter={uomStatusFilter}
+            onStatusFilterChange={setUomStatusFilter}
+            hasActiveFilters={hasUomFilters}
+            onClearFilters={clearUomFilters}
             onAdd={openAddUom}
             onEdit={openEditUom}
             onDelete={handleDeleteUom}

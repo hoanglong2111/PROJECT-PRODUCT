@@ -4,6 +4,7 @@ import { IconChevronDown, IconSearch } from '@tabler/icons-react';
 import { useMemo, useState, type ReactNode } from 'react';
 
 import type { PurchaseOrderLineV1 } from '@shared/api/purchaseOrders';
+import { formatMoney as formatMoneyValue } from '@shared/utils/money';
 
 import { dateOnly, formatWeightKg, getPoLineLotState, getPoLineReceiptState, toNumber } from '../model/purchaseOrderModel';
 
@@ -326,7 +327,7 @@ function MetaCell({ label, value, wide }: { label: string; value: ReactNode; wid
 }
 
 function formatMoney(value: number | string | null | undefined, currencyCode: string) {
-  return `${toNumber(value).toLocaleString(undefined, { maximumFractionDigits: 2 })} ${currencyCode}`.trim();
+  return formatMoneyValue(value, currencyCode);
 }
 
 // Keep the dense columns narrow: numbers under 10k stay fully readable with

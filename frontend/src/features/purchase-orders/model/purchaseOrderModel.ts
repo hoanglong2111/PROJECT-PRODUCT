@@ -11,6 +11,9 @@ import type {
   PurchaseOrderV1,
   UpdatePurchaseOrderV1Payload,
 } from '@shared/api/purchaseOrders';
+import type { QuotationV1 } from '@shared/api/quotations';
+import type { Currency, Incoterm, TransportMode } from '@shared/api/tradeMasterData';
+import { toShippingMode } from '@features/quotations/model/quotationModel';
 
 import {
   STAGE_BY_STATUS,
@@ -74,6 +77,17 @@ export type PoFormDraft = {
   quotation_id: string;
   lines: PoLineDraft[];
 };
+
+export type QuotationPrefillMasterData = {
+  currencies: Currency[];
+  incoterms: Incoterm[];
+  transportModes: TransportMode[];
+};
+
+type QuotationPrefillSource = Pick<
+  QuotationV1,
+  'currency_code' | 'exchange_rate' | 'id' | 'incoterm_code' | 'mode'
+> & Partial<Pick<QuotationV1, 'supplier_id'>>;
 
 export type LotDraft = {
   id?: string;
@@ -168,6 +182,47 @@ export function createInitialPoDraft(order?: PurchaseOrderV1): PoFormDraft {
       }))
       : [newLineDraft(0)],
   };
+}
+
+export function applyQuotationPrefill(
+  draft: PoFormDraft,
+  quotation: QuotationPrefillSource,
+  masterData: QuotationPrefillMasterData,
+): PoFormDraft {
+  const incoterm = masterData.incoterms.find((item) => item.incoterm_code === quotation.incoterm_code);
+  const currency = masterData.currencies.find((item) => item.currency_code === quotation.currency_code);
+  const exchangeRate = toNumber(quotation.exchange_rate);
+
+  const nextDraft = {
+    ...draft,
+    quotation_id: quotation.id,
+    supplier_id: quotation.supplier_id || draft.supplier_id,
+    incoterm_id: incoterm?.id ?? draft.incoterm_id,
+    currency_id: currency?.id ?? draft.currency_id,
+    transport_mode_id: resolveQuotationTransportModeId(quotation.mode, masterData.transportModes) ?? draft.transport_mode_id,
+    exchange_rate: exchangeRate > 0 ? exchangeRate : draft.exchange_rate,
+  };
+
+  return draft.quotation_id === nextDraft.quotation_id &&
+    draft.supplier_id === nextDraft.supplier_id &&
+    draft.incoterm_id === nextDraft.incoterm_id &&
+    draft.currency_id === nextDraft.currency_id &&
+    draft.transport_mode_id === nextDraft.transport_mode_id &&
+    draft.exchange_rate === nextDraft.exchange_rate
+    ? draft
+    : nextDraft;
+}
+
+function resolveQuotationTransportModeId(mode: string | null | undefined, transportModes: TransportMode[]) {
+  const normalizedMode = String(mode ?? '').toUpperCase();
+  if (!normalizedMode.includes('AIR') && !normalizedMode.includes('FCL') && !normalizedMode.includes('LCL')) {
+    return null;
+  }
+
+  const shippingMode = toShippingMode(mode);
+  const transportModeCode = shippingMode === 'AIR' ? 'AIR' : 'SEA';
+
+  return transportModes.find((item) => item.mode_code.toUpperCase() === transportModeCode)?.id ?? null;
 }
 
 export function buildPoPayload(draft: PoFormDraft): CreatePurchaseOrderV1Payload {

@@ -407,8 +407,27 @@ After DO is created, frontend should navigate to:
 Quotation is a **top-level feature** (own sidebar tab at `/quotations`), no longer a tab
 inside the DO. It is a standalone **pre-PO freight quotation** (FDS → customer) that
 carries its own `customer_ref` + `incoterm_code` + `mode` + freight `charge_lines`
-(Incoterms×mode catalog at `@shared/lib/quotationCharges`). It is **freight-only** — no
+(doc-grounded charge suggestions from Charge Code master data). It is **freight-only** - no
 goods line items.
+
+Quotation charge suggestions are derived only from `05_Charge_Code` master data:
+`charge_code.group` must be inside the Incoterm scope, the quotation mode must match the
+row's mode flag (`sea_fcl`, `sea_lcl`, or `air`), and the row must be active. Incoterm
+drives scope only; it never supplies a price. Every suggested `unit_price` starts blank
+and sales enters the commercial price manually.
+
+`@shared/lib/quotationCharges.incotermChargeGroups` defines the buyer-scope groups:
+
+```txt
+EXW      -> ORIGIN_EXPORT, MAIN_FREIGHT, FREIGHT_SURCHARGE, DOCUMENTATION_FILING, DESTINATION_IMPORT
+FCA/FOB  -> MAIN_FREIGHT, FREIGHT_SURCHARGE, DOCUMENTATION_FILING, DESTINATION_IMPORT
+CFR/CIF  -> DESTINATION_IMPORT
+DDP      -> none
+unknown  -> all five primary groups
+```
+
+`ANCILLARY_ACCESSORIAL` and `SERVICE_OTHER` are not auto-suggested; they remain manual
+"Other / arising fees".
 
 Canonical flow: `Quotation(CONFIRMED) → PO → DO → Shipment → DTO`.
 
@@ -733,6 +752,17 @@ Rules:
   existing supplier partner rows in this scope.
 - Master-data clients call /api compatibility endpoints and read the
   { data, total, pagination } / { data } / { data, message } shapes.
+```
+
+## 16.1 Master Data / Mock Backend Non-Issues
+
+These are intentionally not frontend work items:
+
+```txt
+- STT with filtering/pagination is safe because the master-data tables do not expose click-to-sort.
+  The row number is a continuous visible-row counter, not a persisted sort key.
+- Dropping or splitting kbi-mock-api is backend-only work. The frontend is already decoupled through
+  VITE_API_URL and the API contract, with dev-only mock scaffolding kept inside shared API adapters.
 ```
 
 ---

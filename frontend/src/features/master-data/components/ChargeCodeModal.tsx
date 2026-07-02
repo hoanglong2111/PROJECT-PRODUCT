@@ -1,4 +1,4 @@
-import { Alert, Button, Group, Modal, Select, SimpleGrid, Stack, Switch, Textarea, TextInput } from '@mantine/core';
+import { Alert, Select, SimpleGrid, Switch, Textarea, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -16,7 +16,8 @@ import { useI18n } from '@shared/i18n';
 import { CHARGE_CATEGORIES, CHARGE_GROUPS } from '@shared/lib/chargeCategories';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
-import { optionalString } from '../model/masterDataModel';
+import { getRevCostLabel, optionalString } from '../model/masterDataModel';
+import { MasterDataFormActions, MasterDataFormModal, MasterDataFormSection } from './MasterDataFormModal';
 
 type ChargeCodeFormValues = {
   code: string;
@@ -133,30 +134,38 @@ export function ChargeCodeModal({
   };
 
   return (
-    <Modal
+    <MasterDataFormModal
       opened={opened}
       onClose={onClose}
       size="lg"
       title={editing ? t('masterData.editChargeCode') : t('masterData.createChargeCode')}
+      footer={(
+        <MasterDataFormActions
+          onCancel={onClose}
+          onSave={handleSave}
+          loading={mutation.isPending}
+          disabled={!form.values.code.trim() || !form.values.nameEn.trim() || !form.values.group || !form.values.category || !form.values.defaultUom}
+        />
+      )}
     >
-      <Stack gap="md">
-        {mutation.isError ? (
-          <Alert color="red" icon={<IconAlertCircle size={18} />}>
-            {getApiErrorMessage(mutation.error)}
-          </Alert>
-        ) : null}
+      {mutation.isError ? (
+        <Alert color="red" icon={<IconAlertCircle size={18} />}>
+          {getApiErrorMessage(mutation.error)}
+        </Alert>
+      ) : null}
+      <MasterDataFormSection>
         <SimpleGrid cols={{ base: 1, sm: 2 }}>
           <TextInput label={t('masterData.chargeCode')} required {...form.getInputProps('code')} />
           <Select
             label={t('masterData.chargeGroup')}
-            data={CHARGE_GROUPS.map((group) => ({ label: t(group.labelKey), value: group.value }))}
+            data={CHARGE_GROUPS.map((group) => ({ label: group.docLabel, value: group.value }))}
             required
             searchable
             {...form.getInputProps('group')}
           />
           <Select
             label={t('masterData.chargeCategory')}
-            data={CHARGE_CATEGORIES.map((category) => ({ label: t(category.labelKey), value: category.value }))}
+            data={CHARGE_CATEGORIES.map((category) => ({ label: category.docLabel, value: category.value }))}
             required
             searchable
             {...form.getInputProps('category')}
@@ -174,14 +183,16 @@ export function ChargeCodeModal({
           <Select
             label={<HeaderLabel label={t('masterData.revCost')} hint={t('glossary.revCost')} />}
             data={[
-              { label: t('masterData.revCostRevenue'), value: 'REVENUE' },
-              { label: t('masterData.revCostCost'), value: 'COST' },
-              { label: t('masterData.revCostBoth'), value: 'BOTH' },
+              { label: getRevCostLabel('REVENUE'), value: 'REVENUE' },
+              { label: getRevCostLabel('COST'), value: 'COST' },
+              { label: getRevCostLabel('BOTH'), value: 'BOTH' },
             ]}
             required
             {...form.getInputProps('revCost')}
           />
         </SimpleGrid>
+      </MasterDataFormSection>
+      <MasterDataFormSection>
         <SimpleGrid cols={{ base: 1, sm: 3 }}>
           <Switch label={t('masterData.seaFcl')} {...form.getInputProps('seaFcl', { type: 'checkbox' })} />
           <Switch label={t('masterData.seaLcl')} {...form.getInputProps('seaLcl', { type: 'checkbox' })} />
@@ -193,21 +204,13 @@ export function ChargeCodeModal({
             {...form.getInputProps('taxable', { type: 'checkbox' })}
           />
         </SimpleGrid>
+      </MasterDataFormSection>
+      <MasterDataFormSection>
         <Textarea label={t('masterData.description')} autosize minRows={3} {...form.getInputProps('description')} />
+      </MasterDataFormSection>
+      <MasterDataFormSection compact>
         <Switch label={t('masterData.active')} {...form.getInputProps('isActive', { type: 'checkbox' })} />
-        <Group justify="flex-end">
-          <Button variant="subtle" color="gray" onClick={onClose}>
-            {t('common.cancel')}
-          </Button>
-          <Button
-            onClick={handleSave}
-            loading={mutation.isPending}
-            disabled={!form.values.code.trim() || !form.values.nameEn.trim() || !form.values.group || !form.values.category || !form.values.defaultUom}
-          >
-            {t('common.save')}
-          </Button>
-        </Group>
-      </Stack>
-    </Modal>
+      </MasterDataFormSection>
+    </MasterDataFormModal>
   );
 }

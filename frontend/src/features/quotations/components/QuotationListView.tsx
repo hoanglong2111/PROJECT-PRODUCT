@@ -7,6 +7,7 @@ import { EmptyState } from '@shared/components/EmptyState';
 import { ListPagination, useListPagination } from '@shared/components/ListPagination';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { useI18n } from '@shared/i18n';
+import { formatMoney } from '@shared/utils/money';
 
 import {
   quotationTabItems,
@@ -14,10 +15,6 @@ import {
   type QuotationTab,
 } from '../model/quotationModel';
 import { useQuotationsUiStore } from '../model/quotationsUiStore';
-
-function formatMoney(amount: number, currency: string | null | undefined): string {
-  return `${new Intl.NumberFormat('en-US').format(Math.round(amount))} ${currency ?? ''}`.trim();
-}
 
 type QuotationListViewProps = {
   filteredQuotations: QuotationV1[];

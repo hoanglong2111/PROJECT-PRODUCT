@@ -1,24 +1,43 @@
-import { ActionIcon, Alert, Button, Group, Loader, Paper, ScrollArea, Stack, Table, Text, TextInput, Tooltip } from '@mantine/core';
-import { IconAlertCircle, IconPencil, IconPlus, IconRefresh, IconSearch, IconTrash } from '@tabler/icons-react';
+import { ActionIcon, Alert, Group, Loader, Paper, ScrollArea, Stack, Table, Text, Tooltip } from '@mantine/core';
+import { useDebouncedValue } from '@mantine/hooks';
+import { IconAlertCircle, IconPencil, IconTrash } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 
 import type { PaginatedResponse } from '@shared/api/tradeMasterData';
 import { EmptyState } from '@shared/components/EmptyState';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
-import { LIST_PAGE_SIZE, ListPagination } from '@shared/components/ListPagination';
+import { LIST_PAGE_SIZE, ListPagination, useListPagination } from '@shared/components/ListPagination';
 import { useI18n } from '@shared/i18n';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
 import { optionalString } from '../model/masterDataModel';
+import { MasterDataToolbar } from './MasterDataToolbar';
+
+// Reference master-data sets are small; load the whole set up-front so search/filter and
+// client-side pagination operate over every row, not just the first server page.
+const REFERENCE_PAGE_FETCH_LIMIT = 500;
 
 export type ReferenceColumn<T> = {
+  align?: 'left' | 'center' | 'right';
   key: string;
   label: string;
   hint?: string;
   width?: number | string;
   render: (record: T) => ReactNode;
 };
+
+type ColumnAlign = NonNullable<ReferenceColumn<unknown>['align']>;
+
+function alignToJustify(align?: ColumnAlign) {
+  if (align === 'center') return 'center';
+  if (align === 'right') return 'flex-end';
+  return 'flex-start';
+}
+
+function cellClassName(align?: ColumnAlign) {
+  return ['md-cell-clamp', align ? `md-cell-align-${align}` : null].filter(Boolean).join(' ');
+}
 
 export function ReferenceDataPanel<T extends { id: string }>({
   addLabel,
@@ -28,12 +47,17 @@ export function ReferenceDataPanel<T extends { id: string }>({
   emptyDescription,
   emptyTitle,
   fetcher,
+  hasActiveFilters = false,
   onAdd,
+  onClearFilters,
   onDelete,
   onEdit,
-  pageSize = LIST_PAGE_SIZE,
+  pageSize = REFERENCE_PAGE_FETCH_LIMIT,
   queryKey,
   searchPlaceholder,
+  statusFilter,
+  statusFilterClientSide = false,
+  onStatusFilterChange,
   title,
   toolbarExtra,
 }: {
@@ -43,27 +67,35 @@ export function ReferenceDataPanel<T extends { id: string }>({
   columns: Array<ReferenceColumn<T>>;
   emptyDescription: string;
   emptyTitle: string;
-  fetcher: (params: { limit: number; page: number; search?: string }) => Promise<PaginatedResponse<T>>;
+  fetcher: (params: { limit: number; page: number; search?: string; is_active?: boolean }) => Promise<PaginatedResponse<T>>;
+  hasActiveFilters?: boolean;
   onAdd: () => void;
+  onClearFilters?: () => void;
   onDelete: (record: T) => void;
   onEdit: (record: T) => void;
   /** Server fetch page size. Pass a large value to load all rows when using clientFilter. */
   pageSize?: number;
   queryKey: (params: Record<string, unknown>) => readonly unknown[];
   searchPlaceholder: string;
+  statusFilter?: boolean | null;
+  statusFilterClientSide?: boolean;
+  onStatusFilterChange?: (value: boolean | null) => void;
   title: string;
   toolbarExtra?: ReactNode;
 }) {
   const { t } = useI18n();
-  const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  const [debouncedSearch] = useDebouncedValue(search, 250);
+  const hasSearch = search.trim().length > 0;
+  const showClearFilters = hasActiveFilters || hasSearch;
   const params = useMemo(
     () => ({
-      page,
+      page: 1,
       limit: pageSize,
-      search: optionalString(search),
+      search: optionalString(debouncedSearch),
+      is_active: statusFilterClientSide ? undefined : statusFilter ?? undefined,
     }),
-    [page, pageSize, search],
+    [debouncedSearch, pageSize, statusFilter, statusFilterClientSide],
   );
 
   const query = useQuery({
@@ -72,56 +104,49 @@ export function ReferenceDataPanel<T extends { id: string }>({
   });
 
   const allRecords = query.data?.data ?? [];
-  const records = clientFilter ? allRecords.filter(clientFilter) : allRecords;
-  const total = clientFilter ? records.length : (query.data?.total ?? 0);
-  const pageCount = clientFilter ? 1 : Math.max(1, query.data?.pagination.totalPages ?? 1);
-  const pageStart = total === 0 ? 0 : (page - 1) * pageSize + 1;
-  const pageEnd = Math.min(total, page * pageSize);
+  const filtered = clientFilter ? allRecords.filter(clientFilter) : allRecords;
+  const total = filtered.length;
+  const showSmallSetCount = !query.isLoading && total <= LIST_PAGE_SIZE;
+  // The full reference set is loaded up-front, so paginate client-side: every tab gets a
+  // consistent LIST_PAGE_SIZE page and a continuous STT counter. Reset to page 1 whenever the
+  // filtered row count changes (search / status / attribute filter).
+  const { page, pageCount, pageEnd, pageStart, setPage, visibleItems: records } = useListPagination(filtered, [
+    debouncedSearch,
+    statusFilter,
+    total,
+  ]);
 
-  useEffect(() => {
-    if (page > pageCount) {
-      setPage(pageCount);
-    }
-  }, [page, pageCount]);
+  const handleClearFilters = () => {
+    setSearch('');
+    setPage(1);
+    onClearFilters?.();
+  };
 
   return (
     <Stack gap="md">
-      <Paper withBorder p="md" className="dl-filter-panel">
-        <Group justify="space-between" align="end" gap="md" className="dl-filter-row">
-          <TextInput
-            className="dl-filter-search"
-            label={title}
-            placeholder={searchPlaceholder}
-            leftSection={<IconSearch size={16} />}
-            value={search}
-            onChange={(event) => {
-              setSearch(event.currentTarget.value);
-              setPage(1);
-            }}
-            style={{ flex: 1 }}
-          />
-          {toolbarExtra}
-          <Group gap="xs">
-            {query.isFetching ? <Loader size="sm" /> : null}
-            {canManage ? (
-              <Button leftSection={<IconPlus size={16} />} onClick={onAdd}>
-                {addLabel}
-              </Button>
-            ) : null}
-            <Tooltip label={t('masterData.refresh')}>
-              <ActionIcon
-                aria-label={t('masterData.refresh')}
-                variant="light"
-                onClick={() => {
-                  void query.refetch();
-                }}
-              >
-                <IconRefresh size={18} />
-              </ActionIcon>
-            </Tooltip>
-          </Group>
-        </Group>
-      </Paper>
+      <MasterDataToolbar
+        addLabel={addLabel}
+        canManage={canManage}
+        filters={toolbarExtra}
+        hasActiveFilters={showClearFilters}
+        isFetching={query.isFetching}
+        onAdd={onAdd}
+        onClear={handleClearFilters}
+        onSearchChange={(value) => {
+          setSearch(value);
+          setPage(1);
+        }}
+        onStatusChange={onStatusFilterChange
+          ? (value) => {
+            onStatusFilterChange(value);
+            setPage(1);
+          }
+          : undefined}
+        searchLabel={title}
+        searchPlaceholder={searchPlaceholder}
+        searchValue={search}
+        statusValue={statusFilter}
+      />
 
       {query.isError ? (
         <Alert color="red" icon={<IconAlertCircle size={18} />}>
@@ -138,33 +163,53 @@ export function ReferenceDataPanel<T extends { id: string }>({
             </Text>
           </Group>
         ) : records.length === 0 ? (
-          <EmptyState title={emptyTitle} description={emptyDescription} />
+          <EmptyState
+            title={showClearFilters ? t('masterData.noFilteredResults') : emptyTitle}
+            description={showClearFilters ? t('masterData.noFilteredResultsDescription') : emptyDescription}
+            action={showClearFilters
+              ? { label: t('masterData.clearFilters'), onClick: handleClearFilters }
+              : canManage
+                ? { label: addLabel, onClick: onAdd }
+                : undefined}
+          />
         ) : (
           <ScrollArea className="data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
-            <Table miw={1100} verticalSpacing="sm" highlightOnHover>
+            <Table
+              stickyHeader
+              verticalSpacing="sm"
+              highlightOnHover
+              className="md-table"
+              style={{ tableLayout: 'fixed', width: '100%' }}
+            >
               <Table.Thead>
                 <Table.Tr>
+                  <Table.Th style={{ width: 56, textAlign: 'center' }}>
+                    <HeaderLabel label={t('common.rowNumber')} />
+                  </Table.Th>
                   {columns.map((column) => (
-                    <Table.Th key={column.key} style={{ width: column.width }}>
-                      <HeaderLabel label={column.label} hint={column.hint} />
+                    <Table.Th key={column.key} style={{ width: column.width, textAlign: column.align }}>
+                      <HeaderLabel label={column.label} hint={column.hint} justify={alignToJustify(column.align)} />
                     </Table.Th>
                   ))}
                   {canManage ? (
-                    <Table.Th style={{ width: 112 }}>
+                    <Table.Th style={{ width: 112, textAlign: 'center' }}>
                       {t('masterData.actions')}
                     </Table.Th>
                   ) : null}
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {records.map((record) => (
+                {records.map((record, index) => (
                   <Table.Tr key={record.id}>
+                    <Table.Td className="tabular-nums md-cell-align-center">{pageStart + index}</Table.Td>
                     {columns.map((column) => (
-                      <Table.Td key={column.key}>{column.render(record)}</Table.Td>
+                      <Table.Td key={column.key} className={cellClassName(column.align)} style={{ textAlign: column.align }}>
+                        {column.render(record)}
+                      </Table.Td>
                     ))}
                     {canManage ? (
-                      <Table.Td>
-                        <Group gap="xs" wrap="nowrap">
+                      <Table.Td className="md-cell-align-center">
+                        <Group gap="xs" wrap="nowrap" justify="center">
                           <Tooltip label={t('common.edit')}>
                             <ActionIcon
                               aria-label={t('common.edit')}
@@ -194,14 +239,22 @@ export function ReferenceDataPanel<T extends { id: string }>({
           </ScrollArea>
         )}
 
-        <ListPagination
-          page={page}
-          pageCount={pageCount}
-          pageEnd={pageEnd}
-          pageStart={pageStart}
-          setPage={setPage}
-          total={total}
-        />
+        {showSmallSetCount ? (
+          <Group justify="flex-start" p="md" className="md-pagination-fallback">
+            <Text size="sm" c="dimmed" className="md-filter-count">
+              {t('common.shown', { count: total })}
+            </Text>
+          </Group>
+        ) : (
+          <ListPagination
+            page={page}
+            pageCount={pageCount}
+            pageEnd={pageEnd}
+            pageStart={pageStart}
+            setPage={setPage}
+            total={total}
+          />
+        )}
       </Paper>
     </Stack>
   );

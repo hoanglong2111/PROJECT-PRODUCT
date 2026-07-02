@@ -2,7 +2,7 @@ import type { CreateItemPayload, UpdateItemPayload } from '@shared/api/items';
 import type { ChargeCodePayload } from '@shared/api/chargeCodes';
 import type { SupplierPayload } from '@shared/api/tradeMasterData';
 import type { CarrierPayload, ForwarderPayload } from '@shared/api/forwarders';
-import type { DepartmentCode, MilestoneCode, TaskTemplatePayload } from '@shared/api/taskTemplates';
+import type { TaskTemplatePayload } from '@shared/api/taskTemplates';
 import type { UomPayload } from '@shared/api/uoms';
 
 export type SaveItemInput = {
@@ -64,39 +64,41 @@ export type SaveTaskTemplateInput = {
   };
 };
 
-const milestoneLabelKeys: Partial<Record<MilestoneCode | string, string>> = {
-  PRE_SHIPMENT: 'masterData.milestonePreShipment',
-  MS1_BOOKING_CONFIRMED: 'masterData.milestoneBookingConfirmed',
-  MS2_CARGO_READY: 'masterData.milestoneCargoReady',
-  MS3_LOADED: 'masterData.milestoneLoaded',
-  MS4_IN_TRANSIT: 'masterData.milestoneInTransit',
-  MS5_ARRIVED_PORT: 'masterData.milestoneArrivedPort',
-  MS6_CUSTOMS_SUBMITTED: 'masterData.milestoneCustomsSubmitted',
-  MS7_CUSTOMS_CLEARED: 'masterData.milestoneCustomsCleared',
-  MS8_DELIVERED_GATE: 'masterData.milestoneDeliveredGate',
+const MILESTONE_DOC_LABELS: Record<string, string> = {
+  PRE_SHIPMENT: 'Pre-shipment',
+  MS1_BOOKING_CONFIRMED: 'MS-1 Booking confirmed',
+  MS2_CARGO_READY: 'MS-2 Cargo ready',
+  MS3_LOADED: 'MS-3 Loaded',
+  MS4_IN_TRANSIT: 'MS-4 In transit',
+  MS5_ARRIVED_PORT: 'MS-5 Arrived port',
+  MS6_CUSTOMS_SUBMITTED: 'MS-6 Customs submitted',
+  MS7_CUSTOMS_CLEARED: 'MS-7 Customs cleared',
+  MS8_DELIVERED_GATE: 'MS-8 Delivered to gate',
 };
 
-const departmentLabelKeys: Partial<Record<DepartmentCode | string, string>> = {
-  FDS_SALES: 'masterData.departmentFdsSales',
-  KBI_PURCHASING: 'masterData.departmentKbiPurchasing',
-  FDS_OPS: 'masterData.departmentFdsOps',
-  FDS_OPS_CUSTOMS: 'masterData.departmentFdsOpsCustoms',
-  FDS_ACCOUNTING: 'masterData.departmentFdsAccounting',
-  KBI_WAREHOUSE: 'masterData.departmentKbiWarehouse',
+const DEPARTMENT_DOC_LABELS: Record<string, string> = {
+  FDS_SALES: 'FDS Sales',
+  FDS_OPS: 'FDS Ops',
+  FDS_OPS_CUSTOMS: 'FDS Ops (Customs)',
+  FDS_ACCOUNTING: 'FDS Kế toán',
+  KBI_PURCHASING: 'KBI – Mua hàng',
+  KBI_WAREHOUSE: 'KBI Kho',
 };
 
-export function getMilestoneLabel(code: string | null | undefined, t: (key: string) => string) {
-  if (!code) return t('masterData.noMilestone');
+const REV_COST_LABELS: Record<string, string> = {
+  REVENUE: 'Revenue',
+  COST: 'Cost',
+  BOTH: 'Both',
+};
 
-  const labelKey = milestoneLabelKeys[code];
-  return labelKey ? t(labelKey) : code;
+export function getMilestoneLabel(code: string | null | undefined, _t: (key: string) => string) {
+  if (!code) return '—';
+  return MILESTONE_DOC_LABELS[code] ?? code;
 }
 
-export function getDepartmentLabel(code: string | null | undefined, t: (key: string) => string) {
+export function getDepartmentLabel(code: string | null | undefined, _t: (key: string) => string) {
   if (!code) return '-';
-
-  const labelKey = departmentLabelKeys[code];
-  return labelKey ? t(labelKey) : code;
+  return DEPARTMENT_DOC_LABELS[code] ?? code;
 }
 
 export function optionalString(value: string) {
@@ -120,6 +122,50 @@ export function formatDecimal(value: number | string | null | undefined) {
 export function formatRate(value: number | string | null | undefined) {
   const formatted = formatDecimal(value);
   return formatted === '-' ? formatted : `${formatted}%`;
+}
+
+export const SUPPLIER_TYPE_VALUES = ['OVERSEAS_SEA', 'OVERSEAS_AIR', 'DOMESTIC'];
+export const ITEM_CATEGORY_VALUES = ['NVL', 'BTP', 'TP', 'CCDC', 'DONG_GOI'];
+export const ITEM_TYPE_VALUES = ['RAW', 'SEMI', 'FG', 'CONSUMABLE', 'PACKAGING'];
+export const FORWARDER_TYPE_VALUES = ['SEA', 'AIR', 'TRUCKING', 'MULTI'];
+export const CARRIER_TYPE_VALUES = ['SHIPPING_LINE', 'AIRLINE'];
+
+function rawValue(value: string | null | undefined) {
+  return value ? value : '-';
+}
+
+export function getSupplierTypeLabel(value: string | null | undefined, _t: (key: string) => string) {
+  return rawValue(value);
+}
+
+export const STATUS_FILTER_ALL = 'ALL';
+
+export function statusToSelectValue(value: boolean | null | undefined): string {
+  return value === true ? 'active' : value === false ? 'inactive' : STATUS_FILTER_ALL;
+}
+
+export function selectValueToStatus(value: string | null): boolean | null {
+  return value === 'active' ? true : value === 'inactive' ? false : null;
+}
+
+export function getItemCategoryLabel(value: string | null | undefined, _t: (key: string) => string) {
+  return rawValue(value);
+}
+
+export function getItemTypeLabel(value: string | null | undefined, _t: (key: string) => string) {
+  return rawValue(value);
+}
+
+export function getForwarderTypeLabel(value: string | null | undefined, _t: (key: string) => string) {
+  return rawValue(value);
+}
+
+export function getCarrierTypeLabel(value: string | null | undefined, _t: (key: string) => string) {
+  return rawValue(value);
+}
+
+export function getRevCostLabel(value: string): string {
+  return REV_COST_LABELS[value] ?? value;
 }
 
 export { formatDateTime } from '@shared/utils/date';

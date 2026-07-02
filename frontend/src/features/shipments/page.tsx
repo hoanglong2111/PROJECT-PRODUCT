@@ -26,6 +26,7 @@ import {
   updateShipmentDocument,
   type ShipmentCostPayload,
   type ShipmentDocumentPayload,
+  type ShipmentLoadTypeV1,
   type ShipmentMilestoneCodeV1,
   type ShipmentModeV1,
 } from '@shared/api/shipments';
@@ -38,6 +39,7 @@ import {
   inTransitStatuses,
   inferShipmentModeFromDeliveryOrder,
   isDeliveryOrderShipmentEligible,
+  loadTypeForMode,
   shipmentModeOptions,
   type ShipmentWorkbench,
 } from './model/shipmentModel';
@@ -65,6 +67,7 @@ export function Shipments() {
   const [newDoNumber, setNewDoNumber] = useState('');
   const [newPoNumber, setNewPoNumber] = useState('');
   const [newMode, setNewMode] = useState<ShipmentModeV1>('SEA');
+  const [newLoadType, setNewLoadType] = useState<ShipmentLoadTypeV1 | null>('FCL');
   const [newCarrier, setNewCarrier] = useState('');
   const [newVoyage, setNewVoyage] = useState('');
   const [newVoyageNo, setNewVoyageNo] = useState('');
@@ -105,6 +108,14 @@ export function Shipments() {
     label: t(option.labelKey),
     value: option.value,
   }));
+  const loadTypeOptions = useMemo(
+    () =>
+      loadTypeForMode(newMode).map((option) => ({
+        label: t(option.labelKey),
+        value: option.value,
+      })),
+    [newMode, t],
+  );
 
   useEffect(() => {
     if (!focusedShp) {
@@ -197,6 +208,7 @@ export function Shipments() {
       setNewDoNumber('');
       setNewPoNumber('');
       setNewMode('SEA');
+      setNewLoadType('FCL');
       setNewCarrier('');
       setNewVoyage('');
       setNewVoyageNo('');
@@ -274,11 +286,24 @@ export function Shipments() {
     setNewDeliveryOrderId(deliveryOrderId);
     setNewDoNumber(deliveryOrder?.do_no ?? deliveryOrder?.delivery_order_no ?? '');
     setNewPoNumber(deliveryOrder?.purchase_order?.po_no ?? '');
-    setNewMode(deliveryOrder ? inferShipmentModeFromDeliveryOrder(deliveryOrder) : 'SEA');
+    const inferredMode = deliveryOrder ? inferShipmentModeFromDeliveryOrder(deliveryOrder) : 'SEA';
+    setNewMode(inferredMode);
+    setNewLoadType(loadTypeForMode(inferredMode)[0]?.value ?? null);
     setNewOriginPort(deliveryOrder?.origin_address ?? '');
     setNewDestPort(deliveryOrder?.destination_address ?? '');
     setNewEtd(deliveryOrder?.planned_etd?.slice(0, 10) ?? '');
     setNewEta(deliveryOrder?.planned_eta?.slice(0, 10) ?? '');
+  };
+
+  const handleModeChange = (value: string | null) => {
+    const nextMode = (value as ShipmentModeV1 | null) ?? 'SEA';
+    const nextLoadTypes = loadTypeForMode(nextMode);
+    setNewMode(nextMode);
+    setNewLoadType((current) => (
+      current && nextLoadTypes.some((option) => option.value === current)
+        ? current
+        : nextLoadTypes[0]?.value ?? null
+    ));
   };
 
   const handleCreateShipment = () => {
@@ -293,6 +318,7 @@ export function Shipments() {
       doNumber: newDoNumber,
       poNumber: newPoNumber,
       shippingMode: newMode,
+      loadType: newLoadType,
       carrierName: newCarrier || undefined,
       originPort: newOriginPort || undefined,
       vesselVoyage: newVoyage || undefined,
@@ -446,8 +472,16 @@ export function Shipments() {
                     label={t('shipments.shipmentMode')}
                     data={translatedShipmentModeOptions}
                     value={newMode}
-                    onChange={(value) => setNewMode((value as ShipmentModeV1 | null) ?? 'SEA')}
+                    onChange={handleModeChange}
                   />
+                  {loadTypeOptions.length > 0 ? (
+                    <Select
+                      label={t('shipments.loadType')}
+                      data={loadTypeOptions}
+                      value={newLoadType}
+                      onChange={(value) => setNewLoadType(value as ShipmentLoadTypeV1 | null)}
+                    />
+                  ) : null}
                   <TextInput
                     label={t('shipments.carrier')}
                     placeholder={t('shipments.carrierPlaceholder')}

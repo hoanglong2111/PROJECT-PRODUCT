@@ -1,4 +1,4 @@
-import { Alert, Button, Group, Modal, Select, SimpleGrid, Stack, Switch, Textarea, TextInput } from '@mantine/core';
+import { Alert, Select, SimpleGrid, Switch, Textarea, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -15,7 +15,8 @@ import { queryKeys } from '@shared/api/queryKeys';
 import { useI18n } from '@shared/i18n';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
-import { optionalString } from '../model/masterDataModel';
+import { FORWARDER_TYPE_VALUES, optionalString } from '../model/masterDataModel';
+import { MasterDataFormActions, MasterDataFormModal, MasterDataFormSection } from './MasterDataFormModal';
 
 type ForwarderFormValues = {
   code: string;
@@ -53,12 +54,7 @@ export function ForwarderModal({
   const { t } = useI18n();
   const queryClient = useQueryClient();
   const form = useForm<ForwarderFormValues>({ initialValues: emptyValues });
-  const forwarderTypeOptions = [
-    { label: t('masterData.forwarderTypeSea'), value: 'SEA' },
-    { label: t('masterData.forwarderTypeAir'), value: 'AIR' },
-    { label: t('masterData.forwarderTypeTrucking'), value: 'TRUCKING' },
-    { label: t('masterData.forwarderTypeMulti'), value: 'MULTI' },
-  ];
+  const forwarderTypeOptions = FORWARDER_TYPE_VALUES.map((value) => ({ label: value, value }));
 
   useEffect(() => {
     if (!opened) return;
@@ -139,23 +135,31 @@ export function ForwarderModal({
   };
 
   return (
-    <Modal
+    <MasterDataFormModal
       opened={opened}
       onClose={onClose}
       size="lg"
       title={editing ? t('masterData.editForwarder') : t('masterData.createForwarder')}
+      footer={(
+        <MasterDataFormActions
+          onCancel={onClose}
+          onSave={handleSave}
+          loading={mutation.isPending}
+          disabled={!form.values.code.trim() || !form.values.name.trim() || !form.values.type || !form.values.contactPerson.trim() || !form.values.contactEmail.trim()}
+        />
+      )}
     >
-      <Stack gap="md">
-        {mutation.isError ? (
-          <Alert color="red" icon={<IconAlertCircle size={18} />}>
-            {getApiErrorMessage(mutation.error)}
-          </Alert>
-        ) : null}
-        {form.values.isPrimary && otherPrimaryForwarders.length > 0 ? (
-          <Alert color="blue" icon={<IconAlertCircle size={18} />}>
-            {t('masterData.forwarderPrimaryNotice')}
-          </Alert>
-        ) : null}
+      {mutation.isError ? (
+        <Alert color="red" icon={<IconAlertCircle size={18} />}>
+          {getApiErrorMessage(mutation.error)}
+        </Alert>
+      ) : null}
+      {form.values.isPrimary && otherPrimaryForwarders.length > 0 ? (
+        <Alert color="blue" icon={<IconAlertCircle size={18} />}>
+          {t('masterData.forwarderPrimaryNotice')}
+        </Alert>
+      ) : null}
+      <MasterDataFormSection>
         <SimpleGrid cols={{ base: 1, sm: 2 }}>
           <TextInput label={t('masterData.forwarderCode')} required {...form.getInputProps('code')} />
           <TextInput label={t('masterData.forwarderName')} required {...form.getInputProps('name')} />
@@ -170,22 +174,12 @@ export function ForwarderModal({
           <TextInput label={t('masterData.contactPerson')} required {...form.getInputProps('contactPerson')} />
           <TextInput label={t('masterData.contactEmail')} required {...form.getInputProps('contactEmail')} />
           <TextInput label={t('masterData.contactPhone')} {...form.getInputProps('contactPhone')} />
-          <Switch label={t('masterData.isPrimary')} mt="xl" {...form.getInputProps('isPrimary', { type: 'checkbox' })} />
+          <Switch label={t('masterData.isPrimary')} {...form.getInputProps('isPrimary', { type: 'checkbox' })} />
         </SimpleGrid>
+      </MasterDataFormSection>
+      <MasterDataFormSection>
         <Textarea label={t('masterData.note')} autosize minRows={3} {...form.getInputProps('note')} />
-        <Group justify="flex-end">
-          <Button variant="subtle" color="gray" onClick={onClose}>
-            {t('common.cancel')}
-          </Button>
-          <Button
-            onClick={handleSave}
-            loading={mutation.isPending}
-            disabled={!form.values.code.trim() || !form.values.name.trim() || !form.values.type || !form.values.contactPerson.trim() || !form.values.contactEmail.trim()}
-          >
-            {t('common.save')}
-          </Button>
-        </Group>
-      </Stack>
-    </Modal>
+      </MasterDataFormSection>
+    </MasterDataFormModal>
   );
 }

@@ -34,6 +34,7 @@ import { getApiErrorMessage } from '@shared/lib/errors';
 import { usePoInvalidation } from '../hooks/usePoInvalidation';
 import { usePoMasterData } from '../hooks/usePoMasterData';
 import {
+  applyQuotationPrefill,
   buildCustomsOptions,
   buildPoPatchPayload,
   buildPoPayload,
@@ -78,20 +79,16 @@ export function PurchaseOrderForm({
     setContractAutoSync(!order?.contract_no);
   }, [order]);
 
-  // Create-from-quotation: link the quotation and prefill the commercial header
-  // (incoterm + currency) from it once master data is available. Lines and supplier
-  // are entered normally, so the PO line -> LOT logic is untouched.
+  // Create-from-quotation: link the quotation and prefill the commercial header.
+  // Lines are still entered normally, so the PO line -> LOT logic is untouched.
   useEffect(() => {
     if (mode !== 'create' || !quotation) return;
-    const incoterm = masterData.incoterms.find((item) => item.incoterm_code === quotation.incoterm_code);
-    const currency = masterData.currencies.find((item) => item.currency_code === quotation.currency_code);
-    setDraft((current) => ({
-      ...current,
-      quotation_id: quotation.id,
-      incoterm_id: incoterm?.id ?? current.incoterm_id,
-      currency_id: currency?.id ?? current.currency_id,
+    setDraft((current) => applyQuotationPrefill(current, quotation, {
+      currencies: masterData.currencies,
+      incoterms: masterData.incoterms,
+      transportModes: masterData.transportModes,
     }));
-  }, [mode, quotation, masterData.incoterms, masterData.currencies]);
+  }, [mode, quotation, masterData.currencies, masterData.incoterms, masterData.transportModes]);
 
   const createMutation = useMutation({
     mutationFn: (payload: CreatePurchaseOrderV1Payload) => createPurchaseOrder(payload),

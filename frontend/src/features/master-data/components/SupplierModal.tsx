@@ -1,4 +1,4 @@
-import { Alert, Autocomplete, Button, Group, Modal, Select, SimpleGrid, Stack, Switch, Textarea, TextInput } from '@mantine/core';
+import { Alert, Autocomplete, Group, Select, SimpleGrid, Switch, Textarea, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -11,6 +11,7 @@ import { useI18n } from '@shared/i18n';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
 import { optionalNumber, optionalString } from '../model/masterDataModel';
+import { MasterDataFormActions, MasterDataFormModal, MasterDataFormSection } from './MasterDataFormModal';
 
 type SupplierFormValues = {
   code: string;
@@ -181,18 +182,26 @@ export function SupplierModal({
   };
 
   return (
-    <Modal
+    <MasterDataFormModal
       opened={opened}
       onClose={onClose}
       size="xl"
       title={editing ? t('masterData.editSupplier') : t('masterData.createSupplier')}
+      footer={(
+        <MasterDataFormActions
+          onCancel={onClose}
+          onSave={handleSave}
+          loading={mutation.isPending}
+          disabled={isSaveDisabled}
+        />
+      )}
     >
-      <Stack gap="md">
-        {mutation.isError ? (
-          <Alert color="red" icon={<IconAlertCircle size={18} />}>
-            {getApiErrorMessage(mutation.error)}
-          </Alert>
-        ) : null}
+      {mutation.isError ? (
+        <Alert color="red" icon={<IconAlertCircle size={18} />}>
+          {getApiErrorMessage(mutation.error)}
+        </Alert>
+      ) : null}
+      <MasterDataFormSection>
         <SimpleGrid cols={{ base: 1, sm: 2 }}>
           <TextInput
             label={t('masterData.supplierCode')}
@@ -220,6 +229,10 @@ export function SupplierModal({
           />
           <TextInput label={t('masterData.country')} required {...form.getInputProps('country')} />
           <TextInput label={t('masterData.city')} {...form.getInputProps('city')} />
+        </SimpleGrid>
+      </MasterDataFormSection>
+      <MasterDataFormSection>
+        <SimpleGrid cols={{ base: 1, sm: 2 }}>
           <TextInput label={t('masterData.contactPerson')} required {...form.getInputProps('contactPerson')} />
           <TextInput label={t('masterData.contactEmail')} required {...form.getInputProps('contactEmail')} />
           <TextInput label={t('masterData.contactPhone')} {...form.getInputProps('contactPhone')} />
@@ -248,24 +261,16 @@ export function SupplierModal({
             {...form.getInputProps('leadTimeProductionDays')}
           />
         </SimpleGrid>
+      </MasterDataFormSection>
+      <MasterDataFormSection>
         <SimpleGrid cols={{ base: 1, sm: 2 }}>
           <Textarea label={t('masterData.bankInfo')} autosize minRows={3} {...form.getInputProps('bankInfo')} />
           <Textarea label={t('masterData.note')} autosize minRows={3} {...form.getInputProps('note')} />
         </SimpleGrid>
+      </MasterDataFormSection>
+      <MasterDataFormSection compact>
         <Switch label={t('masterData.active')} {...form.getInputProps('isActive', { type: 'checkbox' })} />
-        <Group justify="flex-end">
-          <Button variant="subtle" color="gray" onClick={onClose}>
-            {t('common.cancel')}
-          </Button>
-          <Button
-            onClick={handleSave}
-            loading={mutation.isPending}
-            disabled={isSaveDisabled}
-          >
-            {t('common.save')}
-          </Button>
-        </Group>
-      </Stack>
-    </Modal>
+      </MasterDataFormSection>
+    </MasterDataFormModal>
   );
 }

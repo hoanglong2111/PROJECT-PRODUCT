@@ -46,7 +46,7 @@ import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { useI18n } from '@shared/i18n';
 
-import { formatDateTime, formatNumber, type FormState } from '../model/domesticTransportOrderModel';
+import { formatDateTime, formatDtoMoney, formatNumber, type FormState } from '../model/domesticTransportOrderModel';
 
 export function DomesticTransportOrderDetail({
   actionPending,

@@ -20,8 +20,11 @@ import type { ShipmentCost, ShipmentRecord } from '@shared/api/logistics';
 import type { ShipmentCostPayload } from '@shared/api/shipments';
 import type { Gd1CostType } from '@shared/model/logistics';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
+import { useTradeMasterDataOptions } from '@shared/hooks/useTradeMasterDataOptions';
+import { convertToBase, formatMoney } from '@shared/utils/money';
 
 import { landedCostTotal } from '../model/shipmentModel';
+import { ShipmentMarginSummary } from './ShipmentMarginSummary';
 
 const BASE_CURRENCY = 'VND';
 
@@ -35,20 +38,12 @@ const COST_TYPES: Gd1CostType[] = [
   'OTHER',
 ];
 
-// Default exchange rate to the base currency (VND), aligned with the seed currencies.
-const CURRENCY_RATES: Record<string, number> = { VND: 1, USD: 25000, CNY: 3500, EUR: 27000 };
-const CURRENCIES = Object.keys(CURRENCY_RATES);
-
 const COST_TYPE_HINT: Partial<Record<Gd1CostType, string>> = {
   FREIGHT: 'glossary.freight',
   INSURANCE: 'glossary.insurance',
   CUSTOMS_DUTY: 'glossary.importDuty',
   LOCAL_CHARGES: 'glossary.localCharges',
 };
-
-function formatBase(value: number) {
-  return `${Math.round(value).toLocaleString()} ${BASE_CURRENCY}`;
-}
 
 export function ShipmentCostsPanel({
   isSaving,
@@ -65,6 +60,7 @@ export function ShipmentCostsPanel({
   shipment: ShipmentRecord;
   t: (key: string, params?: Record<string, string | number>) => string;
 }) {
+  const { currencyOptions } = useTradeMasterDataOptions();
   const costs = shipment.costs;
   const total = landedCostTotal(costs);
 
@@ -73,11 +69,10 @@ export function ShipmentCostsPanel({
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState<number | string>('');
   const [currency, setCurrency] = useState('USD');
-  const [rate, setRate] = useState<number | string>(CURRENCY_RATES.USD);
+  const [rate, setRate] = useState<number | string>('');
   const [invoiceRef, setInvoiceRef] = useState('');
 
   const costTypeOptions = COST_TYPES.map((type) => ({ label: t(`shipments.costTypes.${type}`), value: type }));
-  const currencyOptions = CURRENCIES.map((code) => ({ label: code, value: code }));
 
   const resetForm = () => {
     setEditingId(null);
@@ -85,24 +80,36 @@ export function ShipmentCostsPanel({
     setDescription('');
     setAmount('');
     setCurrency('USD');
-    setRate(CURRENCY_RATES.USD);
+    setRate('');
     setInvoiceRef('');
   };
 
   const handleCurrencyChange = (value: string | null) => {
     const next = value ?? BASE_CURRENCY;
     setCurrency(next);
-    if (next in CURRENCY_RATES) setRate(CURRENCY_RATES[next]);
+    if (next === BASE_CURRENCY) {
+      // The base currency never needs conversion — lock the rate at 1.
+      setRate(1);
+    } else if (rate === '' || Number(rate) === 1) {
+      // Clear the base default so the user consciously enters the real FX rate to VND.
+      setRate('');
+    }
   };
+
+  // For the base currency the rate is always 1; otherwise a positive FX rate is required
+  // so a foreign-currency cost can never be saved with a silent (missing) conversion.
+  const isBaseCurrency = currency === BASE_CURRENCY;
+  const rateInvalid = !isBaseCurrency && !(Number(rate) > 0);
 
   const handleSubmit = () => {
     if (amount === '' || Number(amount) <= 0) return;
+    if (rateInvalid) return;
     const payload: ShipmentCostPayload = {
       cost_type: costType,
       description: description.trim() || null,
       amount: Number(amount),
       currency_code: currency,
-      exchange_rate: rate === '' ? 1 : Number(rate),
+      exchange_rate: isBaseCurrency ? 1 : Number(rate),
       invoice_ref: invoiceRef.trim() || null,
     };
     if (editingId) {
@@ -125,13 +132,15 @@ export function ShipmentCostsPanel({
 
   return (
     <Stack gap="md">
+      <ShipmentMarginSummary shipment={shipment} t={t} />
+
       <Paper withBorder p="md">
         <Group justify="space-between">
           <Text fw={700} size="sm">
             <HeaderLabel label={t('shipments.costs')} hint={t('glossary.landedCost')} />
           </Text>
           <Badge size="lg" color="teal">
-            {formatBase(total)}
+            {formatMoney(total, BASE_CURRENCY)}
           </Badge>
         </Group>
       </Paper>
@@ -176,6 +185,9 @@ export function ShipmentCostsPanel({
             thousandSeparator=","
             value={rate}
             onChange={setRate}
+            withAsterisk={!isBaseCurrency}
+            disabled={isBaseCurrency}
+            error={rateInvalid ? t('shipments.costExchangeRateRequired') : undefined}
           />
         </SimpleGrid>
         <Group justify="flex-end" mt="sm" gap="xs">
@@ -187,7 +199,7 @@ export function ShipmentCostsPanel({
           <Button
             leftSection={<IconPlus size={16} />}
             loading={isSaving}
-            disabled={amount === '' || Number(amount) <= 0}
+            disabled={amount === '' || Number(amount) <= 0 || rateInvalid}
             onClick={handleSubmit}
           >
             {editingId ? t('shipments.costSave') : t('shipments.addCost')}
@@ -229,9 +241,9 @@ export function ShipmentCostsPanel({
                         ) : null}
                       </Table.Td>
                       <Table.Td style={{ textAlign: 'right' }}>
-                        {cost.amount.toLocaleString()} {cost.currency_code}
+                        {formatMoney(cost.amount, cost.currency_code)}
                       </Table.Td>
-                      <Table.Td style={{ textAlign: 'right' }}>{formatBase(cost.amount * cost.exchange_rate)}</Table.Td>
+                      <Table.Td style={{ textAlign: 'right' }}>{formatMoney(convertToBase(cost.amount, cost.exchange_rate), BASE_CURRENCY)}</Table.Td>
                       <Table.Td>
                         <Group gap="xs" justify="flex-end" wrap="nowrap">
                           <ActionIcon
