@@ -9,7 +9,7 @@ import { queryKeys } from '@shared/api/queryKeys';
 import { useI18n } from '@shared/i18n';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
-import { optionalString } from '../model/masterDataModel';
+import { CARRIER_TYPE_VALUES, optionalString } from '../model/masterDataModel';
 
 type CarrierFormValues = {
   code: string;
@@ -45,10 +45,7 @@ export function CarrierModal({
   const { t } = useI18n();
   const queryClient = useQueryClient();
   const form = useForm<CarrierFormValues>({ initialValues: emptyValues });
-  const carrierTypeOptions = [
-    { label: t('masterData.carrierTypeShippingLine'), value: 'SHIPPING_LINE' },
-    { label: t('masterData.carrierTypeAirline'), value: 'AIRLINE' },
-  ];
+  const carrierTypeOptions = CARRIER_TYPE_VALUES.map((value) => ({ label: value, value }));
 
   useEffect(() => {
     if (!opened) return;

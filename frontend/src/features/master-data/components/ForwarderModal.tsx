@@ -15,7 +15,7 @@ import { queryKeys } from '@shared/api/queryKeys';
 import { useI18n } from '@shared/i18n';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
-import { optionalString } from '../model/masterDataModel';
+import { FORWARDER_TYPE_VALUES, optionalString } from '../model/masterDataModel';
 
 type ForwarderFormValues = {
   code: string;
@@ -53,12 +53,7 @@ export function ForwarderModal({
   const { t } = useI18n();
   const queryClient = useQueryClient();
   const form = useForm<ForwarderFormValues>({ initialValues: emptyValues });
-  const forwarderTypeOptions = [
-    { label: t('masterData.forwarderTypeSea'), value: 'SEA' },
-    { label: t('masterData.forwarderTypeAir'), value: 'AIR' },
-    { label: t('masterData.forwarderTypeTrucking'), value: 'TRUCKING' },
-    { label: t('masterData.forwarderTypeMulti'), value: 'MULTI' },
-  ];
+  const forwarderTypeOptions = FORWARDER_TYPE_VALUES.map((value) => ({ label: value, value }));
 
   useEffect(() => {
     if (!opened) return;
