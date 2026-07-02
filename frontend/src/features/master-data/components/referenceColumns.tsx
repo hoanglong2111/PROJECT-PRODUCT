@@ -6,7 +6,7 @@ import type { Carrier, Forwarder } from '@shared/api/forwarders';
 import type { Item } from '@shared/api/items';
 import type { Currency, Incoterm, Supplier, TransportMode } from '@shared/api/tradeMasterData';
 import type { Uom } from '@shared/api/uoms';
-import { StatusDot } from '@shared/components/StatusDot';
+import { StatusToggle } from '@shared/components/StatusToggle';
 import { useI18n } from '@shared/i18n';
 import { CHARGE_CATEGORIES, CHARGE_GROUPS } from '@shared/lib/chargeCategories';
 
@@ -53,6 +53,7 @@ export function buildItemColumns(t: T): Array<ReferenceColumn<Item>> {
     {
       key: 'identity',
       label: t('masterData.itemName'),
+      width: 260,
       render: (item) => (
         <Stack gap={4}>
           <Group gap="xs" wrap="nowrap">
@@ -116,8 +117,9 @@ export function buildItemColumns(t: T): Array<ReferenceColumn<Item>> {
     {
       key: 'status',
       label: t('common.status'),
-      width: 56,
-      render: (item) => <StatusDot active={item.is_active !== false} />,
+      align: 'center',
+      width: 96,
+      render: (item) => <StatusToggle active={item.is_active !== false} />,
     },
   ];
 }
@@ -127,6 +129,7 @@ export function buildCurrencyColumns(t: T): Array<ReferenceColumn<Currency>> {
     {
       key: 'code',
       label: t('masterData.currencyCode'),
+      width: 180,
       render: (currency) => (
         <Stack gap={3}>
           <Badge variant="light">{currency.currency_code}</Badge>
@@ -153,8 +156,9 @@ export function buildCurrencyColumns(t: T): Array<ReferenceColumn<Currency>> {
     {
       key: 'status',
       label: t('common.status'),
-      width: 56,
-      render: (currency) => <StatusDot active={currency.is_active} />,
+      align: 'center',
+      width: 96,
+      render: (currency) => <StatusToggle active={currency.is_active} />,
     },
     {
       key: 'updated',
@@ -177,6 +181,7 @@ export function buildIncotermColumns(t: T): Array<ReferenceColumn<Incoterm>> {
     {
       key: 'name',
       label: t('masterData.incotermName'),
+      width: 240,
       render: (incoterm) => (
         <Stack gap={4}>
           <Text fw={700} lineClamp={1}>
@@ -200,8 +205,9 @@ export function buildIncotermColumns(t: T): Array<ReferenceColumn<Incoterm>> {
     {
       key: 'status',
       label: t('common.status'),
-      width: 56,
-      render: (incoterm) => <StatusDot active={incoterm.is_active} />,
+      align: 'center',
+      width: 96,
+      render: (incoterm) => <StatusToggle active={incoterm.is_active} />,
     },
   ];
 }
@@ -211,6 +217,7 @@ export function buildTransportModeColumns(t: T): Array<ReferenceColumn<Transport
     {
       key: 'code',
       label: t('masterData.transportModeCode'),
+      width: 240,
       render: (mode) => (
         <Stack gap={3}>
           <Badge variant="light">{mode.mode_code}</Badge>
@@ -239,8 +246,9 @@ export function buildTransportModeColumns(t: T): Array<ReferenceColumn<Transport
     {
       key: 'status',
       label: t('common.status'),
-      width: 56,
-      render: (mode) => <StatusDot active={mode.is_active} />,
+      align: 'center',
+      width: 96,
+      render: (mode) => <StatusToggle active={mode.is_active} />,
     },
   ];
 }
@@ -253,6 +261,7 @@ export function buildChargeCodeColumns(t: T): Array<ReferenceColumn<ChargeCode>>
     {
       key: 'identity',
       label: t('masterData.chargeCode'),
+      width: 260,
       render: (chargeCode) => (
         <Stack gap={4}>
           <Group gap="xs" wrap="nowrap">
@@ -283,13 +292,15 @@ export function buildChargeCodeColumns(t: T): Array<ReferenceColumn<ChargeCode>>
       key: 'uom',
       label: t('masterData.defaultUom'),
       hint: t('glossary.defaultUom'),
-      width: 90,
+      align: 'center',
+      width: 104,
       render: (chargeCode) => <Badge color="gray" variant="light">{chargeCode.default_uom}</Badge>,
     },
     {
       key: 'revCost',
       label: t('masterData.revCost'),
-      width: 92,
+      align: 'center',
+      width: 104,
       render: (chargeCode) => (
         <Tooltip label={getRevCostLabel(chargeCode.rev_cost)}>
           <Badge color={revCostColor(chargeCode.rev_cost)} variant="light">
@@ -302,7 +313,8 @@ export function buildChargeCodeColumns(t: T): Array<ReferenceColumn<ChargeCode>>
       key: 'taxable',
       label: t('masterData.taxable'),
       hint: t('glossary.taxableCharge'),
-      width: 72,
+      align: 'center',
+      width: 104,
       render: (chargeCode) => {
         const label = chargeCode.taxable ? t('masterData.taxable') : t('masterData.nonTaxable');
 
@@ -322,7 +334,8 @@ export function buildChargeCodeColumns(t: T): Array<ReferenceColumn<ChargeCode>>
     {
       key: 'scope',
       label: t('masterData.transportApplicability'),
-      width: 150,
+      align: 'center',
+      width: 156,
       render: (chargeCode) => {
         const modes = [
           { key: 'sea_fcl', label: t('masterData.seaFcl'), short: 'F', active: chargeCode.sea_fcl },
@@ -352,8 +365,9 @@ export function buildChargeCodeColumns(t: T): Array<ReferenceColumn<ChargeCode>>
     {
       key: 'status',
       label: t('common.status'),
-      width: 56,
-      render: (chargeCode) => <StatusDot active={chargeCode.is_active} />,
+      align: 'center',
+      width: 96,
+      render: (chargeCode) => <StatusToggle active={chargeCode.is_active} />,
     },
   ];
 }
@@ -363,6 +377,7 @@ export function buildUomColumns(t: T): Array<ReferenceColumn<Uom>> {
     {
       key: 'identity',
       label: t('masterData.uomCode'),
+      width: 220,
       render: (uom) => (
         <Stack gap={4}>
           <Group gap="xs" wrap="nowrap">
@@ -389,8 +404,9 @@ export function buildUomColumns(t: T): Array<ReferenceColumn<Uom>> {
     {
       key: 'status',
       label: t('common.status'),
-      width: 56,
-      render: (uom) => <StatusDot active={uom.is_active} />,
+      align: 'center',
+      width: 96,
+      render: (uom) => <StatusToggle active={uom.is_active} />,
     },
     {
       key: 'updated',
@@ -406,6 +422,7 @@ export function buildSupplierColumns(t: T): Array<ReferenceColumn<Supplier>> {
     {
       key: 'identity',
       label: t('masterData.supplier'),
+      width: 240,
       render: (supplier) => (
         <Stack gap={4}>
           <Group gap="xs" wrap="nowrap">
@@ -479,8 +496,9 @@ export function buildSupplierColumns(t: T): Array<ReferenceColumn<Supplier>> {
     {
       key: 'status',
       label: t('common.status'),
-      width: 56,
-      render: (supplier) => <StatusDot active={supplier.is_active} />,
+      align: 'center',
+      width: 96,
+      render: (supplier) => <StatusToggle active={supplier.is_active} />,
     },
   ];
 }
@@ -490,6 +508,7 @@ export function buildForwarderColumns(t: T): Array<ReferenceColumn<Forwarder>> {
     {
       key: 'identity',
       label: t('masterData.forwarder'),
+      width: 200,
       render: (forwarder) => (
         <Stack gap={4}>
           <Badge variant="light">{forwarder.forwarder_code}</Badge>
@@ -527,7 +546,8 @@ export function buildForwarderColumns(t: T): Array<ReferenceColumn<Forwarder>> {
     {
       key: 'primary',
       label: t('masterData.isPrimary'),
-      width: 72,
+      align: 'center',
+      width: 100,
       render: (forwarder) => {
         const label = forwarder.is_primary
           ? t('masterData.isPrimary')
@@ -549,8 +569,9 @@ export function buildForwarderColumns(t: T): Array<ReferenceColumn<Forwarder>> {
     {
       key: 'status',
       label: t('common.status'),
-      width: 56,
-      render: (forwarder) => <StatusDot active={forwarder.is_active !== false} />,
+      align: 'center',
+      width: 96,
+      render: (forwarder) => <StatusToggle active={forwarder.is_active !== false} />,
     },
   ];
 }
@@ -560,6 +581,7 @@ export function buildCarrierColumns(t: T): Array<ReferenceColumn<Carrier>> {
     {
       key: 'identity',
       label: t('masterData.carrier'),
+      width: 200,
       render: (carrier) => (
         <Stack gap={4}>
           <Badge variant="light">{carrier.carrier_code}</Badge>
@@ -604,8 +626,9 @@ export function buildCarrierColumns(t: T): Array<ReferenceColumn<Carrier>> {
     {
       key: 'status',
       label: t('common.status'),
-      width: 56,
-      render: (carrier) => <StatusDot active={carrier.is_active !== false} />,
+      align: 'center',
+      width: 96,
+      render: (carrier) => <StatusToggle active={carrier.is_active !== false} />,
     },
   ];
 }

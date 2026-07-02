@@ -7,7 +7,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import type { PaginatedResponse } from '@shared/api/tradeMasterData';
 import { EmptyState } from '@shared/components/EmptyState';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
-import { ListPagination, useListPagination } from '@shared/components/ListPagination';
+import { LIST_PAGE_SIZE, ListPagination, useListPagination } from '@shared/components/ListPagination';
 import { useI18n } from '@shared/i18n';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
@@ -19,12 +19,25 @@ import { MasterDataToolbar } from './MasterDataToolbar';
 const REFERENCE_PAGE_FETCH_LIMIT = 500;
 
 export type ReferenceColumn<T> = {
+  align?: 'left' | 'center' | 'right';
   key: string;
   label: string;
   hint?: string;
   width?: number | string;
   render: (record: T) => ReactNode;
 };
+
+type ColumnAlign = NonNullable<ReferenceColumn<unknown>['align']>;
+
+function alignToJustify(align?: ColumnAlign) {
+  if (align === 'center') return 'center';
+  if (align === 'right') return 'flex-end';
+  return 'flex-start';
+}
+
+function cellClassName(align?: ColumnAlign) {
+  return ['md-cell-clamp', align ? `md-cell-align-${align}` : null].filter(Boolean).join(' ');
+}
 
 export function ReferenceDataPanel<T extends { id: string }>({
   addLabel,
@@ -93,6 +106,7 @@ export function ReferenceDataPanel<T extends { id: string }>({
   const allRecords = query.data?.data ?? [];
   const filtered = clientFilter ? allRecords.filter(clientFilter) : allRecords;
   const total = filtered.length;
+  const showSmallSetCount = !query.isLoading && total <= LIST_PAGE_SIZE;
   // The full reference set is loaded up-front, so paginate client-side: every tab gets a
   // consistent LIST_PAGE_SIZE page and a continuous STT counter. Reset to page 1 whenever the
   // filtered row count changes (search / status / attribute filter).
@@ -113,7 +127,6 @@ export function ReferenceDataPanel<T extends { id: string }>({
       <MasterDataToolbar
         addLabel={addLabel}
         canManage={canManage}
-        count={total}
         filters={toolbarExtra}
         hasActiveFilters={showClearFilters}
         isFetching={query.isFetching}
@@ -161,19 +174,25 @@ export function ReferenceDataPanel<T extends { id: string }>({
           />
         ) : (
           <ScrollArea className="data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
-            <Table stickyHeader verticalSpacing="sm" highlightOnHover style={{ tableLayout: 'fixed', width: '100%' }}>
+            <Table
+              stickyHeader
+              verticalSpacing="sm"
+              highlightOnHover
+              className="md-table"
+              style={{ tableLayout: 'fixed', width: '100%' }}
+            >
               <Table.Thead>
                 <Table.Tr>
-                  <Table.Th style={{ width: 56 }}>
+                  <Table.Th style={{ width: 56, textAlign: 'center' }}>
                     <HeaderLabel label={t('common.rowNumber')} />
                   </Table.Th>
                   {columns.map((column) => (
-                    <Table.Th key={column.key} style={{ width: column.width }}>
-                      <HeaderLabel label={column.label} hint={column.hint} />
+                    <Table.Th key={column.key} style={{ width: column.width, textAlign: column.align }}>
+                      <HeaderLabel label={column.label} hint={column.hint} justify={alignToJustify(column.align)} />
                     </Table.Th>
                   ))}
                   {canManage ? (
-                    <Table.Th style={{ width: 112 }}>
+                    <Table.Th style={{ width: 112, textAlign: 'center' }}>
                       {t('masterData.actions')}
                     </Table.Th>
                   ) : null}
@@ -182,13 +201,15 @@ export function ReferenceDataPanel<T extends { id: string }>({
               <Table.Tbody>
                 {records.map((record, index) => (
                   <Table.Tr key={record.id}>
-                    <Table.Td className="tabular-nums">{pageStart + index}</Table.Td>
+                    <Table.Td className="tabular-nums md-cell-align-center">{pageStart + index}</Table.Td>
                     {columns.map((column) => (
-                      <Table.Td key={column.key} className="md-cell-clamp">{column.render(record)}</Table.Td>
+                      <Table.Td key={column.key} className={cellClassName(column.align)} style={{ textAlign: column.align }}>
+                        {column.render(record)}
+                      </Table.Td>
                     ))}
                     {canManage ? (
-                      <Table.Td>
-                        <Group gap="xs" wrap="nowrap">
+                      <Table.Td className="md-cell-align-center">
+                        <Group gap="xs" wrap="nowrap" justify="center">
                           <Tooltip label={t('common.edit')}>
                             <ActionIcon
                               aria-label={t('common.edit')}
@@ -218,14 +239,22 @@ export function ReferenceDataPanel<T extends { id: string }>({
           </ScrollArea>
         )}
 
-        <ListPagination
-          page={page}
-          pageCount={pageCount}
-          pageEnd={pageEnd}
-          pageStart={pageStart}
-          setPage={setPage}
-          total={total}
-        />
+        {showSmallSetCount ? (
+          <Group justify="flex-start" p="md" className="md-pagination-fallback">
+            <Text size="sm" c="dimmed" className="md-filter-count">
+              {t('common.shown', { count: total })}
+            </Text>
+          </Group>
+        ) : (
+          <ListPagination
+            page={page}
+            pageCount={pageCount}
+            pageEnd={pageEnd}
+            pageStart={pageStart}
+            setPage={setPage}
+            total={total}
+          />
+        )}
       </Paper>
     </Stack>
   );

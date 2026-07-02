@@ -27,7 +27,8 @@ import {
 import { queryKeys } from '@shared/api/queryKeys';
 import { EmptyState } from '@shared/components/EmptyState';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
-import { StatusDot } from '@shared/components/StatusDot';
+import { LIST_PAGE_SIZE } from '@shared/components/ListPagination';
+import { StatusToggle } from '@shared/components/StatusToggle';
 import { useI18n } from '@shared/i18n';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
@@ -131,6 +132,8 @@ export function TaskTemplatesSection({
   });
 
   const templates = useMemo(() => taskTemplatesQuery.data?.data ?? [], [taskTemplatesQuery.data?.data]);
+  const totalTemplates = templates.length;
+  const showSmallSetCount = !taskTemplatesQuery.isLoading && totalTemplates <= LIST_PAGE_SIZE;
   const groupedTemplates = useMemo(() => groupTaskTemplates(templates), [templates]);
   const milestoneOptions = useMemo(
     () => [
@@ -165,7 +168,6 @@ export function TaskTemplatesSection({
       <MasterDataToolbar
         addLabel={t('masterData.addTaskTemplate')}
         canManage={canManage}
-        count={templates.length}
         filters={(
           <>
             <Select
@@ -214,12 +216,19 @@ export function TaskTemplatesSection({
           </Group>
         </Paper>
       ) : groupedTemplates.length === 0 ? (
-        <Paper withBorder p={0}>
+        <Paper withBorder p={0} className="dl-data-panel">
           <EmptyState
             title={showClearFilters ? t('masterData.noFilteredResults') : t('masterData.noTaskTemplates')}
             description={showClearFilters ? t('masterData.noFilteredResultsDescription') : t('masterData.noTaskTemplatesDescription')}
             action={showClearFilters ? { label: t('masterData.clearFilters'), onClick: handleClearFilters } : undefined}
           />
+          {showSmallSetCount ? (
+            <Group justify="flex-start" p="md" className="md-pagination-fallback">
+              <Text size="sm" c="dimmed" className="md-filter-count">
+                {t('common.shown', { count: totalTemplates })}
+              </Text>
+            </Group>
+          ) : null}
         </Paper>
       ) : (
         <Stack gap="md">
@@ -246,11 +255,17 @@ export function TaskTemplatesSection({
               </Group>
               <Collapse expanded={!collapsed}>
                 <ScrollArea className="data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
-                  <Table stickyHeader verticalSpacing="sm" highlightOnHover style={{ tableLayout: 'fixed', width: '100%' }}>
+                  <Table
+                    stickyHeader
+                    verticalSpacing="sm"
+                    highlightOnHover
+                    className="md-table"
+                    style={{ tableLayout: 'fixed', width: '100%' }}
+                  >
                     <Table.Thead>
                       <Table.Tr>
-                        <Table.Th style={{ width: 80 }}>
-                          <HeaderLabel label={t('masterData.sortOrder')} />
+                        <Table.Th style={{ width: 88, textAlign: 'center' }}>
+                          <HeaderLabel label={t('masterData.sortOrder')} justify="center" />
                         </Table.Th>
                         <Table.Th>
                           <HeaderLabel label={t('masterData.taskTemplate')} />
@@ -267,11 +282,11 @@ export function TaskTemplatesSection({
                         <Table.Th style={{ width: 180 }}>
                           <HeaderLabel label={t('masterData.assigneeCode')} />
                         </Table.Th>
-                        <Table.Th style={{ width: 56 }}>
-                          <HeaderLabel label={t('common.status')} />
+                        <Table.Th style={{ width: 96, textAlign: 'center' }}>
+                          <HeaderLabel label={t('common.status')} justify="center" />
                         </Table.Th>
                         {canManage ? (
-                          <Table.Th style={{ width: 96 }}>
+                          <Table.Th style={{ width: 104, textAlign: 'center' }}>
                             {t('masterData.actions')}
                           </Table.Th>
                         ) : null}
@@ -280,7 +295,7 @@ export function TaskTemplatesSection({
                     <Table.Tbody>
                       {group.templates.map((template) => (
                         <Table.Tr key={template.id}>
-                          <Table.Td>{template.sort_order}</Table.Td>
+                          <Table.Td className="md-cell-align-center">{template.sort_order}</Table.Td>
                           <Table.Td className="md-cell-clamp">
                             <Stack gap={3}>
                               <Text fw={700}>{template.task_name}</Text>
@@ -303,12 +318,12 @@ export function TaskTemplatesSection({
                           <Table.Td className="md-cell-clamp">
                             <Text size="sm" lineClamp={1}>{template.assignee_code || '-'}</Text>
                           </Table.Td>
-                          <Table.Td>
-                            <StatusDot active={template.is_active !== false} />
+                          <Table.Td className="md-cell-align-center">
+                            <StatusToggle active={template.is_active !== false} />
                           </Table.Td>
                           {canManage ? (
-                            <Table.Td>
-                              <Group gap="xs" wrap="nowrap">
+                            <Table.Td className="md-cell-align-center">
+                              <Group gap="xs" wrap="nowrap" justify="center">
                                 <Tooltip label={t('common.edit')}>
                                   <ActionIcon
                                     aria-label={t('common.edit')}
@@ -340,6 +355,13 @@ export function TaskTemplatesSection({
               </Paper>
             );
           })}
+          {showSmallSetCount ? (
+            <Group justify="flex-start" px="md" py="sm" className="md-pagination-fallback">
+              <Text size="sm" c="dimmed" className="md-filter-count">
+                {t('common.shown', { count: totalTemplates })}
+              </Text>
+            </Group>
+          ) : null}
         </Stack>
       )}
     </Stack>
