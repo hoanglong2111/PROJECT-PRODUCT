@@ -1,9 +1,12 @@
 import { ActionIcon, Button, Group, Stack, Text } from '@mantine/core';
 import { IconExternalLink, IconTrash } from '@tabler/icons-react';
 
+import { DateTimeText } from '@shared/components/DateTimeText';
+
 // Minimal, type-agnostic file shape so this list can render uploaded files from
 // any document source (DO attachments, shipment documents, ...).
 export type DocumentFile = {
+  dateValue?: string | null;
   id: string;
   fileName: string;
   href?: string | null;
@@ -27,16 +30,23 @@ export function AttachmentList({
   return (
     <Stack gap={6} mt="sm">
       {files.map((file) => {
-        const meta = [file.sizeLabel, file.dateLabel].filter(Boolean).join(' · ');
+        const hasDateMeta = Boolean(file.dateValue || file.dateLabel);
+        const hasMeta = Boolean(file.sizeLabel || hasDateMeta);
         return (
           <Group key={file.id} justify="space-between" gap="xs" wrap="nowrap">
             <div>
               <Text size="sm" fw={600}>
                 {file.fileName}
               </Text>
-              {meta ? (
+              {hasMeta ? (
                 <Text size="xs" c="dimmed">
-                  {meta}
+                  {file.sizeLabel}
+                  {file.sizeLabel && hasDateMeta ? ' · ' : null}
+                  {file.dateValue ? (
+                    <DateTimeText value={file.dateValue} size="xs" c="dimmed" />
+                  ) : (
+                    file.dateLabel
+                  )}
                 </Text>
               ) : null}
             </div>

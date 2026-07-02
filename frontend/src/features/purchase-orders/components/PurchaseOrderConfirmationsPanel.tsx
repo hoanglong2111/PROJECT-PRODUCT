@@ -1,9 +1,11 @@
 import { Alert, Badge, Group, Loader, Paper, SimpleGrid, Stack, Text } from '@mantine/core';
 import { IconAlertTriangle, IconCircleCheck } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
+import type { ReactNode } from 'react';
 
 import { fetchPurchaseOrderConfirmations } from '@shared/api/purchaseOrders';
 import { queryKeys } from '@shared/api/queryKeys';
+import { DateTimeText } from '@shared/components/DateTimeText';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
 import { dateOnly } from '../model/purchaseOrderModel';
@@ -59,7 +61,8 @@ export function PurchaseOrderConfirmationsPanel({ purchaseOrderId }: { purchaseO
                   {confirmation.supplier_ref_no ?? 'No supplier ref'}
                 </Text>
                 <Text size="xs" c="dimmed">
-                  Confirmed by {confirmation.confirmed_by ?? '-'} · {dateOnly(confirmation.confirmed_at) || '-'}
+                  Confirmed by {confirmation.confirmed_by ?? '-'} ·{' '}
+                  <DateTimeText value={confirmation.confirmed_at} size="xs" c="dimmed" />
                 </Text>
               </div>
               <Group gap={6} wrap="nowrap">
@@ -76,7 +79,7 @@ export function PurchaseOrderConfirmationsPanel({ purchaseOrderId }: { purchaseO
 
             <SimpleGrid cols={{ base: 1, sm: 3 }} mt="sm" spacing="xs">
               <ConfirmationField label="Cargo ready" value={dateOnly(confirmation.cargo_ready_date) || '-'} />
-              <ConfirmationField label="Confirmed at" value={dateOnly(confirmation.confirmed_at) || '-'} />
+              <ConfirmationField label="Confirmed at" value={<DateTimeText value={confirmation.confirmed_at} />} />
               <ConfirmationField label="Lines confirmed" value={String(confirmation.lines?.length ?? '-')} />
             </SimpleGrid>
 
@@ -92,7 +95,7 @@ export function PurchaseOrderConfirmationsPanel({ purchaseOrderId }: { purchaseO
   );
 }
 
-function ConfirmationField({ label, value }: { label: string; value: string }) {
+function ConfirmationField({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div>
       <Text className="metric-label" size="xs" tt="uppercase" fw={700} c="dimmed">

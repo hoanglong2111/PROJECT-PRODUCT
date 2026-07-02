@@ -115,14 +115,6 @@
   color: color-mix(in srgb, var(--kbfe-primary-color) 82%, var(--kbfe-text-primary));
 }
 
-.rfq-back-action {
-  margin: -0.125rem 0 0.125rem -0.5rem;
-}
-
-.rfq-back-action .mantine-Button-label {
-  white-space: nowrap;
-}
-
 .rfq-form-title-copy .mantine-Title-root,
 .rfq-detail-title-copy .mantine-Title-root,
 .rfq-list-title-copy .mantine-Title-root {

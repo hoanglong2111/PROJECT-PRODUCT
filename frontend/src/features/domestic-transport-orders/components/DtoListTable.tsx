@@ -2,13 +2,14 @@ import { ActionIcon, Group, Paper, ScrollArea, Table, Text, Tooltip } from '@man
 import { IconExternalLink } from '@tabler/icons-react';
 
 import type { DomesticTransportOrderV1 } from '@shared/api/domesticTransportOrders';
+import { DateTimeText } from '@shared/components/DateTimeText';
 import { EmptyState } from '@shared/components/EmptyState';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { ListPagination } from '@shared/components/ListPagination';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { useI18n } from '@shared/i18n';
 
-import { PAGE_SIZE, formatContainers, formatDateTime } from '../model/domesticTransportOrderModel';
+import { PAGE_SIZE, formatContainers } from '../model/domesticTransportOrderModel';
 
 export function DtoListTable({
   onSelect,
@@ -82,8 +83,12 @@ export function DtoListTable({
                   <Text size="sm" fw={600} lineClamp={1} title={`${order.origin ?? '-'} -> ${order.destination ?? '-'}`}>
                     {order.origin ?? '-'} {'->'} {order.destination ?? '-'}
                   </Text>
-                  <Text size="xs" c="dimmed">{t('domesticTransportOrders.pickup')} {formatDateTime(order.scheduled_pickup_at)}</Text>
-                  <Text size="xs" c="dimmed">{t('domesticTransportOrders.delivery')} {formatDateTime(order.scheduled_delivery_at)}</Text>
+                  <Text size="xs" c="dimmed">
+                    {t('domesticTransportOrders.pickup')} <DateTimeText value={order.scheduled_pickup_at} size="xs" c="dimmed" />
+                  </Text>
+                  <Text size="xs" c="dimmed">
+                    {t('domesticTransportOrders.delivery')} <DateTimeText value={order.scheduled_delivery_at} size="xs" c="dimmed" />
+                  </Text>
                 </Table.Td>
                 <Table.Td className="dto-col-status"><StatusBadge status={order.status} /></Table.Td>
                 <Table.Td className="dto-col-open">

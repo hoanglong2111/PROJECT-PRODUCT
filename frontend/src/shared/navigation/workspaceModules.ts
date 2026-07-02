@@ -6,7 +6,7 @@ import {
   IconShip,
   IconShoppingCart,
   IconTruck,
-  IconTruckDelivery,
+  IconTruckLoading,
 } from '@tabler/icons-react';
 import type { ComponentType } from 'react';
 
@@ -28,7 +28,7 @@ export const workspaceModules = [
   { labelKey: 'shell.dashboard', path: '/', capability: 'dashboard.view', icon: IconLayoutDashboard },
   { labelKey: 'shell.quotations', path: '/quotations', capability: 'quotations.view', icon: IconFileInvoice },
   { labelKey: 'shell.purchaseOrders', path: '/purchase-orders', capability: 'purchaseOrders.view', icon: IconShoppingCart },
-  { labelKey: 'shell.deliveryOrders', path: '/delivery-orders', capability: 'deliveryOrders.view', icon: IconTruckDelivery },
+  { labelKey: 'shell.deliveryOrders', path: '/delivery-orders', capability: 'deliveryOrders.view', icon: IconTruckLoading },
   { labelKey: 'shell.shipments', path: '/shipments', capability: 'shipments.view', icon: IconShip },
   {
     labelKey: 'shell.domesticTransportOrders',

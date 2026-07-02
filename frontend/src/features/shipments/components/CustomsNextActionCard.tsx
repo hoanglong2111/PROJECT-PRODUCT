@@ -3,6 +3,7 @@ import { IconCheck, IconX } from '@tabler/icons-react';
 import type { UseMutationResult } from '@tanstack/react-query';
 
 import type { CustomsDeclarationChannelV1, CustomsDeclarationV1 } from '@shared/api/customsDeclarations';
+import { DateTimeText } from '@shared/components/DateTimeText';
 import { useI18n } from '@shared/i18n';
 
 import { customsNextAction } from '../model/shipmentModel';
@@ -36,7 +37,9 @@ export function CustomsNextActionCard({
       <Alert color="teal" icon={<IconCheck size={18} />}>
         <Text fw={600}>{t('shipments.clearedSummary')}</Text>
         {declaration.cleared_at ? (
-          <Text size="sm" c="dimmed">{t('shipments.clearedAt')}: {new Date(declaration.cleared_at).toLocaleString()}</Text>
+          <Text size="sm" c="dimmed">
+            {t('shipments.clearedAt')}: <DateTimeText value={declaration.cleared_at} size="sm" c="dimmed" showZone />
+          </Text>
         ) : null}
       </Alert>
     );

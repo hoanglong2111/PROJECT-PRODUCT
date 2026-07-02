@@ -1117,3 +1117,7 @@ html[data-kbfe-visual-theme='high-contrast'] .dl-filter-panel .mantine-Select-in
 html[data-kbfe-visual-theme='high-contrast'] .md-scope-dot.is-off {
   opacity: 0.48;
 }
+
+.date-time-text {
+  white-space: nowrap;
+}

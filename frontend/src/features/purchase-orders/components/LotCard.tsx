@@ -115,10 +115,12 @@ export function LotCard({
             </div>
           </Group>
 
-          <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="xs" className="lot-list-meta">
+          <SimpleGrid cols={{ base: 2, sm: 3, lg: 6 }} spacing="xs" className="lot-list-meta">
             <LotMeta label="CRD" value={dateOnly(lot.planned_cargo_ready_date) || '-'} />
             <LotMeta label="ETD" value={dateOnly(lot.planned_etd) || '-'} />
             <LotMeta label="ETA" value={dateOnly(lot.planned_eta) || '-'} />
+            <LotMeta label="POL" value={lot.origin_port || '-'} />
+            <LotMeta label="POD" value={lot.destination_port || '-'} />
             <LotMeta label="Lines / Qty" value={`${lines.length} / ${totalQtyLabel}`} />
           </SimpleGrid>
 

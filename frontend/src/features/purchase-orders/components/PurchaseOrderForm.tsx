@@ -29,6 +29,7 @@ import {
 import type { QuotationV1 } from '@shared/api/quotations';
 import { DateField } from '@shared/components/DateField';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
+import { useI18n } from '@shared/i18n';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
 import { usePoInvalidation } from '../hooks/usePoInvalidation';
@@ -41,6 +42,7 @@ import {
   createInitialPoDraft,
   deriveContractNo,
   newLineDraft,
+  PO_DESTINATION_COUNTRY,
   poTypeOptions,
   toNumber,
   totalPoAmount,
@@ -66,6 +68,7 @@ export function PurchaseOrderForm({
   const [contractAutoSync, setContractAutoSync] = useState(() => !order?.contract_no);
   const invalidatePo = usePoInvalidation(order?.id);
   const masterData = usePoMasterData();
+  const { t } = useI18n();
   const itemInputRef = useRef<HTMLInputElement>(null);
   const railListRef = useRef<HTMLDivElement>(null);
   // When a line is added we want to jump straight into editing it: remember its
@@ -111,6 +114,7 @@ export function PurchaseOrderForm({
   const selectedIncoterm = masterData.incoterms.find((incoterm) => incoterm.id === draft.incoterm_id);
   const selectedCurrency = masterData.currencies.find((currency) => currency.id === draft.currency_id);
   const selectedTransportMode = masterData.transportModes.find((transportMode) => transportMode.id === draft.transport_mode_id);
+  const originCountry = selectedSupplier?.country ?? '-';
   const poTotal = totalPoAmount(draft.lines);
   // A line is only saved if it has an item and a positive quantity (buildPoPayload
   // drops the rest). Surface that here so incomplete lines aren't silently lost.
@@ -393,6 +397,26 @@ export function PurchaseOrderForm({
                 value={draft.expected_eta}
                 onChange={(value) => {
                   setDraft((current) => ({ ...current, expected_eta: value ?? '' }));
+                }}
+              />
+            </SimpleGrid>
+            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm" mt="sm">
+              <TextInput
+                label={t('purchaseOrders.portOfLoading')}
+                description={`${t('purchaseOrders.originCountry')}: ${originCountry}`}
+                value={draft.origin_port}
+                onChange={(event) => {
+                  const { value } = event.currentTarget;
+                  setDraft((current) => ({ ...current, origin_port: value }));
+                }}
+              />
+              <TextInput
+                label={t('purchaseOrders.portOfDischarge')}
+                description={`${t('purchaseOrders.destinationCountry')}: ${PO_DESTINATION_COUNTRY}`}
+                value={draft.destination_port}
+                onChange={(event) => {
+                  const { value } = event.currentTarget;
+                  setDraft((current) => ({ ...current, destination_port: value }));
                 }}
               />
             </SimpleGrid>
