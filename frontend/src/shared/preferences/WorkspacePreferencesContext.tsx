@@ -8,19 +8,26 @@ export type { ColorPresetId, EventThemeId };
 export type WorkspaceLanguage = 'vi' | 'en';
 export type AppearanceMode = 'light' | 'dark' | 'auto';
 export type ResolvedColorScheme = 'light' | 'dark';
-export type VisualTheme = 'standard' | 'high-contrast' | 'blue-sight' | 'yellow-sight';
+export type VisualTheme = 'standard' | 'high-contrast' | 'eye-comfort';
 export type DensityPreference = 'standard' | 'compact';
 
 type WorkspacePreferencesContextValue = {
   appearanceMode: AppearanceMode;
+  colorIntensity: number;
   colorPreset: ColorPresetId;
+  contrastLevel: number;
   density: DensityPreference;
+  dimLevel: number;
   eventTheme: EventThemeId;
   language: WorkspaceLanguage;
+  resetFineTune: () => void;
   resolvedColorScheme: ResolvedColorScheme;
   setAppearanceMode: (appearanceMode: AppearanceMode) => void;
+  setColorIntensity: (value: number) => void;
   setColorPreset: (preset: ColorPresetId) => void;
+  setContrastLevel: (value: number) => void;
   setDensity: (density: DensityPreference) => void;
+  setDimLevel: (value: number) => void;
   setEventTheme: (theme: EventThemeId) => void;
   setLanguage: (language: WorkspaceLanguage) => void;
   setVisualTheme: (visualTheme: VisualTheme) => void;
@@ -34,6 +41,15 @@ const DENSITY_STORAGE_KEY = 'kbfe.preferences.density';
 const COLOR_PRESET_STORAGE_KEY = 'kbfe.preferences.color-preset';
 const EVENT_THEME_STORAGE_KEY = 'kbfe.preferences.event-theme';
 const LEGACY_EVENT_THEME_STORAGE_KEY = 'kbfe.preferences.event-theme-legacy';
+const COLOR_INTENSITY_STORAGE_KEY = 'kbfe.preferences.color-intensity';
+const DIM_LEVEL_STORAGE_KEY = 'kbfe.preferences.dim-level';
+const CONTRAST_LEVEL_STORAGE_KEY = 'kbfe.preferences.contrast-level';
+
+const FINE_TUNE_DEFAULTS = {
+  colorIntensity: 100,
+  contrastLevel: 100,
+  dimLevel: 0,
+} as const;
 
 const WorkspacePreferencesContext = createContext<WorkspacePreferencesContextValue | undefined>(undefined);
 
@@ -68,8 +84,11 @@ function readStoredVisualTheme(): VisualTheme {
   }
 
   const value = window.localStorage.getItem(VISUAL_THEME_STORAGE_KEY);
-  if (value === 'high-contrast' || value === 'blue-sight' || value === 'yellow-sight') {
+  if (value === 'high-contrast' || value === 'eye-comfort') {
     return value;
+  }
+  if (value === 'blue-sight' || value === 'yellow-sight') {
+    return 'eye-comfort';
   }
 
   const legacyValue = window.localStorage.getItem(LEGACY_EVENT_THEME_STORAGE_KEY);
@@ -77,7 +96,7 @@ function readStoredVisualTheme(): VisualTheme {
     return 'high-contrast';
   }
   if (legacyValue === 'night-shift') {
-    return 'blue-sight';
+    return 'eye-comfort';
   }
 
   return 'standard';
@@ -135,6 +154,19 @@ function readStoredEventTheme(): EventThemeId {
   return defaultEventThemeId;
 }
 
+function readStoredFineTune(key: string, fallback: number): number {
+  if (typeof window === 'undefined') {
+    return fallback;
+  }
+
+  const value = Number(window.localStorage.getItem(key));
+  if (Number.isNaN(value)) {
+    return fallback;
+  }
+
+  return Math.min(100, Math.max(0, value));
+}
+
 export function WorkspacePreferencesProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState<WorkspaceLanguage>(readStoredLanguage);
   const [appearanceMode, setAppearanceModeState] = useState<AppearanceMode>(readStoredAppearanceMode);
@@ -142,6 +174,15 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
   const [density, setDensityState] = useState<DensityPreference>(readStoredDensity);
   const [colorPreset, setColorPresetState] = useState<ColorPresetId>(readStoredColorPreset);
   const [eventTheme, setEventThemeState] = useState<EventThemeId>(readStoredEventTheme);
+  const [colorIntensity, setColorIntensityState] = useState<number>(() =>
+    readStoredFineTune(COLOR_INTENSITY_STORAGE_KEY, FINE_TUNE_DEFAULTS.colorIntensity),
+  );
+  const [dimLevel, setDimLevelState] = useState<number>(() =>
+    readStoredFineTune(DIM_LEVEL_STORAGE_KEY, FINE_TUNE_DEFAULTS.dimLevel),
+  );
+  const [contrastLevel, setContrastLevelState] = useState<number>(() =>
+    readStoredFineTune(CONTRAST_LEVEL_STORAGE_KEY, FINE_TUNE_DEFAULTS.contrastLevel),
+  );
   const [resolvedColorScheme, setResolvedColorScheme] = useState<ResolvedColorScheme>(() => {
     const storedAppearanceMode = readStoredAppearanceMode();
     return storedAppearanceMode === 'auto' ? getSystemColorScheme() : storedAppearanceMode;
@@ -177,7 +218,21 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
     document.documentElement.dataset.kbfeVisualTheme = visualTheme;
     document.documentElement.dataset.kbfeColorPreset = colorPreset;
     document.documentElement.dataset.kbfeEventTheme = eventTheme;
-  }, [appearanceMode, colorPreset, density, eventTheme, language, resolvedColorScheme, visualTheme]);
+    document.documentElement.style.setProperty('--kbfe-user-intensity', String(colorIntensity / 100));
+    document.documentElement.style.setProperty('--kbfe-user-dim', String(dimLevel / 100));
+    document.documentElement.style.setProperty('--kbfe-user-contrast', String(contrastLevel / 100));
+  }, [
+    appearanceMode,
+    colorIntensity,
+    colorPreset,
+    contrastLevel,
+    density,
+    dimLevel,
+    eventTheme,
+    language,
+    resolvedColorScheme,
+    visualTheme,
+  ]);
 
   const setLanguage = (nextLanguage: WorkspaceLanguage) => {
     setLanguageState(nextLanguage);
@@ -221,23 +276,71 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
     }
   };
 
+  const setColorIntensity = (nextValue: number) => {
+    const clamped = Math.min(100, Math.max(0, nextValue));
+    setColorIntensityState(clamped);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(COLOR_INTENSITY_STORAGE_KEY, String(clamped));
+    }
+  };
+
+  const setDimLevel = (nextValue: number) => {
+    const clamped = Math.min(100, Math.max(0, nextValue));
+    setDimLevelState(clamped);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(DIM_LEVEL_STORAGE_KEY, String(clamped));
+    }
+  };
+
+  const setContrastLevel = (nextValue: number) => {
+    const clamped = Math.min(100, Math.max(0, nextValue));
+    setContrastLevelState(clamped);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(CONTRAST_LEVEL_STORAGE_KEY, String(clamped));
+    }
+  };
+
+  const resetFineTune = () => {
+    setColorIntensity(FINE_TUNE_DEFAULTS.colorIntensity);
+    setDimLevel(FINE_TUNE_DEFAULTS.dimLevel);
+    setContrastLevel(FINE_TUNE_DEFAULTS.contrastLevel);
+  };
+
   const value = useMemo(
     () => ({
       appearanceMode,
+      colorIntensity,
       colorPreset,
+      contrastLevel,
       density,
+      dimLevel,
       eventTheme,
       language,
+      resetFineTune,
       resolvedColorScheme,
       setAppearanceMode,
+      setColorIntensity,
       setColorPreset,
+      setContrastLevel,
       setDensity,
+      setDimLevel,
       setEventTheme,
       setLanguage,
       setVisualTheme,
       visualTheme,
     }),
-    [appearanceMode, colorPreset, density, eventTheme, language, resolvedColorScheme, visualTheme],
+    [
+      appearanceMode,
+      colorIntensity,
+      colorPreset,
+      contrastLevel,
+      density,
+      dimLevel,
+      eventTheme,
+      language,
+      resolvedColorScheme,
+      visualTheme,
+    ],
   );
 
   return <WorkspacePreferencesContext.Provider value={value}>{children}</WorkspacePreferencesContext.Provider>;

@@ -88,16 +88,14 @@ export const appearanceModeLabels: Record<WorkspaceLanguage, Record<AppearanceMo
 
 export const visualThemeLabels: Record<WorkspaceLanguage, Record<VisualTheme, string>> = {
   en: {
-    'blue-sight': 'Blue Sight',
+    'eye-comfort': 'Eye Comfort Mode',
     'high-contrast': 'High Contrast',
     standard: 'Standard',
-    'yellow-sight': 'Yellow Sight',
   },
   vi: {
-    'blue-sight': 'Blue Sight',
+    'eye-comfort': 'Chế độ dịu mắt',
     'high-contrast': 'Tương phản cao',
     standard: 'Tiêu chuẩn',
-    'yellow-sight': 'Yellow Sight',
   },
 };
 

@@ -14,7 +14,7 @@ export function VisualThemeCard({ visualTheme, onChange }: Props) {
 
   const options = useMemo(
     () =>
-      (['standard', 'high-contrast', 'blue-sight', 'yellow-sight'] as VisualTheme[]).map(
+      (['standard', 'high-contrast', 'eye-comfort'] as VisualTheme[]).map(
         (theme) => ({
           label: visualThemeLabel(theme),
           value: theme,
