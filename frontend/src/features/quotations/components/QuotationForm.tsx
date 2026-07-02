@@ -16,7 +16,6 @@ import {
 } from '@mantine/core';
 import {
   IconAlertTriangle,
-  IconArrowLeft,
   IconChevronDown,
   IconFileInvoice,
   IconPlus,
@@ -388,15 +387,6 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
                 <IconFileInvoice size={18} />
               </div>
               <div className="rfq-form-title-copy">
-                <Button
-                  variant="subtle"
-                  size="xs"
-                  leftSection={<IconArrowLeft size={14} />}
-                  onClick={onCancel}
-                  className="rfq-back-action"
-                >
-                  {t('common.backToList')}
-                </Button>
                 <Title order={3}>{formTitle}</Title>
                 <Text c="dimmed" size="sm" mt={4}>
                   {formSubtitle}

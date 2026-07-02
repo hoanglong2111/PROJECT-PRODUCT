@@ -38,6 +38,7 @@ export const purchaseOrderStatusOptions: PurchaseOrderStatusV1[] = [
 export const poTypeOptions: PurchaseOrderTypeV1[] = ['SEA', 'AIR', 'DOMESTIC'];
 export const lotStatusOptions: PoLotStatus[] = ['PLANNED', 'READY', 'ASSIGNED_TO_SHIPMENT', 'SHIPPED', 'CANCELLED'];
 export const lockedLotStatuses = new Set<PoLotStatus>(['ASSIGNED_TO_SHIPMENT', 'SHIPPED', 'CANCELLED']);
+export const PO_DESTINATION_COUNTRY = 'VN';
 
 export type SelectOption = {
   label: string;
@@ -72,6 +73,8 @@ export type PoFormDraft = {
   exchange_rate: number;
   expected_etd: string;
   expected_eta: string;
+  origin_port: string;
+  destination_port: string;
   notes: string;
   // Reversed flow: a PO is created from a CONFIRMED quotation (required in create mode).
   quotation_id: string;
@@ -97,6 +100,8 @@ export type LotDraft = {
   planned_cargo_ready_date: string;
   planned_etd: string;
   planned_eta: string;
+  origin_port: string;
+  destination_port: string;
   sort_order: number;
   notes: string;
 };
@@ -162,6 +167,8 @@ export function createInitialPoDraft(order?: PurchaseOrderV1): PoFormDraft {
     exchange_rate: toNumber(order?.exchange_rate, 1) || 1,
     expected_etd: dateOnly(order?.expected_etd),
     expected_eta: dateOnly(order?.expected_eta),
+    origin_port: order?.origin_port ?? '',
+    destination_port: order?.destination_port ?? '',
     notes: order?.notes ?? '',
     quotation_id: order?.quotation_id ?? '',
     lines: order?.lines?.length
@@ -238,6 +245,8 @@ export function buildPoPayload(draft: PoFormDraft): CreatePurchaseOrderV1Payload
     exchange_rate: draft.exchange_rate || 1,
     expected_etd: nullIfEmpty(draft.expected_etd),
     expected_eta: nullIfEmpty(draft.expected_eta),
+    origin_port: nullIfEmpty(draft.origin_port),
+    destination_port: nullIfEmpty(draft.destination_port),
     notes: nullIfEmpty(draft.notes),
     quotation_id: nullIfEmpty(draft.quotation_id),
     lines: draft.lines
@@ -256,6 +265,25 @@ export function buildPoPayload(draft: PoFormDraft): CreatePurchaseOrderV1Payload
         expected_eta_line: nullIfEmpty(line.expected_eta_line),
         notes: nullIfEmpty(line.notes),
       })),
+  };
+}
+
+export function resolvePoOriginCountry(order: Pick<PurchaseOrderV1, 'supplier'>) {
+  return order.supplier?.country ?? null;
+}
+
+export function resolveCreateDoFromLotsDefaults(
+  lots: PoLot[],
+  purchaseOrder: Pick<PurchaseOrderV1, 'destination_port' | 'expected_eta' | 'expected_etd' | 'origin_port'>,
+) {
+  const primaryLot = lots[0];
+
+  return {
+    origin_port: primaryLot?.origin_port || purchaseOrder.origin_port || '',
+    destination_port: primaryLot?.destination_port || purchaseOrder.destination_port || '',
+    requested_pickup_date: dateOnly(primaryLot?.planned_cargo_ready_date),
+    planned_etd: dateOnly(primaryLot?.planned_etd ?? purchaseOrder.expected_etd),
+    planned_eta: dateOnly(primaryLot?.planned_eta ?? purchaseOrder.expected_eta),
   };
 }
 

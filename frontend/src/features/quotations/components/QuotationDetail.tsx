@@ -15,7 +15,6 @@ import {
   type QuotationV1,
 } from '@shared/api/quotations';
 import { queryKeys } from '@shared/api/queryKeys';
-import { BackActionButton } from '@shared/components/BackActionButton';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { useI18n } from '@shared/i18n';
 import { formatDate, formatDateTime } from '@shared/utils/date';
@@ -48,12 +47,11 @@ function formatEventType(value?: string | null): string {
 
 type QuotationDetailProps = {
   quotation: QuotationV1;
-  onBack: () => void;
   onRevise?: (q: QuotationV1) => void;
   onInspectVersion?: (q: QuotationV1) => void;
 };
 
-export function QuotationDetail({ quotation, onBack, onRevise, onInspectVersion }: QuotationDetailProps) {
+export function QuotationDetail({ quotation, onRevise, onInspectVersion }: QuotationDetailProps) {
   const { t, statusLabel } = useI18n();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -118,7 +116,6 @@ export function QuotationDetail({ quotation, onBack, onRevise, onInspectVersion 
                 <IconFileInvoice size={18} />
               </div>
               <div className="rfq-detail-title-copy">
-                <BackActionButton size="xs" iconSize={14} onClick={onBack} className="rfq-back-action" />
                 <Group gap="xs" align="center">
                   <Title order={3}>{quotation.quotation_no}</Title>
                   <StatusBadge status={status} />

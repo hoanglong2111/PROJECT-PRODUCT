@@ -3,10 +3,18 @@ import { IconBuildingWarehouse, IconCalendarStats, IconCoins, IconFileInvoice, I
 import type { ReactNode } from 'react';
 
 import type { PurchaseOrderLineV1, PurchaseOrderV1 } from '@shared/api/purchaseOrders';
+import { useI18n } from '@shared/i18n';
 
-import { dateOnly, getDateDelayDays, totalPoAmount } from '../model/purchaseOrderModel';
+import {
+  dateOnly,
+  getDateDelayDays,
+  PO_DESTINATION_COUNTRY,
+  resolvePoOriginCountry,
+  totalPoAmount,
+} from '../model/purchaseOrderModel';
 
 export function PurchaseOrderDetailInfo({ lines, order }: { lines: PurchaseOrderLineV1[]; order: PurchaseOrderV1 }) {
+  const { t } = useI18n();
   const loadingPort = order.logistics_timeline?.loading_port;
   const unloadingPort = order.logistics_timeline?.unloading_port;
   const warehouse = order.logistics_timeline?.warehouse;
@@ -28,6 +36,9 @@ export function PurchaseOrderDetailInfo({ lines, order }: { lines: PurchaseOrder
       ? { color: 'red', label: `${maxDelayDays} days late` }
       : { color: 'teal', label: 'On time' };
   const transportMode = order.transport_mode?.mode_code ?? '-';
+  const originCountry = resolvePoOriginCountry(order) ?? '-';
+  const originPort = order.origin_port || '-';
+  const destinationPort = order.destination_port || '-';
 
   return (
     <Paper withBorder p={0} className="purchase-order-detail-card">
@@ -80,6 +91,12 @@ export function PurchaseOrderDetailInfo({ lines, order }: { lines: PurchaseOrder
           statusColor={routeStatus.color}
           statusLabel={routeStatus.label}
           transportMode={transportMode}
+          loadingPortCountry={originCountry}
+          loadingPortLabel={t('purchaseOrders.portOfLoading')}
+          loadingPortName={originPort}
+          unloadingPortCountry={PO_DESTINATION_COUNTRY}
+          unloadingPortLabel={t('purchaseOrders.portOfDischarge')}
+          unloadingPortName={destinationPort}
         />
       </div>
 
@@ -126,16 +143,28 @@ function LogisticsRouteTimeline({
   statusColor,
   statusLabel,
   transportMode,
+  loadingPortCountry,
+  loadingPortLabel,
+  loadingPortName,
+  unloadingPortCountry,
+  unloadingPortLabel,
+  unloadingPortName,
 }: {
   actualAta: string;
   actualAtd: string;
   actualWarehouseAta: string;
+  loadingPortCountry: string;
+  loadingPortLabel: string;
+  loadingPortName: string;
   plannedEta: string;
   plannedEtd: string;
   plannedWarehouseEta: string;
   statusColor: string;
   statusLabel: string;
   transportMode: string;
+  unloadingPortCountry: string;
+  unloadingPortLabel: string;
+  unloadingPortName: string;
 }) {
   const isAir = transportMode.toLowerCase().includes('air');
   const TransportIcon = isAir ? IconPlaneDeparture : IconShip;
@@ -152,13 +181,21 @@ function LogisticsRouteTimeline({
             Logistics timeline
           </Text>
           <Text fw={800} size="sm">
-            Loading port to unloading port{hasWarehouseLeg ? ' to warehouse' : ''}
+            {loadingPortName} to {unloadingPortName}{hasWarehouseLeg ? ' to warehouse' : ''}
           </Text>
         </div>
       </Group>
 
       <div className="purchase-order-route">
-        <PortTimelineNode label="Loading port" primaryLabel="ETD" primaryValue={plannedEtd} secondaryLabel="ATD" secondaryValue={actualAtd} />
+        <PortTimelineNode
+          country={loadingPortCountry}
+          label={loadingPortLabel}
+          portName={loadingPortName}
+          primaryLabel="ETD"
+          primaryValue={plannedEtd}
+          secondaryLabel="ATD"
+          secondaryValue={actualAtd}
+        />
 
         <div className="purchase-order-route-line" aria-hidden="true">
           <span className="purchase-order-route-dot" />
@@ -175,7 +212,9 @@ function LogisticsRouteTimeline({
 
         <PortTimelineNode
           align="right"
-          label="Unloading port"
+          country={unloadingPortCountry}
+          label={unloadingPortLabel}
+          portName={unloadingPortName}
           primaryLabel="ETA"
           primaryValue={plannedEta}
           secondaryLabel="ATA"
@@ -203,14 +242,18 @@ function LogisticsRouteTimeline({
 
 function PortTimelineNode({
   align = 'left',
+  country,
   label,
+  portName,
   primaryLabel,
   primaryValue,
   secondaryLabel,
   secondaryValue,
 }: {
   align?: 'left' | 'right';
+  country: string;
   label: string;
+  portName: string;
   primaryLabel: string;
   primaryValue: string;
   secondaryLabel: string;
@@ -221,6 +264,14 @@ function PortTimelineNode({
       <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
         {label}
       </Text>
+      <div className="purchase-order-route-port">
+        <Text fw={800} size="sm" lineClamp={1} title={portName}>
+          {portName || '-'}
+        </Text>
+        <Text size="xs" c="dimmed" lineClamp={1} title={country}>
+          {country || '-'}
+        </Text>
+      </div>
       <DateValue label={primaryLabel} value={primaryValue} />
       <DateValue label={secondaryLabel} value={secondaryValue} muted />
     </div>

@@ -3,6 +3,7 @@ import { IconAlertTriangle } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 
 import { DateField } from '@shared/components/DateField';
+import { useI18n } from '@shared/i18n';
 import type { PoLotStatus } from '@shared/api/purchaseOrders';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
@@ -22,6 +23,7 @@ export function LotModal({
   onSubmit: (draft: LotDraft) => void;
 }) {
   const [localDraft, setLocalDraft] = useState<LotDraft | null>(draft);
+  const { t } = useI18n();
 
   useEffect(() => {
     setLocalDraft(draft);
@@ -76,6 +78,16 @@ export function LotModal({
               label="ETA"
               value={localDraft.planned_eta}
               onChange={(value) => setLocalDraft({ ...localDraft, planned_eta: value ?? '' })}
+            />
+            <TextInput
+              label={t('purchaseOrders.portOfLoading')}
+              value={localDraft.origin_port}
+              onChange={(event) => setLocalDraft({ ...localDraft, origin_port: event.currentTarget.value })}
+            />
+            <TextInput
+              label={t('purchaseOrders.portOfDischarge')}
+              value={localDraft.destination_port}
+              onChange={(event) => setLocalDraft({ ...localDraft, destination_port: event.currentTarget.value })}
             />
           </SimpleGrid>
           <Textarea

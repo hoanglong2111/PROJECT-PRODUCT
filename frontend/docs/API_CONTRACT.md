@@ -94,8 +94,8 @@ exact request/response types.)
 > laggard (least-advanced) linked shipment's status, mapped to the PO stage
 > taxonomy. The UI reads it as the source of truth for the stage badge and only
 > falls back to a client-side derivation when it is absent.
-- `GET|POST /v1/purchase-orders` — **create requires `quotation_id`** referencing a `CONFIRMED` quotation; the PO stores `quotation_id` for traceability. A missing/non-CONFIRMED quotation is rejected (`VALIDATION_ERROR` 400 / `BUSINESS_RULE_VIOLATION` 409). The PO line → LOT auto-split on create is unchanged.
-- `GET|PATCH /v1/purchase-orders/:id`
+- `GET|POST /v1/purchase-orders` — **create requires `quotation_id`** referencing a `CONFIRMED` quotation; the PO stores `quotation_id` for traceability. A missing/non-CONFIRMED quotation is rejected (`VALIDATION_ERROR` 400 / `BUSINESS_RULE_VIOLATION` 409). Header route fields `origin_port` / `destination_port` are free-text POL/POD defaults; the PO line → LOT auto-split copies them to the default LOT.
+- `GET|PATCH /v1/purchase-orders/:id` — accepts `origin_port` / `destination_port` on the PO header.
 - `POST /v1/purchase-orders/:id/send`
 - `POST /v1/purchase-orders/:id/cancel`
 - `GET|POST /v1/purchase-orders/:id/confirmations`
@@ -104,8 +104,8 @@ exact request/response types.)
 
 ### LOT Planning
 - `GET /v1/purchase-orders/:id/lot-planning` — screen DTO (PO + lines + lots with items)
-- `POST /v1/purchase-orders/:id/lots`
-- `PATCH|DELETE /v1/po-lots/:lotId`
+- `POST /v1/purchase-orders/:id/lots` — accepts per-LOT `origin_port` / `destination_port`; create UI defaults these from the PO header.
+- `PATCH|DELETE /v1/po-lots/:lotId` — PATCH accepts per-LOT `origin_port` / `destination_port` overrides.
 - `POST /v1/po-lots/reorder`
 - `POST /v1/po-lot-lines/:lineId/move`
 - `POST /v1/po-lot-lines/:lineId/split`
@@ -115,7 +115,7 @@ exact request/response types.)
 - `GET /v1/delivery-orders`
 - `GET /v1/delivery-orders/screen` — screen DTO (list with task_summary / missing_documents / warehouse). `order_info.status` is **derived** from the laggard linked shipment once the DO is handed off (it is not the raw DO record status); CANCELLED/CLOSED stay terminal. Parallels the PO `lifecycle_status` rule.
 - `GET /v1/delivery-orders/:id`
-- `POST /v1/delivery-orders/from-lots`
+- `POST /v1/delivery-orders/from-lots` — accepts `lot_ids`, optional `delivery_order_no`, `requested_pickup_date`, `planned_etd`, `planned_eta`, `origin_address`, `destination_address`, and `notes`. The PO LOT confirm UI maps POL/POD to `origin_address` / `destination_address`.
 - `POST /v1/delivery-orders/:id/ready-for-quotation`
 - `POST /v1/delivery-orders/:id/cancel`
 - `GET /v1/delivery-orders/:id/lots`

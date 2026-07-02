@@ -1,9 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
-import type { PurchaseOrderLineV1, PurchaseOrderV1 } from '@shared/api/purchaseOrders';
+import type { PoLot, PurchaseOrderLineV1, PurchaseOrderV1 } from '@shared/api/purchaseOrders';
 
 import { mapStatusFilterToApi } from '../poStageConfig';
-import { deriveContractNo, getPoFulfillment, getPoLineReceiptState, resolvePoStage } from '../purchaseOrderModel';
+import {
+  buildPoPayload,
+  createInitialPoDraft,
+  deriveContractNo,
+  resolveCreateDoFromLotsDefaults,
+  getPoFulfillment,
+  getPoLineReceiptState,
+  resolvePoOriginCountry,
+  resolvePoStage,
+} from '../purchaseOrderModel';
 
 describe('resolvePoStage', () => {
   it('keeps cancelled purchase orders in the cancelled stage first', () => {
@@ -113,6 +122,66 @@ describe('deriveContractNo', () => {
   });
 });
 
+describe('PO route fields', () => {
+  it('round-trips POL and POD through the PO draft payload', () => {
+    const draft = createInitialPoDraft(makePurchaseOrder({
+      origin_port: 'Shanghai Port',
+      destination_port: 'Cat Lai Port',
+    }));
+
+    expect(draft.origin_port).toBe('Shanghai Port');
+    expect(draft.destination_port).toBe('Cat Lai Port');
+
+    const payload = buildPoPayload({
+      ...draft,
+      quotation_id: 'qt_001',
+      supplier_id: 'sup_001',
+      incoterm_id: 'inc_fob',
+      lines: [],
+    });
+
+    expect(payload.origin_port).toBe('Shanghai Port');
+    expect(payload.destination_port).toBe('Cat Lai Port');
+  });
+
+  it('derives the display origin country from the supplier and tolerates missing supplier data', () => {
+    expect(resolvePoOriginCountry(makePurchaseOrder({
+      supplier: { country: 'CN' } as PurchaseOrderV1['supplier'],
+    }))).toBe('CN');
+    expect(resolvePoOriginCountry(makePurchaseOrder({ supplier: null }))).toBeNull();
+  });
+
+  it('prefills the DO-from-LOT route from the selected LOT before falling back to the PO header', () => {
+    const order = makePurchaseOrder({
+      origin_port: 'Ningbo Port',
+      destination_port: 'Cat Lai Port',
+      expected_etd: '2026-07-20',
+      expected_eta: '2026-07-28',
+    });
+
+    expect(resolveCreateDoFromLotsDefaults([poLot({
+      origin_port: 'Shanghai Port',
+      destination_port: 'Hai Phong Port',
+      planned_cargo_ready_date: '2026-07-18',
+      planned_etd: '2026-07-21',
+      planned_eta: '2026-07-29',
+    })], order)).toEqual({
+      origin_port: 'Shanghai Port',
+      destination_port: 'Hai Phong Port',
+      requested_pickup_date: '2026-07-18',
+      planned_etd: '2026-07-21',
+      planned_eta: '2026-07-29',
+    });
+
+    expect(resolveCreateDoFromLotsDefaults([poLot()], order)).toMatchObject({
+      origin_port: 'Ningbo Port',
+      destination_port: 'Cat Lai Port',
+      planned_etd: '2026-07-20',
+      planned_eta: '2026-07-28',
+    });
+  });
+});
+
 describe('getPoLineReceiptState', () => {
   it('returns none when nothing has shipped', () => {
     expect(getPoLineReceiptState(poLine({ qty_shipped: 0, qty_received: 0 }))).toEqual({ state: 'none', shortfall: 0 });
@@ -191,6 +260,22 @@ function makePurchaseOrder(patch: Partial<PurchaseOrderV1> = {}): PurchaseOrderV
     notes: null,
     create_at: '2026-06-01T00:00:00.000Z',
     update_at: '2026-06-01T00:00:00.000Z',
+    ...patch,
+  };
+}
+
+function poLot(patch: Partial<PoLot> = {}): PoLot {
+  return {
+    id: 'lot_001',
+    purchase_order_id: 'po_001',
+    lot_no: 'LOT-001',
+    lot_name: null,
+    status: 'PLANNED',
+    planned_cargo_ready_date: null,
+    planned_etd: null,
+    planned_eta: null,
+    sort_order: 1,
+    notes: null,
     ...patch,
   };
 }

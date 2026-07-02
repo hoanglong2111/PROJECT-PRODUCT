@@ -55,6 +55,8 @@ export type PurchaseOrderV1 = {
   exchange_rate: ApiDecimal | null;
   expected_etd: string | null;
   expected_eta: string | null;
+  origin_port?: string | null;
+  destination_port?: string | null;
   actual_etd?: string | null;
   actual_eta?: string | null;
   expected_warehouse_eta?: string | null;
@@ -243,6 +245,8 @@ export type CreatePurchaseOrderV1Payload = {
   exchange_rate?: number | null;
   expected_etd?: string | null;
   expected_eta?: string | null;
+  origin_port?: string | null;
+  destination_port?: string | null;
   notes?: string | null;
   lines?: PurchaseOrderLinePayload[];
 };

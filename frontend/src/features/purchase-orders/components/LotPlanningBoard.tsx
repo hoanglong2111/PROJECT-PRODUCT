@@ -4,7 +4,11 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState, type DragEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { createDeliveryOrderFromLots, type DeliveryOrderV1 } from '@shared/api/deliveryOrders';
+import {
+  createDeliveryOrderFromLots,
+  type CreateDeliveryOrderFromLotsPayload,
+  type DeliveryOrderV1,
+} from '@shared/api/deliveryOrders';
 import {
   createLot,
   deletePoLot,
@@ -23,12 +27,14 @@ import { getApiErrorMessage } from '@shared/lib/errors';
 
 import { usePoInvalidation } from '../hooks/usePoInvalidation';
 import { dateOnly, lockedLotStatuses, nullIfEmpty, type LotDraft, type SplitDraft } from '../model/purchaseOrderModel';
+import { CreateDoFromLotsModal } from './CreateDoFromLotsModal';
 import { LotCard } from './LotCard';
 import { LotModal } from './LotModal';
 import { SplitLotModal } from './SplitLotModal';
 
 export function LotPlanningBoard({ canManage, planning }: { canManage: boolean; planning: PurchaseOrderLotPlanning }) {
   const [lotDraft, setLotDraft] = useState<LotDraft | null>(null);
+  const [createDoModalOpen, setCreateDoModalOpen] = useState(false);
   const [splitDraft, setSplitDraft] = useState<SplitDraft | null>(null);
   const [selectedLotIds, setSelectedLotIds] = useState<string[]>([]);
   const [boardError, setBoardError] = useState<string | null>(null);
@@ -55,6 +61,10 @@ export function LotPlanningBoard({ canManage, planning }: { canManage: boolean; 
         .map((lot) => lot.id),
     [sortedLots],
   );
+  const selectedLots = useMemo(
+    () => sortedLots.filter((lot) => selectedLotIds.includes(lot.id)),
+    [selectedLotIds, sortedLots],
+  );
   useEffect(() => {
     setSelectedLotIds((current) => current.filter((id) => selectableLotIds.includes(id)));
   }, [selectableLotIds]);
@@ -76,6 +86,8 @@ export function LotPlanningBoard({ canManage, planning }: { canManage: boolean; 
         planned_cargo_ready_date: nullIfEmpty(payload.planned_cargo_ready_date),
         planned_etd: nullIfEmpty(payload.planned_etd),
         planned_eta: nullIfEmpty(payload.planned_eta),
+        origin_port: nullIfEmpty(payload.origin_port),
+        destination_port: nullIfEmpty(payload.destination_port),
         sort_order: payload.sort_order,
         notes: nullIfEmpty(payload.notes),
       }),
@@ -129,14 +141,11 @@ export function LotPlanningBoard({ canManage, planning }: { canManage: boolean; 
   });
 
   const createDoMutation = useMutation({
-    mutationFn: () =>
-      createDeliveryOrderFromLots({
-        lot_ids: selectedLotIds,
-        notes: `Created from PO ${planning.purchase_order.po_no} LOT Planning`,
-      }),
+    mutationFn: (payload: CreateDeliveryOrderFromLotsPayload) => createDeliveryOrderFromLots(payload),
     onSuccess: (deliveryOrder: DeliveryOrderV1) => {
       setBoardError(null);
       setSelectedLotIds([]);
+      setCreateDoModalOpen(false);
       invalidatePo();
       void queryClient.invalidateQueries({ queryKey: queryKeys.deliveryOrders });
       void queryClient.invalidateQueries({ queryKey: queryKeys.deliveryOrderLists });
@@ -154,6 +163,8 @@ export function LotPlanningBoard({ canManage, planning }: { canManage: boolean; 
       planned_cargo_ready_date: '',
       planned_etd: '',
       planned_eta: '',
+      origin_port: planning.purchase_order.origin_port ?? '',
+      destination_port: planning.purchase_order.destination_port ?? '',
       sort_order: sortedLots.length + 1,
       notes: '',
     });
@@ -168,6 +179,8 @@ export function LotPlanningBoard({ canManage, planning }: { canManage: boolean; 
       planned_cargo_ready_date: dateOnly(lot.planned_cargo_ready_date),
       planned_etd: dateOnly(lot.planned_etd),
       planned_eta: dateOnly(lot.planned_eta),
+      origin_port: lot.origin_port ?? '',
+      destination_port: lot.destination_port ?? '',
       sort_order: lot.sort_order,
       notes: lot.notes ?? '',
     });
@@ -281,7 +294,10 @@ export function LotPlanningBoard({ canManage, planning }: { canManage: boolean; 
               leftSection={<IconTruckDelivery size={14} />}
               loading={createDoMutation.isPending}
               disabled={!canManage || selectedLotIds.length === 0}
-              onClick={() => createDoMutation.mutate()}
+              onClick={() => {
+                createDoMutation.reset();
+                setCreateDoModalOpen(true);
+              }}
             >
               Create Internal DO ({selectedLotIds.length})
             </Button>
@@ -350,6 +366,8 @@ export function LotPlanningBoard({ canManage, planning }: { canManage: boolean; 
               planned_cargo_ready_date: nullIfEmpty(nextDraft.planned_cargo_ready_date),
               planned_etd: nullIfEmpty(nextDraft.planned_etd),
               planned_eta: nullIfEmpty(nextDraft.planned_eta),
+              origin_port: nullIfEmpty(nextDraft.origin_port),
+              destination_port: nullIfEmpty(nextDraft.destination_port),
               sort_order: nextDraft.sort_order,
               notes: nullIfEmpty(nextDraft.notes),
             });
@@ -370,6 +388,19 @@ export function LotPlanningBoard({ canManage, planning }: { canManage: boolean; 
             splitQty: Number(nextDraft.split_qty),
           });
         }}
+      />
+
+      <CreateDoFromLotsModal
+        opened={createDoModalOpen}
+        purchaseOrder={planning.purchase_order}
+        lots={selectedLots}
+        loading={createDoMutation.isPending}
+        error={createDoMutation.error}
+        onClose={() => {
+          createDoMutation.reset();
+          setCreateDoModalOpen(false);
+        }}
+        onSubmit={(payload) => createDoMutation.mutate(payload)}
       />
     </Paper>
   );

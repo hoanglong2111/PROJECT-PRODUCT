@@ -1,7 +1,8 @@
 import { Button, Group, Stack, Text, Title } from '@mantine/core';
 import { IconPlus } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 import { fetchQuotationsV1, type QuotationV1 } from '@shared/api/quotations';
 import { BackActionButton } from '@shared/components/BackActionButton';
@@ -20,12 +21,16 @@ import {
 import { useQuotationsUiStore } from './model/quotationsUiStore';
 
 const EMPTY_QUOTATIONS: QuotationV1[] = [];
+const QUOTE_PARAM = 'quote';
+const CREATE_PARAM = 'create';
+const REVISE_PARAM = 'revise';
 
 export function Quotations() {
   const { t } = useI18n();
-  const [view, setView] = useState<'list' | 'form'>('list');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [formSource, setFormSource] = useState<QuotationV1 | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const focusedQuote = searchParams.get(QUOTE_PARAM);
+  const createRequested = searchParams.get(CREATE_PARAM) === '1';
+  const reviseQuote = searchParams.get(REVISE_PARAM);
 
   const activeTab = useQuotationsUiStore((s) => s.activeTab);
   const search = useQuotationsUiStore((s) => s.search);
@@ -72,8 +77,61 @@ export function Quotations() {
     [quotations],
   );
 
-  const selectedQuotation: QuotationV1 | null =
-    selectedId === null ? null : quotations.find((quotation) => quotation.id === selectedId) ?? null;
+  const findQuotation = (value: string | null): QuotationV1 | null => {
+    if (!value) return null;
+    return quotations.find((quotation) => quotation.id === value || quotation.quotation_no === value) ?? null;
+  };
+  const selectedQuotation = findQuotation(focusedQuote);
+  const formSource = findQuotation(reviseQuote);
+  const showForm = createRequested || Boolean(formSource);
+  const showList = !showForm && !selectedQuotation;
+
+  const updateWorkbenchParams = (
+    updater: (nextParams: URLSearchParams) => void,
+    options: { replace?: boolean } = {},
+  ) => {
+    const nextParams = new URLSearchParams(searchParams);
+    updater(nextParams);
+    setSearchParams(nextParams, { replace: options.replace ?? false });
+  };
+
+  const closeWorkbench = () => {
+    updateWorkbenchParams(
+      (nextParams) => {
+        nextParams.delete(QUOTE_PARAM);
+        nextParams.delete(CREATE_PARAM);
+        nextParams.delete(REVISE_PARAM);
+      },
+      { replace: true },
+    );
+  };
+
+  const openQuotation = (quotation: QuotationV1, options: { replace?: boolean } = {}) => {
+    updateWorkbenchParams(
+      (nextParams) => {
+        nextParams.set(QUOTE_PARAM, quotation.quotation_no);
+        nextParams.delete(CREATE_PARAM);
+        nextParams.delete(REVISE_PARAM);
+      },
+      options,
+    );
+  };
+
+  const openCreateForm = () => {
+    updateWorkbenchParams((nextParams) => {
+      nextParams.set(CREATE_PARAM, '1');
+      nextParams.delete(QUOTE_PARAM);
+      nextParams.delete(REVISE_PARAM);
+    });
+  };
+
+  const openReviseForm = (quotation: QuotationV1) => {
+    updateWorkbenchParams((nextParams) => {
+      nextParams.set(REVISE_PARAM, quotation.id);
+      nextParams.delete(QUOTE_PARAM);
+      nextParams.delete(CREATE_PARAM);
+    });
+  };
 
   if (quotationsQuery.isError) {
     return (
@@ -92,18 +150,6 @@ export function Quotations() {
     return <PageLoading title={t('quotations.title')} description={t('quotations.loadingDescription')} />;
   }
 
-  const showList = view === 'list' && !selectedQuotation;
-  const closeWorkbench = () => {
-    setView('list');
-    setSelectedId(null);
-    setFormSource(null);
-  };
-
-  const handleRevise = (q: QuotationV1) => {
-    setFormSource(q);
-    setView('form');
-  };
-
   return (
     <Stack gap="lg" className="quotations-workbench">
       {showList ? (
@@ -118,44 +164,50 @@ export function Quotations() {
             <Button
               className="quotations-primary-action"
               leftSection={<IconPlus size={16} />}
-              onClick={() => {
-                setSelectedId(null);
-                setFormSource(null);
-                setView('form');
-              }}
+              onClick={openCreateForm}
             >
               {t('quotations.newQuotation')}
             </Button>
           </Group>
         </Group>
       ) : (
-        <Group justify="flex-start" className="quotations-subheader dl-page-header">
-          <BackActionButton className="quotations-back-action" onClick={closeWorkbench} />
+        <Group justify="space-between" align="center" gap="md" className="quotations-subheader dl-page-header">
+          <Group gap="xs" align="center" wrap="wrap">
+            <BackActionButton className="quotations-back-action" onClick={closeWorkbench} />
+            {selectedQuotation ? (
+              <>
+                <Text c="dimmed" size="sm">/</Text>
+                <Text fw={600} size="sm">{selectedQuotation.quotation_no}</Text>
+              </>
+            ) : (
+              <>
+                <Text c="dimmed" size="sm">/</Text>
+                <Text fw={600} size="sm">{formSource ? t('quotations.reviseTitle') : t('quotations.newQuotation')}</Text>
+              </>
+            )}
+          </Group>
         </Group>
       )}
 
-      {view === 'form' ? (
+      {showForm ? (
         <QuotationForm
           sourceQuotation={formSource ?? undefined}
           onCancel={closeWorkbench}
           onCreated={(quotation) => {
-            setFormSource(null);
-            setView('list');
-            setSelectedId(quotation.id);
+            openQuotation(quotation, { replace: true });
           }}
         />
       ) : selectedQuotation ? (
         <QuotationDetail
           quotation={selectedQuotation}
-          onBack={closeWorkbench}
-          onRevise={handleRevise}
-          onInspectVersion={(v) => setSelectedId(v.id)}
+          onRevise={openReviseForm}
+          onInspectVersion={openQuotation}
         />
       ) : (
         <QuotationListView
           filteredQuotations={filteredQuotations}
           tabCounts={tabCounts}
-          onInspect={(quotation) => setSelectedId(quotation.id)}
+          onInspect={openQuotation}
         />
       )}
     </Stack>

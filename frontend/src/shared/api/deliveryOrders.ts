@@ -149,6 +149,10 @@ export type CreateDeliveryOrderFromLotsPayload = {
   lot_ids: string[];
   delivery_order_no?: string;
   requested_pickup_date?: string | null;
+  origin_address?: string | null;
+  destination_address?: string | null;
+  planned_etd?: string | null;
+  planned_eta?: string | null;
   notes?: string | null;
 };
 

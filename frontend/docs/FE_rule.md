@@ -389,7 +389,10 @@ Required behavior:
 
 ```txt
 - User selects one or more LOTs.
-- Frontend sends selected lot_ids.
+- Frontend opens a confirmation modal before calling the API.
+- Modal includes optional DO no, requested pickup date, POL, POD, ETD, ETA, and notes.
+- POL/POD prefill from selected LOT route fields; if the selected LOT has no route, fallback to PO header `origin_port` / `destination_port`.
+- Frontend sends selected lot_ids plus the confirmed route/date fields.
 - Backend creates Internal DO.
 - Backend copies LOT item lines into DO lines.
 ```
@@ -398,6 +401,16 @@ After DO is created, frontend should navigate to:
 
 ```txt
 /delivery-orders/:id
+```
+
+PO route display rule:
+
+```txt
+- PO header owns default `origin_port` / `destination_port` for POL/POD.
+- Each LOT may override `origin_port` / `destination_port`.
+- Origin country is display-only from `purchase_order.supplier.country`.
+- Destination country is display-only and always `VN`.
+- No country fields are stored on PO or LOT records.
 ```
 
 ---
