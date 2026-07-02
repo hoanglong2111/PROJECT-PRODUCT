@@ -1,6 +1,6 @@
-import { ActionIcon, Alert, Button, Group, Loader, Paper, ScrollArea, Select, Stack, Table, Text, TextInput, Tooltip } from '@mantine/core';
+import { ActionIcon, Alert, Group, Loader, Paper, ScrollArea, Stack, Table, Text, Tooltip } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
-import { IconAlertCircle, IconPencil, IconPlus, IconSearch, IconTrash } from '@tabler/icons-react';
+import { IconAlertCircle, IconPencil, IconTrash } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState, type ReactNode } from 'react';
 
@@ -11,7 +11,8 @@ import { ListPagination, useListPagination } from '@shared/components/ListPagina
 import { useI18n } from '@shared/i18n';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
-import { getStatusFilterOptions, optionalString, selectValueToStatus, statusToSelectValue } from '../model/masterDataModel';
+import { optionalString } from '../model/masterDataModel';
+import { MasterDataToolbar } from './MasterDataToolbar';
 
 // Reference master-data sets are small; load the whole set up-front so search/filter and
 // client-side pagination operate over every row, not just the first server page.
@@ -100,62 +101,39 @@ export function ReferenceDataPanel<T extends { id: string }>({
     statusFilter,
     total,
   ]);
-  const statusSelect = onStatusFilterChange ? (
-    <Select
-      className="md-filter-select"
-      label={t('common.status')}
-      data={getStatusFilterOptions(t)}
-      value={statusToSelectValue(statusFilter)}
-      onChange={(value) => {
-        onStatusFilterChange(selectValueToStatus(value));
-        setPage(1);
-      }}
-      w={170}
-    />
-  ) : null;
 
   const handleClearFilters = () => {
     setSearch('');
     setPage(1);
     onClearFilters?.();
   };
-  const resultCountLabel = t('common.shown', { count: total });
 
   return (
     <Stack gap="md">
-      <Paper withBorder p="md" className="dl-filter-panel">
-        <Group align="flex-end" gap="sm" wrap="wrap" className="dl-filter-row">
-          <TextInput
-            className="dl-filter-search"
-            label={title}
-            placeholder={searchPlaceholder}
-            leftSection={<IconSearch size={16} />}
-            value={search}
-            onChange={(event) => {
-              setSearch(event.currentTarget.value);
-              setPage(1);
-            }}
-          />
-          {statusSelect}
-          {toolbarExtra}
-          <Group gap="xs" wrap="nowrap" align="flex-end" ml="auto" className="md-filter-tail">
-            {query.isFetching ? <Loader size="sm" /> : null}
-            <Text size="sm" c="dimmed" className="md-filter-count">
-              {resultCountLabel}
-            </Text>
-            {canManage ? (
-              <Button leftSection={<IconPlus size={16} />} onClick={onAdd}>
-                {addLabel}
-              </Button>
-            ) : null}
-            {showClearFilters ? (
-              <Button variant="subtle" onClick={handleClearFilters}>
-                {t('masterData.clearFilters')}
-              </Button>
-            ) : null}
-          </Group>
-        </Group>
-      </Paper>
+      <MasterDataToolbar
+        addLabel={addLabel}
+        canManage={canManage}
+        count={total}
+        filters={toolbarExtra}
+        hasActiveFilters={showClearFilters}
+        isFetching={query.isFetching}
+        onAdd={onAdd}
+        onClear={handleClearFilters}
+        onSearchChange={(value) => {
+          setSearch(value);
+          setPage(1);
+        }}
+        onStatusChange={onStatusFilterChange
+          ? (value) => {
+            onStatusFilterChange(value);
+            setPage(1);
+          }
+          : undefined}
+        searchLabel={title}
+        searchPlaceholder={searchPlaceholder}
+        searchValue={search}
+        statusValue={statusFilter}
+      />
 
       {query.isError ? (
         <Alert color="red" icon={<IconAlertCircle size={18} />}>

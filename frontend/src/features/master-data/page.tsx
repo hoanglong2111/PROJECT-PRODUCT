@@ -1,5 +1,5 @@
 import { Alert, Badge, Group, Select, Stack, Tabs, Text, Title } from '@mantine/core';
-import { useDebouncedValue, useDisclosure } from '@mantine/hooks';
+import { useDisclosure } from '@mantine/hooks';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   IconAlertCircle,
@@ -12,7 +12,7 @@ import {
   IconRulerMeasure,
   IconTruckDelivery,
 } from '@tabler/icons-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import {
   deleteChargeCode,
@@ -47,13 +47,19 @@ import {
   type TransportMode,
 } from '@shared/api/tradeMasterData';
 import { deleteUom, fetchUoms, type Uom } from '@shared/api/uoms';
-import { LIST_PAGE_SIZE } from '@shared/components/ListPagination';
 import { useCan } from '@shared/auth/useCan';
 import { useI18n } from '@shared/i18n';
 import { CHARGE_CATEGORIES, CHARGE_GROUPS } from '@shared/lib/chargeCategories';
 import { useMasterDataStore } from './model/masterDataStore';
 
-import { getSupplierTypeLabel, optionalString, SUPPLIER_TYPE_VALUES } from './model/masterDataModel';
+import {
+  getItemCategoryLabel,
+  getItemTypeLabel,
+  getSupplierTypeLabel,
+  ITEM_CATEGORY_VALUES,
+  ITEM_TYPE_VALUES,
+  SUPPLIER_TYPE_VALUES,
+} from './model/masterDataModel';
 import { CarrierModal } from './components/CarrierModal';
 import { CarriersSection } from './components/CarriersSection';
 import { ChargeCodeModal } from './components/ChargeCodeModal';
@@ -61,13 +67,14 @@ import { CurrencyModal } from './components/CurrencyModal';
 import { ForwarderModal } from './components/ForwarderModal';
 import { ForwardersSection } from './components/ForwardersSection';
 import { IncotermModal } from './components/IncotermModal';
-import { ItemCatalogSection } from './components/ItemCatalogSection';
 import { ItemModal } from './components/ItemModal';
+import { FILTER_SELECT_WIDTH } from './components/MasterDataToolbar';
 import { ReferenceDataPanel } from './components/ReferenceDataPanel';
 import {
   buildChargeCodeColumns,
   buildCurrencyColumns,
   buildIncotermColumns,
+  buildItemColumns,
   buildSupplierColumns,
   buildTransportModeColumns,
   buildUomColumns,
@@ -121,8 +128,6 @@ export function MasterData() {
     forwarderTypeFilter,
     incotermStatusFilter,
     itemCategoryFilter,
-    itemPage,
-    itemSearch,
     itemStatusFilter,
     itemTypeFilter,
     setActiveTab,
@@ -138,8 +143,6 @@ export function MasterData() {
     setForwarderTypeFilter,
     setIncotermStatusFilter,
     setItemCategoryFilter,
-    setItemPage,
-    setItemSearch,
     setItemStatusFilter,
     setItemTypeFilter,
     setSupplierStatusFilter,
@@ -179,22 +182,6 @@ export function MasterData() {
   const [editingForwarder, setEditingForwarder] = useState<Forwarder | null>(null);
   const [editingCarrier, setEditingCarrier] = useState<Carrier | null>(null);
   const [editingTaskTemplate, setEditingTaskTemplate] = useState<TaskTemplate | null>(null);
-  const [debouncedItemSearch] = useDebouncedValue(itemSearch, 250);
-  const itemListParams = useMemo(
-    () => ({
-      page: itemPage,
-      limit: REFERENCE_FETCH_LIMIT,
-      q: optionalString(debouncedItemSearch),
-      is_active: itemStatusFilter ?? undefined,
-    }),
-    [debouncedItemSearch, itemPage, itemStatusFilter],
-  );
-
-  const itemsQuery = useQuery({
-    queryKey: queryKeys.items(itemListParams),
-    queryFn: () => fetchItems(itemListParams),
-    enabled: activeTab === 'items',
-  });
 
   const uomOptionsQuery = useQuery({
     queryKey: queryKeys.uoms({ page: 1, limit: 100, is_active: true }),
@@ -262,6 +249,20 @@ export function MasterData() {
     ],
     [t],
   );
+  const itemCategoryOptions = useMemo(
+    () => [
+      { label: t('common.all'), value: 'ALL' },
+      ...ITEM_CATEGORY_VALUES.map((value) => ({ label: getItemCategoryLabel(value, t), value })),
+    ],
+    [t],
+  );
+  const itemTypeOptions = useMemo(
+    () => [
+      { label: t('common.all'), value: 'ALL' },
+      ...ITEM_TYPE_VALUES.map((value) => ({ label: getItemTypeLabel(value, t), value })),
+    ],
+    [t],
+  );
   const chargeCodeFilter = useMemo(
     () => (chargeGroupFilter || chargeCategoryFilter || chargeCodeRevCostFilter || chargeCodeModeFilter || chargeCodeStatusFilter !== null
       ? (chargeCode: ChargeCode) =>
@@ -274,14 +275,6 @@ export function MasterData() {
     [chargeCategoryFilter, chargeCodeModeFilter, chargeCodeRevCostFilter, chargeCodeStatusFilter, chargeGroupFilter],
   );
 
-  const rawItems = useMemo(() => itemsQuery.data?.data ?? [], [itemsQuery.data?.data]);
-  const items = useMemo(
-    () => rawItems.filter((item) =>
-      (!itemCategoryFilter || item.item_category === itemCategoryFilter) &&
-      (!itemTypeFilter || item.item_type === itemTypeFilter),
-    ),
-    [itemCategoryFilter, itemTypeFilter, rawItems],
-  );
   const uomOptions = useMemo(
     () =>
       (uomOptionsQuery.data?.data ?? []).map((uom) => ({
@@ -290,23 +283,6 @@ export function MasterData() {
       })),
     [uomOptionsQuery.data],
   );
-
-  // Items load in full (REFERENCE_FETCH_LIMIT) and filter client-side, so paginate the filtered
-  // list client-side at LIST_PAGE_SIZE — consistent with every other list and the STT counter.
-  const itemTotal = items.length;
-  const itemPageCount = Math.max(1, Math.ceil(itemTotal / LIST_PAGE_SIZE));
-  const itemPageStart = itemTotal === 0 ? 0 : (itemPage - 1) * LIST_PAGE_SIZE + 1;
-  const itemPageEnd = Math.min(itemTotal, itemPage * LIST_PAGE_SIZE);
-  const visibleItems = useMemo(
-    () => items.slice((itemPage - 1) * LIST_PAGE_SIZE, itemPage * LIST_PAGE_SIZE),
-    [items, itemPage],
-  );
-
-  useEffect(() => {
-    if (itemPage > itemPageCount) {
-      setItemPage(itemPageCount);
-    }
-  }, [itemPage, itemPageCount, setItemPage]);
 
   const invalidateTradeMasterData = (queryKey: readonly unknown[]) => {
     void Promise.all([
@@ -433,13 +409,13 @@ export function MasterData() {
     if (!window.confirm(t('masterData.confirmDeleteTaskTemplate'))) return;
     deleteTaskTemplateMutation.mutate(template.id);
   };
-  const handleDeleteItem = (id: string) => {
+  const handleDeleteItem = (item: Item) => {
     if (!window.confirm(t('masterData.confirmDeleteItem'))) return;
-    deleteItemMutation.mutate(id);
+    deleteItemMutation.mutate(item.id);
   };
 
   const hasSupplierFilters = supplierStatusFilter !== null || supplierTypeFilter !== null;
-  const hasItemFilters = itemStatusFilter !== null || itemCategoryFilter !== null || itemTypeFilter !== null || itemSearch.trim().length > 0;
+  const hasItemFilters = itemStatusFilter !== null || itemCategoryFilter !== null || itemTypeFilter !== null;
   const hasForwarderFilters = forwarderStatusFilter !== null || forwarderTypeFilter !== null;
   const hasCarrierFilters = carrierStatusFilter !== null || carrierTypeFilter !== null;
   const hasTaskTemplateFilters = taskTemplateStatusFilter !== null || taskTemplateDepartmentFilter !== null || taskTemplateMilestoneFilter !== null;
@@ -453,6 +429,7 @@ export function MasterData() {
     chargeCodeModeFilter !== null;
   const hasUomFilters = uomStatusFilter !== null;
 
+  const itemColumns = useMemo(() => buildItemColumns(t), [t]);
   const currencyColumns = useMemo(() => buildCurrencyColumns(t), [t]);
   const incotermColumns = useMemo(() => buildIncotermColumns(t), [t]);
   const transportModeColumns = useMemo(() => buildTransportModeColumns(t), [t]);
@@ -522,33 +499,47 @@ export function MasterData() {
         </Group>
 
         <Tabs.Panel value="items" pt="md">
-          <ItemCatalogSection
+          <ReferenceDataPanel
+            addLabel={t('masterData.addItem')}
             canManage={canManageMasterData}
-            categoryFilter={itemCategoryFilter}
-            deleteItemIsPending={deleteItemMutation.isPending}
-            error={itemsQuery.error}
-            hasActiveFilters={hasItemFilters}
-            isError={itemsQuery.isError}
-            isFetching={itemsQuery.isFetching}
-            isLoading={itemsQuery.isLoading}
-            itemTypeFilter={itemTypeFilter}
-            items={visibleItems}
-            onAddItem={openAddItem}
-            onCategoryFilterChange={setItemCategoryFilter}
-            onClearFilters={clearItemFilters}
-            onDeleteItem={handleDeleteItem}
-            onEditItem={openEditItem}
-            onItemTypeFilterChange={setItemTypeFilter}
-            onSearchChange={setItemSearch}
-            onStatusFilterChange={setItemStatusFilter}
-            page={itemPage}
-            pageCount={itemPageCount}
-            pageEnd={itemPageEnd}
-            pageStart={itemPageStart}
-            search={itemSearch}
-            setPage={setItemPage}
+            title={t('masterData.itemCatalogTitle')}
+            searchPlaceholder={t('masterData.searchItems')}
+            emptyTitle={t('masterData.noItems')}
+            emptyDescription={t('masterData.noItemsDescription')}
+            columns={itemColumns}
+            queryKey={queryKeys.items}
+            fetcher={({ search, ...params }) => fetchItems({ ...params, q: search })}
+            pageSize={REFERENCE_FETCH_LIMIT}
             statusFilter={itemStatusFilter}
-            total={itemTotal}
+            onStatusFilterChange={setItemStatusFilter}
+            hasActiveFilters={hasItemFilters}
+            onClearFilters={clearItemFilters}
+            clientFilter={(item) =>
+              (!itemCategoryFilter || item.item_category === itemCategoryFilter) &&
+              (!itemTypeFilter || item.item_type === itemTypeFilter)}
+            toolbarExtra={(
+              <>
+                <Select
+                  className="md-filter-select"
+                  label={t('masterData.itemCategory')}
+                  data={itemCategoryOptions}
+                  value={itemCategoryFilter ?? 'ALL'}
+                  onChange={(value) => setItemCategoryFilter(value === 'ALL' ? null : value)}
+                  w={FILTER_SELECT_WIDTH}
+                />
+                <Select
+                  className="md-filter-select"
+                  label={t('masterData.itemType')}
+                  data={itemTypeOptions}
+                  value={itemTypeFilter ?? 'ALL'}
+                  onChange={(value) => setItemTypeFilter(value === 'ALL' ? null : value)}
+                  w={FILTER_SELECT_WIDTH}
+                />
+              </>
+            )}
+            onAdd={openAddItem}
+            onEdit={openEditItem}
+            onDelete={handleDeleteItem}
           />
         </Tabs.Panel>
 
@@ -576,7 +567,7 @@ export function MasterData() {
                 data={supplierTypeOptions}
                 value={supplierTypeFilter ?? 'ALL'}
                 onChange={(value) => setSupplierTypeFilter(value === 'ALL' ? null : value)}
-                w={220}
+                w={FILTER_SELECT_WIDTH}
               />
             )}
             onAdd={openAddSupplier}
@@ -723,7 +714,7 @@ export function MasterData() {
                   data={chargeGroupOptions}
                   value={chargeGroupFilter ?? 'ALL'}
                   onChange={(value) => setChargeGroupFilter(value === 'ALL' ? null : value)}
-                  w={240}
+                  w={FILTER_SELECT_WIDTH}
                 />
                 <Select
                   className="md-filter-select"
@@ -731,7 +722,7 @@ export function MasterData() {
                   data={chargeCategoryOptions}
                   value={chargeCategoryFilter ?? 'ALL'}
                   onChange={(value) => setChargeCategoryFilter(value === 'ALL' ? null : value)}
-                  w={220}
+                  w={FILTER_SELECT_WIDTH}
                 />
                 <Select
                   className="md-filter-select"
@@ -739,7 +730,7 @@ export function MasterData() {
                   data={chargeRevCostOptions}
                   value={chargeCodeRevCostFilter ?? 'ALL'}
                   onChange={(value) => setChargeCodeRevCostFilter(value === 'ALL' ? null : value)}
-                  w={180}
+                  w={FILTER_SELECT_WIDTH}
                 />
                 <Select
                   className="md-filter-select"
@@ -747,7 +738,7 @@ export function MasterData() {
                   data={chargeModeOptions}
                   value={chargeCodeModeFilter ?? 'ALL'}
                   onChange={(value) => setChargeCodeModeFilter(value === 'ALL' ? null : value)}
-                  w={180}
+                  w={FILTER_SELECT_WIDTH}
                 />
               </>
             )}

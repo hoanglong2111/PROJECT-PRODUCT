@@ -726,6 +726,64 @@ html[data-kbfe-visual-theme='high-contrast'] .dl-filter-panel .mantine-Select-in
   font-variant-numeric: tabular-nums;
 }
 
+.md-toolbar-row {
+  align-items: flex-end;
+}
+
+.md-toolbar-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--kbfe-text-secondary);
+  line-height: 1;
+}
+
+.md-status-filter {
+  flex: 0 0 auto;
+  min-width: 11rem;
+}
+
+.md-status-dot {
+  display: inline-block;
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 999px;
+  vertical-align: middle;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 13%, transparent);
+}
+
+.md-status-dot.is-active {
+  color: var(--mantine-color-teal-6);
+  background: var(--mantine-color-teal-6);
+}
+
+.md-status-dot.is-inactive {
+  color: var(--mantine-color-red-6);
+  background: var(--mantine-color-red-6);
+}
+
+.md-icon-flag {
+  display: inline-grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  place-items: center;
+  border-radius: 0.375rem;
+  color: var(--kbfe-text-secondary);
+}
+
+.md-icon-flag.is-on {
+  color: var(--mantine-color-teal-6);
+  background: color-mix(in srgb, var(--mantine-color-teal-6) 10%, transparent);
+}
+
+.md-icon-flag.is-star.is-on {
+  color: var(--mantine-color-yellow-7);
+  background: color-mix(in srgb, var(--mantine-color-yellow-6) 14%, transparent);
+}
+
+.md-icon-flag.is-off {
+  opacity: 0.34;
+}
+
 .md-scope-row {
   display: inline-flex;
   flex: 0 0 auto;

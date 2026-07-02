@@ -144,9 +144,23 @@ const itemTypeLabelKeys: Record<string, string> = {
   PACKAGING: 'masterData.itemTypePackaging',
 };
 
+const forwarderTypeLabelKeys: Record<string, string> = {
+  SEA: 'masterData.forwarderTypeSea',
+  AIR: 'masterData.forwarderTypeAir',
+  TRUCKING: 'masterData.forwarderTypeTrucking',
+  MULTI: 'masterData.forwarderTypeMulti',
+};
+
+const carrierTypeLabelKeys: Record<string, string> = {
+  SHIPPING_LINE: 'masterData.carrierTypeShippingLine',
+  AIRLINE: 'masterData.carrierTypeAirline',
+};
+
 export const SUPPLIER_TYPE_VALUES = Object.keys(supplierTypeLabelKeys);
 export const ITEM_CATEGORY_VALUES = Object.keys(itemCategoryLabelKeys);
 export const ITEM_TYPE_VALUES = Object.keys(itemTypeLabelKeys);
+export const FORWARDER_TYPE_VALUES = Object.keys(forwarderTypeLabelKeys);
+export const CARRIER_TYPE_VALUES = Object.keys(carrierTypeLabelKeys);
 
 function localizedValue(value: string | null | undefined, labelKeys: Record<string, string>, t: (key: string) => string) {
   if (!value) return '-';
@@ -158,8 +172,6 @@ export function getSupplierTypeLabel(value: string | null | undefined, t: (key: 
   return localizedValue(value, supplierTypeLabelKeys, t);
 }
 
-// Status filter shared as a labeled Select (All / Active / Inactive), matching the
-// other master-data filters so every control reads the same way.
 export const STATUS_FILTER_ALL = 'ALL';
 
 export function statusToSelectValue(value: boolean | null | undefined): string {
@@ -170,20 +182,20 @@ export function selectValueToStatus(value: string | null): boolean | null {
   return value === 'active' ? true : value === 'inactive' ? false : null;
 }
 
-export function getStatusFilterOptions(t: (key: string) => string) {
-  return [
-    { value: STATUS_FILTER_ALL, label: t('common.all') },
-    { value: 'active', label: t('masterData.activeStatus') },
-    { value: 'inactive', label: t('masterData.inactiveStatus') },
-  ];
-}
-
 export function getItemCategoryLabel(value: string | null | undefined, t: (key: string) => string) {
   return localizedValue(value, itemCategoryLabelKeys, t);
 }
 
 export function getItemTypeLabel(value: string | null | undefined, t: (key: string) => string) {
   return localizedValue(value, itemTypeLabelKeys, t);
+}
+
+export function getForwarderTypeLabel(value: string | null | undefined, t: (key: string) => string) {
+  return localizedValue(value, forwarderTypeLabelKeys, t);
+}
+
+export function getCarrierTypeLabel(value: string | null | undefined, t: (key: string) => string) {
+  return localizedValue(value, carrierTypeLabelKeys, t);
 }
 
 export { formatDateTime } from '@shared/utils/date';
