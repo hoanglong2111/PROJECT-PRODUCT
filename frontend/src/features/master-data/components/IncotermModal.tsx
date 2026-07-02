@@ -1,4 +1,4 @@
-import { Alert, Button, Group, Modal, SimpleGrid, Stack, Switch, Textarea, TextInput } from '@mantine/core';
+import { Alert, Group, SimpleGrid, Switch, Textarea, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -11,6 +11,7 @@ import { useI18n } from '@shared/i18n';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
 import { optionalString } from '../model/masterDataModel';
+import { MasterDataFormActions, MasterDataFormModal, MasterDataFormSection } from './MasterDataFormModal';
 
 type IncotermFormValues = {
   code: string;
@@ -86,17 +87,25 @@ export function IncotermModal({
   };
 
   return (
-    <Modal
+    <MasterDataFormModal
       opened={opened}
       onClose={onClose}
       title={editing ? t('masterData.editIncoterm') : t('masterData.createIncoterm')}
+      footer={(
+        <MasterDataFormActions
+          onCancel={onClose}
+          onSave={handleSave}
+          loading={mutation.isPending}
+          disabled={!form.values.code.trim() || !form.values.name.trim()}
+        />
+      )}
     >
-      <Stack gap="md">
-        {mutation.isError ? (
-          <Alert color="red" icon={<IconAlertCircle size={18} />}>
-            {getApiErrorMessage(mutation.error)}
-          </Alert>
-        ) : null}
+      {mutation.isError ? (
+        <Alert color="red" icon={<IconAlertCircle size={18} />}>
+          {getApiErrorMessage(mutation.error)}
+        </Alert>
+      ) : null}
+      <MasterDataFormSection>
         <SimpleGrid cols={{ base: 1, sm: 2 }}>
           <TextInput
             label={hintedLabel(t('masterData.incotermCode'), t('glossary.incoterm'))}
@@ -106,21 +115,13 @@ export function IncotermModal({
           <TextInput label={t('masterData.incotermName')} required {...form.getInputProps('name')} />
           <TextInput label={t('masterData.incotermNameVn')} {...form.getInputProps('nameVn')} />
         </SimpleGrid>
+      </MasterDataFormSection>
+      <MasterDataFormSection>
         <Textarea label={t('masterData.description')} autosize minRows={3} {...form.getInputProps('description')} />
+      </MasterDataFormSection>
+      <MasterDataFormSection compact>
         <Switch label={t('masterData.active')} {...form.getInputProps('isActive', { type: 'checkbox' })} />
-        <Group justify="flex-end">
-          <Button variant="subtle" color="gray" onClick={onClose}>
-            {t('common.cancel')}
-          </Button>
-          <Button
-            onClick={handleSave}
-            loading={mutation.isPending}
-            disabled={!form.values.code.trim() || !form.values.name.trim()}
-          >
-            {t('common.save')}
-          </Button>
-        </Group>
-      </Stack>
-    </Modal>
+      </MasterDataFormSection>
+    </MasterDataFormModal>
   );
 }

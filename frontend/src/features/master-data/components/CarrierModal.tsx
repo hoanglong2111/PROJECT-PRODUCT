@@ -1,4 +1,4 @@
-import { Alert, Button, Group, Modal, Select, SimpleGrid, Stack, Textarea, TextInput } from '@mantine/core';
+import { Alert, Select, SimpleGrid, Textarea, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -10,6 +10,7 @@ import { useI18n } from '@shared/i18n';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
 import { CARRIER_TYPE_VALUES, optionalString } from '../model/masterDataModel';
+import { MasterDataFormActions, MasterDataFormModal, MasterDataFormSection } from './MasterDataFormModal';
 
 type CarrierFormValues = {
   code: string;
@@ -99,18 +100,26 @@ export function CarrierModal({
   };
 
   return (
-    <Modal
+    <MasterDataFormModal
       opened={opened}
       onClose={onClose}
       size="lg"
       title={editing ? t('masterData.editCarrier') : t('masterData.createCarrier')}
+      footer={(
+        <MasterDataFormActions
+          onCancel={onClose}
+          onSave={handleSave}
+          loading={mutation.isPending}
+          disabled={!form.values.code.trim() || !form.values.name.trim() || !form.values.type}
+        />
+      )}
     >
-      <Stack gap="md">
-        {mutation.isError ? (
-          <Alert color="red" icon={<IconAlertCircle size={18} />}>
-            {getApiErrorMessage(mutation.error)}
-          </Alert>
-        ) : null}
+      {mutation.isError ? (
+        <Alert color="red" icon={<IconAlertCircle size={18} />}>
+          {getApiErrorMessage(mutation.error)}
+        </Alert>
+      ) : null}
+      <MasterDataFormSection>
         <SimpleGrid cols={{ base: 1, sm: 2 }}>
           <TextInput label={t('masterData.carrierCode')} required {...form.getInputProps('code')} />
           <TextInput label={t('masterData.carrierName')} required {...form.getInputProps('name')} />
@@ -126,20 +135,10 @@ export function CarrierModal({
           <TextInput label={t('masterData.contactBooking')} {...form.getInputProps('contactBooking')} />
           <TextInput label={t('masterData.contactEmail')} {...form.getInputProps('contactEmail')} />
         </SimpleGrid>
+      </MasterDataFormSection>
+      <MasterDataFormSection>
         <Textarea label={t('masterData.note')} autosize minRows={3} {...form.getInputProps('note')} />
-        <Group justify="flex-end">
-          <Button variant="subtle" color="gray" onClick={onClose}>
-            {t('common.cancel')}
-          </Button>
-          <Button
-            onClick={handleSave}
-            loading={mutation.isPending}
-            disabled={!form.values.code.trim() || !form.values.name.trim() || !form.values.type}
-          >
-            {t('common.save')}
-          </Button>
-        </Group>
-      </Stack>
-    </Modal>
+      </MasterDataFormSection>
+    </MasterDataFormModal>
   );
 }

@@ -842,6 +842,219 @@ html[data-kbfe-visual-theme='high-contrast'] .dl-filter-panel .mantine-Select-in
   color: var(--kbfe-text-secondary);
 }
 
+.md-form-modal {
+  border: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 86%, var(--kbfe-primary-color) 14%);
+  border-radius: 0.5rem;
+  background: var(--kbfe-surface-elevated);
+  box-shadow: var(--kbfe-shadow-md) !important;
+  overflow: hidden;
+}
+
+.md-form-modal-header {
+  min-height: 3.25rem;
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--kbfe-border-primary);
+  background: color-mix(in srgb, var(--kbfe-surface-subtle) 68%, var(--kbfe-surface-elevated) 32%);
+}
+
+.md-form-modal-title {
+  max-width: calc(100vw - 7rem);
+  overflow: hidden;
+  color: var(--kbfe-text-primary);
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.md-form-modal-close {
+  color: var(--kbfe-text-secondary);
+}
+
+.md-form-modal-body {
+  padding: 0 !important;
+}
+
+.md-form-modal-shell {
+  display: flex;
+  max-height: min(82dvh, 52rem);
+  min-height: 0;
+  flex-direction: column;
+}
+
+.md-form-modal-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--kbfe-space-md);
+}
+
+.md-form-modal-content {
+  min-width: 0;
+}
+
+.md-form-section {
+  min-width: 0;
+  padding: 0.875rem;
+  border: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 86%, transparent);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--kbfe-surface-subtle) 44%, var(--kbfe-surface-elevated) 56%);
+}
+
+.md-form-section.is-compact {
+  padding: 0.75rem;
+}
+
+.md-form-section > * + * {
+  margin-top: var(--kbfe-space-sm);
+}
+
+.md-form-modal .mantine-SimpleGrid-root {
+  align-items: start;
+  gap: var(--kbfe-space-sm) !important;
+}
+
+.md-form-modal .mantine-InputWrapper-root,
+.md-form-modal .mantine-Switch-root {
+  min-width: 0;
+}
+
+.md-form-modal .mantine-InputWrapper-label {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 0.25rem;
+  overflow: hidden;
+  color: var(--kbfe-text-primary);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.md-form-modal .mantine-InputWrapper-label .mantine-Group-root {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.md-form-modal .mantine-InputWrapper-label .mantine-Group-root > span:first-child,
+.md-form-modal .mantine-Switch-label .mantine-Group-root > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.md-form-modal .mantine-Input-input,
+.md-form-modal .mantine-Select-input,
+.md-form-modal .mantine-Autocomplete-input,
+.md-form-modal .mantine-NumberInput-input,
+.md-form-modal .mantine-Textarea-input {
+  border-color: color-mix(in srgb, var(--kbfe-border-primary) 86%, var(--kbfe-text-secondary) 14%) !important;
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 94%, var(--kbfe-background-secondary) 6%) !important;
+  transition:
+    background-color 150ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 150ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 150ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.md-form-modal .mantine-Input-input:hover,
+.md-form-modal .mantine-Select-input:hover,
+.md-form-modal .mantine-Autocomplete-input:hover,
+.md-form-modal .mantine-NumberInput-input:hover,
+.md-form-modal .mantine-Textarea-input:hover {
+  border-color: color-mix(in srgb, var(--kbfe-border-primary) 56%, var(--kbfe-primary-color) 44%) !important;
+}
+
+.md-form-modal .mantine-Input-input:focus,
+.md-form-modal .mantine-Select-input:focus,
+.md-form-modal .mantine-Autocomplete-input:focus,
+.md-form-modal .mantine-NumberInput-input:focus,
+.md-form-modal .mantine-Textarea-input:focus {
+  border-color: var(--kbfe-primary-color) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--kbfe-primary-color) 12%, transparent);
+}
+
+.md-form-modal .mantine-TextInput-input,
+.md-form-modal .mantine-Select-input,
+.md-form-modal .mantine-Autocomplete-input,
+.md-form-modal .mantine-NumberInput-input {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.md-form-modal .mantine-Textarea-input {
+  line-height: var(--kbfe-line-height-normal);
+}
+
+.md-form-modal .mantine-Switch-root {
+  display: flex;
+  align-items: center;
+  min-height: 2.5rem;
+  padding: 0.55rem 0.625rem;
+  border: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 86%, transparent);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 88%, var(--kbfe-background-secondary) 12%);
+}
+
+.md-form-modal .mantine-Switch-body {
+  min-width: 0;
+}
+
+.md-form-modal .mantine-Switch-label {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--kbfe-text-primary);
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.md-form-modal-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--kbfe-border-primary);
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 96%, var(--kbfe-background-secondary) 4%);
+}
+
+.md-form-actions {
+  min-width: 0;
+}
+
+.md-form-actions .mantine-Button-root {
+  min-width: 6.75rem;
+  white-space: nowrap;
+}
+
+.md-form-actions .mantine-Button-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 48em) {
+  .md-form-modal-scroll {
+    padding: var(--kbfe-space-sm);
+  }
+
+  .md-form-modal-footer {
+    padding: var(--kbfe-space-sm);
+  }
+
+  .md-form-actions {
+    width: 100%;
+  }
+
+  .md-form-actions .mantine-Button-root {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
 .md-icon-flag {
   display: inline-grid;
   width: 1.5rem;

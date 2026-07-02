@@ -1,13 +1,11 @@
 import {
   Alert,
-  Button,
-  Modal,
   Select,
   SimpleGrid,
-  Stack,
   Switch,
   Textarea,
   TextInput,
+  Group,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -26,7 +24,7 @@ import { useI18n } from '@shared/i18n';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
 import { optionalNumber, optionalString } from '../model/masterDataModel';
-import { Group } from '@mantine/core';
+import { MasterDataFormActions, MasterDataFormModal, MasterDataFormSection } from './MasterDataFormModal';
 
 type ItemFormValues = {
   code: string;
@@ -206,7 +204,7 @@ export function ItemModal({
   };
 
   return (
-    <Modal
+    <MasterDataFormModal
       opened={opened}
       onClose={onClose}
       size="xl"
@@ -217,34 +215,49 @@ export function ItemModal({
             : t('masterData.itemDetail')
           : t('masterData.createItem')
       }
+      footer={(
+        <MasterDataFormActions
+          onCancel={onClose}
+          onSave={handleSave}
+          loading={saveMutation.isPending}
+          disabled={isSaveDisabled}
+          saveLabel={t('masterData.saveItem')}
+          showSave={canManage}
+          cancelLabel={canManage ? undefined : t('common.close')}
+        />
+      )}
     >
-      <Stack gap="md">
-        {saveMutation.isError ? (
-          <Alert color="red">{getApiErrorMessage(saveMutation.error)}</Alert>
-        ) : null}
+      {saveMutation.isError ? (
+        <Alert color="red">{getApiErrorMessage(saveMutation.error)}</Alert>
+      ) : null}
 
-        <TextInput
-          label={t('masterData.itemCodeLabel')}
-          placeholder={t('masterData.itemCodePlaceholder')}
-          required
-          disabled={Boolean(editing) || itemFormReadOnly}
-          {...form.getInputProps('code')}
-        />
-        <TextInput
-          label={t('masterData.itemNameLabel')}
-          placeholder={t('masterData.itemNamePlaceholder')}
-          required
-          disabled={itemFormReadOnly}
-          {...form.getInputProps('name')}
-        />
-        <TextInput
-          label={t('masterData.itemNameEn')}
-          placeholder={t('masterData.itemNameEnPlaceholder')}
-          required
-          disabled={itemFormReadOnly}
-          {...form.getInputProps('nameEn')}
-        />
+      <MasterDataFormSection>
+        <SimpleGrid cols={{ base: 1, sm: 2 }}>
+          <TextInput
+            label={t('masterData.itemCodeLabel')}
+            placeholder={t('masterData.itemCodePlaceholder')}
+            required
+            disabled={Boolean(editing) || itemFormReadOnly}
+            {...form.getInputProps('code')}
+          />
+          <TextInput
+            label={t('masterData.itemNameLabel')}
+            placeholder={t('masterData.itemNamePlaceholder')}
+            required
+            disabled={itemFormReadOnly}
+            {...form.getInputProps('name')}
+          />
+          <TextInput
+            label={t('masterData.itemNameEn')}
+            placeholder={t('masterData.itemNameEnPlaceholder')}
+            required
+            disabled={itemFormReadOnly}
+            {...form.getInputProps('nameEn')}
+          />
+        </SimpleGrid>
+      </MasterDataFormSection>
 
+      <MasterDataFormSection>
         <SimpleGrid cols={{ base: 1, sm: 3 }}>
           <Select
             label={t('masterData.itemCategory')}
@@ -313,7 +326,9 @@ export function ItemModal({
             {...form.getInputProps('barcode')}
           />
         </SimpleGrid>
+      </MasterDataFormSection>
 
+      <MasterDataFormSection>
         <Textarea
           label={t('masterData.note')}
           autosize
@@ -321,24 +336,14 @@ export function ItemModal({
           disabled={itemFormReadOnly}
           {...form.getInputProps('note')}
         />
+      </MasterDataFormSection>
+      <MasterDataFormSection compact>
         <Switch
           label={t('masterData.active')}
           disabled={itemFormReadOnly}
           {...form.getInputProps('isActive', { type: 'checkbox' })}
         />
-
-        {canManage ? (
-          <Button
-            onClick={handleSave}
-            fullWidth
-            mt="md"
-            loading={saveMutation.isPending}
-            disabled={isSaveDisabled}
-          >
-            {t('masterData.saveItem')}
-          </Button>
-        ) : null}
-      </Stack>
-    </Modal>
+      </MasterDataFormSection>
+    </MasterDataFormModal>
   );
 }

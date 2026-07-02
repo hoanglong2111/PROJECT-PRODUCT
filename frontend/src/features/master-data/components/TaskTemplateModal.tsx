@@ -1,4 +1,4 @@
-import { Alert, Autocomplete, Button, Group, Modal, NumberInput, Select, SimpleGrid, Stack, Textarea, TextInput } from '@mantine/core';
+import { Alert, NumberInput, Select, SimpleGrid, Textarea, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -22,6 +22,7 @@ import {
   optionalString,
   type SaveTaskTemplateInput,
 } from '../model/masterDataModel';
+import { MasterDataFormActions, MasterDataFormModal, MasterDataFormSection } from './MasterDataFormModal';
 
 type TaskTemplateFormValues = {
   groupCode: string;
@@ -152,18 +153,26 @@ export function TaskTemplateModal({
   };
 
   return (
-    <Modal
+    <MasterDataFormModal
       opened={opened}
       onClose={onClose}
       size="xl"
       title={editing ? t('masterData.editTaskTemplate') : t('masterData.createTaskTemplate')}
+      footer={(
+        <MasterDataFormActions
+          onCancel={onClose}
+          onSave={handleSave}
+          loading={mutation.isPending}
+          disabled={isSaveDisabled}
+        />
+      )}
     >
-      <Stack gap="md">
-        {mutation.isError ? (
-          <Alert color="red" icon={<IconAlertCircle size={18} />}>
-            {getApiErrorMessage(mutation.error)}
-          </Alert>
-        ) : null}
+      {mutation.isError ? (
+        <Alert color="red" icon={<IconAlertCircle size={18} />}>
+          {getApiErrorMessage(mutation.error)}
+        </Alert>
+      ) : null}
+      <MasterDataFormSection>
         <SimpleGrid cols={{ base: 1, sm: 2 }}>
           <TextInput label={t('masterData.groupCode')} {...form.getInputProps('groupCode')} />
           <TextInput label={t('masterData.groupName')} required {...form.getInputProps('groupName')} />
@@ -180,11 +189,13 @@ export function TaskTemplateModal({
             value={form.values.milestoneCode ?? 'none'}
             onChange={(value) => form.setFieldValue('milestoneCode', value === 'none' ? null : value)}
           />
-          <Autocomplete
+          <Select
             label={t('masterData.department')}
-            data={Object.keys(DEPARTMENTS)}
+            data={departmentOptions}
+            value={form.values.department || null}
+            onChange={(value) => form.setFieldValue('department', value || '')}
+            searchable
             required
-            {...form.getInputProps('department')}
           />
           <TextInput label={t('masterData.assigneeCode')} {...form.getInputProps('assigneeCode')} />
           <NumberInput
@@ -195,6 +206,8 @@ export function TaskTemplateModal({
           />
           <TextInput label={t('masterData.slaText')} {...form.getInputProps('slaText')} />
         </SimpleGrid>
+      </MasterDataFormSection>
+      <MasterDataFormSection>
         <TextInput label={t('masterData.taskName')} required {...form.getInputProps('taskName')} />
         <Textarea
           label={t('masterData.taskDescription')}
@@ -203,6 +216,8 @@ export function TaskTemplateModal({
           required
           {...form.getInputProps('taskDescription')}
         />
+      </MasterDataFormSection>
+      <MasterDataFormSection>
         <Textarea
           label={t('masterData.relatedDocuments')}
           autosize
@@ -210,15 +225,7 @@ export function TaskTemplateModal({
           {...form.getInputProps('relatedDocuments')}
         />
         <Textarea label={t('masterData.note')} autosize minRows={2} {...form.getInputProps('note')} />
-        <Group justify="flex-end">
-          <Button variant="subtle" color="gray" onClick={onClose}>
-            {t('common.cancel')}
-          </Button>
-          <Button onClick={handleSave} loading={mutation.isPending} disabled={isSaveDisabled}>
-            {t('common.save')}
-          </Button>
-        </Group>
-      </Stack>
-    </Modal>
+      </MasterDataFormSection>
+    </MasterDataFormModal>
   );
 }
