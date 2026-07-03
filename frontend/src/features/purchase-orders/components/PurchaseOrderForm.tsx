@@ -132,7 +132,7 @@ export function PurchaseOrderForm({
 
   useEffect(() => {
     if (!focusLineId || activeLine?.clientId !== focusLineId) return;
-    itemInputRef.current?.focus();
+    itemInputRef.current?.focus({ preventScroll: true });
     railListRef.current
       ?.querySelector<HTMLElement>(`[data-line-id="${focusLineId}"]`)
       ?.scrollIntoView({ block: 'nearest' });
@@ -459,9 +459,6 @@ export function PurchaseOrderForm({
                     <NumberFormatter value={poTotal} thousandSeparator decimalScale={2} />
                   </Text>
                 </Group>
-                <Button variant="light" size="sm" leftSection={<IconPlus size={14} />} onClick={addLine}>
-                  Add line
-                </Button>
               </Group>
             </Group>
             {validLineCount === 0 ? (
@@ -497,11 +494,18 @@ export function PurchaseOrderForm({
                     const isComplete = lineIsComplete(line);
 
                     return (
-                      <UnstyledButton
+                      <div
                         key={line.clientId}
-                        type="button"
+                        role="button"
+                        tabIndex={0}
                         data-line-id={line.clientId}
                         onClick={() => setActiveLineId(line.clientId)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            setActiveLineId(line.clientId);
+                          }
+                        }}
                         className={`purchase-order-line-rail-item${isActive ? ' is-active' : ''}${isComplete ? '' : ' is-incomplete'}`}
                       >
                         <div className="purchase-order-line-rail-item-main">
@@ -536,16 +540,38 @@ export function PurchaseOrderForm({
                           <NumberFormatter value={line.qty_ordered} thousandSeparator decimalScale={4} /> {line.unit ?? ''} |{' '}
                           {selectedCustoms?.label ?? 'HS code pending'}
                         </Text>
-                      </UnstyledButton>
+                        <ActionIcon
+                          className="purchase-order-line-rail-delete"
+                          variant="subtle"
+                          color="red"
+                          size="sm"
+                          aria-label="Delete line"
+                          disabled={draft.lines.length === 1}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            removeLine(line.clientId);
+                          }}
+                        >
+                          <IconTrash size={14} />
+                        </ActionIcon>
+                      </div>
                     );
                   })}
+                  <UnstyledButton
+                    type="button"
+                    className="purchase-order-line-rail-add"
+                    onClick={addLine}
+                  >
+                    <IconPlus size={14} />
+                    <span>Add line</span>
+                  </UnstyledButton>
                 </div>
               </div>
 
               <div className="purchase-order-line-detail">
                 {activeLine ? (
-                  <Stack gap="md">
-                    <Group justify="space-between" align="flex-start" gap="md" className="purchase-order-line-detail-header">
+                  <Stack gap="sm">
+                    <Group justify="space-between" align="flex-start" gap="sm" className="purchase-order-line-detail-header">
                       <Stack gap={4}>
                         <Group gap="xs" wrap="wrap">
                           <Text fw={700}>Editing line #{activeLineIndex + 1}</Text>
@@ -557,15 +583,6 @@ export function PurchaseOrderForm({
                           {activeLineItem?.item_name ?? activeLine.item_description ?? 'Select an item, then complete quantity, pricing, ETA, and notes.'}
                         </Text>
                       </Stack>
-                      <ActionIcon
-                        variant="subtle"
-                        color="red"
-                        aria-label="Remove line"
-                        disabled={draft.lines.length === 1}
-                        onClick={() => removeLine(activeLine.clientId)}
-                      >
-                        <IconTrash size={16} />
-                      </ActionIcon>
                     </Group>
 
                     <SummaryTile

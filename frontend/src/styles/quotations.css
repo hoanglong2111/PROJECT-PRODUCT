@@ -112,7 +112,7 @@
   flex: 0 0 2.25rem;
   place-items: center;
   border: 1px solid color-mix(in srgb, var(--kbfe-primary-color) 28%, var(--kbfe-border-primary));
-  border-radius: 0.5rem;
+  border-radius: var(--kbfe-radius-md);
   background: color-mix(in srgb, var(--kbfe-primary-color) 10%, var(--kbfe-surface-elevated));
   color: color-mix(in srgb, var(--kbfe-primary-color) 82%, var(--kbfe-text-primary));
 }
@@ -138,7 +138,7 @@
   align-items: center;
   padding: 0.625rem 0.75rem;
   border: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 84%, transparent);
-  border-radius: 0.5rem;
+  border-radius: var(--kbfe-radius-md);
   background: color-mix(in srgb, var(--kbfe-surface-elevated) 92%, var(--kbfe-surface-subtle) 8%);
 }
 
@@ -176,7 +176,7 @@
   min-width: 0;
   padding: 1rem;
   border: 1px solid var(--kbfe-border-primary);
-  border-radius: 0.5rem;
+  border-radius: var(--kbfe-radius-md);
   background: color-mix(in srgb, var(--kbfe-surface-elevated) 96%, var(--kbfe-surface-subtle) 4%);
 }
 
@@ -212,7 +212,7 @@
   min-width: 0;
   padding: 0.875rem;
   border: 1px solid var(--kbfe-border-primary);
-  border-radius: 0.5rem;
+  border-radius: var(--kbfe-radius-md);
   background: color-mix(in srgb, var(--kbfe-surface-elevated) 92%, var(--kbfe-surface-subtle) 8%);
 }
 
@@ -252,7 +252,7 @@
 .rfq-fee-header {
   padding: 0.5rem 0.625rem;
   border: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 76%, transparent);
-  border-radius: 0.5rem;
+  border-radius: var(--kbfe-radius-md);
   color: var(--kbfe-text-secondary, var(--kbfe-text-primary));
   font-size: 0.72rem;
   font-weight: 800;
@@ -269,7 +269,7 @@
 .rfq-fee-row {
   padding: 0.625rem;
   border: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 76%, transparent);
-  border-radius: 0.625rem;
+  border-radius: var(--kbfe-radius-lg);
   background: var(--kbfe-surface-elevated);
   transition:
     border-color 160ms ease,
@@ -324,7 +324,7 @@
   overflow: hidden;
   padding: 0.125rem 0.375rem;
   border: 1px solid color-mix(in srgb, var(--kbfe-primary-color) 20%, var(--kbfe-border-primary));
-  border-radius: 0.375rem;
+  border-radius: var(--kbfe-radius-sm);
   color: color-mix(in srgb, var(--kbfe-primary-color) 78%, var(--kbfe-text-primary));
   font-size: 0.68rem;
   font-weight: 800;
@@ -358,7 +358,7 @@
 }
 
 .rfq-chip-row .mantine-Chip-label {
-  border-radius: 0.5rem;
+  border-radius: var(--kbfe-radius-md);
   font-weight: 700;
 }
 
@@ -370,7 +370,7 @@
   min-width: 0;
   padding: 0.875rem;
   border: 1px solid color-mix(in srgb, var(--kbfe-primary-color) 36%, var(--kbfe-border-primary));
-  border-radius: 0.5rem;
+  border-radius: var(--kbfe-radius-md);
   background: color-mix(in srgb, var(--kbfe-primary-color) 10%, var(--kbfe-surface-elevated));
 }
 
@@ -385,7 +385,7 @@
   height: 2rem;
   flex: 0 0 2rem;
   place-items: center;
-  border-radius: 0.5rem;
+  border-radius: var(--kbfe-radius-md);
   background: color-mix(in srgb, var(--kbfe-primary-color) 12%, var(--kbfe-surface-elevated));
 }
 
@@ -399,7 +399,7 @@
   min-width: 0;
   padding: 0.625rem 0.75rem;
   border: 1px solid var(--kbfe-border-primary);
-  border-radius: 0.5rem;
+  border-radius: var(--kbfe-radius-md);
   background: color-mix(in srgb, var(--kbfe-surface-elevated) 88%, var(--kbfe-surface-subtle) 12%);
 }
 
@@ -420,7 +420,7 @@
 .rfq-submit-hint {
   padding: 0.625rem 0.75rem;
   border: 1px solid color-mix(in srgb, var(--mantine-color-yellow-5) 26%, var(--kbfe-border-primary));
-  border-radius: 0.5rem;
+  border-radius: var(--kbfe-radius-md);
   background: color-mix(in srgb, var(--mantine-color-yellow-5) 12%, var(--kbfe-surface-elevated));
 }
 
@@ -460,7 +460,7 @@
 
 .rfq-list-tabs .mantine-Tabs-tab {
   border: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 76%, transparent);
-  border-radius: 999px;
+  border-radius: var(--kbfe-radius-pill);
   background: color-mix(in srgb, var(--kbfe-surface-elevated) 94%, var(--kbfe-surface-subtle) 6%);
   font-weight: 700;
 }
@@ -614,7 +614,7 @@
 
 .rfq-list-empty {
   border: 1px dashed color-mix(in srgb, var(--kbfe-border-primary) 86%, transparent);
-  border-radius: 0.625rem;
+  border-radius: var(--kbfe-radius-lg);
   background: color-mix(in srgb, var(--kbfe-surface-subtle) 28%, transparent);
 }
 
@@ -623,7 +623,7 @@
   min-width: 13rem;
   padding: 0.625rem 0.75rem;
   border: 1px solid color-mix(in srgb, var(--kbfe-primary-color) 36%, var(--kbfe-border-primary));
-  border-radius: 0.5rem;
+  border-radius: var(--kbfe-radius-md);
   background: color-mix(in srgb, var(--kbfe-primary-color) 10%, var(--kbfe-surface-elevated));
   text-align: right;
 }
@@ -695,7 +695,7 @@
 
 .rfq-empty-lines {
   border: 1px dashed color-mix(in srgb, var(--kbfe-border-primary) 86%, transparent);
-  border-radius: 0.5rem;
+  border-radius: var(--kbfe-radius-md);
   background: color-mix(in srgb, var(--kbfe-surface-subtle) 32%, transparent);
 }
 
@@ -770,7 +770,7 @@
   width: 0.625rem;
   height: 0.625rem;
   border: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 72%, var(--kbfe-text-secondary) 28%);
-  border-radius: 999px;
+  border-radius: var(--kbfe-radius-pill);
   background: var(--kbfe-surface-elevated);
 }
 
@@ -820,7 +820,7 @@
   width: 100%;
   padding: 0.5rem;
   border: 1px solid transparent;
-  border-radius: 0.5rem;
+  border-radius: var(--kbfe-radius-md);
   color: inherit;
   text-align: left;
   background: transparent;
@@ -845,7 +845,7 @@
   width: 0.5rem;
   height: 0.5rem;
   margin-top: 0.4rem;
-  border-radius: 999px;
+  border-radius: var(--kbfe-radius-pill);
   background: var(--kbfe-primary-color);
   box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--kbfe-primary-color) 10%, transparent);
 }
@@ -876,14 +876,14 @@
     right: 0.75rem;
     bottom: 0.75rem;
     left: 0.75rem;
-    z-index: 20;
+    z-index: var(--kbfe-z-mobile-bar);
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 0.75rem;
     align-items: center;
     padding: 0.75rem;
     border: 1px solid color-mix(in srgb, var(--kbfe-primary-color) 32%, var(--kbfe-border-primary));
-    border-radius: 0.625rem;
+    border-radius: var(--kbfe-radius-lg);
     background: color-mix(in srgb, var(--kbfe-surface-elevated) 96%, var(--kbfe-primary-color) 4%);
     box-shadow: var(--kbfe-shadow-md);
   }

@@ -24,7 +24,7 @@ body {
 
 #root {
   position: relative;
-  z-index: 1;
+  z-index: var(--kbfe-z-content);
   min-height: 100dvh;
   isolation: isolate;
 }
@@ -57,7 +57,7 @@ body::after {
 
 .mantine-AppShell-root {
   position: relative;
-  z-index: 1;
+  z-index: var(--kbfe-z-content);
 }
 
 ::selection {
@@ -203,7 +203,7 @@ html[data-kbfe-resolved-color-scheme='light'] .mantine-NavLink-root[data-active]
   z-index: var(--kbfe-z-skip-link);
   transition: top 150ms ease;
   font-weight: 600;
-  border-radius: 0 0 8px 8px;
+  border-radius: 0 0 var(--kbfe-radius-md) var(--kbfe-radius-md);
   text-decoration: none;
   font-size: 0.875rem;
 }

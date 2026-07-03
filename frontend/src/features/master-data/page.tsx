@@ -107,6 +107,9 @@ const CHARGE_MODES = [
   { value: 'rail', labelKey: 'masterData.rail' },
 ];
 
+type ToggleEntityKind = 'item' | 'currency' | 'incoterm' | 'transportMode' | 'chargeCode' | 'uom' | 'supplier';
+type DeleteEntityKind = ToggleEntityKind | 'forwarder' | 'carrier' | 'taskTemplate';
+
 export function MasterData() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
@@ -190,7 +193,11 @@ export function MasterData() {
   const [editingCarrier, setEditingCarrier] = useState<Carrier | null>(null);
   const [editingTaskTemplate, setEditingTaskTemplate] = useState<TaskTemplate | null>(null);
   const [confirmToggle, setConfirmToggle] = useState<{
-    entity: 'item' | 'currency' | 'incoterm' | 'transportMode' | 'chargeCode' | 'uom' | 'supplier';
+    entity: ToggleEntityKind;
+    record: any;
+  } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{
+    entity: DeleteEntityKind;
     record: any;
   } | null>(null);
 
@@ -306,52 +313,80 @@ export function MasterData() {
     mutationFn: deleteItem,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.itemLists });
+      setConfirmDelete(null);
     },
   });
 
   const deleteCurrencyMutation = useMutation({
     mutationFn: deleteCurrency,
-    onSuccess: () => invalidateTradeMasterData(queryKeys.currencyLists),
+    onSuccess: () => {
+      invalidateTradeMasterData(queryKeys.currencyLists);
+      setConfirmDelete(null);
+    },
   });
 
   const deleteIncotermMutation = useMutation({
     mutationFn: deleteIncoterm,
-    onSuccess: () => invalidateTradeMasterData(queryKeys.incotermLists),
+    onSuccess: () => {
+      invalidateTradeMasterData(queryKeys.incotermLists);
+      setConfirmDelete(null);
+    },
   });
 
   const deleteTransportModeMutation = useMutation({
     mutationFn: deleteTransportMode,
-    onSuccess: () => invalidateTradeMasterData(queryKeys.transportModeLists),
+    onSuccess: () => {
+      invalidateTradeMasterData(queryKeys.transportModeLists);
+      setConfirmDelete(null);
+    },
   });
 
   const deleteChargeCodeMutation = useMutation({
     mutationFn: deleteChargeCode,
-    onSuccess: () => invalidateTradeMasterData(queryKeys.chargeCodeLists),
+    onSuccess: () => {
+      invalidateTradeMasterData(queryKeys.chargeCodeLists);
+      setConfirmDelete(null);
+    },
   });
 
   const deleteUomMutation = useMutation({
     mutationFn: deleteUom,
-    onSuccess: () => invalidateTradeMasterData(queryKeys.uomLists),
+    onSuccess: () => {
+      invalidateTradeMasterData(queryKeys.uomLists);
+      setConfirmDelete(null);
+    },
   });
 
   const deleteSupplierMutation = useMutation({
     mutationFn: deleteSupplier,
-    onSuccess: () => invalidateTradeMasterData(queryKeys.supplierLists),
+    onSuccess: () => {
+      invalidateTradeMasterData(queryKeys.supplierLists);
+      setConfirmDelete(null);
+    },
   });
 
   const deleteForwarderMutation = useMutation({
     mutationFn: deleteForwarder,
-    onSuccess: () => invalidateTradeMasterData(queryKeys.forwarderLists),
+    onSuccess: () => {
+      invalidateTradeMasterData(queryKeys.forwarderLists);
+      setConfirmDelete(null);
+    },
   });
 
   const deleteCarrierMutation = useMutation({
     mutationFn: deleteCarrier,
-    onSuccess: () => invalidateTradeMasterData(queryKeys.carrierLists),
+    onSuccess: () => {
+      invalidateTradeMasterData(queryKeys.carrierLists);
+      setConfirmDelete(null);
+    },
   });
 
   const deleteTaskTemplateMutation = useMutation({
     mutationFn: deleteTaskTemplate,
-    onSuccess: () => invalidateTradeMasterData(queryKeys.taskTemplateLists),
+    onSuccess: () => {
+      invalidateTradeMasterData(queryKeys.taskTemplateLists);
+      setConfirmDelete(null);
+    },
   });
 
   const toggleActiveMutation = useMutation({
@@ -359,7 +394,7 @@ export function MasterData() {
       entity,
       record,
     }: {
-      entity: 'item' | 'currency' | 'incoterm' | 'transportMode' | 'chargeCode' | 'uom' | 'supplier';
+      entity: ToggleEntityKind;
       record: any;
     }) => {
       const is_active = !(record.is_active !== false);
@@ -410,7 +445,7 @@ export function MasterData() {
   });
 
   const handleToggleActive = (
-    entity: 'item' | 'currency' | 'incoterm' | 'transportMode' | 'chargeCode' | 'uom' | 'supplier',
+    entity: ToggleEntityKind,
     record: any,
   ) => {
     if (!canManageMasterData) return;
@@ -435,6 +470,123 @@ export function MasterData() {
         return record.uom_code;
       case 'supplier':
         return `${record.supplier_code} - ${record.supplier_name}`;
+    }
+  };
+
+  const getDeleteName = () => {
+    if (!confirmDelete || !confirmDelete.record) return '';
+    const { entity, record } = confirmDelete;
+    switch (entity) {
+      case 'item':
+        return `${record.item_code} - ${record.item_name}`;
+      case 'currency':
+        return `${record.currency_code} - ${record.currency_name}`;
+      case 'incoterm':
+        return record.incoterm_code;
+      case 'transportMode':
+        return `${record.mode_code} - ${record.mode_name}`;
+      case 'chargeCode':
+        return `${record.charge_code} - ${record.charge_name_en}`;
+      case 'uom':
+        return record.uom_code;
+      case 'supplier':
+        return `${record.supplier_code} - ${record.supplier_name}`;
+      case 'forwarder':
+        return `${record.forwarder_code} - ${record.forwarder_name}`;
+      case 'carrier':
+        return `${record.carrier_code} - ${record.carrier_name}`;
+      case 'taskTemplate':
+        return `${record.task_code} - ${record.task_name}`;
+    }
+  };
+
+  const getDeleteMessage = () => {
+    if (!confirmDelete) return '';
+    const name = getDeleteName();
+    switch (confirmDelete.entity) {
+      case 'item':
+        return t('masterData.confirmDeleteItem', { name });
+      case 'currency':
+        return t('masterData.confirmDeleteCurrency', { name });
+      case 'incoterm':
+        return t('masterData.confirmDeleteIncoterm', { name });
+      case 'transportMode':
+        return t('masterData.confirmDeleteTransportMode', { name });
+      case 'chargeCode':
+        return t('masterData.confirmDeleteChargeCode', { name });
+      case 'uom':
+        return t('masterData.confirmDeleteUom', { name });
+      case 'supplier':
+        return t('masterData.confirmDeleteSupplier', { name });
+      case 'forwarder':
+        return t('masterData.confirmDeleteForwarder', { name });
+      case 'carrier':
+        return t('masterData.confirmDeleteCarrier', { name });
+      case 'taskTemplate':
+        return t('masterData.confirmDeleteTaskTemplate', { name });
+    }
+  };
+
+  const getDeleteLoading = () => {
+    if (!confirmDelete) return false;
+    switch (confirmDelete.entity) {
+      case 'item':
+        return deleteItemMutation.isPending;
+      case 'currency':
+        return deleteCurrencyMutation.isPending;
+      case 'incoterm':
+        return deleteIncotermMutation.isPending;
+      case 'transportMode':
+        return deleteTransportModeMutation.isPending;
+      case 'chargeCode':
+        return deleteChargeCodeMutation.isPending;
+      case 'uom':
+        return deleteUomMutation.isPending;
+      case 'supplier':
+        return deleteSupplierMutation.isPending;
+      case 'forwarder':
+        return deleteForwarderMutation.isPending;
+      case 'carrier':
+        return deleteCarrierMutation.isPending;
+      case 'taskTemplate':
+        return deleteTaskTemplateMutation.isPending;
+    }
+  };
+
+  const confirmDeleteRecord = () => {
+    if (!confirmDelete) return;
+    const { entity, record } = confirmDelete;
+    switch (entity) {
+      case 'item':
+        deleteItemMutation.mutate(record.id);
+        break;
+      case 'currency':
+        deleteCurrencyMutation.mutate(record.id);
+        break;
+      case 'incoterm':
+        deleteIncotermMutation.mutate(record.id);
+        break;
+      case 'transportMode':
+        deleteTransportModeMutation.mutate(record.id);
+        break;
+      case 'chargeCode':
+        deleteChargeCodeMutation.mutate(record.id);
+        break;
+      case 'uom':
+        deleteUomMutation.mutate(record.id);
+        break;
+      case 'supplier':
+        deleteSupplierMutation.mutate(record.id);
+        break;
+      case 'forwarder':
+        deleteForwarderMutation.mutate(record.id);
+        break;
+      case 'carrier':
+        deleteCarrierMutation.mutate(record.id);
+        break;
+      case 'taskTemplate':
+        deleteTaskTemplateMutation.mutate(record.id);
+        break;
     }
   };
 
@@ -469,44 +621,34 @@ export function MasterData() {
   const openEditItem = (item: Item) => { setEditingItem(item); itemModalHandlers.open(); };
 
   const handleDeleteCurrency = (currency: Currency) => {
-    if (!window.confirm(t('masterData.confirmDeleteCurrency'))) return;
-    deleteCurrencyMutation.mutate(currency.id);
+    setConfirmDelete({ entity: 'currency', record: currency });
   };
   const handleDeleteIncoterm = (incoterm: Incoterm) => {
-    if (!window.confirm(t('masterData.confirmDeleteIncoterm'))) return;
-    deleteIncotermMutation.mutate(incoterm.id);
+    setConfirmDelete({ entity: 'incoterm', record: incoterm });
   };
   const handleDeleteTransportMode = (mode: TransportMode) => {
-    if (!window.confirm(t('masterData.confirmDeleteTransportMode'))) return;
-    deleteTransportModeMutation.mutate(mode.id);
+    setConfirmDelete({ entity: 'transportMode', record: mode });
   };
   const handleDeleteChargeCode = (chargeCode: ChargeCode) => {
-    if (!window.confirm(t('masterData.confirmDeleteChargeCode'))) return;
-    deleteChargeCodeMutation.mutate(chargeCode.id);
+    setConfirmDelete({ entity: 'chargeCode', record: chargeCode });
   };
   const handleDeleteUom = (uom: Uom) => {
-    if (!window.confirm(t('masterData.confirmDeleteUom'))) return;
-    deleteUomMutation.mutate(uom.id);
+    setConfirmDelete({ entity: 'uom', record: uom });
   };
   const handleDeleteSupplier = (supplier: Supplier) => {
-    if (!window.confirm(t('masterData.confirmDeleteSupplier'))) return;
-    deleteSupplierMutation.mutate(supplier.id);
+    setConfirmDelete({ entity: 'supplier', record: supplier });
   };
   const handleDeleteForwarder = (forwarder: Forwarder) => {
-    if (!window.confirm(t('masterData.confirmDeleteForwarder'))) return;
-    deleteForwarderMutation.mutate(forwarder.id);
+    setConfirmDelete({ entity: 'forwarder', record: forwarder });
   };
   const handleDeleteCarrier = (carrier: Carrier) => {
-    if (!window.confirm(t('masterData.confirmDeleteCarrier'))) return;
-    deleteCarrierMutation.mutate(carrier.id);
+    setConfirmDelete({ entity: 'carrier', record: carrier });
   };
   const handleDeleteTaskTemplate = (template: TaskTemplate) => {
-    if (!window.confirm(t('masterData.confirmDeleteTaskTemplate'))) return;
-    deleteTaskTemplateMutation.mutate(template.id);
+    setConfirmDelete({ entity: 'taskTemplate', record: template });
   };
   const handleDeleteItem = (item: Item) => {
-    if (!window.confirm(t('masterData.confirmDeleteItem'))) return;
-    deleteItemMutation.mutate(item.id);
+    setConfirmDelete({ entity: 'item', record: item });
   };
 
   const hasSupplierFilters = supplierStatusFilter !== null || supplierTypeFilter !== null;
@@ -943,6 +1085,19 @@ export function MasterData() {
           loading={toggleActiveMutation.isPending}
           onConfirm={() => toggleActiveMutation.mutate(confirmToggle)}
           onCancel={() => setConfirmToggle(null)}
+        />
+      ) : null}
+
+      {confirmDelete ? (
+        <ConfirmModal
+          opened={!!confirmDelete}
+          title={t('masterData.confirmDeleteTitle')}
+          message={getDeleteMessage()}
+          confirmLabel={t('masterData.deleteAction')}
+          confirmColor="red"
+          loading={getDeleteLoading()}
+          onConfirm={confirmDeleteRecord}
+          onCancel={() => setConfirmDelete(null)}
         />
       ) : null}
     </Stack>

@@ -265,10 +265,10 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
       </Paper>
 
       <Grid gap="md" className="delivery-order-control-grid">
-        <Grid.Col span={{ base: 12, xl: 9 }}>
+        <Grid.Col span={{ base: 12, xl: 6 }}>
           <UpdateDeliveryOrderForm deliveryOrder={deliveryOrder} />
         </Grid.Col>
-        <Grid.Col span={{ base: 12, xl: 3 }}>
+        <Grid.Col span={{ base: 12, xl: 6 }}>
           <div className="delivery-order-gate-sidebar">
             <OperationalGateSummary deliveryOrder={deliveryOrder} gates={gates} risks={risks} />
           </div>
@@ -296,8 +296,8 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
 
         <Tabs.Panel value="overview" pt="md">
           <Stack gap="md">
-            <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="md" className="delivery-order-control-grid delivery-order-overview-pages">
-              <Paper withBorder p="md">
+            <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="sm" className="delivery-order-control-grid delivery-order-overview-pages">
+              <Paper withBorder p="sm">
                 <Stack gap="sm">
                   <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
                     {t('deliveryOrders.supplierAllocationHeader')}
@@ -325,8 +325,8 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
                 </Stack>
               </Paper>
 
-              <Paper withBorder p="md">
-                <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
+              <Paper withBorder p="sm">
+                <SimpleGrid cols={{ base: 1, md: 2 }} spacing="sm">
                   <Stack gap="sm">
                     <Group gap="sm" align="flex-start" wrap="nowrap">
                       <ShippingIcon size={22} />
@@ -392,10 +392,10 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
           <Stack gap="md" className="delivery-order-ops-layout">
             <Paper
               withBorder
-              p="md"
+              p="sm"
               className={`delivery-order-ops-hero ${primaryRisk ? 'delivery-order-ops-hero-risk' : 'delivery-order-ops-hero-clear'}`}
             >
-              <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="lg">
+              <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="sm">
                 <Stack gap="xs" className="delivery-order-ops-hero-copy">
                   <Group gap="xs" wrap="wrap">
                     <Badge color={primaryRisk ? getRiskColor(primaryRisk.severity) : 'teal'} variant="light">
@@ -456,61 +456,63 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
               </SimpleGrid>
             </Paper>
 
-            <Paper withBorder p="md" className="delivery-order-ops-gate-panel">
-              <Stack gap={0}>
-                {gates.map((gate) => (
-                  <div key={gate.id} className={`do-gate-row ${gate.passed ? 'is-passed' : 'is-blocked'}`}>
-                    <div className="delivery-order-ops-gate-copy">
-                      <Text fw={800}>{gateLabel(gate.id, t)}</Text>
+            <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="sm" className="delivery-order-ops-panels">
+              <Paper withBorder p="sm" className="delivery-order-ops-gate-panel">
+                <Stack gap={0}>
+                  {gates.map((gate) => (
+                    <div key={gate.id} className={`do-gate-row ${gate.passed ? 'is-passed' : 'is-blocked'}`}>
+                      <div className="delivery-order-ops-gate-copy">
+                        <Text fw={800}>{gateLabel(gate.id, t)}</Text>
+                        <Text size="sm" c="dimmed">
+                          {gateDetail(gate, t) || '-'}
+                        </Text>
+                      </div>
                       <Text size="sm" c="dimmed">
-                        {gateDetail(gate, t) || '-'}
+                        {taskRoleLabel(gate.owner)}
                       </Text>
+                      <Badge color={gate.passed ? 'teal' : 'orange'} variant="light">
+                        {gate.passed ? t('deliveryOrders.gatePassed') : t('deliveryOrders.gateBlocked')}
+                      </Badge>
                     </div>
-                    <Text size="sm" c="dimmed">
-                      {taskRoleLabel(gate.owner)}
-                    </Text>
-                    <Badge color={gate.passed ? 'teal' : 'orange'} variant="light">
-                      {gate.passed ? t('deliveryOrders.gatePassed') : t('deliveryOrders.gateBlocked')}
-                    </Badge>
-                  </div>
-                ))}
-              </Stack>
-            </Paper>
+                  ))}
+                </Stack>
+              </Paper>
 
-            <Paper withBorder p="md" className="delivery-order-ops-risk-panel">
-              <Group justify="space-between" align="flex-start" gap="sm" mb="sm" className="delivery-order-ops-risk-header">
-                <div className="delivery-order-ops-risk-copy">
-                  <Text fw={700}>{t('deliveryOrders.nextActions')}</Text>
-                  <Text size="sm" c="dimmed">
-                    {t('deliveryOrders.nextActionsDescription')}
-                  </Text>
-                </div>
-                <Badge color={orderedRisks.length > 0 ? 'red' : 'teal'} variant="light">
-                  {orderedRisks.length > 0 ? t('common.atRisk') : t('deliveryOrders.readyForClosure')}
-                </Badge>
-              </Group>
-              <Stack gap="sm">
-                {orderedRisks.length > 0 ? (
-                  orderedRisks.map((risk) => (
-                    <Group key={risk.code} justify="space-between" align="flex-start" gap="sm" className={`do-risk-row severity-${risk.severity}`}>
-                      <Group gap="xs" className="delivery-order-ops-risk-row-copy">
-                        <Badge color={getRiskColor(risk.severity)} variant="light">
-                          {riskLabel(risk.code, t)}
-                        </Badge>
-                        <Text size="sm">{riskDetail(risk, t)}</Text>
+              <Paper withBorder p="sm" className="delivery-order-ops-risk-panel">
+                <Group justify="space-between" align="flex-start" gap="sm" mb="sm" className="delivery-order-ops-risk-header">
+                  <div className="delivery-order-ops-risk-copy">
+                    <Text fw={700}>{t('deliveryOrders.nextActions')}</Text>
+                    <Text size="sm" c="dimmed">
+                      {t('deliveryOrders.nextActionsDescription')}
+                    </Text>
+                  </div>
+                  <Badge color={orderedRisks.length > 0 ? 'red' : 'teal'} variant="light">
+                    {orderedRisks.length > 0 ? t('common.atRisk') : t('deliveryOrders.readyForClosure')}
+                  </Badge>
+                </Group>
+                <Stack gap="sm">
+                  {orderedRisks.length > 0 ? (
+                    orderedRisks.map((risk) => (
+                      <Group key={risk.code} justify="space-between" align="flex-start" gap="sm" className={`do-risk-row severity-${risk.severity}`}>
+                        <Group gap="xs" className="delivery-order-ops-risk-row-copy">
+                          <Badge color={getRiskColor(risk.severity)} variant="light">
+                            {riskLabel(risk.code, t)}
+                          </Badge>
+                          <Text size="sm">{riskDetail(risk, t)}</Text>
+                        </Group>
+                        <Text size="sm" c="dimmed">
+                          {taskRoleLabel(risk.owner)} · {t('deliveryOrders.sla', { sla: slaLabel(risk.sla, t) })}
+                        </Text>
                       </Group>
-                      <Text size="sm" c="dimmed">
-                        {taskRoleLabel(risk.owner)} · {t('deliveryOrders.sla', { sla: slaLabel(risk.sla, t) })}
-                      </Text>
-                    </Group>
-                  ))
-                ) : (
-                  <Text size="sm" c="dimmed">
-                    {t('deliveryOrders.noOpsRisk')}
-                  </Text>
-                )}
-              </Stack>
-            </Paper>
+                    ))
+                  ) : (
+                    <Text size="sm" c="dimmed">
+                      {t('deliveryOrders.noOpsRisk')}
+                    </Text>
+                  )}
+                </Stack>
+              </Paper>
+            </SimpleGrid>
 
             <SimpleGrid cols={{ base: 1, sm: 2, xl: 4 }} spacing={0} className="do-fact-strip delivery-order-ops-facts">
               <DeliveryOrderFact
@@ -523,11 +525,11 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
                 label={t('deliveryOrders.polPod')}
                 value={`${deliveryOrder.logistics_shipping.port_of_departure} ${t('deliveryOrders.routeConnector')} ${deliveryOrder.logistics_shipping.port_of_destination}`}
               />
-      <DeliveryOrderFact label={t('deliveryOrders.ofAfDebitNote')} value={gates.find((gate) => gate.id === 'documents')?.passed ? t('deliveryOrders.ready') : t('deliveryOrders.waitingDocuments')} />
-      <DeliveryOrderFact label={t('deliveryOrders.finalDebitNote')} value={gates.find((gate) => gate.id === 'finance')?.passed ? t('deliveryOrders.ready') : t('deliveryOrders.waitingOpsGates')} />
-      <DeliveryOrderFact label={t('deliveryOrders.podArchive')} value={deliveryOrder.warehouse_tracking.actual_entry_date ? t('deliveryOrders.ready') : t('deliveryOrders.waitingWarehouse')} />
-    </SimpleGrid>
-  </Stack>
+              <DeliveryOrderFact label={t('deliveryOrders.ofAfDebitNote')} value={gates.find((gate) => gate.id === 'documents')?.passed ? t('deliveryOrders.ready') : t('deliveryOrders.waitingDocuments')} />
+              <DeliveryOrderFact label={t('deliveryOrders.finalDebitNote')} value={gates.find((gate) => gate.id === 'finance')?.passed ? t('deliveryOrders.ready') : t('deliveryOrders.waitingOpsGates')} />
+              <DeliveryOrderFact label={t('deliveryOrders.podArchive')} value={deliveryOrder.warehouse_tracking.actual_entry_date ? t('deliveryOrders.ready') : t('deliveryOrders.waitingWarehouse')} />
+            </SimpleGrid>
+          </Stack>
         </Tabs.Panel >
 
         <Tabs.Panel value="documents" pt="md">
@@ -586,56 +588,56 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
         </Tabs.Panel>
       </Tabs >
 
-    <Modal
-      opened={closeConfirmOpen}
-      onClose={() => setCloseConfirmOpen(false)}
-      title={
-        <ModalTitle
-          feature="delivery-orders"
-          icon={<IconCircleCheck size={18} stroke={1.8} />}
-          title={t('deliveryOrders.closeConfirmTitle')}
-          subtitle={deliveryOrder.order_info.order_number}
-        />
-      }
-      centered
-    >
-      <Stack gap="md">
-        <Alert color="orange" icon={<IconAlertTriangle size={18} />}>
-          {t('deliveryOrders.closeConfirmDescription')}
-        </Alert>
-        <List spacing="xs" size="sm" center>
-          {closureChecklist.map((item) => (
-            <List.Item
-              key={item.label}
-              icon={
-                item.ok ? (
-                  <IconCircleCheck size={18} color="var(--mantine-color-teal-6)" />
-                ) : (
-                  <IconCircleX size={18} color="var(--mantine-color-gray-5)" />
-                )
-              }
+      <Modal
+        opened={closeConfirmOpen}
+        onClose={() => setCloseConfirmOpen(false)}
+        title={
+          <ModalTitle
+            feature="delivery-orders"
+            icon={<IconCircleCheck size={18} stroke={1.8} />}
+            title={t('deliveryOrders.closeConfirmTitle')}
+            subtitle={deliveryOrder.order_info.order_number}
+          />
+        }
+        centered
+      >
+        <Stack gap="md">
+          <Alert color="orange" icon={<IconAlertTriangle size={18} />}>
+            {t('deliveryOrders.closeConfirmDescription')}
+          </Alert>
+          <List spacing="xs" size="sm" center>
+            {closureChecklist.map((item) => (
+              <List.Item
+                key={item.label}
+                icon={
+                  item.ok ? (
+                    <IconCircleCheck size={18} color="var(--mantine-color-teal-6)" />
+                  ) : (
+                    <IconCircleX size={18} color="var(--mantine-color-gray-5)" />
+                  )
+                }
+              >
+                {item.label}
+              </List.Item>
+            ))}
+          </List>
+          <Group justify="flex-end" gap="xs">
+            <Button variant="subtle" onClick={() => setCloseConfirmOpen(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              color="teal"
+              loading={actionMutation.isPending}
+              onClick={() => {
+                actionMutation.mutate('close');
+                setCloseConfirmOpen(false);
+              }}
             >
-              {item.label}
-            </List.Item>
-          ))}
-        </List>
-        <Group justify="flex-end" gap="xs">
-          <Button variant="subtle" onClick={() => setCloseConfirmOpen(false)}>
-            {t('common.cancel')}
-          </Button>
-          <Button
-            color="teal"
-            loading={actionMutation.isPending}
-            onClick={() => {
-              actionMutation.mutate('close');
-              setCloseConfirmOpen(false);
-            }}
-          >
-            {t('deliveryOrders.closeDoAction')}
-          </Button>
-        </Group>
-      </Stack>
-    </Modal>
+              {t('deliveryOrders.closeDoAction')}
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Stack >
   );
 }

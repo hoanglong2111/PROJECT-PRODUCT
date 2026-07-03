@@ -7,7 +7,7 @@
 .mantine-DateInput-calendar {
   padding: var(--kbfe-space-xs, 0.5rem);
   background: var(--kbfe-surface-elevated);
-  border-radius: 0.75rem;
+  border-radius: var(--kbfe-radius-xl);
 }
 
 /* The popover shell that wraps the calendar */
@@ -15,7 +15,7 @@
   padding: 0.35rem;
   background: var(--kbfe-surface-elevated);
   border: 1px solid var(--kbfe-border-primary);
-  border-radius: 0.85rem;
+  border-radius: var(--kbfe-radius-xl);
   box-shadow: var(--kbfe-shadow-md);
 }
 
@@ -23,7 +23,7 @@
 .mantine-DateInput-calendarHeaderLevel {
   font-weight: var(--kbfe-font-weight-semibold, 600);
   color: var(--kbfe-text-primary);
-  border-radius: 0.5rem;
+  border-radius: var(--kbfe-radius-md);
   transition: background-color 120ms ease;
 }
 
@@ -33,7 +33,7 @@
 
 .mantine-DateInput-calendarHeaderControl {
   color: var(--kbfe-text-secondary);
-  border-radius: 0.5rem;
+  border-radius: var(--kbfe-radius-md);
   transition: background-color 120ms ease, color 120ms ease;
 }
 
@@ -53,7 +53,7 @@
 
 /* --- Day cells -------------------------------------------------------------- */
 .mantine-DateInput-day {
-  border-radius: 0.5rem;
+  border-radius: var(--kbfe-radius-md);
   color: var(--kbfe-text-primary);
   transition: background-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
 }
@@ -105,7 +105,7 @@
 /* --- Month / year / decade level cells ------------------------------------- */
 .mantine-DateInput-monthsListControl,
 .mantine-DateInput-yearsListControl {
-  border-radius: 0.5rem;
+  border-radius: var(--kbfe-radius-md);
   color: var(--kbfe-text-primary);
   transition: background-color 120ms ease;
 }

@@ -196,10 +196,28 @@ html {
   --kbfe-control-height-lg: 2.625rem;
   --kbfe-app-max-width: 92rem;
   --kbfe-text-measure: 65ch;
+  /* Border-radius scale — one-off values (0.3125rem, 0.45rem, 0.55rem, 0.85rem,
+     2px…) get consolidated onto the nearest step below instead of adding more
+     stray sizes. */
+  --kbfe-radius-xs: 0.25rem;
+  --kbfe-radius-sm: 0.375rem;
+  --kbfe-radius-md: 0.5rem;
+  --kbfe-radius-lg: 0.625rem;
+  --kbfe-radius-xl: 0.75rem;
+  --kbfe-radius-pill: 999px;
+  /* z-index scale — every stacking layer in the app should reference one of
+     these instead of a raw number, so the ordering lives in one place. */
   --kbfe-z-background-texture: 0;
+  --kbfe-z-content: 1;
+  --kbfe-z-sticky-header: 2;
+  --kbfe-z-card-content: 3;
+  --kbfe-z-sticky-tabs: 4;
+  --kbfe-z-sticky-toolbar: 5;
   --kbfe-z-sticky: 10;
+  --kbfe-z-mobile-bar: 20;
   --kbfe-z-overlay: 40;
   --kbfe-z-skip-link: 60;
+  --kbfe-z-scroll-nav: 200;
 
   /* --- Visual fine-tune derivation layer ---------------------------------
      Sliders in Settings write --kbfe-user-intensity/-dim/-contrast (0..1) as

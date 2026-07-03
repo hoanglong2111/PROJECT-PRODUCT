@@ -1,23 +1,45 @@
 /* global-search.css — split from src/styles.css. Global classes; do not rename. See AGENTS.md "Styling". */
 
+/* Underline search field: no box/pill border, just a bottom rule that
+   thickens and tints on focus. flex-basis/max-width still morph the box
+   wider on focus so it reads as "expanding" rather than static. */
 .global-search-shell {
-  flex: 1 1 24rem;
-  max-width: 44rem;
+  flex: 1 1 15rem;
+  max-width: 17rem;
   min-width: 12rem;
   margin-inline: clamp(0.25rem, 2vw, 1.5rem);
+  transition:
+    flex-basis 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    max-width 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.global-search-shell[data-focused='true'] {
+  flex-basis: 24rem;
+  max-width: 44rem;
 }
 
 .global-search-input input {
-  background: var(--kbfe-surface-elevated);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  border-bottom: 1px solid var(--kbfe-border-primary);
   transition:
-    background-color 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    border-color 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-bottom-color 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
     box-shadow 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .global-search-input input:focus,
 .global-search-input input:focus-within {
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--kbfe-primary-color) 16%, transparent);
+  border-bottom-color: var(--kbfe-primary-color);
+  box-shadow: 0 1px 0 0 var(--kbfe-primary-color);
+}
+
+/* Keep a visible keyboard-focus indicator (accessibility requirement) but as
+   the same bottom rule instead of the app-wide boxed ring — a full outline
+   would fight the underline-only look this field is meant to have. */
+.global-search-input input:focus-visible {
+  outline: none !important;
+  box-shadow: 0 2px 0 0 var(--kbfe-primary-color);
 }
 
 .global-search-dropdown {
@@ -46,7 +68,7 @@ html[data-kbfe-resolved-color-scheme='dark'] .global-search-dropdown {
 .global-search-result {
   display: block;
   width: 100%;
-  border-radius: 0.5rem;
+  border-radius: var(--kbfe-radius-md);
   padding: 0.625rem;
   transform: translateX(0);
   transition:
@@ -73,7 +95,7 @@ html[data-kbfe-resolved-color-scheme='dark'] .global-search-dropdown {
   height: 2rem;
   flex: 0 0 auto;
   place-items: center;
-  border-radius: 0.5rem;
+  border-radius: var(--kbfe-radius-md);
   background: color-mix(in srgb, var(--kbfe-primary-color) 12%, transparent);
   color: var(--kbfe-primary-color);
   transition:
@@ -113,11 +135,17 @@ html[data-kbfe-resolved-color-scheme='dark'] .global-search-dropdown {
 }
 /* prefers-reduced-motion handled globally in base.css */
 
+html[data-kbfe-visual-theme='high-contrast'] .global-search-dropdown {
+  backdrop-filter: none !important;
+  background: var(--kbfe-surface-elevated) !important;
+}
+
 @media (max-width: 48em) {
   .global-search-shell {
     min-width: 0;
     margin-inline: 0.25rem;
     flex: 1 1 auto;
+    max-width: none;
   }
 
   .global-search-input input {

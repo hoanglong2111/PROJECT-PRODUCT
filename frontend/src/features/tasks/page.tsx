@@ -64,17 +64,27 @@ export function Tasks() {
   const [selectedTask, setSelectedTask] = useState<LogisticsTask | null>(null);
   const [taskFormOpened, taskFormHandlers] = useDisclosure(false);
   const [editingTask, setEditingTask] = useState<LogisticsTask | null>(null);
+  const [returnToTask, setReturnToTask] = useState<LogisticsTask | null>(null);
   const openCreateTask = () => {
     setEditingTask(null);
+    setReturnToTask(null);
     taskFormHandlers.open();
   };
   const openEditTask = (task: LogisticsTask) => {
+    setReturnToTask(selectedTask);
+    setSelectedTask(null);
+    closeTaskParam();
     setEditingTask(task);
     taskFormHandlers.open();
   };
   const closeTaskForm = () => {
     taskFormHandlers.close();
     setEditingTask(null);
+    if (returnToTask) {
+      setSelectedTask(returnToTask);
+      openTaskParam(returnToTask.task_id);
+      setReturnToTask(null);
+    }
   };
   const search = useTasksUiStore((s) => s.search);
   const statusFilter = useTasksUiStore((s) => s.statusFilter);
@@ -232,6 +242,7 @@ export function Tasks() {
   const closeTaskDetail = () => {
     setSelectedTask(null);
     setEditingTask(null);
+    setReturnToTask(null);
     taskFormHandlers.close();
     closeTaskParam();
   };
@@ -530,7 +541,9 @@ export function Tasks() {
           opened={taskFormOpened}
           onClose={closeTaskForm}
           onSaved={(saved) => {
-            closeTaskForm();
+            taskFormHandlers.close();
+            setEditingTask(null);
+            setReturnToTask(null);
             setSelectedTask(saved);
             openTaskParam(saved.task_id);
           }}

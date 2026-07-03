@@ -26,6 +26,7 @@ import { GbFlag, VnFlag } from './FlagIcon';
 import { GlobalSearch } from './GlobalSearch';
 import { NotificationBell } from './NotificationBell';
 import { RouteErrorBoundary } from './PageFeedback';
+import { ScrollNavButton } from './ScrollNavButton';
 import { SidebarUserFooter } from './SidebarUserFooter';
 
 export function AppShellLayout() {
@@ -128,7 +129,11 @@ export function AppShellLayout() {
           </div>
 
           <div className="header-body">
-            <GlobalSearch />
+            <div className="header-search-track" data-rail={railMode ? 'true' : undefined}>
+              <div className="header-search-spacer" aria-hidden="true" />
+              <GlobalSearch />
+              <div className="header-search-spacer" aria-hidden="true" />
+            </div>
 
             <Group className="header-actions" gap="xs" wrap="nowrap">
               <Tooltip label={appearanceMode === 'auto' ? t('shell.appearanceAuto') : t('shell.toggleColorScheme')}>
@@ -197,6 +202,7 @@ export function AppShellLayout() {
         <RouteErrorBoundary>
           <Outlet />
         </RouteErrorBoundary>
+        <ScrollNavButton />
       </AppShell.Main>
     </AppShell>
   );
