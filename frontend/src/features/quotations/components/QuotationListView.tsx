@@ -1,5 +1,5 @@
 import { ActionIcon, Badge, Button, Group, Paper, Select, SimpleGrid, Stack, Text, TextInput, Title, Tooltip } from '@mantine/core';
-import { IconClock, IconEye, IconFileInvoice, IconSearch, IconX } from '@tabler/icons-react';
+import { IconCalendarPlus, IconClock, IconEye, IconFileInvoice, IconSearch, IconX } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 
 import type { QuotationV1 } from '@shared/api/quotations';
@@ -15,7 +15,6 @@ import { formatMoney } from '@shared/utils/money';
 import {
   quotationTabItems,
   quotationDisplayTotal,
-  quotationModeOptions,
   quotationTypeFullLabelKeys,
   quotationTypeShortLabels,
   type QuotationTab,
@@ -40,34 +39,24 @@ export function QuotationListView({ filteredQuotations, onInspect, supplierOptio
   const setTypeFilter = useQuotationsUiStore((s) => s.setTypeFilter);
   const supplierFilter = useQuotationsUiStore((s) => s.supplierFilter);
   const setSupplierFilter = useQuotationsUiStore((s) => s.setSupplierFilter);
-  const modeFilter = useQuotationsUiStore((s) => s.modeFilter);
-  const setModeFilter = useQuotationsUiStore((s) => s.setModeFilter);
   const createdFrom = useQuotationsUiStore((s) => s.createdFrom);
   const setCreatedFrom = useQuotationsUiStore((s) => s.setCreatedFrom);
   const createdTo = useQuotationsUiStore((s) => s.createdTo);
   const setCreatedTo = useQuotationsUiStore((s) => s.setCreatedTo);
-  const validFrom = useQuotationsUiStore((s) => s.validFrom);
-  const setValidFrom = useQuotationsUiStore((s) => s.setValidFrom);
-  const validTo = useQuotationsUiStore((s) => s.validTo);
-  const setValidTo = useQuotationsUiStore((s) => s.setValidTo);
   const clearFilters = useQuotationsUiStore((s) => s.clearFilters);
   const hasActiveFilters =
     Boolean(search) ||
     typeFilter !== 'all' ||
     Boolean(supplierFilter) ||
-    modeFilter !== 'all' ||
-    Boolean(createdFrom || createdTo || validFrom || validTo);
+    Boolean(createdFrom || createdTo);
 
   const pagination = useListPagination(filteredQuotations, [
     activeTab,
     search,
     typeFilter,
     supplierFilter,
-    modeFilter,
     createdFrom,
     createdTo,
-    validFrom,
-    validTo,
   ]);
 
   return (
@@ -154,12 +143,6 @@ export function QuotationListView({ filteredQuotations, onInspect, supplierOptio
               clearable
               nothingFoundMessage={t('common.all')}
             />
-            <Select
-              label={t('quotations.filterMode')}
-              value={modeFilter}
-              onChange={(value) => setModeFilter(value ?? 'all')}
-              data={[{ value: 'all', label: t('common.all') }, ...quotationModeOptions]}
-            />
             <DateField
               label={t('quotations.filterCreatedFrom')}
               value={createdFrom}
@@ -169,16 +152,6 @@ export function QuotationListView({ filteredQuotations, onInspect, supplierOptio
               label={t('quotations.filterCreatedTo')}
               value={createdTo}
               onChange={(value) => setCreatedTo(value ?? '')}
-            />
-            <DateField
-              label={t('quotations.filterValidFrom')}
-              value={validFrom}
-              onChange={(value) => setValidFrom(value ?? '')}
-            />
-            <DateField
-              label={t('quotations.filterValidTo')}
-              value={validTo}
-              onChange={(value) => setValidTo(value ?? '')}
             />
             <Button
               variant={hasActiveFilters ? 'light' : 'subtle'}
@@ -207,7 +180,6 @@ export function QuotationListView({ filteredQuotations, onInspect, supplierOptio
                 <span className="rfq-list-head-type">{t('quotations.typeColumn')}</span>
                 <span className="rfq-list-head-money">{t('quotations.total')}</span>
                 <span className="rfq-list-head-status">{t('quotations.status')}</span>
-                <span className="rfq-list-head-created">{t('quotations.createdColumn')}</span>
                 <span className="rfq-list-head-action" />
               </div>
 
@@ -230,7 +202,15 @@ export function QuotationListView({ filteredQuotations, onInspect, supplierOptio
                           ) : null}
                         </Group>
                       </CopyValue>
-                      <QuotationValidityBadge validUntil={quotation.valid_until} />
+                      <Group gap={8} wrap="wrap" align="center" className="rfq-code-meta">
+                        <Tooltip label={t('quotations.createdColumn')}>
+                          <Text component="span" size="xs" c="dimmed" className="rfq-code-created">
+                            <IconCalendarPlus size={12} className="rfq-code-created-icon" />
+                            {formatDate(quotation.create_at)}
+                          </Text>
+                        </Tooltip>
+                        <QuotationValidityBadge validUntil={quotation.valid_until} />
+                      </Group>
                     </div>
 
                     <div className="rfq-list-cell">
@@ -284,13 +264,6 @@ export function QuotationListView({ filteredQuotations, onInspect, supplierOptio
                         {t('quotations.status')}
                       </Text>
                       <StatusBadge status={quotation.status} />
-                    </div>
-
-                    <div className="rfq-list-cell rfq-list-created">
-                      <Text size="xs" c="dimmed" className="rfq-list-mobile-label">
-                        {t('quotations.createdColumn')}
-                      </Text>
-                      <Text size="sm">{formatDate(quotation.create_at)}</Text>
                     </div>
 
                     <div className="rfq-list-cell rfq-list-action">
