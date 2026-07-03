@@ -1,0 +1,34 @@
+html {
+  --kbfe-theme-transition-duration: 300ms;
+  --kbfe-theme-transition-easing: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+html[data-kbfe-theme-transition='active'],
+html[data-kbfe-theme-transition='active'] body,
+html[data-kbfe-theme-transition='active'] body::before,
+html[data-kbfe-theme-transition='active'] body::after,
+html[data-kbfe-theme-transition='active'] *,
+html[data-kbfe-theme-transition='active'] *::before,
+html[data-kbfe-theme-transition='active'] *::after {
+  transition-property: background, background-color, border-color, box-shadow, color, fill, opacity, stroke;
+  transition-duration: var(--kbfe-theme-transition-duration);
+  transition-timing-function: var(--kbfe-theme-transition-easing);
+}
+
+html[data-kbfe-theme-transition='active'] .theme-toggle-icon {
+  transition-property: opacity, transform;
+  transition-duration: 170ms, 220ms;
+  transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-kbfe-theme-transition='active'],
+  html[data-kbfe-theme-transition='active'] body,
+  html[data-kbfe-theme-transition='active'] body::before,
+  html[data-kbfe-theme-transition='active'] body::after,
+  html[data-kbfe-theme-transition='active'] *,
+  html[data-kbfe-theme-transition='active'] *::before,
+  html[data-kbfe-theme-transition='active'] *::after {
+    transition-duration: 0.01ms !important;
+  }
+}

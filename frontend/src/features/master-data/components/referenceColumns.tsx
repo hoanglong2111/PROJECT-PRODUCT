@@ -28,6 +28,14 @@ function empty(value: string | number | null | undefined) {
   return value === null || value === undefined || value === '' ? '-' : value;
 }
 
+function textCell(value: string | number | null | undefined, className?: string) {
+  return (
+    <Text size="sm" className={className}>
+      {empty(value)}
+    </Text>
+  );
+}
+
 function statusLabel(active: boolean, t: T) {
   return active ? t('masterData.activeStatus') : t('masterData.inactiveStatus');
 }
@@ -58,7 +66,7 @@ export function buildItemColumns(t: T, onToggleActive?: (record: Item) => void):
         <Stack gap={4}>
           <Group gap="xs" wrap="nowrap">
             <Badge variant="light">{item.item_code}</Badge>
-            <Text fw={700} lineClamp={1} title={item.item_name}>
+            <Text size="sm" fw={700} lineClamp={1} title={item.item_name}>
               {item.item_name}
             </Text>
           </Group>
@@ -100,19 +108,19 @@ export function buildItemColumns(t: T, onToggleActive?: (record: Item) => void):
       key: 'hsCode',
       label: t('masterData.defaultHsCode'),
       width: 120,
-      render: (item) => empty(item.hs_code),
+      render: (item) => textCell(item.hs_code, 'dl-code-text'),
     },
     {
       key: 'origin',
       label: t('masterData.countryOfOrigin'),
       width: 120,
-      render: (item) => empty(item.country_of_origin),
+      render: (item) => textCell(item.country_of_origin),
     },
     {
       key: 'price',
       label: t('masterData.unitPriceUsd'),
       width: 125,
-      render: (item) => formatDecimal(item.unit_price_usd),
+      render: (item) => textCell(formatDecimal(item.unit_price_usd)),
     },
     {
       key: 'status',
@@ -133,7 +141,7 @@ export function buildCurrencyColumns(t: T, onToggleActive?: (record: Currency) =
       render: (currency) => (
         <Stack gap={3}>
           <Badge variant="light">{currency.currency_code}</Badge>
-          <Text fw={700} lineClamp={1}>
+          <Text size="sm" fw={700} lineClamp={1}>
             {currency.currency_name}
           </Text>
         </Stack>
@@ -144,14 +152,14 @@ export function buildCurrencyColumns(t: T, onToggleActive?: (record: Currency) =
       label: t('masterData.currencySymbol'),
       hint: t('glossary.currencySymbol'),
       width: 110,
-      render: (currency) => currency.symbol || '-',
+      render: (currency) => textCell(currency.symbol),
     },
     {
       key: 'decimal_places',
       label: t('masterData.decimalPlaces'),
       hint: t('glossary.decimalPlaces'),
       width: 140,
-      render: (currency) => currency.decimal_places,
+      render: (currency) => textCell(currency.decimal_places),
     },
     {
       key: 'status',
@@ -164,7 +172,7 @@ export function buildCurrencyColumns(t: T, onToggleActive?: (record: Currency) =
       key: 'updated',
       label: t('masterData.updatedAt'),
       width: 150,
-      render: (currency) => <DateTimeText value={currency.update_at} />,
+      render: (currency) => <DateTimeText size="sm" value={currency.update_at} />,
     },
   ];
 }
@@ -184,7 +192,7 @@ export function buildIncotermColumns(t: T, onToggleActive?: (record: Incoterm) =
       width: 240,
       render: (incoterm) => (
         <Stack gap={4}>
-          <Text fw={700} lineClamp={1}>
+          <Text size="sm" fw={700} lineClamp={1}>
             {incoterm.incoterm_name}
           </Text>
           <Text size="xs" c="dimmed" lineClamp={1}>
@@ -221,7 +229,7 @@ export function buildTransportModeColumns(t: T, onToggleActive?: (record: Transp
       render: (mode) => (
         <Stack gap={3}>
           <Badge variant="light">{mode.mode_code}</Badge>
-          <Text fw={700} lineClamp={1}>
+          <Text size="sm" fw={700} lineClamp={1}>
             {mode.mode_name}
           </Text>
         </Stack>
@@ -266,7 +274,7 @@ export function buildChargeCodeColumns(t: T, onToggleActive?: (record: ChargeCod
         <Stack gap={4}>
           <Group gap="xs" wrap="nowrap">
             <Badge variant="light">{chargeCode.charge_code}</Badge>
-            <Text fw={700} lineClamp={1} title={chargeCode.charge_name_en}>
+            <Text size="sm" fw={700} lineClamp={1} title={chargeCode.charge_name_en}>
               {chargeCode.charge_name_en}
             </Text>
           </Group>
@@ -280,7 +288,7 @@ export function buildChargeCodeColumns(t: T, onToggleActive?: (record: ChargeCod
       key: 'group',
       label: t('masterData.chargeGroup'),
       width: 170,
-      render: (chargeCode) => groupLabelMap[chargeCode.group] ?? chargeCode.group,
+      render: (chargeCode) => textCell(groupLabelMap[chargeCode.group] ?? chargeCode.group),
     },
     {
       key: 'category',
@@ -382,7 +390,7 @@ export function buildUomColumns(t: T, onToggleActive?: (record: Uom) => void): A
         <Stack gap={4}>
           <Group gap="xs" wrap="nowrap">
             <Badge variant="light">{uom.uom_code}</Badge>
-            <Text fw={700} lineClamp={1} title={uom.uom_name_en}>
+            <Text size="sm" fw={700} lineClamp={1} title={uom.uom_name_en}>
               {uom.uom_name_en}
             </Text>
           </Group>
@@ -412,7 +420,7 @@ export function buildUomColumns(t: T, onToggleActive?: (record: Uom) => void): A
       key: 'updated',
       label: t('masterData.updatedAt'),
       width: 150,
-      render: (uom) => <DateTimeText value={uom.update_at} />,
+      render: (uom) => <DateTimeText size="sm" value={uom.update_at} />,
     },
   ];
 }
@@ -427,7 +435,7 @@ export function buildSupplierColumns(t: T, onToggleActive?: (record: Supplier) =
         <Stack gap={4}>
           <Group gap="xs" wrap="nowrap">
             <Badge variant="light">{supplier.supplier_code}</Badge>
-            <Text fw={700} lineClamp={1} title={supplier.supplier_name}>
+            <Text size="sm" fw={700} lineClamp={1} title={supplier.supplier_name}>
               {supplier.supplier_name}
             </Text>
           </Group>
@@ -491,7 +499,7 @@ export function buildSupplierColumns(t: T, onToggleActive?: (record: Supplier) =
       key: 'lead',
       label: t('masterData.leadTimeDays'),
       width: 100,
-      render: (supplier) => empty(supplier.lead_time_production_days),
+      render: (supplier) => textCell(supplier.lead_time_production_days),
     },
     {
       key: 'status',
@@ -512,7 +520,7 @@ export function buildForwarderColumns(t: T, onToggleActive?: (record: Forwarder)
       render: (forwarder) => (
         <Stack gap={4}>
           <Badge variant="light">{forwarder.forwarder_code}</Badge>
-          <Text fw={700} lineClamp={1} title={forwarder.forwarder_name}>
+          <Text size="sm" fw={700} lineClamp={1} title={forwarder.forwarder_name}>
             {forwarder.forwarder_name}
           </Text>
         </Stack>
@@ -528,7 +536,7 @@ export function buildForwarderColumns(t: T, onToggleActive?: (record: Forwarder)
       key: 'country',
       label: t('masterData.country'),
       width: 120,
-      render: (forwarder) => empty(forwarder.country),
+      render: (forwarder) => textCell(forwarder.country),
     },
     {
       key: 'contact',
@@ -585,7 +593,7 @@ export function buildCarrierColumns(t: T, onToggleActive?: (record: Carrier) => 
       render: (carrier) => (
         <Stack gap={4}>
           <Badge variant="light">{carrier.carrier_code}</Badge>
-          <Text fw={700} lineClamp={1} title={carrier.carrier_name}>
+          <Text size="sm" fw={700} lineClamp={1} title={carrier.carrier_name}>
             {carrier.carrier_name}
           </Text>
         </Stack>
@@ -601,7 +609,7 @@ export function buildCarrierColumns(t: T, onToggleActive?: (record: Carrier) => 
       key: 'scacIata',
       label: t('masterData.scacIataCode'),
       width: 125,
-      render: (carrier) => empty(carrier.scac_iata_code),
+      render: (carrier) => textCell(carrier.scac_iata_code, 'dl-code-text'),
     },
     {
       key: 'route',

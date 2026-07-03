@@ -138,8 +138,10 @@ export function AppShellLayout() {
             <Group className="header-actions" gap="xs" wrap="nowrap">
               <Tooltip label={appearanceMode === 'auto' ? t('shell.appearanceAuto') : t('shell.toggleColorScheme')}>
                 <ActionIcon
+                  className="theme-toggle-action"
                   variant="subtle"
                   size="lg"
+                  data-theme-state={appearanceMode === 'auto' ? 'auto' : resolvedColorScheme}
                   aria-label={appearanceMode === 'auto' ? t('shell.appearanceAuto') : t('shell.toggleColorScheme')}
                   onClick={() =>
                     appearanceMode === 'auto'
@@ -147,13 +149,15 @@ export function AppShellLayout() {
                       : setAppearanceMode(resolvedColorScheme === 'dark' ? 'light' : 'dark')
                   }
                 >
-                  {appearanceMode === 'auto' ? (
+                  <span className="theme-toggle-icon theme-toggle-icon-auto" aria-hidden="true">
                     <IconSunMoon size={18} />
-                  ) : resolvedColorScheme === 'dark' ? (
-                    <IconSun size={18} />
-                  ) : (
+                  </span>
+                  <span className="theme-toggle-icon theme-toggle-icon-light" aria-hidden="true">
                     <IconMoon size={18} />
-                  )}
+                  </span>
+                  <span className="theme-toggle-icon theme-toggle-icon-dark" aria-hidden="true">
+                    <IconSun size={18} />
+                  </span>
                 </ActionIcon>
               </Tooltip>
               <Tooltip label={t('shell.toggleLanguage')}>

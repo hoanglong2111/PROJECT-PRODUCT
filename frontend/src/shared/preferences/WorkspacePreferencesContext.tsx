@@ -1,4 +1,4 @@
-﻿import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+﻿import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ColorPresetId } from '@shared/theme/colorPresets';
 import { defaultColorPresetId } from '@shared/theme/colorPresets';
 
@@ -46,6 +46,8 @@ const FINE_TUNE_DEFAULTS = {
   contrastLevel: 100,
   dimLevel: 0,
 } as const;
+
+const THEME_TRANSITION_MS = 320;
 
 const WorkspacePreferencesContext = createContext<WorkspacePreferencesContextValue | undefined>(undefined);
 
@@ -163,10 +165,31 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
     readStoredFineTune(DIM_LEVEL_STORAGE_KEY, FINE_TUNE_DEFAULTS.dimLevel),
   );
   const [contrastLevel, setContrastLevelState] = useState<number>(FINE_TUNE_DEFAULTS.contrastLevel);
+  const themeTransitionTimeoutRef = useRef<number | null>(null);
   const [resolvedColorScheme, setResolvedColorScheme] = useState<ResolvedColorScheme>(() => {
     const storedAppearanceMode = readStoredAppearanceMode();
     return storedAppearanceMode === 'auto' ? getSystemColorScheme() : storedAppearanceMode;
   });
+
+  const startThemeTransition = () => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return;
+    }
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return;
+    }
+
+    if (themeTransitionTimeoutRef.current !== null) {
+      window.clearTimeout(themeTransitionTimeoutRef.current);
+    }
+
+    document.documentElement.dataset.kbfeThemeTransition = 'active';
+    themeTransitionTimeoutRef.current = window.setTimeout(() => {
+      delete document.documentElement.dataset.kbfeThemeTransition;
+      themeTransitionTimeoutRef.current = null;
+    }, THEME_TRANSITION_MS);
+  };
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -212,6 +235,17 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
     visualTheme,
   ]);
 
+  useEffect(() => {
+    return () => {
+      if (themeTransitionTimeoutRef.current !== null && typeof window !== 'undefined') {
+        window.clearTimeout(themeTransitionTimeoutRef.current);
+      }
+      if (typeof document !== 'undefined') {
+        delete document.documentElement.dataset.kbfeThemeTransition;
+      }
+    };
+  }, []);
+
   const setLanguage = (nextLanguage: WorkspaceLanguage) => {
     setLanguageState(nextLanguage);
     if (typeof window !== 'undefined') {
@@ -220,6 +254,7 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
   };
 
   const setAppearanceMode = (nextAppearanceMode: AppearanceMode) => {
+    startThemeTransition();
     setAppearanceModeState(nextAppearanceMode);
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(APPEARANCE_MODE_STORAGE_KEY, nextAppearanceMode);

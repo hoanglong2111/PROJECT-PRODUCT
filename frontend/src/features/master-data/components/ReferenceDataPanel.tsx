@@ -179,7 +179,8 @@ export function ReferenceDataPanel<T extends { id: string }>({
               verticalSpacing="sm"
               highlightOnHover
               className="md-table"
-              style={{ tableLayout: 'fixed', width: '100%' }}
+              layout="fixed"
+              w="100%"
             >
               <Table.Thead>
                 <Table.Tr>
@@ -201,7 +202,11 @@ export function ReferenceDataPanel<T extends { id: string }>({
               <Table.Tbody>
                 {records.map((record, index) => (
                   <Table.Tr key={record.id}>
-                    <Table.Td className="tabular-nums md-cell-align-center">{pageStart + index}</Table.Td>
+                    <Table.Td className="md-cell-align-center">
+                      <Text size="sm" className="tabular-nums">
+                        {pageStart + index}
+                      </Text>
+                    </Table.Td>
                     {columns.map((column) => (
                       <Table.Td key={column.key} className={cellClassName(column.align)} style={{ textAlign: column.align }}>
                         {column.render(record)}

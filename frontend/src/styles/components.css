@@ -926,13 +926,7 @@ tr:hover .copy-on-hover,
 
 .md-table thead th {
   white-space: nowrap;
-  font-weight: 700;
   padding-block: .5rem;
-  font-size: .75rem;
-  text-transform: uppercase;
-  letter-spacing: .02em;
-  color: var(--kbfe-text-secondary);
-  background: color-mix(in srgb, var(--kbfe-surface-subtle) 55%, var(--kbfe-surface-elevated)) !important;
 }
 
 .md-table thead th .mantine-Group-root {
@@ -954,6 +948,10 @@ tr:hover .copy-on-hover,
 
 .md-row-primary td:first-child {
   border-left: 3px solid var(--mantine-color-yellow-6) !important;
+}
+
+.dl-data-panel .md-table tbody tr:hover td {
+  background: var(--kbfe-row-hover-background) !important;
 }
 
 .md-cell-stt {

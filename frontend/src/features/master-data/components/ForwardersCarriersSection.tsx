@@ -258,7 +258,8 @@ export function ForwardersCarriersSection({
               verticalSpacing="sm"
               highlightOnHover
               className="md-table"
-              style={{ tableLayout: 'fixed', width: '100%' }}
+              layout="fixed"
+              w="100%"
             >
               <Table.Thead>
                 <Table.Tr>
@@ -298,7 +299,7 @@ export function ForwardersCarriersSection({
                       key={`${record.rowType}-${record.id}`}
                       className={isForwarder && record.original.is_primary ? 'md-row-primary' : undefined}
                     >
-                      <Table.Td className="tabular-nums md-cell-align-center md-cell-stt">
+                      <Table.Td className="md-cell-align-center md-cell-stt">
                         {isForwarder && record.original.is_primary ? (
                           <Tooltip label={t('masterData.isPrimary')}>
                             <span className="md-primary-flag">
@@ -306,12 +307,14 @@ export function ForwardersCarriersSection({
                             </span>
                           </Tooltip>
                         ) : null}
-                        {pageStart + index}
+                        <Text size="sm" className="tabular-nums">
+                          {pageStart + index}
+                        </Text>
                       </Table.Td>
                       <Table.Td className="md-cell-clamp">
                         <Stack gap={4}>
                           <Badge variant="light">{record.code}</Badge>
-                          <Text fw={700} lineClamp={1} title={record.name} size="sm">
+                          <Text size="sm" fw={700} lineClamp={1} title={record.name}>
                             {record.name}
                           </Text>
                         </Stack>

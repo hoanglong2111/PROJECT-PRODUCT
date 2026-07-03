@@ -271,7 +271,7 @@ export function TaskTemplatesSection({
                     {collapsed ? <IconChevronRight size={16} /> : <IconChevronDown size={16} />}
                   </ActionIcon>
                   <Badge variant="light">{group.groupCode}</Badge>
-                  <Text fw={700}>{group.groupName}</Text>
+                  <Text size="sm" fw={700}>{group.groupName}</Text>
                 </Group>
                 <Badge color="gray" variant="light">
                   {group.templates.length}
@@ -284,7 +284,8 @@ export function TaskTemplatesSection({
                     verticalSpacing="sm"
                     highlightOnHover
                     className="md-table"
-                    style={{ tableLayout: 'fixed', width: '100%' }}
+                    layout="fixed"
+                    w="100%"
                   >
                     <Table.Thead>
                       <Table.Tr>
@@ -319,10 +320,14 @@ export function TaskTemplatesSection({
                     <Table.Tbody>
                       {group.templates.map((template) => (
                         <Table.Tr key={template.id}>
-                          <Table.Td className="md-cell-align-center">{template.sort_order}</Table.Td>
+                          <Table.Td className="md-cell-align-center">
+                            <Text size="sm" className="tabular-nums">
+                              {template.sort_order}
+                            </Text>
+                          </Table.Td>
                           <Table.Td className="md-cell-clamp">
                             <Stack gap={3}>
-                              <Text fw={700}>{template.task_name}</Text>
+                              <Text size="sm" fw={700}>{template.task_name}</Text>
                               <Text size="sm" c="dimmed" lineClamp={2}>
                                 {template.task_description || '-'}
                               </Text>
@@ -333,7 +338,9 @@ export function TaskTemplatesSection({
                               {getMilestoneLabel(template.milestone_code, t)}
                             </Badge>
                           </Table.Td>
-                          <Table.Td>{formatSla(template, t)}</Table.Td>
+                          <Table.Td>
+                            <Text size="sm">{formatSla(template, t)}</Text>
+                          </Table.Td>
                           <Table.Td>
                             <Badge color="teal" variant="outline">
                               {getDepartmentLabel(template.department, t)}
