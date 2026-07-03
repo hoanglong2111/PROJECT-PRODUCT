@@ -111,6 +111,7 @@ export function QuotationListView({ filteredQuotations, onInspect, tabCounts }: 
                 <span className="rfq-list-head-code">{t('quotations.quoteNumber')}</span>
                 <span className="rfq-list-head-customer">{t('quotations.customer')}</span>
                 <span className="rfq-list-head-route">{t('quotations.route')}</span>
+                <span className="rfq-list-head-type">{t('quotations.typeColumn')}</span>
                 <span className="rfq-list-head-money">{t('quotations.total')}</span>
                 <span className="rfq-list-head-status">{t('quotations.status')}</span>
                 <span className="rfq-list-head-action" />
@@ -159,16 +160,20 @@ export function QuotationListView({ filteredQuotations, onInspect, tabCounts }: 
                       <Text size="sm" fw={600}>
                         {quotation.mode ?? '-'}
                       </Text>
-                      <Group gap={6} wrap="nowrap" align="center">
-                        <Text size="xs" c="dimmed">
-                          {quotation.incoterm_code ?? '-'}
-                        </Text>
-                        <Tooltip label={t(quotationTypeFullLabelKeys[quotation.quotation_type])}>
-                          <Badge size="xs" variant="light" color="grape">
-                            {quotationTypeShortLabels[quotation.quotation_type]}
-                          </Badge>
-                        </Tooltip>
-                      </Group>
+                      <Text size="xs" c="dimmed">
+                        {quotation.incoterm_code ?? '-'}
+                      </Text>
+                    </div>
+
+                    <div className="rfq-list-cell rfq-list-type">
+                      <Text size="xs" c="dimmed" className="rfq-list-mobile-label">
+                        {t('quotations.typeColumn')}
+                      </Text>
+                      <Tooltip label={t(quotationTypeFullLabelKeys[quotation.quotation_type])}>
+                        <Badge size="xs" variant="light" color="grape">
+                          {quotationTypeShortLabels[quotation.quotation_type]}
+                        </Badge>
+                      </Tooltip>
                     </div>
 
                     <div className="rfq-list-cell rfq-list-money">
