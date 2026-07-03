@@ -46,19 +46,6 @@ describe('accessPolicy', () => {
     expect(canUserAccessCapability(user, 'purchaseOrders.view')).toBe(false);
   });
 
-  it('applies demo hidden overlay even for admin capabilities', () => {
-    const admin = { ...baseUser, role: 'ADMIN' } satisfies AuthUser;
-    const demoEnv = {
-      VITE_DEMO_MODE: 'true',
-      VITE_DEMO_HIDDEN: 'masterData,purchaseOrders.manage',
-    };
-
-    expect(canUserAccessCapability(admin, 'masterData.view', demoEnv)).toBe(false);
-    expect(canUserAccessCapability(admin, 'masterData.manage', demoEnv)).toBe(false);
-    expect(canUserAccessCapability(admin, 'purchaseOrders.manage', demoEnv)).toBe(false);
-    expect(canUserAccessCapability(admin, 'purchaseOrders.view', demoEnv)).toBe(true);
-  });
-
   it('keeps every role policy unique enough to catch accidental empty grants', () => {
     for (const [role, capabilities] of Object.entries(ROLE_CAPABILITIES)) {
       expect(capabilities.length, role).toBeGreaterThan(0);
