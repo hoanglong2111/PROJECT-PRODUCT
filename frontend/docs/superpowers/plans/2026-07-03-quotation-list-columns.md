@@ -9,7 +9,7 @@ Spec nguồn: `../specs/2026-07-03-quotation-list-columns-design.md`
 Đưa 4 tín hiệu quyết định lên bảng danh sách báo giá mà không phình cột:
 
 - Hiệu lực báo giá.
-- Phiên bản và trạng thái final.
+- Badge FINAL của bản chốt.
 - Nhà cung cấp.
 - Loại báo giá.
 
@@ -19,6 +19,7 @@ Spec nguồn: `../specs/2026-07-03-quotation-list-columns-design.md`
 - Thêm `QuotationValidityBadge` dùng Mantine `Badge` và i18n `quotations.validity.*`.
 - Thêm map `quotationTypeShortLabels` và `quotationTypeFullLabelKeys` trong `quotationModel.ts`.
 - Làm giàu 3 ô sẵn có trong `QuotationListView.tsx`; giữ nguyên 6 cột và không sửa `--rfq-list-columns`.
+- Không hiển thị chip version vì mỗi version là một dòng riêng; badge `FINAL` dùng chữ cứng.
 
 ## Verification
 

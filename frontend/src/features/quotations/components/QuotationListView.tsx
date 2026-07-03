@@ -129,12 +129,9 @@ export function QuotationListView({ filteredQuotations, onInspect, tabCounts }: 
                             {quotation.quotation_no}
                           </Text>
                         </CopyValue>
-                        {quotation.version > 1 ? (
-                          <Badge size="xs" variant="light" color="gray">{`v${quotation.version}`}</Badge>
-                        ) : null}
                         {quotation.is_final ? (
                           <Badge size="xs" variant="light" color="blue">
-                            {t('quotations.final')}
+                            FINAL
                           </Badge>
                         ) : null}
                       </Group>
