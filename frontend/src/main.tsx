@@ -18,10 +18,12 @@ import { useWorkspacePreferences, WorkspacePreferencesProvider } from '@shared/p
 import { queryClient } from '@shared/queryClient';
 import { AuthProvider } from "@shared/auth/AuthContext";
 import { buildTheme, buildCssVariablesResolver } from '@shared/theme/theme';
+import { useI18n } from '@shared/i18n';
 
 function ThemedApp() {
   const { colorPreset, resolvedColorScheme } = useWorkspacePreferences();
-  const theme = buildTheme(colorPreset);
+  const { t } = useI18n();
+  const theme = buildTheme(colorPreset, t('common.selectPlaceholder'));
   const cssVariablesResolver = buildCssVariablesResolver(colorPreset);
 
   return (

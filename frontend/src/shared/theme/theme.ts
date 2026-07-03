@@ -40,6 +40,17 @@ const baseThemeOptions = {
   },
 };
 
+function withSelectPlaceholder(selectPlaceholder?: string) {
+  if (!selectPlaceholder) {
+    return {};
+  }
+
+  return {
+    Select: { defaultProps: { placeholder: selectPlaceholder } },
+    MultiSelect: { defaultProps: { placeholder: selectPlaceholder } },
+  };
+}
+
 function toTuple(arr: readonly string[]): MantineColorsTuple {
   return arr as unknown as MantineColorsTuple;
 }
@@ -85,7 +96,7 @@ export function getEffectivePalette(
   return [...preset.colors[scheme]];
 }
 
-export function buildTheme(colorPresetId?: ColorPresetId) {
+export function buildTheme(colorPresetId?: ColorPresetId, selectPlaceholder?: string) {
   const presetId = colorPresetId ?? defaultColorPresetId;
   const preset = colorPresets[presetId] ?? colorPresets[defaultColorPresetId];
 
@@ -99,6 +110,10 @@ export function buildTheme(colorPresetId?: ColorPresetId) {
     primaryColor,
     colors: {
       [primaryColor]: toTuple(colors),
+    },
+    components: {
+      ...baseThemeOptions.components,
+      ...withSelectPlaceholder(selectPlaceholder),
     },
   });
 }

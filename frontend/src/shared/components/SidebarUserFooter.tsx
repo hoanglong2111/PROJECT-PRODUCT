@@ -1,4 +1,4 @@
-import { ActionIcon, Avatar, Group, Menu, Text, UnstyledButton } from '@mantine/core';
+import { ActionIcon, Avatar, Group, Menu, Text, Tooltip, UnstyledButton } from '@mantine/core';
 import { IconLogout, IconSettings, IconUserCircle } from '@tabler/icons-react';
 import { Link } from 'react-router-dom';
 
@@ -61,50 +61,43 @@ export function SidebarUserFooter({ railMode }: { railMode: boolean }) {
             {t('shell.settings')}
           </Menu.Item>
         ) : null}
-        {railMode ? (
-          <Menu.Item
-            className="profile-menu-item profile-menu-item-danger"
-            color="red"
-            leftSection={<IconLogout size={16} />}
-            onClick={logout}
-          >
-            {t('shell.logout')}
-          </Menu.Item>
-        ) : null}
       </Menu.Dropdown>
     </Menu>
   );
 
-  if (railMode) {
-    return (
-      <div className="sidebar-user-footer" data-rail="true">
-        {avatarMenu}
-      </div>
-    );
-  }
-
   return (
-    <div className="sidebar-user-footer">
+    <div className="sidebar-user-footer" data-rail={railMode ? 'true' : undefined}>
       <Group gap="sm" wrap="nowrap" className="sidebar-user-footer-info">
         {avatarMenu}
-        <div className="profile-meta">
-          <Text size="sm" fw={600} lineClamp={1}>
-            {user.fullName}
-          </Text>
-          <Text size="xs" c="dimmed" lineClamp={1}>
-            {roleLabel(user.role)}
-          </Text>
-        </div>
+        {railMode ? null : (
+          <div className="profile-meta">
+            <Text size="sm" fw={600} lineClamp={1}>
+              {user.fullName}
+            </Text>
+            <Text size="xs" c="dimmed" lineClamp={1}>
+              {roleLabel(user.role)}
+            </Text>
+          </div>
+        )}
       </Group>
-      <ActionIcon
-        color="red"
-        variant="light"
-        size="lg"
-        aria-label={t('shell.logout')}
-        onClick={logout}
+      <Tooltip
+        label={t('shell.logout')}
+        position={railMode ? 'right' : 'top'}
+        withArrow
+        openDelay={200}
       >
-        <IconLogout size={18} />
-      </ActionIcon>
+        <ActionIcon
+          className="sidebar-user-footer-logout"
+          color="red"
+          variant="light"
+          size={railMode ? 34 : 36}
+          radius="xl"
+          aria-label={t('shell.logout')}
+          onClick={logout}
+        >
+          <IconLogout size={18} />
+        </ActionIcon>
+      </Tooltip>
     </div>
   );
 }

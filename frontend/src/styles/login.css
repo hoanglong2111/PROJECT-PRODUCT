@@ -16,7 +16,7 @@
   height: 40rem;
   border-radius: 50%;
   background: radial-gradient(circle, color-mix(in srgb, var(--kbfe-primary-color) 8%, transparent) 0%, transparent 70%);
-  z-index: 0;
+  z-index: var(--kbfe-z-background-texture);
   pointer-events: none;
 }
 
@@ -28,7 +28,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 0;
+  z-index: var(--kbfe-z-background-texture);
   pointer-events: none;
   background-image: radial-gradient(circle at center, var(--kbfe-decorative-dot-color) 1px, transparent 1.6px);
   background-size: 22px 22px;
@@ -46,7 +46,7 @@ html[data-kbfe-visual-theme='high-contrast'] .login-page-shell::after {
   border: 1px solid var(--kbfe-border-primary) !important;
   box-shadow: var(--kbfe-shadow-lg) !important;
   position: relative;
-  z-index: 1;
+  z-index: var(--kbfe-z-content);
   border-top: 4px solid var(--kbfe-primary-color) !important;
 }
 

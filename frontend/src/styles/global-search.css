@@ -46,7 +46,7 @@ html[data-kbfe-resolved-color-scheme='dark'] .global-search-dropdown {
 .global-search-result {
   display: block;
   width: 100%;
-  border-radius: 0.5rem;
+  border-radius: var(--kbfe-radius-md);
   padding: 0.625rem;
   transform: translateX(0);
   transition:
@@ -73,7 +73,7 @@ html[data-kbfe-resolved-color-scheme='dark'] .global-search-dropdown {
   height: 2rem;
   flex: 0 0 auto;
   place-items: center;
-  border-radius: 0.5rem;
+  border-radius: var(--kbfe-radius-md);
   background: color-mix(in srgb, var(--kbfe-primary-color) 12%, transparent);
   color: var(--kbfe-primary-color);
   transition:

@@ -26,6 +26,7 @@ import { GbFlag, VnFlag } from './FlagIcon';
 import { GlobalSearch } from './GlobalSearch';
 import { NotificationBell } from './NotificationBell';
 import { RouteErrorBoundary } from './PageFeedback';
+import { ScrollNavButton } from './ScrollNavButton';
 import { SidebarUserFooter } from './SidebarUserFooter';
 
 export function AppShellLayout() {
@@ -197,6 +198,7 @@ export function AppShellLayout() {
         <RouteErrorBoundary>
           <Outlet />
         </RouteErrorBoundary>
+        <ScrollNavButton />
       </AppShell.Main>
     </AppShell>
   );
