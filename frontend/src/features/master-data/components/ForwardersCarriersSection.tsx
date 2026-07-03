@@ -1,15 +1,16 @@
 import { ActionIcon, Alert, Badge, Group, Loader, Paper, ScrollArea, Stack, Table, Text, Tooltip } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { IconAlertCircle, IconPencil, IconStarFilled, IconTrash } from '@tabler/icons-react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
-import { fetchCarriers, fetchForwarders, type Carrier, type Forwarder } from '@shared/api/forwarders';
+import { fetchCarriers, fetchForwarders, updateCarrier, updateForwarder, type Carrier, type Forwarder } from '@shared/api/forwarders';
 import { queryKeys } from '@shared/api/queryKeys';
 import { EmptyState } from '@shared/components/EmptyState';
 import { FilterSegment } from '@shared/components/FilterSegment';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { LIST_PAGE_SIZE, ListPagination, useListPagination } from '@shared/components/ListPagination';
+import { ConfirmModal } from '@shared/components/ConfirmModal';
 import { StatusToggle } from '@shared/components/StatusToggle';
 import { useI18n } from '@shared/i18n';
 import { getApiErrorMessage } from '@shared/lib/errors';
@@ -60,6 +61,22 @@ export function ForwardersCarriersSection({
   const [debouncedSearch] = useDebouncedValue(search, 250);
   const [segment, setSegment] = useState<'ALL' | 'FORWARDER' | 'CARRIER'>('ALL');
   const [statusFilter, setStatusFilter] = useState<boolean | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<CombinedPartnerRecord | null>(null);
+
+  const queryClient = useQueryClient();
+  const toggleMutation = useMutation<any, Error, CombinedPartnerRecord>({
+    mutationFn: (r: CombinedPartnerRecord) =>
+      r.rowType === 'forwarder'
+        ? updateForwarder(r.id, { is_active: !r.is_active })
+        : updateCarrier(r.id, { is_active: !r.is_active }),
+    onSuccess: () => {
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.forwarderLists }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.carrierLists }),
+      ]);
+      setConfirmTarget(null);
+    },
+  });
 
   // Load both datasets (up to 500 items for client-side search/filter/pagination)
   const forwardersQuery = useQuery({
@@ -277,8 +294,20 @@ export function ForwardersCarriersSection({
                 {records.map((record, index) => {
                   const isForwarder = record.rowType === 'forwarder';
                   return (
-                    <Table.Tr key={`${record.rowType}-${record.id}`}>
-                      <Table.Td className="tabular-nums md-cell-align-center">{pageStart + index}</Table.Td>
+                    <Table.Tr
+                      key={`${record.rowType}-${record.id}`}
+                      className={isForwarder && record.original.is_primary ? 'md-row-primary' : undefined}
+                    >
+                      <Table.Td className="tabular-nums md-cell-align-center md-cell-stt">
+                        {isForwarder && record.original.is_primary ? (
+                          <Tooltip label={t('masterData.isPrimary')}>
+                            <span className="md-primary-flag">
+                              <IconStarFilled size={12} />
+                            </span>
+                          </Tooltip>
+                        ) : null}
+                        {pageStart + index}
+                      </Table.Td>
                       <Table.Td className="md-cell-clamp">
                         <Stack gap={4}>
                           <Badge variant="light">{record.code}</Badge>
@@ -324,18 +353,9 @@ export function ForwardersCarriersSection({
                       </Table.Td>
                       <Table.Td className="md-cell-clamp">
                         {isForwarder ? (
-                          <Group gap="xs" wrap="nowrap" align="center">
-                            {record.original.is_primary ? (
-                              <Tooltip label={t('masterData.isPrimary')}>
-                                <span className="md-icon-flag is-star is-on" role="img">
-                                  <IconStarFilled size={16} />
-                                </span>
-                              </Tooltip>
-                            ) : null}
-                            <Text size="sm" c="dimmed" lineClamp={2}>
-                              {record.original.note || record.original.country || '-'}
-                            </Text>
-                          </Group>
+                          <Text size="sm" c="dimmed" lineClamp={2}>
+                            {record.original.note || record.original.country || '-'}
+                          </Text>
                         ) : (
                           <Text size="sm" c="dimmed" lineClamp={2}>
                             {record.original.service_route_note || record.original.scac_iata_code || '-'}
@@ -343,7 +363,12 @@ export function ForwardersCarriersSection({
                         )}
                       </Table.Td>
                       <Table.Td className="md-cell-align-center">
-                        <StatusToggle active={record.is_active} />
+                        <StatusToggle
+                          active={record.is_active}
+                          onToggle={canManage ? () => setConfirmTarget(record) : undefined}
+                          loading={toggleMutation.isPending && confirmTarget?.id === record.id && confirmTarget?.rowType === record.rowType}
+                          disabled={toggleMutation.isPending}
+                        />
                       </Table.Td>
                       {canManage ? (
                         <Table.Td className="md-cell-align-center">
@@ -407,6 +432,23 @@ export function ForwardersCarriersSection({
           />
         )}
       </Paper>
+
+      {confirmTarget ? (
+        <ConfirmModal
+          opened={!!confirmTarget}
+          title={t('masterData.confirmToggleTitle')}
+          message={
+            confirmTarget.is_active
+              ? t('masterData.confirmCloseMessage', { name: confirmTarget.name })
+              : t('masterData.confirmOpenMessage', { name: confirmTarget.name })
+          }
+          confirmLabel={confirmTarget.is_active ? t('masterData.closeAction') : t('masterData.openAction')}
+          confirmColor={confirmTarget.is_active ? 'red' : 'teal'}
+          loading={toggleMutation.isPending}
+          onConfirm={() => toggleMutation.mutate(confirmTarget)}
+          onCancel={() => setConfirmTarget(null)}
+        />
+      ) : null}
     </Stack>
   );
 }

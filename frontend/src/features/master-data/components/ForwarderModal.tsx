@@ -27,6 +27,7 @@ type ForwarderFormValues = {
   contactEmail: string;
   contactPhone: string;
   isPrimary: boolean;
+  isActive: boolean;
   note: string;
 };
 
@@ -39,6 +40,7 @@ const emptyValues: ForwarderFormValues = {
   contactEmail: '',
   contactPhone: '',
   isPrimary: false,
+  isActive: true,
   note: '',
 };
 
@@ -73,6 +75,7 @@ export function ForwarderModal({
       contactEmail: editing.contact_email ?? '',
       contactPhone: editing.contact_phone ?? '',
       isPrimary: editing.is_primary,
+      isActive: editing.is_active !== false,
       note: editing.note ?? '',
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -103,6 +106,7 @@ export function ForwarderModal({
         contact_email: optionalString(form.values.contactEmail),
         contact_phone: optionalString(form.values.contactPhone),
         is_primary: form.values.isPrimary,
+        is_active: form.values.isActive,
         note: optionalString(form.values.note),
       };
 
@@ -175,6 +179,7 @@ export function ForwarderModal({
           <TextInput label={t('masterData.contactEmail')} required {...form.getInputProps('contactEmail')} />
           <TextInput label={t('masterData.contactPhone')} {...form.getInputProps('contactPhone')} />
           <Switch label={t('masterData.isPrimary')} {...form.getInputProps('isPrimary', { type: 'checkbox' })} />
+          <Switch label={t('masterData.active')} {...form.getInputProps('isActive', { type: 'checkbox' })} />
         </SimpleGrid>
       </MasterDataFormSection>
       <MasterDataFormSection>

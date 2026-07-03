@@ -17,6 +17,7 @@ import { useMemo, useState } from 'react';
 import {
   deleteChargeCode,
   fetchChargeCodes,
+  updateChargeCode,
   type ChargeCode,
 } from '@shared/api/chargeCodes';
 import {
@@ -28,6 +29,7 @@ import {
 import {
   deleteItem,
   fetchItems,
+  updateItem,
   type Item,
 } from '@shared/api/items';
 import { queryKeys } from '@shared/api/queryKeys';
@@ -41,12 +43,16 @@ import {
   fetchIncoterms,
   fetchSuppliers,
   fetchTransportModes,
+  updateCurrency,
+  updateIncoterm,
+  updateSupplier,
+  updateTransportMode,
   type Currency,
   type Incoterm,
   type Supplier,
   type TransportMode,
 } from '@shared/api/tradeMasterData';
-import { deleteUom, fetchUoms, type Uom } from '@shared/api/uoms';
+import { deleteUom, fetchUoms, updateUom, type Uom } from '@shared/api/uoms';
 import { useCan } from '@shared/auth/useCan';
 import { useI18n } from '@shared/i18n';
 import { CHARGE_CATEGORIES, CHARGE_GROUPS } from '@shared/lib/chargeCategories';
@@ -61,6 +67,7 @@ import {
   ITEM_TYPE_VALUES,
   SUPPLIER_TYPE_VALUES,
 } from './model/masterDataModel';
+import { ConfirmModal } from '@shared/components/ConfirmModal';
 import { CarrierModal } from './components/CarrierModal';
 import { ChargeCodeModal } from './components/ChargeCodeModal';
 import { CurrencyModal } from './components/CurrencyModal';
@@ -182,6 +189,10 @@ export function MasterData() {
   const [editingForwarder, setEditingForwarder] = useState<Forwarder | null>(null);
   const [editingCarrier, setEditingCarrier] = useState<Carrier | null>(null);
   const [editingTaskTemplate, setEditingTaskTemplate] = useState<TaskTemplate | null>(null);
+  const [confirmToggle, setConfirmToggle] = useState<{
+    entity: 'item' | 'currency' | 'incoterm' | 'transportMode' | 'chargeCode' | 'uom' | 'supplier';
+    record: any;
+  } | null>(null);
 
   const uomOptionsQuery = useQuery({
     queryKey: queryKeys.uoms({ page: 1, limit: 100, is_active: true }),
@@ -343,6 +354,90 @@ export function MasterData() {
     onSuccess: () => invalidateTradeMasterData(queryKeys.taskTemplateLists),
   });
 
+  const toggleActiveMutation = useMutation({
+    mutationFn: async ({
+      entity,
+      record,
+    }: {
+      entity: 'item' | 'currency' | 'incoterm' | 'transportMode' | 'chargeCode' | 'uom' | 'supplier';
+      record: any;
+    }) => {
+      const is_active = !(record.is_active !== false);
+      switch (entity) {
+        case 'item':
+          return updateItem(record.id, { is_active });
+        case 'currency':
+          return updateCurrency(record.id, { is_active });
+        case 'incoterm':
+          return updateIncoterm(record.id, { is_active });
+        case 'transportMode':
+          return updateTransportMode(record.id, { is_active });
+        case 'chargeCode':
+          return updateChargeCode(record.id, { is_active });
+        case 'uom':
+          return updateUom(record.id, { is_active });
+        case 'supplier':
+          return updateSupplier(record.id, { is_active });
+      }
+    },
+    onSuccess: (_, variables) => {
+      const { entity } = variables;
+      switch (entity) {
+        case 'item':
+          void queryClient.invalidateQueries({ queryKey: queryKeys.itemLists });
+          break;
+        case 'currency':
+          invalidateTradeMasterData(queryKeys.currencyLists);
+          break;
+        case 'incoterm':
+          invalidateTradeMasterData(queryKeys.incotermLists);
+          break;
+        case 'transportMode':
+          invalidateTradeMasterData(queryKeys.transportModeLists);
+          break;
+        case 'chargeCode':
+          invalidateTradeMasterData(queryKeys.chargeCodeLists);
+          break;
+        case 'uom':
+          invalidateTradeMasterData(queryKeys.uomLists);
+          break;
+        case 'supplier':
+          invalidateTradeMasterData(queryKeys.supplierLists);
+          break;
+      }
+      setConfirmToggle(null);
+    },
+  });
+
+  const handleToggleActive = (
+    entity: 'item' | 'currency' | 'incoterm' | 'transportMode' | 'chargeCode' | 'uom' | 'supplier',
+    record: any,
+  ) => {
+    if (!canManageMasterData) return;
+    setConfirmToggle({ entity, record });
+  };
+
+  const getToggleName = () => {
+    if (!confirmToggle || !confirmToggle.record) return '';
+    const { entity, record } = confirmToggle;
+    switch (entity) {
+      case 'item':
+        return `${record.item_code} - ${record.item_name}`;
+      case 'currency':
+        return `${record.currency_code} - ${record.currency_name}`;
+      case 'incoterm':
+        return record.incoterm_code;
+      case 'transportMode':
+        return `${record.mode_code} - ${record.mode_name}`;
+      case 'chargeCode':
+        return `${record.charge_code} - ${record.charge_name_en}`;
+      case 'uom':
+        return record.uom_code;
+      case 'supplier':
+        return `${record.supplier_code} - ${record.supplier_name}`;
+    }
+  };
+
   const openAddCurrency = () => { setEditingCurrency(null); currencyModalHandlers.open(); };
   const openEditCurrency = (currency: Currency) => { setEditingCurrency(currency); currencyModalHandlers.open(); };
 
@@ -429,13 +524,34 @@ export function MasterData() {
     chargeCodeModeFilter !== null;
   const hasUomFilters = uomStatusFilter !== null;
 
-  const itemColumns = useMemo(() => buildItemColumns(t), [t]);
-  const currencyColumns = useMemo(() => buildCurrencyColumns(t), [t]);
-  const incotermColumns = useMemo(() => buildIncotermColumns(t), [t]);
-  const transportModeColumns = useMemo(() => buildTransportModeColumns(t), [t]);
-  const chargeCodeColumns = useMemo(() => buildChargeCodeColumns(t), [t]);
-  const uomColumns = useMemo(() => buildUomColumns(t), [t]);
-  const supplierColumns = useMemo(() => buildSupplierColumns(t), [t]);
+  const itemColumns = useMemo(
+    () => buildItemColumns(t, canManageMasterData ? (rec) => handleToggleActive('item', rec) : undefined),
+    [t, canManageMasterData],
+  );
+  const currencyColumns = useMemo(
+    () => buildCurrencyColumns(t, canManageMasterData ? (rec) => handleToggleActive('currency', rec) : undefined),
+    [t, canManageMasterData],
+  );
+  const incotermColumns = useMemo(
+    () => buildIncotermColumns(t, canManageMasterData ? (rec) => handleToggleActive('incoterm', rec) : undefined),
+    [t, canManageMasterData],
+  );
+  const transportModeColumns = useMemo(
+    () => buildTransportModeColumns(t, canManageMasterData ? (rec) => handleToggleActive('transportMode', rec) : undefined),
+    [t, canManageMasterData],
+  );
+  const chargeCodeColumns = useMemo(
+    () => buildChargeCodeColumns(t, canManageMasterData ? (rec) => handleToggleActive('chargeCode', rec) : undefined),
+    [t, canManageMasterData],
+  );
+  const uomColumns = useMemo(
+    () => buildUomColumns(t, canManageMasterData ? (rec) => handleToggleActive('uom', rec) : undefined),
+    [t, canManageMasterData],
+  );
+  const supplierColumns = useMemo(
+    () => buildSupplierColumns(t, canManageMasterData ? (rec) => handleToggleActive('supplier', rec) : undefined),
+    [t, canManageMasterData],
+  );
 
   return (
     <Stack gap="lg">
@@ -812,6 +928,23 @@ export function MasterData() {
         opened={itemModalOpened}
         uomOptions={uomOptions}
       />
+
+      {confirmToggle ? (
+        <ConfirmModal
+          opened={!!confirmToggle}
+          title={t('masterData.confirmToggleTitle')}
+          message={
+            (confirmToggle.record.is_active !== false)
+              ? t('masterData.confirmCloseMessage', { name: getToggleName() })
+              : t('masterData.confirmOpenMessage', { name: getToggleName() })
+          }
+          confirmLabel={(confirmToggle.record.is_active !== false) ? t('masterData.closeAction') : t('masterData.openAction')}
+          confirmColor={(confirmToggle.record.is_active !== false) ? 'red' : 'teal'}
+          loading={toggleActiveMutation.isPending}
+          onConfirm={() => toggleActiveMutation.mutate(confirmToggle)}
+          onCancel={() => setConfirmToggle(null)}
+        />
+      ) : null}
     </Stack>
   );
 }
