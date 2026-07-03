@@ -1,76 +1,31 @@
-﻿import {
-  ActionIcon,
-  Badge,
-  Box,
-  Group,
-  Loader,
-  Popover,
-  ScrollArea,
-  Stack,
-  Text,
-  TextInput,
-  UnstyledButton,
-} from '@mantine/core';
-import { useDebouncedValue } from '@mantine/hooks';
-import {
-  IconClipboardList,
-  IconFileInvoice,
-  IconSearch,
-  IconShoppingCart,
-  IconTruckDelivery,
-  IconUserCircle,
-  IconX,
-} from '@tabler/icons-react';
-import { useQuery } from '@tanstack/react-query';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { ActionIcon, Box, Loader, Popover, ScrollArea, Stack, Text, TextInput } from '@mantine/core';
+import { IconSearch, IconX } from '@tabler/icons-react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { fetchGlobalSearch, type GlobalSearchKind } from '@shared/api/system';
-import { queryKeys } from '@shared/api/queryKeys';
+import type { GlobalSearchResult } from '@shared/api/system';
 import { useI18n } from '@shared/i18n';
-
-const kindMeta: Record<
-  GlobalSearchKind,
-  {
-    color: string;
-    icon: typeof IconFileInvoice;
-  }
-> = {
-  purchase_request: { color: 'blue', icon: IconFileInvoice },
-  purchase_order: { color: 'teal', icon: IconShoppingCart },
-  delivery_order: { color: 'orange', icon: IconTruckDelivery },
-  task: { color: 'violet', icon: IconClipboardList },
-  account: { color: 'gray', icon: IconUserCircle },
-};
+import { GlobalSearchResultRow } from './globalSearch/GlobalSearchResultRow';
+import { useGlobalSearchQuery } from './globalSearch/useGlobalSearchQuery';
 
 export function GlobalSearch() {
   const navigate = useNavigate();
-  const { searchKindLabel, statusLabel, t } = useI18n();
+  const { t } = useI18n();
   const searchDropdownRef = useRef<HTMLDivElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const searchShellRef = useRef<HTMLDivElement | null>(null);
   const searchViewportRef = useRef<HTMLDivElement | null>(null);
-  const [query, setQuery] = useState('');
   const [opened, setOpened] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [debouncedQuery] = useDebouncedValue(query.trim(), 250);
-  const canSearch = debouncedQuery.length >= 2;
+  const { isFetching, query, results, setQuery, stateMessage } = useGlobalSearchQuery();
 
-  const searchQuery = useQuery({
-    queryKey: queryKeys.globalSearchResults(debouncedQuery),
-    queryFn: () => fetchGlobalSearch(debouncedQuery),
-    enabled: canSearch,
-    staleTime: 10_000,
-  });
-
-  const results = searchQuery.data ?? [];
-  const shouldShowPanel = opened && (query.trim().length > 0 || searchQuery.isFetching || results.length > 0);
+  const shouldShowPanel = opened && (query.trim().length > 0 || isFetching || results.length > 0);
 
   useEffect(() => {
     setActiveIndex(0);
-  }, [debouncedQuery, results.length]);
+  }, [query, results.length]);
 
-  const openResult = (result: (typeof results)[number]) => {
+  const openResult = (result: GlobalSearchResult) => {
     navigate(result.href);
     setOpened(false);
     setQuery('');
@@ -111,28 +66,8 @@ export function GlobalSearch() {
     };
   }, [opened]);
 
-  const stateMessage = useMemo(() => {
-    if (!canSearch) {
-      return t('search.minLength');
-    }
-
-    if (searchQuery.isLoading || searchQuery.isFetching) {
-      return t('search.searching');
-    }
-
-    if (searchQuery.isError) {
-      return t('search.error');
-    }
-
-    if (results.length === 0) {
-      return t('search.noResults');
-    }
-
-    return null;
-  }, [canSearch, results.length, searchQuery.isError, searchQuery.isFetching, searchQuery.isLoading, t]);
-
   return (
-    <Box className="global-search-shell" ref={searchShellRef}>
+    <Box className="global-search-shell" data-focused={opened || undefined} ref={searchShellRef}>
       <Popover
         opened={shouldShowPanel}
         onChange={setOpened}
@@ -188,7 +123,7 @@ export function GlobalSearch() {
             placeholder={t('search.placeholder')}
             radius="md"
             rightSection={
-              searchQuery.isFetching ? (
+              isFetching ? (
                 <Loader size={16} />
               ) : query ? (
                 <ActionIcon
@@ -226,48 +161,15 @@ export function GlobalSearch() {
               viewportRef={searchViewportRef}
             >
               <Stack gap={4}>
-                {results.map((result, index) => {
-                  const isActive = index === activeIndex;
-                  const meta = kindMeta[result.kind];
-                  const Icon = meta.icon;
-
-                  return (
-                    <UnstyledButton
-                      aria-selected={isActive}
-                      className="global-search-result"
-                      data-active={isActive || undefined}
-                      key={`${result.kind}-${result.id}`}
-                      onMouseDown={(event) => event.preventDefault()}
-                      onMouseEnter={() => setActiveIndex(index)}
-                      onClick={() => openResult(result)}
-                      role="option"
-                    >
-                      <Group gap="sm" wrap="nowrap" align="flex-start">
-                        <Box className="global-search-result-icon" data-kind={result.kind}>
-                          <Icon size={16} />
-                        </Box>
-                        <Box flex={1} miw={0}>
-                          <Group gap="xs" wrap="nowrap">
-                            <Text fw={700} size="sm" lineClamp={1}>
-                              {result.title}
-                            </Text>
-                            <Badge color={meta.color} size="xs" variant="light">
-                              {searchKindLabel(result.kind)}
-                            </Badge>
-                          </Group>
-                          <Text c="dimmed" size="xs" lineClamp={1}>
-                            {result.subtitle}
-                          </Text>
-                        </Box>
-                        {result.status ? (
-                          <Badge color="gray" size="xs" variant="outline">
-                            {statusLabel(result.status)}
-                          </Badge>
-                        ) : null}
-                      </Group>
-                    </UnstyledButton>
-                  );
-                })}
+                {results.map((result, index) => (
+                  <GlobalSearchResultRow
+                    active={index === activeIndex}
+                    key={`${result.kind}-${result.id}`}
+                    onActivate={openResult}
+                    onHover={() => setActiveIndex(index)}
+                    result={result}
+                  />
+                ))}
               </Stack>
             </ScrollArea.Autosize>
           )}
