@@ -7,7 +7,7 @@ const DEMO_UNLOCK_STORAGE_KEY = 'kbfe.demo.unlocked';
  * capability to hide that whole screen + its sidebar entry; `/fds-admin` reveals it.
  * Empty by default — arbitrary in-page UI is hidden with `<AdminOnly>` instead.
  */
-export const DEMO_HIDDEN_CAPABILITIES = new Set<Capability>([]);
+export const DEMO_HIDDEN_CAPABILITIES: ReadonlySet<Capability> = new Set<Capability>([]);
 
 export function isDemoUnlocked() {
   if (typeof window === 'undefined') {
