@@ -1,33 +1,43 @@
 import type { Capability } from '@shared/auth/capabilities';
 
-type DemoFlagEnv = Pick<ImportMetaEnv, 'VITE_DEMO_HIDDEN' | 'VITE_DEMO_MODE'>;
+const DEMO_UNLOCK_STORAGE_KEY = 'kbfe.demo.unlocked';
 
-const enabledValues = new Set(['1', 'true', 'yes', 'on']);
+/**
+ * Capabilities hidden in the default (locked) demo view. Add a module's `*.view`
+ * capability to hide that whole screen + its sidebar entry; `/fds-admin` reveals it.
+ * Empty by default — arbitrary in-page UI is hidden with `<AdminOnly>` instead.
+ */
+export const DEMO_HIDDEN_CAPABILITIES: ReadonlySet<Capability> = new Set<Capability>([]);
 
-export function isDemoMode(env: DemoFlagEnv = import.meta.env) {
-  return enabledValues.has((env.VITE_DEMO_MODE ?? '').trim().toLowerCase());
-}
-
-export function getDemoHiddenEntries(env: DemoFlagEnv = import.meta.env) {
-  if (!isDemoMode(env)) {
-    return new Set<string>();
+export function isDemoUnlocked() {
+  if (typeof window === 'undefined') {
+    return false;
   }
 
-  return new Set(
-    (env.VITE_DEMO_HIDDEN ?? '')
-      .split(',')
-      .map((entry) => entry.trim())
-      .filter(Boolean),
-  );
+  return window.localStorage.getItem(DEMO_UNLOCK_STORAGE_KEY) === '1';
 }
 
-export function isDemoHidden(capability: Capability, env: DemoFlagEnv = import.meta.env) {
-  const hiddenEntries = getDemoHiddenEntries(env);
-  const moduleName = capability.split('.')[0];
+export function setDemoUnlocked(unlocked: boolean) {
+  if (typeof window === 'undefined') {
+    return;
+  }
 
-  return (
-    hiddenEntries.has(capability) ||
-    hiddenEntries.has(moduleName) ||
-    hiddenEntries.has(`${moduleName}.*`)
-  );
+  if (unlocked) {
+    window.localStorage.setItem(DEMO_UNLOCK_STORAGE_KEY, '1');
+    return;
+  }
+
+  window.localStorage.removeItem(DEMO_UNLOCK_STORAGE_KEY);
+}
+
+export function isCapabilityDemoHidden(
+  capability: Capability,
+  hiddenCapabilities: ReadonlySet<Capability>,
+  unlocked: boolean,
+) {
+  return !unlocked && hiddenCapabilities.has(capability);
+}
+
+export function isDemoHidden(capability: Capability) {
+  return isCapabilityDemoHidden(capability, DEMO_HIDDEN_CAPABILITIES, isDemoUnlocked());
 }

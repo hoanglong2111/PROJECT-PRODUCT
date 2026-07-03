@@ -2,7 +2,6 @@ import { isDemoHidden } from '@shared/config/featureFlags';
 import { CAPABILITIES, type Capability } from './capabilities';
 import type { AppRole, AuthUser } from './types';
 
-type CapabilityEnv = Parameters<typeof isDemoHidden>[1];
 const knownCapabilities = new Set<Capability>(CAPABILITIES);
 
 const managerCapabilities = [
@@ -103,11 +102,10 @@ export function capabilitiesForUser(user: Pick<AuthUser, 'permissions' | 'role'>
 export function canUserAccessCapability(
   user: Pick<AuthUser, 'permissions' | 'role'>,
   capability: Capability,
-  env?: CapabilityEnv,
 ) {
   return (
     knownCapabilities.has(capability) &&
     capabilitiesForUser(user).includes(capability) &&
-    !isDemoHidden(capability, env)
+    !isDemoHidden(capability)
   );
 }

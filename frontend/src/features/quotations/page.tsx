@@ -45,11 +45,8 @@ export function Quotations() {
   const search = useQuotationsUiStore((s) => s.search);
   const typeFilter = useQuotationsUiStore((s) => s.typeFilter);
   const supplierFilter = useQuotationsUiStore((s) => s.supplierFilter);
-  const modeFilter = useQuotationsUiStore((s) => s.modeFilter);
   const createdFrom = useQuotationsUiStore((s) => s.createdFrom);
   const createdTo = useQuotationsUiStore((s) => s.createdTo);
-  const validFrom = useQuotationsUiStore((s) => s.validFrom);
-  const validTo = useQuotationsUiStore((s) => s.validTo);
 
   const quotationsQuery = useQuery({
     queryKey: queryKeys.quotations,
@@ -74,12 +71,10 @@ export function Quotations() {
         .includes(normalizedSearch);
       const matchesType = typeFilter === 'all' || quotation.quotation_type === typeFilter;
       const matchesSupplier = !supplierFilter || quotation.supplier_id === supplierFilter;
-      const matchesMode = modeFilter === 'all' || quotation.mode === modeFilter;
       const matchesCreated = inDateRange(quotation.create_at, createdFrom, createdTo);
-      const matchesValid = inDateRange(quotation.valid_until, validFrom, validTo);
-      return matchesTab && matchesSearch && matchesType && matchesSupplier && matchesMode && matchesCreated && matchesValid;
+      return matchesTab && matchesSearch && matchesType && matchesSupplier && matchesCreated;
     });
-  }, [quotations, activeTab, search, typeFilter, supplierFilter, modeFilter, createdFrom, createdTo, validFrom, validTo]);
+  }, [quotations, activeTab, search, typeFilter, supplierFilter, createdFrom, createdTo]);
 
   const tabCounts = useMemo(
     () =>

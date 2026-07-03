@@ -19,6 +19,7 @@ import type { ShipmentCostPayload, ShipmentDocumentPayload, ShipmentMilestoneCod
 import { EntityLink } from '@entities/logistics';
 import { CopyValue } from '@shared/components/CopyValue';
 import { StatusBadge } from '@shared/components/StatusBadge';
+import { AdminOnly } from '@shared/auth/AdminOnly';
 
 import { channelColor } from '../model/shipmentModel';
 import { ShipmentCarrierDoPanel } from './ShipmentCarrierDoPanel';
@@ -114,9 +115,11 @@ export function ShipmentDetailView({
           <Tabs.Tab value="tasks" leftSection={<IconChecklist size={14} />}>
             {t('shipments.tasks')}
           </Tabs.Tab>
-          <Tabs.Tab value="carrier-do" leftSection={<IconFileInvoice size={14} />}>
-            {t('shipments.carrierDo')}
-          </Tabs.Tab>
+          <AdminOnly>
+            <Tabs.Tab value="carrier-do" leftSection={<IconFileInvoice size={14} />}>
+              {t('shipments.carrierDo')}
+            </Tabs.Tab>
+          </AdminOnly>
           <Tabs.Tab value="fds-do" leftSection={<IconFileInvoice size={14} />}>
             {t('shipments.fdsDo')}
           </Tabs.Tab>
@@ -171,11 +174,13 @@ export function ShipmentDetailView({
           <ShipmentTasksPanel tasks={shipment.po_tasks} />
         </Tabs.Panel>
 
-        <Tabs.Panel value="carrier-do" pt="sm">
-          <ShipmentCarrierDoPanel shipment={shipment} />
-        </Tabs.Panel>
+        {/* FDS-only tab: hidden in the demo view, revealed via /fds-admin. */}
+        <AdminOnly>
+          <Tabs.Panel value="carrier-do" pt="sm">
+            <ShipmentCarrierDoPanel shipment={shipment} />
+          </Tabs.Panel>
+        </AdminOnly>
 
-        {/* FDS-only permissions are deferred; UI is visible for now. */}
         <Tabs.Panel value="fds-do" pt="sm">
           <ShipmentCarrierDoPanel shipment={shipment} />
         </Tabs.Panel>

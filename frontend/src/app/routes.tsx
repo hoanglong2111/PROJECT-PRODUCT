@@ -2,6 +2,7 @@ import { lazy, type ComponentType, type ReactElement } from 'react';
 import { Route, Routes } from 'react-router-dom';
 
 import type { Capability } from '@shared/auth/capabilities';
+import { FdsAdminRoute, FdsDemoRoute } from '@shared/auth/FdsAdminRoute';
 import { RequireAuth } from '@shared/auth/RequireAuth';
 import { RequireCapability } from '@shared/auth/RequireCapability';
 import { AppShellLayout } from '@shared/components/AppShellLayout';
@@ -34,6 +35,8 @@ const Unauthorized = lazyFeature(() => import('@features/unauthorized/page'), 'U
 const publicRoutes: RouteConfig[] = [
   { path: '/login', element: <Login /> },
   { path: '/unauthorized', element: <Unauthorized /> },
+  { path: '/fds-admin', element: <FdsAdminRoute /> },
+  { path: '/fds-demo', element: <FdsDemoRoute /> },
 ];
 
 const workspaceRoutes: RouteConfig[] = [
