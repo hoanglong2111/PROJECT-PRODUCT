@@ -17,6 +17,7 @@ import type { ReactNode } from 'react';
 import type { ShipmentRecord } from '@shared/api/logistics';
 import type { ShipmentCostPayload, ShipmentDocumentPayload, ShipmentMilestoneCodeV1 } from '@shared/api/shipments';
 import { EntityLink } from '@entities/logistics';
+import { CopyValue } from '@shared/components/CopyValue';
 import { StatusBadge } from '@shared/components/StatusBadge';
 
 import { channelColor } from '../model/shipmentModel';
@@ -67,7 +68,9 @@ export function ShipmentDetailView({
         <Group justify="space-between" align="flex-start">
           <div>
             <Group gap="xs" mb={4} wrap="nowrap">
-              <Title order={3}>{shipment.shipment_number}</Title>
+              <Title order={3}>
+                <CopyValue value={shipment.shipment_number}>{shipment.shipment_number}</CopyValue>
+              </Title>
               <StatusBadge status={shipment.status} />
             </Group>
             <Text c="dimmed" size="sm">
@@ -113,6 +116,9 @@ export function ShipmentDetailView({
           </Tabs.Tab>
           <Tabs.Tab value="carrier-do" leftSection={<IconFileInvoice size={14} />}>
             {t('shipments.carrierDo')}
+          </Tabs.Tab>
+          <Tabs.Tab value="fds-do" leftSection={<IconFileInvoice size={14} />}>
+            {t('shipments.fdsDo')}
           </Tabs.Tab>
           <Tabs.Tab value="dtos" leftSection={<IconTruck size={14} />}>
             DTOs
@@ -166,6 +172,11 @@ export function ShipmentDetailView({
         </Tabs.Panel>
 
         <Tabs.Panel value="carrier-do" pt="sm">
+          <ShipmentCarrierDoPanel shipment={shipment} />
+        </Tabs.Panel>
+
+        {/* FDS-only permissions are deferred; UI is visible for now. */}
+        <Tabs.Panel value="fds-do" pt="sm">
           <ShipmentCarrierDoPanel shipment={shipment} />
         </Tabs.Panel>
 
@@ -297,12 +308,14 @@ function ShipmentOverviewCard({ shipment, t }: { shipment: ShipmentRecord; t: (k
                 {channelLabel}
               </Badge>
             }
-            meta={shipment.customs.lane_status || shipment.customs.declaration_no || '-'}
+            meta={shipment.customs.declaration_no || shipment.customs.lane_status || '-'}
+            metaCopyable={Boolean(shipment.customs.declaration_no)}
           />
           <ShipmentCommandItem
             icon={<IconFileInvoice size={18} />}
             label={t('shipments.blAwb')}
             value={shipment.bl_awb_no || '-'}
+            copyable
             meta={`${[shipment.shipping_mode, shipment.load_type].filter(Boolean).join(' / ')} · ${t('shipments.port')}: ${shipment.dest_port || '-'}`}
           />
         </div>
@@ -347,12 +360,16 @@ function ShipmentCommandItem({
   icon,
   label,
   meta,
+  metaCopyable = false,
   value,
   valueNode,
+  copyable = false,
 }: {
+  copyable?: boolean;
   icon: ReactNode;
   label: string;
   meta: string;
+  metaCopyable?: boolean;
   value?: string;
   valueNode?: ReactNode;
 }) {
@@ -366,11 +383,11 @@ function ShipmentCommandItem({
           </Text>
           {valueNode ?? (
             <Text fw={800} lineClamp={1} title={value}>
-              {value || '-'}
+              {copyable && value ? <CopyValue value={value}>{value}</CopyValue> : value || '-'}
             </Text>
           )}
           <Text size="xs" c="dimmed" lineClamp={1} title={meta}>
-            {meta || '-'}
+            {metaCopyable && meta ? <CopyValue value={meta}>{meta}</CopyValue> : meta || '-'}
           </Text>
         </div>
       </Group>

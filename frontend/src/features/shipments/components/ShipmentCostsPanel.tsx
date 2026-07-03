@@ -19,6 +19,7 @@ import { useState } from 'react';
 import type { ShipmentCost, ShipmentRecord } from '@shared/api/logistics';
 import type { ShipmentCostPayload } from '@shared/api/shipments';
 import type { Gd1CostType } from '@shared/model/logistics';
+import { CopyValue } from '@shared/components/CopyValue';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { useTradeMasterDataOptions } from '@shared/hooks/useTradeMasterDataOptions';
 import { convertToBase, formatMoney } from '@shared/utils/money';
@@ -236,7 +237,7 @@ export function ShipmentCostsPanel({
                         <Text size="sm">{cost.description || '-'}</Text>
                         {cost.invoice_ref ? (
                           <Text size="xs" c="dimmed">
-                            {cost.invoice_ref}
+                            <CopyValue value={cost.invoice_ref}>{cost.invoice_ref}</CopyValue>
                           </Text>
                         ) : null}
                       </Table.Td>

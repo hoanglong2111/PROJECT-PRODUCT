@@ -39,6 +39,7 @@ import type {
   DomesticTransportOrderLineV1,
   DomesticTransportOrderV1,
 } from '@shared/api/domesticTransportOrders';
+import { CopyValue } from '@shared/components/CopyValue';
 import { EmptyState } from '@shared/components/EmptyState';
 import { EntityLink } from '@entities/logistics';
 import { DateTimeField } from '@shared/components/DateField';
@@ -157,7 +158,9 @@ export function DomesticTransportOrderDetail({
           <Group justify="space-between" align="flex-start" className="dto-detail-title-row">
             <div>
               <Group gap="xs">
-                <Title order={3}>{order.dto_no}</Title>
+                <Title order={3}>
+                  <CopyValue value={order.dto_no}>{order.dto_no}</CopyValue>
+                </Title>
                 <StatusBadge status={order.status} />
                 {isFetching ? <Loader size="xs" /> : null}
               </Group>
@@ -311,6 +314,11 @@ export function DomesticTransportOrderDetail({
                 label={t('domesticTransportOrders.truckVendor')}
                 value={truckVendor}
                 meta={`${t('domesticTransportOrders.carrierDo')}: ${carrierDo}`}
+                metaNode={(
+                  <>
+                    {t('domesticTransportOrders.carrierDo')}: <CopyValue value={carrierDo}>{carrierDo}</CopyValue>
+                  </>
+                )}
               />
               <OverviewSummaryCard
                 accent="teal"
@@ -524,12 +532,14 @@ function OverviewSummaryCard({
   icon,
   label,
   meta,
+  metaNode,
   value,
 }: {
   accent?: 'blue' | 'cyan' | 'gray' | 'teal';
   icon: ReactNode;
   label: string;
   meta: string;
+  metaNode?: ReactNode;
   value: string;
 }) {
   return (
@@ -541,7 +551,7 @@ function OverviewSummaryCard({
         <div className="dto-overview-summary-content">
           <Text className="metric-label" size="xs" fw={700} tt="uppercase">{label}</Text>
           <Text fw={800} lineClamp={1} title={value}>{value}</Text>
-          <Text size="xs" c="dimmed" lineClamp={2} title={meta}>{meta}</Text>
+          <Text size="xs" c="dimmed" lineClamp={2} title={meta}>{metaNode ?? meta}</Text>
         </div>
       </Group>
     </Paper>

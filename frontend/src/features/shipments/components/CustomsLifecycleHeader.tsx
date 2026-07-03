@@ -2,6 +2,7 @@ import { Badge, Group, Paper, Stepper, Text, Tooltip } from '@mantine/core';
 import { IconCheck, IconX } from '@tabler/icons-react';
 
 import type { CustomsDeclarationV1 } from '@shared/api/customsDeclarations';
+import { CopyValue } from '@shared/components/CopyValue';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { useI18n } from '@shared/i18n';
 
@@ -23,7 +24,13 @@ export function CustomsLifecycleHeader({ declaration }: { declaration: CustomsDe
       <Group justify="space-between" align="flex-start" mb="md">
         <div>
           <Group gap="xs">
-            <Text fw={700}>{declaration.declaration_no ?? t('shipments.draftDeclaration')}</Text>
+            <Text fw={700}>
+              {declaration.declaration_no ? (
+                <CopyValue value={declaration.declaration_no}>{declaration.declaration_no}</CopyValue>
+              ) : (
+                t('shipments.draftDeclaration')
+              )}
+            </Text>
             <StatusBadge status={declaration.status} />
             {declaration.customs_channel ? (
               <Tooltip label={t(channelHintKey(declaration.customs_channel))}>

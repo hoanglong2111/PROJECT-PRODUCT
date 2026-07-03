@@ -1,4 +1,4 @@
-import type { QuotationChargeLineV1, QuotationStatusV1, QuotationV1 } from '@shared/api/quotations';
+import type { QuotationChargeLineV1, QuotationStatusV1, QuotationTypeV1, QuotationV1 } from '@shared/api/quotations';
 import type { MessageKey } from '@shared/i18n';
 import type { ShippingMode } from '@shared/model/logistics';
 
@@ -62,3 +62,21 @@ export function quotationDisplayTotal(
 export function isQuotationConfirmed(quotation: Pick<QuotationV1, 'status'>): boolean {
   return quotation.status === 'CONFIRMED';
 }
+
+/** Nhan rut gon hien thi tren badge bang danh sach. */
+export const quotationTypeShortLabels: Record<QuotationTypeV1, string> = {
+  FREIGHT: 'FREIGHT',
+  LOCAL_CHARGE: 'LOCAL',
+  CUSTOMS: 'CUSTOMS',
+  TRUCKING: 'TRUCK',
+  MIXED: 'MIXED',
+};
+
+/** i18n key ten day du dung cho tooltip. */
+export const quotationTypeFullLabelKeys: Record<QuotationTypeV1, MessageKey> = {
+  FREIGHT: 'quotations.type.freight',
+  LOCAL_CHARGE: 'quotations.type.localCharge',
+  CUSTOMS: 'quotations.type.customs',
+  TRUCKING: 'quotations.type.trucking',
+  MIXED: 'quotations.type.mixed',
+};

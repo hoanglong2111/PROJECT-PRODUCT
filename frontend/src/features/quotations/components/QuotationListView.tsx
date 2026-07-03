@@ -1,35 +1,74 @@
-import { ActionIcon, Paper, SimpleGrid, Stack, Text, TextInput, Title, Tooltip } from '@mantine/core';
+import { ActionIcon, Badge, Button, Group, Paper, Select, SimpleGrid, Stack, Text, TextInput, Title, Tooltip } from '@mantine/core';
 import { IconClock, IconEye, IconFileInvoice, IconSearch, IconX } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 
 import type { QuotationV1 } from '@shared/api/quotations';
+import { CopyValue } from '@shared/components/CopyValue';
+import { DateField } from '@shared/components/DateField';
 import { EmptyState } from '@shared/components/EmptyState';
 import { ListPagination, useListPagination } from '@shared/components/ListPagination';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { useI18n } from '@shared/i18n';
+import { formatDate } from '@shared/utils/date';
 import { formatMoney } from '@shared/utils/money';
 
 import {
   quotationTabItems,
   quotationDisplayTotal,
+  quotationModeOptions,
+  quotationTypeFullLabelKeys,
+  quotationTypeShortLabels,
   type QuotationTab,
 } from '../model/quotationModel';
 import { useQuotationsUiStore } from '../model/quotationsUiStore';
+import { QuotationValidityBadge } from './QuotationValidityBadge';
 
 type QuotationListViewProps = {
   filteredQuotations: QuotationV1[];
+  supplierOptions: { value: string; label: string }[];
   tabCounts: Record<QuotationTab, number>;
   onInspect: (quotation: QuotationV1) => void;
 };
 
-export function QuotationListView({ filteredQuotations, onInspect, tabCounts }: QuotationListViewProps) {
+export function QuotationListView({ filteredQuotations, onInspect, supplierOptions, tabCounts }: QuotationListViewProps) {
   const { t } = useI18n();
   const activeTab = useQuotationsUiStore((s) => s.activeTab);
   const setActiveTab = useQuotationsUiStore((s) => s.setActiveTab);
   const search = useQuotationsUiStore((s) => s.search);
   const setSearch = useQuotationsUiStore((s) => s.setSearch);
+  const typeFilter = useQuotationsUiStore((s) => s.typeFilter);
+  const setTypeFilter = useQuotationsUiStore((s) => s.setTypeFilter);
+  const supplierFilter = useQuotationsUiStore((s) => s.supplierFilter);
+  const setSupplierFilter = useQuotationsUiStore((s) => s.setSupplierFilter);
+  const modeFilter = useQuotationsUiStore((s) => s.modeFilter);
+  const setModeFilter = useQuotationsUiStore((s) => s.setModeFilter);
+  const createdFrom = useQuotationsUiStore((s) => s.createdFrom);
+  const setCreatedFrom = useQuotationsUiStore((s) => s.setCreatedFrom);
+  const createdTo = useQuotationsUiStore((s) => s.createdTo);
+  const setCreatedTo = useQuotationsUiStore((s) => s.setCreatedTo);
+  const validFrom = useQuotationsUiStore((s) => s.validFrom);
+  const setValidFrom = useQuotationsUiStore((s) => s.setValidFrom);
+  const validTo = useQuotationsUiStore((s) => s.validTo);
+  const setValidTo = useQuotationsUiStore((s) => s.setValidTo);
+  const clearFilters = useQuotationsUiStore((s) => s.clearFilters);
+  const hasActiveFilters =
+    Boolean(search) ||
+    typeFilter !== 'all' ||
+    Boolean(supplierFilter) ||
+    modeFilter !== 'all' ||
+    Boolean(createdFrom || createdTo || validFrom || validTo);
 
-  const pagination = useListPagination(filteredQuotations, [activeTab, search]);
+  const pagination = useListPagination(filteredQuotations, [
+    activeTab,
+    search,
+    typeFilter,
+    supplierFilter,
+    modeFilter,
+    createdFrom,
+    createdTo,
+    validFrom,
+    validTo,
+  ]);
 
   return (
     <Stack gap="md" className="rfq-list">
@@ -92,6 +131,64 @@ export function QuotationListView({ filteredQuotations, onInspect, tabCounts }: 
             onChange={(event) => setSearch(event.currentTarget.value)}
             className="rfq-list-search dl-filter-search"
           />
+          <div className="rfq-list-filter-row dl-filter-row">
+            <Select
+              label={t('quotations.filterType')}
+              value={typeFilter}
+              onChange={(value) => setTypeFilter((value ?? 'all') as typeof typeFilter)}
+              data={[
+                { value: 'all', label: t('common.all') },
+                ...(Object.keys(quotationTypeShortLabels) as (keyof typeof quotationTypeShortLabels)[]).map((key) => ({
+                  value: key,
+                  label: t(quotationTypeFullLabelKeys[key]),
+                })),
+              ]}
+            />
+            <Select
+              label={t('common.supplier')}
+              placeholder={t('common.all')}
+              value={supplierFilter}
+              onChange={setSupplierFilter}
+              data={supplierOptions}
+              searchable
+              clearable
+              nothingFoundMessage={t('common.all')}
+            />
+            <Select
+              label={t('quotations.filterMode')}
+              value={modeFilter}
+              onChange={(value) => setModeFilter(value ?? 'all')}
+              data={[{ value: 'all', label: t('common.all') }, ...quotationModeOptions]}
+            />
+            <DateField
+              label={t('quotations.filterCreatedFrom')}
+              value={createdFrom}
+              onChange={(value) => setCreatedFrom(value ?? '')}
+            />
+            <DateField
+              label={t('quotations.filterCreatedTo')}
+              value={createdTo}
+              onChange={(value) => setCreatedTo(value ?? '')}
+            />
+            <DateField
+              label={t('quotations.filterValidFrom')}
+              value={validFrom}
+              onChange={(value) => setValidFrom(value ?? '')}
+            />
+            <DateField
+              label={t('quotations.filterValidTo')}
+              value={validTo}
+              onChange={(value) => setValidTo(value ?? '')}
+            />
+            <Button
+              variant={hasActiveFilters ? 'light' : 'subtle'}
+              leftSection={<IconX size={16} />}
+              onClick={clearFilters}
+              disabled={!hasActiveFilters}
+            >
+              {t('common.clear')}
+            </Button>
+          </div>
         </div>
       </Paper>
 
@@ -107,8 +204,10 @@ export function QuotationListView({ filteredQuotations, onInspect, tabCounts }: 
                 <span className="rfq-list-head-code">{t('quotations.quoteNumber')}</span>
                 <span className="rfq-list-head-customer">{t('quotations.customer')}</span>
                 <span className="rfq-list-head-route">{t('quotations.route')}</span>
+                <span className="rfq-list-head-type">{t('quotations.typeColumn')}</span>
                 <span className="rfq-list-head-money">{t('quotations.total')}</span>
                 <span className="rfq-list-head-status">{t('quotations.status')}</span>
+                <span className="rfq-list-head-created">{t('quotations.createdColumn')}</span>
                 <span className="rfq-list-head-action" />
               </div>
 
@@ -119,12 +218,19 @@ export function QuotationListView({ filteredQuotations, onInspect, tabCounts }: 
                       <Text size="xs" c="dimmed" className="rfq-list-mobile-label">
                         {t('quotations.quoteNumber')}
                       </Text>
-                      <Text fw={800} size="sm">
-                        {quotation.quotation_no}
-                      </Text>
-                      <Text size="xs" c="dimmed">
-                        {quotation.valid_until ?? '-'}
-                      </Text>
+                      <CopyValue value={quotation.quotation_no} hoverReveal>
+                        <Group gap={6} wrap="nowrap" component="span" align="center">
+                          <Text component="span" fw={800} size="sm" className="dl-code-text">
+                            {quotation.quotation_no}
+                          </Text>
+                          {quotation.is_final ? (
+                            <Badge size="xs" variant="light" color="blue">
+                              FINAL
+                            </Badge>
+                          ) : null}
+                        </Group>
+                      </CopyValue>
+                      <QuotationValidityBadge validUntil={quotation.valid_until} />
                     </div>
 
                     <div className="rfq-list-cell">
@@ -134,6 +240,11 @@ export function QuotationListView({ filteredQuotations, onInspect, tabCounts }: 
                       <Text size="sm" fw={600}>
                         {quotation.customer_ref ?? '-'}
                       </Text>
+                      {quotation.supplier?.supplier_name ? (
+                        <Text size="xs" c="dimmed">
+                          {t('quotations.supplierShort')}: {quotation.supplier.supplier_name}
+                        </Text>
+                      ) : null}
                     </div>
 
                     <div className="rfq-list-cell rfq-list-route">
@@ -146,6 +257,17 @@ export function QuotationListView({ filteredQuotations, onInspect, tabCounts }: 
                       <Text size="xs" c="dimmed">
                         {quotation.incoterm_code ?? '-'}
                       </Text>
+                    </div>
+
+                    <div className="rfq-list-cell rfq-list-type">
+                      <Text size="xs" c="dimmed" className="rfq-list-mobile-label">
+                        {t('quotations.typeColumn')}
+                      </Text>
+                      <Tooltip label={t(quotationTypeFullLabelKeys[quotation.quotation_type])}>
+                        <Badge size="xs" variant="light" color="grape">
+                          {quotationTypeShortLabels[quotation.quotation_type]}
+                        </Badge>
+                      </Tooltip>
                     </div>
 
                     <div className="rfq-list-cell rfq-list-money">
@@ -162,6 +284,13 @@ export function QuotationListView({ filteredQuotations, onInspect, tabCounts }: 
                         {t('quotations.status')}
                       </Text>
                       <StatusBadge status={quotation.status} />
+                    </div>
+
+                    <div className="rfq-list-cell rfq-list-created">
+                      <Text size="xs" c="dimmed" className="rfq-list-mobile-label">
+                        {t('quotations.createdColumn')}
+                      </Text>
+                      <Text size="sm">{formatDate(quotation.create_at)}</Text>
                     </div>
 
                     <div className="rfq-list-cell rfq-list-action">

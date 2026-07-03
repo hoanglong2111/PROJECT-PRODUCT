@@ -84,11 +84,20 @@ html[data-kbfe-visual-theme='high-contrast'] .mantine-AppShell-navbar {
 
 /* Collapse toggle: sits beside the logo (expanded, absolutely pinned to the
    header's right edge) and drops into the sidebar top (collapsed, below). */
+/* No hover/press transform or transition here: the shared button effects
+   (base.css) animate `transform`, which fights this button's own centering
+   transform and made the icon appear to jump under the cursor mid-click. */
 .brand-collapse-toggle {
   position: absolute;
   top: 50%;
   right: var(--kbfe-space-md);
-  transform: translateY(-50%);
+  transform: translateY(-50%) !important;
+  transition: none !important;
+}
+
+.brand-collapse-toggle:hover,
+.brand-collapse-toggle:active:not(:disabled) {
+  transform: translateY(-50%) !important;
 }
 
 .app-shell-navbar-top {
@@ -189,7 +198,7 @@ html[data-kbfe-visual-theme='high-contrast'] .mantine-AppShell-navbar {
 }
 
 .brand-wordmark-line {
-  color: var(--kbfe-text-primary);
+  color: #063891;
   line-height: 1.15;
   white-space: nowrap;
 }
@@ -197,7 +206,7 @@ html[data-kbfe-visual-theme='high-contrast'] .mantine-AppShell-navbar {
 .brand-wordmark-sub {
   font-size: 0.75rem;
   font-weight: 500;
-  color: var(--kbfe-text-secondary);
+  color: #fd5807;
 }
 
 .brand-zone[data-rail='true'] {

@@ -2,6 +2,7 @@ import { ActionIcon, Group, Paper, ScrollArea, Table, Text, Tooltip } from '@man
 import { IconExternalLink } from '@tabler/icons-react';
 
 import type { DomesticTransportOrderV1 } from '@shared/api/domesticTransportOrders';
+import { CopyValue } from '@shared/components/CopyValue';
 import { DateTimeText } from '@shared/components/DateTimeText';
 import { EmptyState } from '@shared/components/EmptyState';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
@@ -44,7 +45,13 @@ export function DtoListTable({
         </Text>
       </Group>
       <ScrollArea className="dto-list-scroll data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
-        <Table miw={820} verticalSpacing="sm" highlightOnHover className="dto-table dto-list-table">
+        <Table
+          miw={1180}
+          verticalSpacing="sm"
+          highlightOnHover
+          data-with-row-border
+          className="dto-table dto-list-table"
+        >
           <Table.Thead>
             <Table.Tr>
               <Table.Th className="dto-col-dto">
@@ -66,20 +73,26 @@ export function DtoListTable({
                 className={order.id === selectedDtoId ? 'dto-list-row is-selected' : 'dto-list-row'}
                 onClick={() => onSelect(order)}
               >
-                <Table.Td className="dto-identity-cell dto-col-dto">
-                  <Text fw={700} className="dl-code-text">{order.dto_no}</Text>
+                <Table.Td className="table-cell-truncate dto-identity-cell dto-col-dto" style={{ maxWidth: '16rem' }}>
+                  <CopyValue value={order.dto_no} hoverReveal>
+                    <Text component="span" fw={700} lineClamp={1} title={order.dto_no} className="dl-code-text">{order.dto_no}</Text>
+                  </CopyValue>
                   <Text size="xs" c="dimmed">{order.vehicle_plate ?? order.vehicle_type ?? '-'}</Text>
                 </Table.Td>
-                <Table.Td className="dto-shipment-cell dto-col-shipment">
-                  <Text size="sm">
+                <Table.Td className="table-cell-truncate dto-shipment-cell dto-col-shipment" style={{ maxWidth: '17rem' }}>
+                  <Text size="sm" lineClamp={1} title={order.shipment?.shipment_no ?? order.shipments?.[0]?.shipment_no ?? order.shipment_id}>
                     {order.shipments && order.shipments.length > 1
                       ? t('domesticTransportOrders.shipmentsCount', { count: order.shipments.length })
                       : order.shipment?.shipment_no ?? order.shipments?.[0]?.shipment_no ?? order.shipment_id}
                   </Text>
                   <Text size="xs" c="dimmed">{formatContainers(order.shipment?.container_no)}</Text>
                 </Table.Td>
-                <Table.Td className="dto-vendor-cell dto-col-vendor">{order.truck_vendor?.supplier_name ?? order.truck_vendor_id ?? '-'}</Table.Td>
-                <Table.Td className="dto-route-cell dto-col-route">
+                <Table.Td className="table-cell-truncate dto-vendor-cell dto-col-vendor" style={{ maxWidth: '18rem' }}>
+                  <Text size="sm" fw={600} lineClamp={1} title={order.truck_vendor?.supplier_name ?? order.truck_vendor_id ?? '-'}>
+                    {order.truck_vendor?.supplier_name ?? order.truck_vendor_id ?? '-'}
+                  </Text>
+                </Table.Td>
+                <Table.Td className="table-cell-truncate dto-route-cell dto-col-route" style={{ maxWidth: '22rem' }}>
                   <Text size="sm" fw={600} lineClamp={1} title={`${order.origin ?? '-'} -> ${order.destination ?? '-'}`}>
                     {order.origin ?? '-'} {'->'} {order.destination ?? '-'}
                   </Text>

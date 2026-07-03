@@ -241,13 +241,11 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
   };
 
   const toggleSidebar = () => {
-    setSidebarCollapsedState((current) => {
-      const nextCollapsed = !current;
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, String(nextCollapsed));
-      }
-      return nextCollapsed;
-    });
+    const nextCollapsed = !sidebarCollapsed;
+    setSidebarCollapsedState(nextCollapsed);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, String(nextCollapsed));
+    }
   };
 
   const setColorPreset = (nextPreset: ColorPresetId) => {

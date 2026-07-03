@@ -31,6 +31,7 @@ import {
   type ShipmentContainerV1,
 } from '@shared/api/shipmentContainers';
 import { queryKeys } from '@shared/api/queryKeys';
+import { CopyValue } from '@shared/components/CopyValue';
 import { EmptyState } from '@shared/components/EmptyState';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { useI18n } from '@shared/i18n';
@@ -202,9 +203,15 @@ export function ShipmentContainersPanel({ shipment }: { shipment: ShipmentRecord
               <Table.Tbody>
                 {containers.map((container) => (
                   <Table.Tr key={container.id}>
-                    <Table.Td><Text fw={700}>{container.container_no}</Text></Table.Td>
+                    <Table.Td>
+                      <Text fw={700}>
+                        <CopyValue value={container.container_no}>{container.container_no}</CopyValue>
+                      </Text>
+                    </Table.Td>
                     <Table.Td>{container.container_type ?? '-'}</Table.Td>
-                    <Table.Td>{container.seal_no ?? '-'}</Table.Td>
+                    <Table.Td>
+                      {container.seal_no ? <CopyValue value={container.seal_no}>{container.seal_no}</CopyValue> : '-'}
+                    </Table.Td>
                     <Table.Td>{container.gross_weight_kg ?? '-'}</Table.Td>
                     <Table.Td>{container.volume_cbm ?? '-'}</Table.Td>
                     <Table.Td>

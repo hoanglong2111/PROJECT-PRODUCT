@@ -27,6 +27,7 @@ import {
 } from '@tabler/icons-react';
 
 import type { PurchaseOrderV1 } from '@shared/api/purchaseOrders';
+import { CopyValue } from '@shared/components/CopyValue';
 import { DateField } from '@shared/components/DateField';
 import { DateTimeText } from '@shared/components/DateTimeText';
 import { EmptyState } from '@shared/components/EmptyState';
@@ -214,26 +215,27 @@ export function PurchaseOrderListView({
           </div>
         ) : (
           <ScrollArea className="data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
-            <Table className="purchase-order-list-table" miw={1180} verticalSpacing="sm" highlightOnHover>
+            <Table
+              className="purchase-order-list-table"
+              data-with-row-border
+              miw={1180}
+              verticalSpacing="sm"
+              highlightOnHover
+            >
               <Table.Thead>
                 <Table.Tr>
                   <Table.Th>
                     <HeaderLabel label="PO" hint={t('glossary.po')} />
                   </Table.Th>
-                  <Table.Th>Supplier/Shipper</Table.Th>
-                  <Table.Th>
-                    <HeaderLabel label="Terms" hint={t('glossary.incoterm')} />
-                  </Table.Th>
+                  <Table.Th>Supplier / Terms</Table.Th>
                   <Table.Th>
                     <HeaderLabel
                       label="Logistics"
                       hint={`${t('glossary.loadingPort')} -> ${t('glossary.unloadingPort')} -> ${t('glossary.warehouse')}`}
                     />
                   </Table.Th>
-                  <Table.Th>Lines</Table.Th>
-                  <Table.Th>Amount</Table.Th>
-                  <Table.Th>Delayed</Table.Th>
-                  <Table.Th>Stage</Table.Th>
+                  <Table.Th>Lines / Amount</Table.Th>
+                  <Table.Th>Stage / Delay</Table.Th>
                   <Table.Th />
                 </Table.Tr>
               </Table.Thead>
@@ -241,9 +243,11 @@ export function PurchaseOrderListView({
                 {purchaseOrders.map((order) => (
                   <Table.Tr key={order.id}>
                     <Table.Td className="table-cell-truncate purchase-order-list-po-cell" style={{ maxWidth: '16rem' }}>
-                      <Text fw={700} lineClamp={1} title={order.po_no} className="dl-code-text">
-                        {order.po_no}
-                      </Text>
+                      <CopyValue value={order.po_no} hoverReveal>
+                        <Text component="span" fw={700} lineClamp={1} title={order.po_no} className="dl-code-text">
+                          {order.po_no}
+                        </Text>
+                      </CopyValue>
                       <Text size="xs" c="dimmed">
                         Contract {order.contract_no}
                       </Text>
@@ -258,11 +262,8 @@ export function PurchaseOrderListView({
                       <Text size="xs" c="dimmed">
                         {order.supplier?.supplier_code ?? order.supplier_id}
                       </Text>
-                    </Table.Td>
-                    <Table.Td className="purchase-order-list-terms-cell">
-                      <Text size="sm">{order.incoterm?.incoterm_code ?? '-'}</Text>
                       <Text size="xs" c="dimmed">
-                        {order.transport_mode?.mode_code ?? order.payment_term ?? '-'}
+                        {order.incoterm?.incoterm_code ?? '-'} | {order.transport_mode?.mode_code ?? order.payment_term ?? '-'}
                       </Text>
                     </Table.Td>
                     <Table.Td>
@@ -270,26 +271,22 @@ export function PurchaseOrderListView({
                     </Table.Td>
                     <Table.Td className="purchase-order-list-lines-cell">
                       <Badge variant="light">{order.lines?.length ?? 0} lines</Badge>
-                    </Table.Td>
-                    <Table.Td className="purchase-order-list-money-cell">
                       <Text fw={600} className="purchase-order-money">
                         <NumberFormatter value={totalPoAmount(order.lines)} thousandSeparator />{' '}
                         {order.currency?.currency_code ?? ''}
                       </Text>
                     </Table.Td>
-                    <Table.Td className="purchase-order-list-delay-cell">
+                    <Table.Td className="po-stage-cell">
+                      <PoStageBadge order={order} />
                       {getDelayedDays(order) > 0 ? (
-                        <Badge color="red" variant="light" className="purchase-order-nowrap-badge">
+                        <Badge color="red" variant="light" mt={6} className="purchase-order-nowrap-badge">
                           {getDelayedDays(order)} days
                         </Badge>
                       ) : (
-                        <Text size="sm" c="dimmed">
+                        <Text size="xs" c="dimmed" mt={4}>
                           -
                         </Text>
                       )}
-                    </Table.Td>
-                    <Table.Td className="po-stage-cell">
-                      <PoStageBadge order={order} />
                     </Table.Td>
                     <Table.Td className="purchase-order-list-action-cell">
                       <Tooltip label="Open detail">

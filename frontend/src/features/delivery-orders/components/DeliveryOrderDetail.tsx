@@ -40,6 +40,7 @@ import {
 } from '@shared/api/deliveryOrders';
 import { queryKeys } from '@shared/api/queryKeys';
 import { BackActionButton } from '@shared/components/BackActionButton';
+import { CopyValue } from '@shared/components/CopyValue';
 import { DelayBadge } from '@shared/components/DelayBadge';
 import { ModalTitle } from '@shared/components/ModalTitle';
 import { StatusBadge } from '@shared/components/StatusBadge';
@@ -150,7 +151,11 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
         <div className="delivery-order-detail-hero-grid">
           <Stack gap="sm" className="delivery-order-detail-main">
             <Group gap="xs" align="center" wrap="wrap">
-              <Title order={3}>{deliveryOrder.order_info.order_number}</Title>
+              <Title order={3}>
+                <CopyValue value={deliveryOrder.order_info.order_number}>
+                  {deliveryOrder.order_info.order_number}
+                </CopyValue>
+              </Title>
               <StatusBadge status={deliveryOrder.order_info.status} />
               <FlowTagBadge tags={deliveryOrder.flow_tags} />
             </Group>
@@ -251,7 +256,7 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
             <Alert color="red" icon={<IconAlertTriangle size={18} />} mt="sm" className="delivery-order-detail-risk-alert">
               {t('deliveryOrders.alertRisk')}
             </Alert>
-        )}
+          )}
         {actionMutation.isError ? (
           <Alert color="red" icon={<IconAlertTriangle size={18} />} mt="md">
             {getApiErrorMessage(actionMutation.error, t('forms.apiUnknownError'))}
@@ -508,13 +513,22 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
             </Paper>
 
             <SimpleGrid cols={{ base: 1, sm: 2, xl: 4 }} spacing={0} className="do-fact-strip delivery-order-ops-facts">
-              <DeliveryOrderFact label={t('deliveryOrders.efmsBooking')} value={deliveryOrder.order_info.tracking_number ?? deliveryOrder.order_info.order_number} />
-              <DeliveryOrderFact label={t('deliveryOrders.ofAfDebitNote')} value={gates.find((gate) => gate.id === 'documents')?.passed ? t('deliveryOrders.ready') : t('deliveryOrders.waitingDocuments')} />
-              <DeliveryOrderFact label={t('deliveryOrders.finalDebitNote')} value={gates.find((gate) => gate.id === 'finance')?.passed ? t('deliveryOrders.ready') : t('deliveryOrders.waitingOpsGates')} />
-              <DeliveryOrderFact label={t('deliveryOrders.podArchive')} value={deliveryOrder.warehouse_tracking.actual_entry_date ? t('deliveryOrders.ready') : t('deliveryOrders.waitingWarehouse')} />
-            </SimpleGrid>
-          </Stack>
-        </Tabs.Panel>
+              <DeliveryOrderFact
+                label={t('deliveryOrders.efmsBooking')}
+                value={deliveryOrder.order_info.tracking_number ?? deliveryOrder.order_info.order_number}
+                copyValue={deliveryOrder.order_info.tracking_number ?? deliveryOrder.order_info.order_number}
+              />
+              <DeliveryOrderFact label={t('deliveryOrders.mblVessel')} value={`${deliveryOrder.logistics_shipping.shipping_line ?? '-'} / ${deliveryOrder.logistics_shipping.vessel_code ?? '-'}`} />
+              <DeliveryOrderFact
+                label={t('deliveryOrders.polPod')}
+                value={`${deliveryOrder.logistics_shipping.port_of_departure} ${t('deliveryOrders.routeConnector')} ${deliveryOrder.logistics_shipping.port_of_destination}`}
+              />
+      <DeliveryOrderFact label={t('deliveryOrders.ofAfDebitNote')} value={gates.find((gate) => gate.id === 'documents')?.passed ? t('deliveryOrders.ready') : t('deliveryOrders.waitingDocuments')} />
+      <DeliveryOrderFact label={t('deliveryOrders.finalDebitNote')} value={gates.find((gate) => gate.id === 'finance')?.passed ? t('deliveryOrders.ready') : t('deliveryOrders.waitingOpsGates')} />
+      <DeliveryOrderFact label={t('deliveryOrders.podArchive')} value={deliveryOrder.warehouse_tracking.actual_entry_date ? t('deliveryOrders.ready') : t('deliveryOrders.waitingWarehouse')} />
+    </SimpleGrid>
+  </Stack>
+        </Tabs.Panel >
 
         <Tabs.Panel value="documents" pt="md">
           <DocumentUploadPanel deliveryOrder={deliveryOrder} documentLabel={documentLabel} />
@@ -570,70 +584,72 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
         <Tabs.Panel value="source-lines" pt="md">
           <SourceLineTable lines={deliveryOrder.source_lines} />
         </Tabs.Panel>
-      </Tabs>
+      </Tabs >
 
-      <Modal
-        opened={closeConfirmOpen}
-        onClose={() => setCloseConfirmOpen(false)}
-        title={
-          <ModalTitle
-            feature="delivery-orders"
-            icon={<IconCircleCheck size={18} stroke={1.8} />}
-            title={t('deliveryOrders.closeConfirmTitle')}
-            subtitle={deliveryOrder.order_info.order_number}
-          />
-        }
-        centered
-      >
-        <Stack gap="md">
-          <Alert color="orange" icon={<IconAlertTriangle size={18} />}>
-            {t('deliveryOrders.closeConfirmDescription')}
-          </Alert>
-          <List spacing="xs" size="sm" center>
-            {closureChecklist.map((item) => (
-              <List.Item
-                key={item.label}
-                icon={
-                  item.ok ? (
-                    <IconCircleCheck size={18} color="var(--mantine-color-teal-6)" />
-                  ) : (
-                    <IconCircleX size={18} color="var(--mantine-color-gray-5)" />
-                  )
-                }
-              >
-                {item.label}
-              </List.Item>
-            ))}
-          </List>
-          <Group justify="flex-end" gap="xs">
-            <Button variant="subtle" onClick={() => setCloseConfirmOpen(false)}>
-              {t('common.cancel')}
-            </Button>
-            <Button
-              color="teal"
-              loading={actionMutation.isPending}
-              onClick={() => {
-                actionMutation.mutate('close');
-                setCloseConfirmOpen(false);
-              }}
+    <Modal
+      opened={closeConfirmOpen}
+      onClose={() => setCloseConfirmOpen(false)}
+      title={
+        <ModalTitle
+          feature="delivery-orders"
+          icon={<IconCircleCheck size={18} stroke={1.8} />}
+          title={t('deliveryOrders.closeConfirmTitle')}
+          subtitle={deliveryOrder.order_info.order_number}
+        />
+      }
+      centered
+    >
+      <Stack gap="md">
+        <Alert color="orange" icon={<IconAlertTriangle size={18} />}>
+          {t('deliveryOrders.closeConfirmDescription')}
+        </Alert>
+        <List spacing="xs" size="sm" center>
+          {closureChecklist.map((item) => (
+            <List.Item
+              key={item.label}
+              icon={
+                item.ok ? (
+                  <IconCircleCheck size={18} color="var(--mantine-color-teal-6)" />
+                ) : (
+                  <IconCircleX size={18} color="var(--mantine-color-gray-5)" />
+                )
+              }
             >
-              {t('deliveryOrders.closeDoAction')}
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
-    </Stack>
+              {item.label}
+            </List.Item>
+          ))}
+        </List>
+        <Group justify="flex-end" gap="xs">
+          <Button variant="subtle" onClick={() => setCloseConfirmOpen(false)}>
+            {t('common.cancel')}
+          </Button>
+          <Button
+            color="teal"
+            loading={actionMutation.isPending}
+            onClick={() => {
+              actionMutation.mutate('close');
+              setCloseConfirmOpen(false);
+            }}
+          >
+            {t('deliveryOrders.closeDoAction')}
+          </Button>
+        </Group>
+      </Stack>
+    </Modal>
+    </Stack >
   );
 }
 
-function DeliveryOrderFact({ label, value }: { label: ReactNode; value: ReactNode }) {
+function DeliveryOrderFact({ copyValue, label, value }: { copyValue?: string; label: ReactNode; value: ReactNode }) {
+  const title = typeof value === 'string' ? value : undefined;
+
   return (
     <div className="do-fact">
       <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
         {label}
       </Text>
-      <Text component="div" fw={700} lineClamp={1} title={typeof value === 'string' ? value : undefined}>
-        {value}
+      <Text fw={700} lineClamp={1} title={title}>
+        {copyValue && typeof value === 'string' ? <CopyValue value={copyValue}>{value}</CopyValue> : value}
       </Text>
     </div>
   );

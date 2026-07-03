@@ -25,6 +25,15 @@ const QUOTE_PARAM = 'quote';
 const CREATE_PARAM = 'create';
 const REVISE_PARAM = 'revise';
 
+const inDateRange = (value: string | null | undefined, from: string, to: string) => {
+  if (!from && !to) return true;
+  if (!value) return false;
+  const day = value.slice(0, 10);
+  if (from && day < from) return false;
+  if (to && day > to) return false;
+  return true;
+};
+
 export function Quotations() {
   const { t } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -34,6 +43,13 @@ export function Quotations() {
 
   const activeTab = useQuotationsUiStore((s) => s.activeTab);
   const search = useQuotationsUiStore((s) => s.search);
+  const typeFilter = useQuotationsUiStore((s) => s.typeFilter);
+  const supplierFilter = useQuotationsUiStore((s) => s.supplierFilter);
+  const modeFilter = useQuotationsUiStore((s) => s.modeFilter);
+  const createdFrom = useQuotationsUiStore((s) => s.createdFrom);
+  const createdTo = useQuotationsUiStore((s) => s.createdTo);
+  const validFrom = useQuotationsUiStore((s) => s.validFrom);
+  const validTo = useQuotationsUiStore((s) => s.validTo);
 
   const quotationsQuery = useQuery({
     queryKey: queryKeys.quotations,
@@ -56,9 +72,14 @@ export function Quotations() {
         .join(' ')
         .toLowerCase()
         .includes(normalizedSearch);
-      return matchesTab && matchesSearch;
+      const matchesType = typeFilter === 'all' || quotation.quotation_type === typeFilter;
+      const matchesSupplier = !supplierFilter || quotation.supplier_id === supplierFilter;
+      const matchesMode = modeFilter === 'all' || quotation.mode === modeFilter;
+      const matchesCreated = inDateRange(quotation.create_at, createdFrom, createdTo);
+      const matchesValid = inDateRange(quotation.valid_until, validFrom, validTo);
+      return matchesTab && matchesSearch && matchesType && matchesSupplier && matchesMode && matchesCreated && matchesValid;
     });
-  }, [quotations, activeTab, search]);
+  }, [quotations, activeTab, search, typeFilter, supplierFilter, modeFilter, createdFrom, createdTo, validFrom, validTo]);
 
   const tabCounts = useMemo(
     () =>
@@ -85,6 +106,14 @@ export function Quotations() {
   const formSource = findQuotation(reviseQuote);
   const showForm = createRequested || Boolean(formSource);
   const showList = !showForm && !selectedQuotation;
+
+  const supplierOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const q of quotations) {
+      if (q.supplier_id) map.set(q.supplier_id, q.supplier?.supplier_name ?? q.supplier_id);
+    }
+    return [...map].map(([value, label]) => ({ value, label }));
+  }, [quotations]);
 
   const updateWorkbenchParams = (
     updater: (nextParams: URLSearchParams) => void,
@@ -206,6 +235,7 @@ export function Quotations() {
       ) : (
         <QuotationListView
           filteredQuotations={filteredQuotations}
+          supplierOptions={supplierOptions}
           tabCounts={tabCounts}
           onInspect={openQuotation}
         />
