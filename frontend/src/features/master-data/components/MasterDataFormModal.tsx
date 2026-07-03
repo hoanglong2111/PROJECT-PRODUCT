@@ -2,6 +2,7 @@ import { Button, Group, Modal, Stack, type ModalProps } from '@mantine/core';
 import { IconCheck, IconX } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 
+import { ModalTitle } from '@shared/components/ModalTitle';
 import { useI18n } from '@shared/i18n';
 
 export function MasterDataFormModal({
@@ -24,7 +25,7 @@ export function MasterDataFormModal({
       opened={opened}
       onClose={onClose}
       size={size}
-      title={title}
+      title={<ModalTitle feature="master-data" title={title} />}
       centered
       classNames={{
         body: 'md-form-modal-body',

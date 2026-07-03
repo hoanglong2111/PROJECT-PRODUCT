@@ -198,7 +198,7 @@ export function DeliveryOrders() {
   }
 
   return (
-    <Stack gap="lg">
+    <Stack gap="md">
       {!selectedDeliveryOrder ? (
         <Group justify="space-between" align="flex-start" gap="md" className="dl-page-header">
           <div className="dl-page-title-block">

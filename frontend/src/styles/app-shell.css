@@ -246,6 +246,91 @@ html[data-kbfe-visual-theme='high-contrast'] .mantine-AppShell-navbar {
   font-weight: 600;
 }
 
+.profile-menu-item {
+  border-radius: 0.5rem;
+}
+
+.profile-menu-dropdown {
+  padding: 0.375rem;
+}
+
+.profile-menu-item:hover {
+  background: color-mix(in srgb, var(--kbfe-primary-color) 10%, var(--kbfe-surface-elevated));
+  color: var(--kbfe-text-primary);
+}
+
+.profile-menu-item:hover .mantine-Menu-itemSection {
+  color: var(--kbfe-primary-color);
+}
+
+.profile-menu-item-danger:hover .mantine-Menu-itemSection {
+  color: var(--mantine-color-red-6);
+}
+
+.notification-bell-static,
+.notification-bell-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notification-bell-static {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.5rem;
+  color: var(--kbfe-text-secondary);
+}
+
+.notification-bell-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.notification-bell-indicator .mantine-Indicator-indicator {
+  min-width: 1rem;
+  padding-inline: 0.25rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 1;
+  border: 2px solid var(--kbfe-glass-surface);
+}
+
+.notification-bell-trigger {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.5rem;
+  color: var(--kbfe-text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notification-bell-item {
+  padding: var(--kbfe-space-sm) var(--kbfe-space-md);
+  border-bottom: 1px solid var(--kbfe-border-primary);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--kbfe-space-xs);
+}
+
+.notification-bell-item:last-child {
+  border-bottom: none;
+}
+
+.notification-bell-item.is-unread {
+  background: color-mix(in srgb, var(--kbfe-primary-color) 6%, transparent);
+}
+
+.notification-bell-dot {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background-color: var(--mantine-color-red-6);
+  flex-shrink: 0;
+  margin-top: 0.35rem;
+}
+
 .language-toggle {
   display: inline-flex;
   align-items: center;
@@ -276,6 +361,39 @@ html[data-kbfe-visual-theme='high-contrast'] .mantine-AppShell-navbar {
 
 .profile-meta {
   max-width: 11rem;
+}
+
+.sidebar-user-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--kbfe-space-sm);
+  flex: 0 0 auto;
+  margin-top: auto;
+  padding-top: var(--kbfe-space-sm);
+  border-top: 1px solid var(--kbfe-border-primary);
+}
+
+.sidebar-user-footer-info {
+  min-width: 0;
+}
+
+.mantine-AppShell-navbar[data-rail='true'] .sidebar-user-footer {
+  flex-direction: column;
+  gap: var(--kbfe-space-sm);
+}
+
+.notification-item {
+  padding: var(--kbfe-space-sm) var(--kbfe-space-md);
+  border-bottom: 1px solid var(--kbfe-border-primary);
+}
+
+.notification-item:last-child {
+  border-bottom: none;
+}
+
+.notification-item.is-unread {
+  background: color-mix(in srgb, var(--kbfe-primary-color) 6%, transparent);
 }
 @media (max-width: 48em) {
 

@@ -2,7 +2,8 @@ import { Alert, Button, Group, Modal, Select, SimpleGrid, Stack, Textarea, TextI
 import { IconAlertTriangle } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 
-import { DateField } from '@shared/components/DateField';
+import { DateTimeField } from '@shared/components/DateField';
+import { ModalTitle } from '@shared/components/ModalTitle';
 import { useI18n } from '@shared/i18n';
 import type { PoLotStatus } from '@shared/api/purchaseOrders';
 import { getApiErrorMessage } from '@shared/lib/errors';
@@ -30,7 +31,18 @@ export function LotModal({
   }, [draft]);
 
   return (
-    <Modal opened={!!draft} onClose={onClose} title={draft?.id ? 'Edit LOT' : 'Create empty LOT'} size="lg">
+    <Modal
+      opened={!!draft}
+      onClose={onClose}
+      title={
+        <ModalTitle
+          feature="purchase-orders"
+          title={draft?.id ? t('purchaseOrders.editLotTitle') : t('purchaseOrders.createLotTitle')}
+          subtitle={localDraft?.lot_no || undefined}
+        />
+      }
+      size="lg"
+    >
       {localDraft ? (
         <Stack
           component="form"
@@ -64,17 +76,17 @@ export function LotModal({
               data={lotStatusOptions}
               onChange={(value) => setLocalDraft({ ...localDraft, status: (value || 'PLANNED') as PoLotStatus })}
             />
-            <DateField
+            <DateTimeField
               label="Cargo ready"
               value={localDraft.planned_cargo_ready_date}
               onChange={(value) => setLocalDraft({ ...localDraft, planned_cargo_ready_date: value ?? '' })}
             />
-            <DateField
+            <DateTimeField
               label="ETD"
               value={localDraft.planned_etd}
               onChange={(value) => setLocalDraft({ ...localDraft, planned_etd: value ?? '' })}
             />
-            <DateField
+            <DateTimeField
               label="ETA"
               value={localDraft.planned_eta}
               onChange={(value) => setLocalDraft({ ...localDraft, planned_eta: value ?? '' })}

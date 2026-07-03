@@ -24,8 +24,9 @@ import {
   type ConfirmPurchaseOrderPayload,
   type PurchaseOrderV1,
 } from '@shared/api/purchaseOrders';
-import { DateField } from '@shared/components/DateField';
+import { DateTimeField } from '@shared/components/DateField';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
+import { ModalTitle } from '@shared/components/ModalTitle';
 import { useI18n } from '@shared/i18n';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
@@ -94,7 +95,19 @@ export function SupplierConfirmationModal({
   };
 
   return (
-    <Modal opened={opened} onClose={onClose} title="Supplier confirmation" size="xl">
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title={
+        <ModalTitle
+          feature="purchase-orders"
+          icon={<IconCircleCheck size={18} stroke={1.8} />}
+          title={t('purchaseOrders.supplierConfirmationTitle')}
+          subtitle={order.po_no}
+        />
+      }
+      size="xl"
+    >
       <Stack component="form" gap="md" onSubmit={handleSubmit} className="purchase-order-confirmation-form">
         {mutation.isError ? (
           <Alert color="red" icon={<IconAlertTriangle size={18} />}>
@@ -159,7 +172,7 @@ export function SupplierConfirmationModal({
                       />
                     </Table.Td>
                     <Table.Td>
-                      <DateField
+                      <DateTimeField
                         value={lineDraft?.cargo_ready_date ?? ''}
                         onChange={(value) => {
                           setLineDrafts((current) => ({

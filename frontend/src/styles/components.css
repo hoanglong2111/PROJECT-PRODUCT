@@ -226,6 +226,99 @@
   align-self: end;
   min-height: 2.25rem;
 }
+
+.mantine-Modal-header:not(.md-form-modal-header),
+.mantine-Drawer-header {
+  min-height: 3.25rem;
+  border-bottom: 1px solid var(--kbfe-border-primary);
+  background: color-mix(in srgb, var(--kbfe-surface-subtle) 55%, var(--kbfe-surface-elevated));
+}
+
+.mantine-Modal-title,
+.mantine-Drawer-title {
+  min-width: 0;
+}
+
+.kbfe-modal-title {
+  --kbfe-modal-accent: var(--kbfe-primary-color);
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  gap: 0.625rem;
+}
+
+.kbfe-modal-title--purchase-orders {
+  --kbfe-modal-accent: var(--kbfe-status-orange);
+}
+
+.kbfe-modal-title--delivery-orders {
+  --kbfe-modal-accent: var(--kbfe-status-blue);
+}
+
+.kbfe-modal-title--shipments {
+  --kbfe-modal-accent: var(--kbfe-status-cyan);
+}
+
+.kbfe-modal-title--tasks {
+  --kbfe-modal-accent: var(--mantine-color-violet-6);
+}
+
+.kbfe-modal-title--master-data {
+  --kbfe-modal-accent: var(--kbfe-primary-color);
+}
+
+.kbfe-modal-title--settings {
+  --kbfe-modal-accent: var(--kbfe-status-gray);
+}
+
+.kbfe-modal-title--dto {
+  --kbfe-modal-accent: var(--mantine-color-green-6);
+}
+
+.kbfe-modal-title--quotations {
+  --kbfe-modal-accent: var(--kbfe-status-yellow);
+}
+
+.kbfe-modal-title__icon {
+  display: inline-grid;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--kbfe-modal-accent) 28%, var(--kbfe-border-primary));
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--kbfe-modal-accent) 12%, transparent);
+  color: var(--kbfe-modal-accent);
+}
+
+.kbfe-modal-title__text {
+  display: grid;
+  min-width: 0;
+  gap: 0.125rem;
+}
+
+.kbfe-modal-title__label,
+.kbfe-modal-title__subtitle {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kbfe-modal-title__label {
+  color: var(--kbfe-text-primary);
+  font-size: 0.9375rem;
+  font-weight: 800;
+  line-height: var(--kbfe-line-height-tight);
+}
+
+.kbfe-modal-title__subtitle {
+  color: var(--kbfe-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: var(--kbfe-line-height-tight);
+}
 @media (max-width: 48em) {
 
   .status-control,
@@ -697,6 +790,16 @@ html[data-kbfe-visual-theme='high-contrast'] .dl-filter-panel .mantine-Select-in
   min-width: 0;
 }
 
+.md-tab-group .mantine-Tabs-tab {
+  min-height: 2rem;
+  padding-block: .3rem;
+}
+
+.md-tab-group + .md-tab-group {
+  padding-inline-start: .75rem;
+  border-inline-start: 1px solid var(--kbfe-border-primary);
+}
+
 .md-cell-clamp,
 .md-cell-clamp .mantine-Text-root,
 .md-cell-clamp .mantine-Badge-label {
@@ -730,14 +833,9 @@ html[data-kbfe-visual-theme='high-contrast'] .dl-filter-panel .mantine-Select-in
   margin-bottom: 0.45rem;
 }
 
-.md-toolbar-actions {
-  width: 100%;
-  padding-top: var(--kbfe-space-sm);
-  border-top: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 82%, transparent);
-}
-
-.md-toolbar-actions .mantine-Button-root {
-  white-space: nowrap;
+.md-toolbar-inline-actions {
+  margin-inline-start: auto;
+  align-self: flex-end;
 }
 
 .md-toolbar-label {
@@ -755,7 +853,12 @@ html[data-kbfe-visual-theme='high-contrast'] .dl-filter-panel .mantine-Select-in
 .md-table thead th {
   white-space: nowrap;
   font-weight: 700;
-  letter-spacing: 0;
+  padding-block: .5rem;
+  font-size: .75rem;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  color: var(--kbfe-text-secondary);
+  background: color-mix(in srgb, var(--kbfe-surface-subtle) 55%, var(--kbfe-surface-elevated)) !important;
 }
 
 .md-table thead th .mantine-Group-root {
@@ -764,6 +867,18 @@ html[data-kbfe-visual-theme='high-contrast'] .dl-filter-panel .mantine-Select-in
 
 .md-table tbody td {
   vertical-align: middle;
+  padding-block: .5rem;
+}
+
+.md-table tbody tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--kbfe-surface-subtle) 30%, transparent) !important;
+}
+
+.md-group-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--kbfe-surface-elevated) !important;
 }
 
 .md-cell-align-center {

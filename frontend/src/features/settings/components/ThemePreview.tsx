@@ -2,16 +2,15 @@ import { Alert, Badge, Button, Group, Paper, Stack, Text } from '@mantine/core';
 import { IconBulb } from '@tabler/icons-react';
 import { useI18n } from '@shared/i18n';
 import { useWorkspacePreferences } from '@shared/preferences/WorkspacePreferencesContext';
-import { getEffectivePresetId, getEffectivePalette } from '@shared/theme/theme';
+import { getEffectivePalette } from '@shared/theme/theme';
 import { colorPresets } from '@shared/theme/colorPresets';
 
 export function ThemePreview() {
   const { t } = useI18n();
-  const { colorPreset, eventTheme, resolvedColorScheme } = useWorkspacePreferences();
+  const { colorPreset, resolvedColorScheme } = useWorkspacePreferences();
 
-  const effectivePresetId = getEffectivePresetId(colorPreset, eventTheme);
-  const preset = colorPresets[effectivePresetId] ?? colorPresets.teal;
-  const colors = getEffectivePalette(colorPreset, eventTheme, resolvedColorScheme);
+  const preset = colorPresets[colorPreset] ?? colorPresets.teal;
+  const colors = getEffectivePalette(colorPreset, resolvedColorScheme);
 
   // We display 5 representative shades of the current theme
   const previewShades = [
@@ -31,7 +30,7 @@ export function ThemePreview() {
             <Text fw={700}>{t('settings.themeSystem')}</Text>
           </Group>
           <Badge variant="light" size="lg" color={preset.primaryColor}>
-            {t(`settings.colorPresets.${effectivePresetId}`)}
+            {t(`settings.colorPresets.${colorPreset}`)}
           </Badge>
         </Group>
 

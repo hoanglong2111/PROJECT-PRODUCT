@@ -23,6 +23,7 @@ import { fetchShipments, type ShipmentRecord } from '@shared/api/logistics';
 import { queryKeys } from '@shared/api/queryKeys';
 import { fetchSuppliers } from '@shared/api/tradeMasterData';
 import { BackActionButton } from '@shared/components/BackActionButton';
+import { ModalTitle } from '@shared/components/ModalTitle';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
 import { useEntityParam } from '@shared/hooks/useEntityParam';
 import { useI18n } from '@shared/i18n';
@@ -348,11 +349,15 @@ export function DomesticTransportOrders() {
         position="right"
         size="xl"
         title={
-          <Text fw={700}>
-            {selectedShipment
-              ? t('shipments.createDtoFromShipment', { shipmentNumber: selectedShipment.shipment_number })
-              : t('domesticTransportOrders.create')}
-          </Text>
+          <ModalTitle
+            feature="dto"
+            title={
+              selectedShipment
+                ? t('shipments.createDtoFromShipment', { shipmentNumber: selectedShipment.shipment_number })
+                : t('domesticTransportOrders.create')
+            }
+            subtitle={selectedShipment?.shipment_number}
+          />
         }
       >
         <CreateDtoFromShipmentPanel
@@ -377,9 +382,11 @@ export function DomesticTransportOrders() {
         size="85rem"
         title={
           <Group gap="xs" align="center">
-            <Text fw={700}>
-              {selectedOrder?.dto_no ?? t('domesticTransportOrders.detailTitle')}
-            </Text>
+            <ModalTitle
+              feature="dto"
+              title={selectedOrder?.dto_no ?? t('domesticTransportOrders.detailTitle')}
+              subtitle={selectedOrder?.shipment?.shipment_no ?? selectedOrder?.shipment_id}
+            />
             {detailQuery.isFetching ? <Badge variant="light">{t('common.loading')}</Badge> : null}
           </Group>
         }

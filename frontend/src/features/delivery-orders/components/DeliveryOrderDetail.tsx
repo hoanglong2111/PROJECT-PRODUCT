@@ -2,6 +2,7 @@ import {
   Alert,
   Badge,
   Button,
+  Grid,
   Group,
   List,
   Modal,
@@ -40,6 +41,7 @@ import {
 import { queryKeys } from '@shared/api/queryKeys';
 import { BackActionButton } from '@shared/components/BackActionButton';
 import { DelayBadge } from '@shared/components/DelayBadge';
+import { ModalTitle } from '@shared/components/ModalTitle';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { useI18n } from '@shared/i18n';
 import { getApiErrorMessage } from '@shared/lib/errors';
@@ -119,7 +121,7 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
 
   if (createShipmentOpen) {
     return (
-      <Stack gap="lg">
+      <Stack gap="md">
         <Group justify="space-between" align="center" gap="md" className="dl-page-header delivery-order-shipment-create-header">
           <Group gap="xs" align="center" wrap="wrap">
             <BackActionButton
@@ -143,7 +145,7 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
   }
 
   return (
-    <Stack gap="lg">
+    <Stack gap="md">
       <Paper withBorder p="md" className="delivery-order-detail-hero">
         <div className="delivery-order-detail-hero-grid">
           <Stack gap="sm" className="delivery-order-detail-main">
@@ -217,8 +219,7 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
           </Stack>
         </div>
 
-        <SimpleGrid cols={{ base: 1, sm: 2, xl: 4 }} spacing="sm" className="delivery-order-detail-facts">
-          <DeliveryOrderFact label={t('deliveryOrders.sourcePoLot')} value={`${sourcePoNumber} / ${sourceLotNumber}`} />
+        <SimpleGrid cols={{ base: 1, sm: 2, xl: 4 }} spacing={0} className="do-fact-strip">
           <DeliveryOrderFact
             label={t('common.route')}
             value={`${deliveryOrder.logistics_shipping.port_of_departure || '-'} ${t('deliveryOrders.routeConnector')} ${deliveryOrder.logistics_shipping.port_of_destination || '-'}`}
@@ -230,6 +231,17 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
           <DeliveryOrderFact
             label={t('forms.warehouse')}
             value={deliveryOrder.warehouse_tracking.actual_entry_date ?? deliveryOrder.warehouse_tracking.planned_entry_date ?? '-'}
+          />
+          <DeliveryOrderFact
+            label={t('deliveryOrders.linkedShipmentEta')}
+            value={
+              <Group gap={6} wrap="nowrap">
+                <Text fw={700} size="sm" truncate>
+                  {deliveryOrder.linked_shipment_number ?? t('deliveryOrders.noShipment')}
+                </Text>
+                <DelayBadge days={delay.days} type={delay.type} />
+              </Group>
+            }
           />
         </SimpleGrid>
 
@@ -247,12 +259,16 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
         ) : null}
       </Paper>
 
-      <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="md" className="delivery-order-control-grid">
-        <div className="delivery-order-gate-sidebar">
-          <OperationalGateSummary deliveryOrder={deliveryOrder} gates={gates} risks={risks} />
-        </div>
-        <UpdateDeliveryOrderForm deliveryOrder={deliveryOrder} />
-      </SimpleGrid>
+      <Grid gap="md" className="delivery-order-control-grid">
+        <Grid.Col span={{ base: 12, xl: 9 }}>
+          <UpdateDeliveryOrderForm deliveryOrder={deliveryOrder} />
+        </Grid.Col>
+        <Grid.Col span={{ base: 12, xl: 3 }}>
+          <div className="delivery-order-gate-sidebar">
+            <OperationalGateSummary deliveryOrder={deliveryOrder} gates={gates} risks={risks} />
+          </div>
+        </Grid.Col>
+      </Grid>
 
       <Tabs defaultValue="overview" className="delivery-order-detail-tabs">
         <Tabs.List className="delivery-order-detail-tabs-list">
@@ -277,14 +293,11 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
           <Stack gap="md">
             <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="md" className="delivery-order-control-grid delivery-order-overview-pages">
               <Paper withBorder p="md">
-                <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
+                <Stack gap="sm">
+                  <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
+                    {t('deliveryOrders.supplierAllocationHeader')}
+                  </Text>
                   <Stack gap={6}>
-                    <Group gap="xs" align="center">
-                      <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
-                        {t('deliveryOrders.sourcePoLot')}
-                      </Text>
-                      <StatusBadge status={deliveryOrder.order_info.status} />
-                    </Group>
                     <Group gap="xs" align="center" wrap="wrap">
                       <EntityLink type="po" id={sourcePoNumber} compact />
                       <Badge color="gray" variant="light">
@@ -298,154 +311,55 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
                       {deliveryOrder.product_details.item_name_requested}
                     </Text>
                   </Stack>
-
-                  <Stack gap="xs">
-                    <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
-                      {t('deliveryOrders.overviewAllocation')}
-                    </Text>
-                    <SimpleGrid cols={{ base: 2, xs: 4 }} spacing="sm">
-                      <div>
-                        <Text fw={700} size="lg" className="tabular-nums">
-                          <NumberFormatter value={deliveryOrder.source_lines.length} thousandSeparator />
-                        </Text>
-                        <Text size="xs" c="dimmed">{t('deliveryOrders.overviewItems')}</Text>
-                      </div>
-                      <div>
-                        <Text fw={700} size="lg" className="tabular-nums">
-                          <NumberFormatter value={deliveryOrder.product_details.quantity} thousandSeparator />
-                        </Text>
-                        <Text size="xs" c="dimmed">{deliveryOrder.product_details.unit || 'PCS'}</Text>
-                      </div>
-                      <div>
-                        <Text fw={700} size="lg" className="tabular-nums">
-                          <NumberFormatter value={allocationWeightKg} thousandSeparator />
-                        </Text>
-                        <Text size="xs" c="dimmed">kg</Text>
-                      </div>
-                      <div>
-                        <Text fw={700} size="lg" className="tabular-nums">
-                          <NumberFormatter value={containerCount} thousandSeparator />
-                        </Text>
-                        <Text size="xs" c="dimmed">{t('deliveryOrders.overviewContainers')}</Text>
-                      </div>
-                    </SimpleGrid>
-                  </Stack>
-                </SimpleGrid>
+                  <div className="do-kpi-row">
+                    <DeliveryOrderFact label={t('deliveryOrders.overviewItems')} value={<NumberFormatter value={deliveryOrder.source_lines.length} thousandSeparator />} />
+                    <DeliveryOrderFact label={deliveryOrder.product_details.unit || 'PCS'} value={<NumberFormatter value={deliveryOrder.product_details.quantity} thousandSeparator />} />
+                    <DeliveryOrderFact label="kg" value={<NumberFormatter value={allocationWeightKg} thousandSeparator />} />
+                    <DeliveryOrderFact label={t('deliveryOrders.overviewContainers')} value={<NumberFormatter value={containerCount} thousandSeparator />} />
+                  </div>
+                </Stack>
               </Paper>
 
               <Paper withBorder p="md">
-                <Stack gap="md">
-                  <Group gap="sm" align="flex-start" wrap="nowrap">
-                    <ShippingIcon size={22} />
-                    <Stack gap={4}>
-                      <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
-                        {t('common.route')}
-                      </Text>
-                      <Group gap="xs" align="center" wrap="wrap">
+                <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
+                  <Stack gap="sm">
+                    <Group gap="sm" align="flex-start" wrap="nowrap">
+                      <ShippingIcon size={22} />
+                      <Stack gap={4}>
+                        <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
+                          {t('common.route')}
+                        </Text>
                         <Text fw={700}>
                           {deliveryOrder.logistics_shipping.port_of_departure || '-'} {t('deliveryOrders.routeConnector')} {deliveryOrder.logistics_shipping.port_of_destination || '-'}
                         </Text>
-                        <Badge color="blue" variant="light">
-                          {t('deliveryOrders.eta')} {deliveryOrder.logistics_shipping.eta_planned ?? '-'}
-                        </Badge>
-                      </Group>
-                      <Text size="sm" c="dimmed">
-                        {shippingMethodLabel(deliveryOrder.logistics_shipping.shipping_method)} - {deliveryOrder.logistics_shipping.incoterms || '-'}
+                      </Stack>
+                    </Group>
+                    <div className="do-detail-list">
+                      <DetailListRow label={t('deliveryOrders.etdEta')} value={`${deliveryOrder.logistics_shipping.etd_planned ?? '-'} / ${deliveryOrder.logistics_shipping.eta_planned ?? '-'}`} />
+                      <DetailListRow label={t('deliveryOrders.mblVessel')} value={`${deliveryOrder.logistics_shipping.shipping_line ?? '-'} / ${deliveryOrder.logistics_shipping.vessel_code ?? '-'}`} />
+                      <DetailListRow label={t('forms.incoterms')} value={deliveryOrder.logistics_shipping.incoterms || '-'} />
+                      <DetailListRow label={t('forms.shippingMethod')} value={shippingMethodLabel(deliveryOrder.logistics_shipping.shipping_method)} />
+                    </div>
+                  </Stack>
+
+                  <Stack gap="sm">
+                    <div>
+                      <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
+                        {t('forms.warehouse')}
                       </Text>
-                    </Stack>
-                  </Group>
-                  <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
-                    <Stack gap={2}>
-                      <Text className="metric-label" size="xs" tt="uppercase" fw={700}>{t('deliveryOrders.etdEta')}</Text>
-                      <Text fw={600}>{deliveryOrder.logistics_shipping.etd_planned ?? '-'} / {deliveryOrder.logistics_shipping.eta_planned ?? '-'}</Text>
-                    </Stack>
-                    <Stack gap={2}>
-                      <Text className="metric-label" size="xs" tt="uppercase" fw={700}>{t('deliveryOrders.mblVessel')}</Text>
-                      <Text fw={600}>{deliveryOrder.logistics_shipping.shipping_line ?? '-'} / {deliveryOrder.logistics_shipping.vessel_code ?? '-'}</Text>
-                    </Stack>
-                    <Stack gap={2}>
-                      <Text className="metric-label" size="xs" tt="uppercase" fw={700}>{t('forms.incoterms')}</Text>
-                      <Text fw={600}>{deliveryOrder.logistics_shipping.incoterms || '-'}</Text>
-                    </Stack>
-                  </SimpleGrid>
-                </Stack>
+                    </div>
+                    <div className="do-detail-list">
+                      <DetailListRow label={t('forms.plannedWarehouseEntry')} value={deliveryOrder.warehouse_tracking.planned_entry_date ?? '-'} />
+                      <DetailListRow label={t('forms.warehouseDeadline')} value={deliveryOrder.warehouse_tracking.warehouse_deadline || '-'} />
+                      <DetailListRow label={t('forms.actualEntryDate')} value={deliveryOrder.warehouse_tracking.actual_entry_date ?? '-'} />
+                    </div>
+                  </Stack>
+                </SimpleGrid>
               </Paper>
             </SimpleGrid>
 
-            <Paper withBorder p="md">
-              <SimpleGrid cols={{ base: 1, md: 3 }} spacing="lg">
-                <Stack gap="xs">
-                  <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
-                    {t('deliveryOrders.linkedShipmentEta')}
-                  </Text>
-                  <Group gap="xs" align="center" wrap="wrap">
-                    {deliveryOrder.linked_shipment_number ? (
-                      <Badge color="blue" variant="light">{deliveryOrder.linked_shipment_number}</Badge>
-                    ) : (
-                      <Badge color="gray" variant="light">{t('deliveryOrders.noShipment')}</Badge>
-                    )}
-                    <DelayBadge days={delay.days} type={delay.type} />
-                  </Group>
-                  <Text size="sm" c={delay.isLate ? 'red' : 'dimmed'}>
-                    {t('deliveryOrders.eta')} {deliveryOrder.logistics_shipping.eta_planned ?? '-'}
-                  </Text>
-                </Stack>
-
-                <Stack gap="xs">
-                  <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
-                    {t('forms.warehouse')}
-                  </Text>
-                  <Stack gap={6}>
-                    <Group gap={6} wrap="nowrap">
-                      <Text size="sm" c="dimmed">{t('forms.plannedWarehouseEntry')}:</Text>
-                      <Text size="sm" fw={600}>{deliveryOrder.warehouse_tracking.planned_entry_date ?? '-'}</Text>
-                    </Group>
-                    <Group gap={6} wrap="nowrap">
-                      <Text size="sm" c="dimmed">{t('forms.warehouseDeadline')}:</Text>
-                      <Text size="sm" fw={600}>{deliveryOrder.warehouse_tracking.warehouse_deadline || '-'}</Text>
-                    </Group>
-                    <Group gap={6} wrap="nowrap">
-                      <Text size="sm" c="dimmed">{t('forms.actualEntryDate')}:</Text>
-                      <Text size="sm" fw={600}>{deliveryOrder.warehouse_tracking.actual_entry_date ?? '-'}</Text>
-                    </Group>
-                  </Stack>
-                </Stack>
-
-                <Stack gap="xs">
-                  <Group gap="xs" align="baseline">
-                    <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
-                      {t('deliveryOrders.overviewOpsHealth')}
-                    </Text>
-                    <Text size="xs" c="dimmed" className="tabular-nums">
-                      {deliveryOrder.task_summary.completed_tasks}/{deliveryOrder.task_summary.total_tasks} {t('shell.tasks')}
-                    </Text>
-                  </Group>
-                  <Group gap={6}>
-                    {missingDocumentsCount > 0 ? (
-                      <Badge size="xs" color="red" variant="light">
-                        {t('deliveryOrders.missingDocuments', { count: missingDocumentsCount })}
-                      </Badge>
-                    ) : (
-                      <Badge size="xs" color="teal" variant="light">
-                        {t('deliveryOrders.complete')}
-                      </Badge>
-                    )}
-                    {deliveryOrder.task_summary.blocked_tasks > 0 ? (
-                      <Badge size="xs" color="orange" variant="light">
-                        {t('deliveryOrders.blockedSuffix', { count: deliveryOrder.task_summary.blocked_tasks })}
-                      </Badge>
-                    ) : null}
-                  </Group>
-                  <Progress value={taskProgress} size="sm" color={taskProgress === 100 ? 'teal' : 'blue'} />
-                  <Text size="xs" c="dimmed">
-                    {t('deliveryOrders.requiredRemaining')}: {deliveryOrder.task_summary.required_tasks_remaining}
-                  </Text>
-                </Stack>
-              </SimpleGrid>
-            </Paper>
-
             {deliveryOrder.order_info.notes || deliveryOrder.order_info.xnk_notes ? (
-              <Paper withBorder p="md">
+              <Paper withBorder p="md" className="do-notes-panel">
                 <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
                   {deliveryOrder.order_info.notes ? (
                     <Stack gap={4}>
@@ -473,7 +387,7 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
           <Stack gap="md" className="delivery-order-ops-layout">
             <Paper
               withBorder
-              p="lg"
+              p="md"
               className={`delivery-order-ops-hero ${primaryRisk ? 'delivery-order-ops-hero-risk' : 'delivery-order-ops-hero-clear'}`}
             >
               <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="lg">
@@ -500,7 +414,7 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
                 </Stack>
 
                 <SimpleGrid cols={{ base: 1, xs: 3 }} spacing="sm" className="delivery-order-ops-kpi-grid">
-                  <div className="delivery-order-ops-kpi">
+                  <div className="delivery-order-ops-kpi do-kpi-row">
                     <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
                       {t('deliveryOrders.opsGateScore')}
                     </Text>
@@ -511,7 +425,7 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
                       {t('deliveryOrders.opsGateScoreDescription')}
                     </Text>
                   </div>
-                  <div className={`delivery-order-ops-kpi ${delay.isLate ? 'is-alert' : 'is-good'}`}>
+                  <div className={`delivery-order-ops-kpi do-kpi-row ${delay.isLate ? 'is-alert' : 'is-good'}`}>
                     <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
                       {t('common.delay')}
                     </Text>
@@ -522,7 +436,7 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
                       {deliveryOrder.warehouse_tracking.warehouse_deadline}
                     </Text>
                   </div>
-                  <div className={`delivery-order-ops-kpi ${blockedGateCount > 0 ? 'is-alert' : 'is-good'}`}>
+                  <div className={`delivery-order-ops-kpi do-kpi-row ${blockedGateCount > 0 ? 'is-alert' : 'is-good'}`}>
                     <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
                       {t('deliveryOrders.nextActions')}
                     </Text>
@@ -537,33 +451,26 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
               </SimpleGrid>
             </Paper>
 
-            <SimpleGrid cols={{ base: 1, sm: 2 }} className="delivery-order-ops-gate-grid">
-              {gates.map((gate) => (
-                <Paper key={gate.id} withBorder p="md" className={`delivery-order-ops-gate-card ${gate.passed ? 'is-passed' : 'is-blocked'}`}>
-                  <Stack gap="sm">
-                    <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
-                      <div className="delivery-order-ops-gate-copy">
-                        <Text fw={800}>{gateLabel(gate.id, t)}</Text>
-                        <Text size="sm" c="dimmed">
-                          {gateDetail(gate, t) || '-'}
-                        </Text>
-                      </div>
-                      <Badge color={gate.passed ? 'teal' : 'orange'} variant="light">
-                        {gate.passed ? t('deliveryOrders.gatePassed') : t('deliveryOrders.gateBlocked')}
-                      </Badge>
-                    </Group>
-                    <Group justify="space-between" gap="xs" wrap="wrap">
-                      <Text size="xs" c="dimmed">
-                        {t('common.owner')}
-                      </Text>
+            <Paper withBorder p="md" className="delivery-order-ops-gate-panel">
+              <Stack gap={0}>
+                {gates.map((gate) => (
+                  <div key={gate.id} className={`do-gate-row ${gate.passed ? 'is-passed' : 'is-blocked'}`}>
+                    <div className="delivery-order-ops-gate-copy">
+                      <Text fw={800}>{gateLabel(gate.id, t)}</Text>
                       <Text size="sm" c="dimmed">
-                        {taskRoleLabel(gate.owner)}
+                        {gateDetail(gate, t) || '-'}
                       </Text>
-                    </Group>
-                  </Stack>
-                </Paper>
-              ))}
-            </SimpleGrid>
+                    </div>
+                    <Text size="sm" c="dimmed">
+                      {taskRoleLabel(gate.owner)}
+                    </Text>
+                    <Badge color={gate.passed ? 'teal' : 'orange'} variant="light">
+                      {gate.passed ? t('deliveryOrders.gatePassed') : t('deliveryOrders.gateBlocked')}
+                    </Badge>
+                  </div>
+                ))}
+              </Stack>
+            </Paper>
 
             <Paper withBorder p="md" className="delivery-order-ops-risk-panel">
               <Group justify="space-between" align="flex-start" gap="sm" mb="sm" className="delivery-order-ops-risk-header">
@@ -580,7 +487,7 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
               <Stack gap="sm">
                 {orderedRisks.length > 0 ? (
                   orderedRisks.map((risk) => (
-                    <Group key={risk.code} justify="space-between" align="flex-start" gap="sm" className={`delivery-order-ops-risk-row severity-${risk.severity}`}>
+                    <Group key={risk.code} justify="space-between" align="flex-start" gap="sm" className={`do-risk-row severity-${risk.severity}`}>
                       <Group gap="xs" className="delivery-order-ops-risk-row-copy">
                         <Badge color={getRiskColor(risk.severity)} variant="light">
                           {riskLabel(risk.code, t)}
@@ -600,13 +507,8 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
               </Stack>
             </Paper>
 
-            <SimpleGrid cols={{ base: 1, md: 3 }} className="delivery-order-ops-facts">
+            <SimpleGrid cols={{ base: 1, sm: 2, xl: 4 }} spacing={0} className="do-fact-strip delivery-order-ops-facts">
               <DeliveryOrderFact label={t('deliveryOrders.efmsBooking')} value={deliveryOrder.order_info.tracking_number ?? deliveryOrder.order_info.order_number} />
-              <DeliveryOrderFact label={t('deliveryOrders.mblVessel')} value={`${deliveryOrder.logistics_shipping.shipping_line ?? '-'} / ${deliveryOrder.logistics_shipping.vessel_code ?? '-'}`} />
-              <DeliveryOrderFact
-                label={t('deliveryOrders.polPod')}
-                value={`${deliveryOrder.logistics_shipping.port_of_departure} ${t('deliveryOrders.routeConnector')} ${deliveryOrder.logistics_shipping.port_of_destination}`}
-              />
               <DeliveryOrderFact label={t('deliveryOrders.ofAfDebitNote')} value={gates.find((gate) => gate.id === 'documents')?.passed ? t('deliveryOrders.ready') : t('deliveryOrders.waitingDocuments')} />
               <DeliveryOrderFact label={t('deliveryOrders.finalDebitNote')} value={gates.find((gate) => gate.id === 'finance')?.passed ? t('deliveryOrders.ready') : t('deliveryOrders.waitingOpsGates')} />
               <DeliveryOrderFact label={t('deliveryOrders.podArchive')} value={deliveryOrder.warehouse_tracking.actual_entry_date ? t('deliveryOrders.ready') : t('deliveryOrders.waitingWarehouse')} />
@@ -620,6 +522,34 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
 
         <Tabs.Panel value="tasks" pt="md">
           <Stack gap="md">
+            <Paper withBorder p="md" className="delivery-order-task-health">
+              <Group justify="space-between" gap="sm" align="flex-start">
+                <div>
+                  <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
+                    {t('deliveryOrders.overviewOpsHealth')}
+                  </Text>
+                  <Text size="sm" c="dimmed" className="tabular-nums">
+                    {deliveryOrder.task_summary.completed_tasks}/{deliveryOrder.task_summary.total_tasks} {t('shell.tasks')}
+                  </Text>
+                </div>
+                <Group gap={6}>
+                  {missingDocumentsCount > 0 ? (
+                    <Badge size="xs" color="red" variant="light">
+                      {t('deliveryOrders.missingDocuments', { count: missingDocumentsCount })}
+                    </Badge>
+                  ) : (
+                    <Badge size="xs" color="teal" variant="light">
+                      {t('deliveryOrders.complete')}
+                    </Badge>
+                  )}
+                  {deliveryOrder.task_summary.blocked_tasks > 0 ? (
+                    <Badge size="xs" color="orange" variant="light">
+                      {t('deliveryOrders.blockedSuffix', { count: deliveryOrder.task_summary.blocked_tasks })}
+                    </Badge>
+                  ) : null}
+                </Group>
+              </Group>
+            </Paper>
             <Group justify="space-between">
               <div>
                 <Text fw={700}>{t('deliveryOrders.closureGate')}</Text>
@@ -630,7 +560,7 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
               <Badge color={taskProgress === 100 ? 'teal' : 'orange'}>{t('deliveryOrders.tasksDone', { percent: taskProgress })}</Badge>
             </Group>
             <Progress value={taskProgress} color={taskProgress === 100 ? 'teal' : 'orange'} />
-            <SimpleGrid cols={{ base: 1, sm: 3 }} className="delivery-order-task-facts">
+            <SimpleGrid cols={{ base: 1, sm: 3 }} spacing={0} className="do-fact-strip delivery-order-task-facts">
               <DeliveryOrderFact label={t('tasks.totalTasks')} value={String(deliveryOrder.task_summary.total_tasks)} />
               <DeliveryOrderFact label={t('tasks.blocked')} value={String(deliveryOrder.task_summary.blocked_tasks)} />
               <DeliveryOrderFact label={t('deliveryOrders.requiredRemaining')} value={String(deliveryOrder.task_summary.required_tasks_remaining)} />
@@ -645,7 +575,14 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
       <Modal
         opened={closeConfirmOpen}
         onClose={() => setCloseConfirmOpen(false)}
-        title={t('deliveryOrders.closeConfirmTitle')}
+        title={
+          <ModalTitle
+            feature="delivery-orders"
+            icon={<IconCircleCheck size={18} stroke={1.8} />}
+            title={t('deliveryOrders.closeConfirmTitle')}
+            subtitle={deliveryOrder.order_info.order_number}
+          />
+        }
         centered
       >
         <Stack gap="md">
@@ -691,11 +628,24 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
 
 function DeliveryOrderFact({ label, value }: { label: ReactNode; value: ReactNode }) {
   return (
-    <div className="delivery-order-detail-fact">
+    <div className="do-fact">
       <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
         {label}
       </Text>
-      <Text fw={700} lineClamp={1} title={typeof value === 'string' ? value : undefined}>
+      <Text component="div" fw={700} lineClamp={1} title={typeof value === 'string' ? value : undefined}>
+        {value}
+      </Text>
+    </div>
+  );
+}
+
+function DetailListRow({ label, value }: { label: ReactNode; value: ReactNode }) {
+  return (
+    <div className="do-detail-list-row">
+      <Text size="sm" c="dimmed" lineClamp={1}>
+        {label}
+      </Text>
+      <Text component="div" size="sm" fw={700} lineClamp={1} title={typeof value === 'string' ? value : undefined}>
         {value}
       </Text>
     </div>

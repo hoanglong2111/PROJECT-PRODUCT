@@ -3,6 +3,8 @@ import { IconAlertTriangle, IconGitBranch } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import type { PoLot } from '@shared/api/purchaseOrders';
+import { ModalTitle } from '@shared/components/ModalTitle';
+import { useI18n } from '@shared/i18n';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
 import { lockedLotStatuses, toNumber, type SplitDraft } from '../model/purchaseOrderModel';
@@ -23,6 +25,7 @@ export function SplitLotModal({
   onSubmit: (draft: SplitDraft) => void;
 }) {
   const [localDraft, setLocalDraft] = useState<SplitDraft | null>(draft);
+  const { t } = useI18n();
 
   useEffect(() => {
     setLocalDraft(draft);
@@ -45,7 +48,19 @@ export function SplitLotModal({
     Number(localDraft?.split_qty) < availableQty;
 
   return (
-    <Modal opened={!!draft} onClose={onClose} title="Split item line" size="lg">
+    <Modal
+      opened={!!draft}
+      onClose={onClose}
+      title={
+        <ModalTitle
+          feature="purchase-orders"
+          icon={<IconGitBranch size={18} stroke={1.8} />}
+          title={t('purchaseOrders.splitLotTitle')}
+          subtitle={localDraft?.sourceLot.lot_no}
+        />
+      }
+      size="lg"
+    >
       {localDraft ? (
         <Stack
           component="form"

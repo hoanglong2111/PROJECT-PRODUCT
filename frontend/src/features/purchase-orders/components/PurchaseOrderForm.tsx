@@ -27,7 +27,7 @@ import {
   type UpdatePurchaseOrderV1Payload,
 } from '@shared/api/purchaseOrders';
 import type { QuotationV1 } from '@shared/api/quotations';
-import { DateField } from '@shared/components/DateField';
+import { DateTimeField } from '@shared/components/DateField';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { useI18n } from '@shared/i18n';
 import { getApiErrorMessage } from '@shared/lib/errors';
@@ -385,14 +385,14 @@ export function PurchaseOrderForm({
                 searchable
                 clearable
               />
-              <DateField
+              <DateTimeField
                 label="ETD"
                 value={draft.expected_etd}
                 onChange={(value) => {
                   setDraft((current) => ({ ...current, expected_etd: value ?? '' }));
                 }}
               />
-              <DateField
+              <DateTimeField
                 label="ETA"
                 value={draft.expected_eta}
                 onChange={(value) => {
@@ -644,7 +644,7 @@ export function PurchaseOrderForm({
                             decimalScale={3}
                             onChange={(value) => updateLine(activeLine.clientId, { gross_weight_kg: toNumber(value) })}
                           />
-                          <DateField
+                          <DateTimeField
                             label="Line ETA"
                             value={activeLine.expected_eta_line}
                             onChange={(value) => updateLine(activeLine.clientId, { expected_eta_line: value ?? '' })}

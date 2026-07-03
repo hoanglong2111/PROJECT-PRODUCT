@@ -12,7 +12,7 @@ import {
   type TaskRole,
   type TaskStatus,
 } from '@shared/api/logistics';
-import { DateField } from '@shared/components/DateField';
+import { DateTimeField } from '@shared/components/DateField';
 import { fetchTaskTemplates } from '@shared/api/taskTemplates';
 import { queryKeys } from '@shared/api/queryKeys';
 import { getApiErrorMessage } from '@shared/lib/errors';
@@ -251,7 +251,7 @@ export function TaskFormPanel({
                 data={STATUS_VALUES.map((status) => ({ label: statusLabel(status), value: status }))}
                 {...form.getInputProps('status')}
               />
-              <DateField label={t('tasks.dueDate')} {...form.getInputProps('dueDate')} />
+              <DateTimeField label={t('tasks.dueDate')} {...form.getInputProps('dueDate')} />
               <NumberInput label={t('tasks.progress')} min={0} max={100} suffix="%" {...form.getInputProps('progress')} />
             </SimpleGrid>
           </section>

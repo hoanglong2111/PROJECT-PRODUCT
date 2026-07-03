@@ -16,7 +16,8 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 
 import type { CreateDeliveryOrderFromLotsPayload } from '@shared/api/deliveryOrders';
 import type { PoLot, PurchaseOrderV1 } from '@shared/api/purchaseOrders';
-import { DateField } from '@shared/components/DateField';
+import { DateTimeField } from '@shared/components/DateField';
+import { ModalTitle } from '@shared/components/ModalTitle';
 import { useI18n } from '@shared/i18n';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
@@ -85,7 +86,14 @@ export function CreateDoFromLotsModal({
     <Modal
       opened={opened}
       onClose={loading ? () => undefined : onClose}
-      title={t('purchaseOrders.createDoFromLotsTitle')}
+      title={
+        <ModalTitle
+          feature="purchase-orders"
+          icon={<IconTruckDelivery size={18} stroke={1.8} />}
+          title={t('purchaseOrders.createDoFromLotsTitle')}
+          subtitle={purchaseOrder.po_no}
+        />
+      }
       size="xl"
       classNames={{ body: 'purchase-order-create-do-modal-body' }}
     >
@@ -139,7 +147,7 @@ export function CreateDoFromLotsModal({
               setDraft((current) => ({ ...current, delivery_order_no: value }));
             }}
           />
-          <DateField
+          <DateTimeField
             label={t('purchaseOrders.requestedPickupDate')}
             value={draft.requested_pickup_date}
             onChange={(value) => setDraft((current) => ({ ...current, requested_pickup_date: value ?? '' }))}
@@ -162,12 +170,12 @@ export function CreateDoFromLotsModal({
             }}
             required
           />
-          <DateField
+          <DateTimeField
             label="ETD"
             value={draft.planned_etd}
             onChange={(value) => setDraft((current) => ({ ...current, planned_etd: value ?? '' }))}
           />
-          <DateField
+          <DateTimeField
             label="ETA"
             value={draft.planned_eta}
             onChange={(value) => setDraft((current) => ({ ...current, planned_eta: value ?? '' }))}

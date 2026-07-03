@@ -11,8 +11,8 @@ export function RiskQueue({ riskRows }: { riskRows: DashboardRiskRow[] }) {
   const { t } = useI18n();
 
   return (
-    <Paper withBorder p="lg" className="metric-card dashboard-card dashboard-risk-card dl-data-panel">
-      <Group justify="space-between" mb="md" align="flex-start" className="dl-data-panel-header">
+    <Paper withBorder p="md" className="metric-card dashboard-card dashboard-risk-card dl-data-panel">
+      <Group justify="space-between" mb="sm" align="flex-start" className="dl-data-panel-header dashboard-risk-header">
         <div>
           <Title order={3}>{t('dashboard.riskQueue')}</Title>
           <Text size="sm" c="dimmed">
@@ -23,7 +23,7 @@ export function RiskQueue({ riskRows }: { riskRows: DashboardRiskRow[] }) {
       </Group>
 
       {riskRows.length > 0 ? (
-        <Stack gap="xs">
+        <Stack gap={6}>
           {riskRows.map(({ deliveryOrder, primaryRisk, risks }) => (
             <div key={deliveryOrder.id} className="dashboard-risk-row">
               <div className="dashboard-risk-grid">
@@ -48,7 +48,7 @@ export function RiskQueue({ riskRows }: { riskRows: DashboardRiskRow[] }) {
                   <Badge color={getRiskColor(primaryRisk.severity)} variant="light">
                     {riskLabel(primaryRisk.code, t)}
                   </Badge>
-                  <Text size="xs" c="dimmed" mt={4} lineClamp={2}>
+                  <Text size="xs" c="dimmed" mt={4} lineClamp={2} className="dashboard-risk-subtitle">
                     {primaryRisk.detail}
                   </Text>
                 </div>
@@ -69,7 +69,7 @@ export function RiskQueue({ riskRows }: { riskRows: DashboardRiskRow[] }) {
                 </div>
               </div>
 
-              <Group gap={6} mt="sm">
+              <Group gap={6} mt={6}>
                 {risks.map((risk) => (
                   <Badge key={risk.code} color={getRiskColor(risk.severity)} variant="light" size="xs">
                     {riskLabel(risk.code, t)}
@@ -83,7 +83,7 @@ export function RiskQueue({ riskRows }: { riskRows: DashboardRiskRow[] }) {
         <div className="dashboard-risk-empty">
           <IconShieldCheck size={22} />
           <Text size="sm" fw={800}>
-            Không có rủi ro vận hành nổi bật
+            {t('dashboard.riskQueueEmpty')}
           </Text>
         </div>
       )}

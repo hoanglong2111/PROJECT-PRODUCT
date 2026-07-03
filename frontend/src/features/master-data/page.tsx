@@ -62,11 +62,10 @@ import {
   SUPPLIER_TYPE_VALUES,
 } from './model/masterDataModel';
 import { CarrierModal } from './components/CarrierModal';
-import { CarriersSection } from './components/CarriersSection';
 import { ChargeCodeModal } from './components/ChargeCodeModal';
 import { CurrencyModal } from './components/CurrencyModal';
 import { ForwarderModal } from './components/ForwarderModal';
-import { ForwardersSection } from './components/ForwardersSection';
+import { ForwardersCarriersSection } from './components/ForwardersCarriersSection';
 import { IncotermModal } from './components/IncotermModal';
 import { ItemModal } from './components/ItemModal';
 import { FILTER_SELECT_WIDTH } from './components/MasterDataToolbar';
@@ -578,32 +577,15 @@ export function MasterData() {
         </Tabs.Panel>
 
         <Tabs.Panel value="forwarders" pt="md">
-          <Stack gap="md">
-            <ForwardersSection
-              canManage={canManageMasterData}
-              hasActiveFilters={hasForwarderFilters}
-              onAdd={openAddForwarder}
-              onClearFilters={clearForwarderFilters}
-              onDelete={handleDeleteForwarder}
-              onEdit={openEditForwarder}
-              onStatusFilterChange={setForwarderStatusFilter}
-              onTypeFilterChange={setForwarderTypeFilter}
-              statusFilter={forwarderStatusFilter}
-              typeFilter={forwarderTypeFilter}
-            />
-            <CarriersSection
-              canManage={canManageMasterData}
-              hasActiveFilters={hasCarrierFilters}
-              onAdd={openAddCarrier}
-              onClearFilters={clearCarrierFilters}
-              onDelete={handleDeleteCarrier}
-              onEdit={openEditCarrier}
-              onStatusFilterChange={setCarrierStatusFilter}
-              onTypeFilterChange={setCarrierTypeFilter}
-              statusFilter={carrierStatusFilter}
-              typeFilter={carrierTypeFilter}
-            />
-          </Stack>
+          <ForwardersCarriersSection
+            canManage={canManageMasterData}
+            onAddForwarder={openAddForwarder}
+            onAddCarrier={openAddCarrier}
+            onEditForwarder={openEditForwarder}
+            onEditCarrier={openEditCarrier}
+            onDeleteForwarder={handleDeleteForwarder}
+            onDeleteCarrier={handleDeleteCarrier}
+          />
         </Tabs.Panel>
 
         <Tabs.Panel value="taskTemplates" pt="md">

@@ -20,9 +20,9 @@ import { AuthProvider } from "@shared/auth/AuthContext";
 import { buildTheme, buildCssVariablesResolver } from '@shared/theme/theme';
 
 function ThemedApp() {
-  const { colorPreset, eventTheme, resolvedColorScheme } = useWorkspacePreferences();
-  const theme = buildTheme(colorPreset, eventTheme);
-  const cssVariablesResolver = buildCssVariablesResolver(colorPreset, eventTheme);
+  const { colorPreset, resolvedColorScheme } = useWorkspacePreferences();
+  const theme = buildTheme(colorPreset);
+  const cssVariablesResolver = buildCssVariablesResolver(colorPreset);
 
   return (
     <MantineProvider

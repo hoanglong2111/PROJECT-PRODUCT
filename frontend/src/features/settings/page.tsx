@@ -18,7 +18,7 @@ import {
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useDebouncedValue, useDisclosure } from '@mantine/hooks';
-import { IconBulb, IconPalette, IconPlus, IconSearch, IconSettings, IconShieldLock, IconUserCircle, IconUsers } from '@tabler/icons-react';
+import { IconBulb, IconPalette, IconPlus, IconSearch, IconSettings, IconShieldLock, IconUserCircle, IconUserPlus, IconUsers } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -30,24 +30,21 @@ import { useCan } from '@shared/auth/useCan';
 import { useAuth } from '@shared/auth/useAuth';
 import { EmptyState } from '@shared/components/EmptyState';
 import { ListPagination, useListPagination } from '@shared/components/ListPagination';
+import { ModalTitle } from '@shared/components/ModalTitle';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
 import { useI18n } from '@shared/i18n';
 import {
   type AppearanceMode,
   type ColorPresetId,
   type DensityPreference,
-  type EventThemeId,
   type VisualTheme,
   type WorkspaceLanguage,
   useWorkspacePreferences,
 } from '@shared/preferences/WorkspacePreferencesContext';
-import { eventThemes } from '@shared/theme/eventThemes';
-import { getEffectivePresetId } from '@shared/theme/theme';
 import {
   AppearanceModeCard,
   ColorPresetGrid,
   DensityCard,
-  EventThemeCard,
   FineTuneCard,
   LanguageCard,
   ThemePreview,
@@ -68,7 +65,6 @@ export function Settings() {
     contrastLevel,
     density,
     dimLevel,
-    eventTheme,
     language,
     resetFineTune,
     resolvedColorScheme,
@@ -78,7 +74,6 @@ export function Settings() {
     setContrastLevel,
     setDensity,
     setDimLevel,
-    setEventTheme,
     setLanguage,
     setVisualTheme,
     visualTheme,
@@ -235,18 +230,10 @@ export function Settings() {
               visualTheme={visualTheme}
             />
 
-            <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="lg">
-              <ColorPresetGrid
-                colorPreset={colorPreset}
-                eventTheme={eventTheme}
-                onChange={setColorPreset}
-                onEventReset={() => setEventTheme('none')}
-              />
-              <EventThemeCard
-                eventTheme={eventTheme}
-                onChange={setEventTheme}
-              />
-            </SimpleGrid>
+            <ColorPresetGrid
+              colorPreset={colorPreset}
+              onChange={setColorPreset}
+            />
 
             <SimpleGrid cols={{ base: 1, md: 2, xl: 4 }}>
               <AppearanceModeCard
@@ -271,28 +258,10 @@ export function Settings() {
               <SimpleGrid cols={{ base: 1, md: 2, xl: 5 }}>
                 <Info label={t('settings.currentAppearance')} value={appearanceModeLabel(appearanceMode)} />
                 <Info label={t('settings.currentResolvedMode')} value={appearanceModeLabel(resolvedColorScheme)} />
-                {(() => {
-                  const effective = getEffectivePresetId(colorPreset, eventTheme);
-                  const isOverridden = effective !== colorPreset;
-                  const displayValue = isOverridden
-                    ? `${t(`settings.colorPresets.${colorPreset}`)} -> ${t(`settings.colorPresets.${effective}`)} (${t('settings.eventTheme')})`
-                    : t(`settings.colorPresets.${colorPreset}`);
-                  return (
-                    <Info
-                      label={t('settings.colorPreset')}
-                      value={displayValue}
-                    />
-                  );
-                })()}
-                {(() => {
-                  const ev = eventThemes[eventTheme] ?? eventThemes.none;
-                  return (
-                    <Info
-                      label={t('settings.eventTheme')}
-                      value={t(`settings.eventThemes.${ev.id}`)}
-                    />
-                  );
-                })()}
+                <Info
+                  label={t('settings.colorPreset')}
+                  value={t(`settings.colorPresets.${colorPreset}`)}
+                />
                 <Info label={t('settings.currentVisualTheme')} value={visualThemeLabel(visualTheme)} />
                 <Info label={t('settings.currentDensity')} value={densityLabel(density)} />
                 <Info label={t('settings.currentLanguage')} value={languageLabel(language)} />
@@ -356,7 +325,13 @@ export function Settings() {
                 <Modal
                   opened={createModalOpened}
                   onClose={createModalHandlers.close}
-                  title={t('settings.createAccount')}
+                  title={
+                    <ModalTitle
+                      feature="settings"
+                      icon={<IconUserPlus size={18} stroke={1.8} />}
+                      title={t('settings.createAccount')}
+                    />
+                  }
                   size="lg"
                 >
                   <form
