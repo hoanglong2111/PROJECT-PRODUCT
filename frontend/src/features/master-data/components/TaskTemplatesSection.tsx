@@ -2,6 +2,7 @@ import {
   ActionIcon,
   Alert,
   Badge,
+  Button,
   Collapse,
   Group,
   Loader,
@@ -14,7 +15,7 @@ import {
   Tooltip,
 } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
-import { IconAlertCircle, IconChevronDown, IconChevronRight, IconPencil, IconTrash } from '@tabler/icons-react';
+import { IconAlertCircle, IconChevronDown, IconChevronRight, IconChevronsDown, IconChevronsUp, IconPencil, IconTrash } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
@@ -163,6 +164,19 @@ export function TaskTemplatesSection({
     setCollapsedGroups((current) => ({ ...current, [groupKey]: !current[groupKey] }));
   };
 
+  const anyExpanded = useMemo(() => groupedTemplates.some((g) => collapsedGroups[g.key] !== true), [groupedTemplates, collapsedGroups]);
+  const toggleAllGroups = () => {
+    if (anyExpanded) {
+      const nextCollapsed: Record<string, boolean> = {};
+      groupedTemplates.forEach((g) => {
+        nextCollapsed[g.key] = true;
+      });
+      setCollapsedGroups(nextCollapsed);
+    } else {
+      setCollapsedGroups({});
+    }
+  };
+
   return (
     <Stack gap="md">
       <MasterDataToolbar
@@ -232,12 +246,22 @@ export function TaskTemplatesSection({
         </Paper>
       ) : (
         <Stack gap="md">
+          <Group justify="flex-end">
+            <Button
+              size="xs"
+              variant="subtle"
+              leftSection={anyExpanded ? <IconChevronsUp size={14} /> : <IconChevronsDown size={14} />}
+              onClick={toggleAllGroups}
+            >
+              {anyExpanded ? t('masterData.collapseAll') : t('masterData.expandAll')}
+            </Button>
+          </Group>
           {groupedTemplates.map((group) => {
             const collapsed = collapsedGroups[group.key] === true;
 
             return (
               <Paper key={group.key} withBorder p={0} className="dl-data-panel">
-              <Group justify="space-between" px="md" py="sm" className="dl-data-panel-header">
+              <Group justify="space-between" px="md" py="sm" className="dl-data-panel-header md-group-header">
                 <Group gap="xs">
                   <ActionIcon
                     aria-label={group.groupName}

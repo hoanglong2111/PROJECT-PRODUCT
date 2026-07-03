@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { DateField } from '@shared/components/DateField';
+import { DateTimeField } from '@shared/components/DateField';
 import type { DeliveryOrder } from '@shared/api/logistics';
 import { createShipment } from '@shared/api/logistics';
 import type { ShipmentLoadTypeV1, ShipmentModeV1 } from '@shared/api/shipments';
@@ -151,8 +151,8 @@ export function CreateShipmentFromDoPanel({
           <TextInput label={t('shipments.blAwb')} value={blAwbNo} onChange={(event) => setBlAwbNo(event.currentTarget.value)} />
           <TextInput label="POL" placeholder={t('shipments.portOfLoading')} value={originPort} onChange={(event) => setOriginPort(event.currentTarget.value)} />
           <TextInput label="POD" placeholder={t('shipments.portOfDischarge')} value={destPort} onChange={(event) => setDestPort(event.currentTarget.value)} />
-          <DateField label="ETD" value={etd} onChange={(value) => setEtd(value ?? '')} />
-          <DateField label="ETA" value={eta} onChange={(value) => setEta(value ?? '')} />
+          <DateTimeField label="ETD" value={etd} onChange={(value) => setEtd(value ?? '')} />
+          <DateTimeField label="ETA" value={eta} onChange={(value) => setEta(value ?? '')} />
         </SimpleGrid>
 
         {createMutation.isError ? (

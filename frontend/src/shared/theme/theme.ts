@@ -1,9 +1,7 @@
 import { createTheme, type MantineColorsTuple } from '@mantine/core';
 import { rem } from '@mantine/core';
 import { colorPresets, defaultColorPresetId } from './colorPresets';
-import { eventThemes, defaultEventThemeId } from './eventThemes';
 import type { ColorPresetId } from './colorPresets';
-import type { EventThemeId } from './eventThemes';
 
 const baseThemeOptions = {
   fontFamily:
@@ -54,7 +52,7 @@ function buildColorVariables(
   for (let i = 0; i < colors.length; i++) {
     result[`--mantine-color-${colorName}-${i}`] = colors[i];
   }
-  
+
   // Override Mantine's variant variables for the primary color palette
   // so components that specifically reference this color name (e.g., Button)
   // use our custom theme tokens instead of Mantine's auto-generated ones.
@@ -77,56 +75,24 @@ function buildColorVariables(
   return result;
 }
 
-export function getEffectivePresetId(
-  colorPresetId?: ColorPresetId,
-  eventThemeId?: EventThemeId,
-): ColorPresetId {
-  const presetId = colorPresetId ?? defaultColorPresetId;
-  const eventId = eventThemeId ?? defaultEventThemeId;
-  const event = eventThemes[eventId] ?? eventThemes[defaultEventThemeId];
-  const resolvedEventId = event ? event.id : defaultEventThemeId;
-  const eventPresetId = event ? event.colorPresetId : defaultColorPresetId;
-
-  return resolvedEventId !== 'none' && eventPresetId !== presetId
-    ? eventPresetId
-    : presetId;
-}
-
 export function getEffectivePalette(
   colorPresetId: ColorPresetId,
-  eventThemeId: EventThemeId,
   scheme: 'light' | 'dark',
 ): string[] {
-  const effectivePresetId = getEffectivePresetId(colorPresetId, eventThemeId);
-  const effectivePreset = colorPresets[effectivePresetId] ?? colorPresets[defaultColorPresetId];
-  const event = eventThemes[eventThemeId] ?? eventThemes[defaultEventThemeId];
+  const presetId = colorPresetId ?? defaultColorPresetId;
+  const preset = colorPresets[presetId] ?? colorPresets[defaultColorPresetId];
 
-  const colors = [...effectivePreset.colors[scheme]];
-
-  if (event && event.accentOverride) {
-    if (scheme === 'light' && event.accentOverride.primaryLight) {
-      colors[6] = event.accentOverride.primaryLight;
-    } else if (scheme === 'dark' && event.accentOverride.primaryDark) {
-      colors[7] = event.accentOverride.primaryDark;
-    }
-  }
-
-  return colors;
+  return [...preset.colors[scheme]];
 }
 
-export function buildTheme(
-  colorPresetId?: ColorPresetId,
-  eventThemeId?: EventThemeId,
-) {
-  const effectivePresetId = getEffectivePresetId(colorPresetId, eventThemeId);
-  const effectivePreset = colorPresets[effectivePresetId] ?? colorPresets[defaultColorPresetId];
+export function buildTheme(colorPresetId?: ColorPresetId) {
   const presetId = colorPresetId ?? defaultColorPresetId;
-  const eventId = eventThemeId ?? defaultEventThemeId;
+  const preset = colorPresets[presetId] ?? colorPresets[defaultColorPresetId];
 
   // Build colors tuple (always use light palette as the base Mantine theme)
-  const colors = getEffectivePalette(presetId, eventId, 'light');
+  const colors = getEffectivePalette(presetId, 'light');
 
-  const primaryColor = effectivePreset.primaryColor;
+  const primaryColor = preset.primaryColor;
 
   return createTheme({
     ...baseThemeOptions,
@@ -137,19 +103,14 @@ export function buildTheme(
   });
 }
 
-export function buildCssVariablesResolver(
-  colorPresetId?: ColorPresetId,
-  eventThemeId?: EventThemeId,
-) {
-  const effectivePresetId = getEffectivePresetId(colorPresetId, eventThemeId);
-  const effectivePreset = colorPresets[effectivePresetId] ?? colorPresets[defaultColorPresetId];
+export function buildCssVariablesResolver(colorPresetId?: ColorPresetId) {
   const presetId = colorPresetId ?? defaultColorPresetId;
-  const eventId = eventThemeId ?? defaultEventThemeId;
+  const preset = colorPresets[presetId] ?? colorPresets[defaultColorPresetId];
 
-  const lightColors = getEffectivePalette(presetId, eventId, 'light');
-  const darkColors = getEffectivePalette(presetId, eventId, 'dark');
+  const lightColors = getEffectivePalette(presetId, 'light');
+  const darkColors = getEffectivePalette(presetId, 'dark');
 
-  const primaryColor = effectivePreset.primaryColor;
+  const primaryColor = preset.primaryColor;
 
   return () => ({
     variables: {

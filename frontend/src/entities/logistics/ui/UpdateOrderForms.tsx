@@ -1,8 +1,9 @@
-﻿import {
+import {
   Alert,
   Badge,
   Button,
   Checkbox,
+  Drawer,
   Group,
   NumberInput,
   Paper,
@@ -15,8 +16,9 @@
   Textarea,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
+import { useDebouncedValue, useDisclosure } from '@mantine/hooks';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { IconAlertTriangle } from '@tabler/icons-react';
+import { IconAlertTriangle, IconPencil } from '@tabler/icons-react';
 import { type ReactNode, useEffect, useState } from 'react';
 
 import {
@@ -26,11 +28,12 @@ import {
   updateDeliveryOrder,
   updateLogisticsTask,
 } from '@shared/api/logistics';
-import { DateField } from '@shared/components/DateField';
+import { DateTimeField } from '@shared/components/DateField';
 import { queryKeys } from '@shared/api/queryKeys';
 import { getApiErrorMessage } from '@shared/lib/errors';
 import { findSupplierByCode, useTradeMasterDataOptions } from '@shared/hooks/useTradeMasterDataOptions';
 import { useI18n } from '@shared/i18n';
+import { ModalTitle } from '@shared/components/ModalTitle';
 
 const shippingMethodValues: Array<DeliveryOrder['logistics_shipping']['shipping_method']> = ['SEA', 'AIR', 'ROAD'];
 const documentOptions = ['Invoice', 'Packing List', 'B/L', 'CO'];
@@ -39,7 +42,7 @@ const taskStatusValues: TaskStatus[] = ['PENDING', 'TODO', 'IN_PROGRESS', 'WAITI
 export function UpdateDeliveryOrderForm({ deliveryOrder }: { deliveryOrder: DeliveryOrder }) {
   const queryClient = useQueryClient();
   const { documentLabel, shippingMethodLabel, t } = useI18n();
-  const [editing, setEditing] = useState(false);
+  const [drawerOpened, { open, close }] = useDisclosure(false);
   const locked = deliveryOrder.order_info.status === 'DELIVERED';
   const {
     currencyOptions,
@@ -155,7 +158,7 @@ export function UpdateDeliveryOrderForm({ deliveryOrder }: { deliveryOrder: Deli
         queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats }),
         queryClient.invalidateQueries({ queryKey: queryKeys.globalSearch }),
       ]);
-      setEditing(false);
+      close();
     },
   });
 
@@ -171,14 +174,37 @@ export function UpdateDeliveryOrderForm({ deliveryOrder }: { deliveryOrder: Deli
             {t('forms.updateDoHint')}
           </Text>
         </div>
-        <Button size="xs" variant={editing ? 'default' : 'light'} onClick={() => setEditing((value) => !value)} disabled={locked}>
-          {editing ? t('common.cancel') : t('common.edit')}
+        <Button size="xs" variant="light" onClick={open} disabled={locked}>
+          {t('common.edit')}
         </Button>
       </Group>
 
-      {locked ? <Alert color="orange">{t('deliveryOrders.lockedAfterCompleted')}</Alert> : null}
+      {locked ? <Alert color="orange" mb="md">{t('deliveryOrders.lockedAfterCompleted')}</Alert> : null}
 
-      {!locked && editing ? (
+      <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="sm" className="delivery-order-update-readonly-grid">
+        <UpdateFact label={t('forms.itemCode')} value={form.values.itemCode || '-'} />
+        <UpdateFact label={t('forms.supplierName')} value={form.values.supplierName || '-'} />
+        <UpdateFact
+          label={t('common.route')}
+          value={`${form.values.portOfDeparture || '-'} ${t('deliveryOrders.routeConnector')} ${form.values.portOfDestination || '-'}`}
+        />
+        <UpdateFact label={t('common.documents')} value={receivedDocuments} />
+      </SimpleGrid>
+
+      <Drawer
+        opened={drawerOpened}
+        onClose={close}
+        position="right"
+        size="lg"
+        title={
+          <ModalTitle
+            feature="delivery-orders"
+            icon={<IconPencil size={18} />}
+            title={t('forms.updateDo')}
+            subtitle={deliveryOrder.order_info.order_number}
+          />
+        }
+      >
         <form
           onSubmit={form.onSubmit(() => {
             mutation.mutate();
@@ -191,7 +217,7 @@ export function UpdateDeliveryOrderForm({ deliveryOrder }: { deliveryOrder: Deli
               </Alert>
             ) : null}
 
-            <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="md" className="delivery-order-update-section-grid">
+            <SimpleGrid cols={1} spacing="md" className="delivery-order-update-section-grid">
               <Paper withBorder p="md" className="delivery-order-update-section">
                 <Text fw={700} mb="sm">
                   {t('deliveryOrders.supplierAllocationHeader')}
@@ -231,8 +257,8 @@ export function UpdateDeliveryOrderForm({ deliveryOrder }: { deliveryOrder: Deli
                   <TextInput label={t('forms.shippingLine')} {...form.getInputProps('shippingLine')} />
                   <TextInput label={t('forms.portOfDeparture')} {...form.getInputProps('portOfDeparture')} />
                   <TextInput label={t('forms.portOfDestination')} {...form.getInputProps('portOfDestination')} />
-                  <DateField label={t('forms.etdPlanned')} {...form.getInputProps('etdPlanned')} />
-                  <DateField label={t('forms.etaPlanned')} {...form.getInputProps('etaPlanned')} />
+                  <DateTimeField label={t('forms.etdPlanned')} {...form.getInputProps('etdPlanned')} />
+                  <DateTimeField label={t('forms.etaPlanned')} {...form.getInputProps('etaPlanned')} />
                 </SimpleGrid>
               </Paper>
 
@@ -241,10 +267,10 @@ export function UpdateDeliveryOrderForm({ deliveryOrder }: { deliveryOrder: Deli
                   {t('forms.warehouse')}
                 </Text>
                 <SimpleGrid cols={{ base: 1, sm: 2 }}>
-                  <DateField label={t('forms.plannedWarehouseEntry')} {...form.getInputProps('plannedEntryDate')} />
-                  <DateField label={t('forms.actualEntryDate')} {...form.getInputProps('actualEntryDate')} />
+                  <DateTimeField label={t('forms.plannedWarehouseEntry')} {...form.getInputProps('plannedEntryDate')} />
+                  <DateTimeField label={t('forms.actualEntryDate')} {...form.getInputProps('actualEntryDate')} />
                   <TextInput label={t('forms.warehouse')} {...form.getInputProps('warehouseCode')} />
-                  <DateField label={t('forms.warehouseDeadline')} {...form.getInputProps('warehouseDeadline')} />
+                  <DateTimeField label={t('forms.warehouseDeadline')} {...form.getInputProps('warehouseDeadline')} />
                 </SimpleGrid>
               </Paper>
 
@@ -270,24 +296,17 @@ export function UpdateDeliveryOrderForm({ deliveryOrder }: { deliveryOrder: Deli
             </SimpleGrid>
 
             <Textarea label={t('common.notes')} minRows={3} {...form.getInputProps('notes')} />
-            <Group justify="flex-end">
+            <Group justify="flex-end" gap="xs">
+              <Button type="button" variant="subtle" size="xs" onClick={close}>
+                {t('common.cancel')}
+              </Button>
               <Button type="submit" size="xs" loading={mutation.isPending}>
                 {t('common.save')}
               </Button>
             </Group>
           </Stack>
         </form>
-      ) : (
-        <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="sm" mt={locked ? 'md' : undefined} className="delivery-order-update-readonly-grid">
-          <UpdateFact label={t('forms.itemCode')} value={form.values.itemCode || '-'} />
-          <UpdateFact label={t('forms.supplierName')} value={form.values.supplierName || '-'} />
-          <UpdateFact
-            label={t('common.route')}
-            value={`${form.values.portOfDeparture || '-'} ${t('deliveryOrders.routeConnector')} ${form.values.portOfDestination || '-'}`}
-          />
-          <UpdateFact label={t('common.documents')} value={receivedDocuments} />
-        </SimpleGrid>
-      )}
+      </Drawer>
     </Paper>
   );
 }
@@ -366,7 +385,7 @@ export function UpdateTaskProgressForm({
         </div>
         <Group gap="xs" wrap="nowrap">
           <Badge variant="light">{task.progress}%</Badge>
-          <Button size="xs" variant={editing ? 'default' : 'light'} onClick={() => setEditing((value) => !value)} disabled={locked}>
+          <Button size="xs" variant={editing ? 'default' : 'light'} onClick={() => setEditing(!editing)} disabled={locked}>
             {editing ? t('common.cancel') : t('common.edit')}
           </Button>
         </Group>
@@ -392,7 +411,7 @@ export function UpdateTaskProgressForm({
             <SimpleGrid cols={{ base: 1, sm: 2 }} className="task-progress-fields">
               <NumberInput label={t('tasks.progress')} min={0} max={100} suffix="%" {...form.getInputProps('progress')} />
               <Select label={t('common.status')} data={statusOptions} {...form.getInputProps('status')} />
-              <DateField label={t('tasks.dueDate')} {...form.getInputProps('dueDate')} />
+              <DateTimeField label={t('tasks.dueDate')} {...form.getInputProps('dueDate')} />
               <TextInput label={t('tasks.blockedReason')} {...form.getInputProps('blockedReason')} />
             </SimpleGrid>
             <Textarea label={t('common.notes')} minRows={3} {...form.getInputProps('notes')} />

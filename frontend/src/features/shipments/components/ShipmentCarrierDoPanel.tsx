@@ -25,7 +25,7 @@ import {
   type CarrierDeliveryOrderV1,
 } from '@shared/api/carrierDeliveryOrders';
 import { CopyValue } from '@shared/components/CopyValue';
-import { DateField } from '@shared/components/DateField';
+import { DateTimeField } from '@shared/components/DateField';
 import type { ShipmentRecord } from '@shared/api/logistics';
 import { queryKeys } from '@shared/api/queryKeys';
 import { fetchSuppliers } from '@shared/api/tradeMasterData';
@@ -144,13 +144,13 @@ export function ShipmentCarrierDoPanel({ shipment }: { shipment: ShipmentRecord 
               disabled={!isCleared}
               onChange={(event) => setContainerNo(event.currentTarget.value)}
             />
-            <DateField
+            <DateTimeField
               label={t('shipments.issuedDate')}
               value={issuedDate}
               disabled={!isCleared}
               onChange={(value) => setIssuedDate(value ?? '')}
             />
-            <DateField
+            <DateTimeField
               label={t('shipments.expiredDate')}
               value={expiredDate}
               disabled={!isCleared}

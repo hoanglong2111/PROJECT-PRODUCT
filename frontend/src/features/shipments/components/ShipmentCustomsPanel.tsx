@@ -14,7 +14,7 @@ import {
   TextInput,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconPlus, IconShield, IconX } from '@tabler/icons-react';
+import { IconAlertTriangle, IconPlus, IconShield, IconX } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 
@@ -34,6 +34,7 @@ import {
 import type { ShipmentRecord } from '@shared/api/logistics';
 import { queryKeys } from '@shared/api/queryKeys';
 import { fetchSuppliers } from '@shared/api/tradeMasterData';
+import { ModalTitle } from '@shared/components/ModalTitle';
 import { useI18n } from '@shared/i18n';
 
 import { CustomsLifecycleHeader } from './CustomsLifecycleHeader';
@@ -391,7 +392,14 @@ export function ShipmentCustomsPanel({ shipment }: { shipment: ShipmentRecord })
           <Modal
             opened={cancelModalOpen}
             onClose={closeCancelModal}
-            title={t('shipments.confirmCancelTitle')}
+            title={
+              <ModalTitle
+                feature="shipments"
+                icon={<IconAlertTriangle size={18} stroke={1.8} />}
+                title={t('shipments.confirmCancelTitle')}
+                subtitle={shipment.shipment_number}
+              />
+            }
             centered
           >
             <Stack gap="md">

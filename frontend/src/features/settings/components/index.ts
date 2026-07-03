@@ -1,7 +1,6 @@
 export { AppearanceModeCard } from './AppearanceModeCard';
 export { ColorPresetGrid } from './ColorPresetGrid';
 export { DensityCard } from './DensityCard';
-export { EventThemeCard } from './EventThemeCard';
 export { FineTuneCard } from './FineTuneCard';
 export { LanguageCard } from './LanguageCard';
 export { ThemePreview } from './ThemePreview';

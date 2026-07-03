@@ -30,6 +30,7 @@ import { BackActionButton } from '@shared/components/BackActionButton';
 import { FilterSegment } from '@shared/components/FilterSegment';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { ListPagination, useListPagination } from '@shared/components/ListPagination';
+import { ModalTitle } from '@shared/components/ModalTitle';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import {
@@ -517,9 +518,11 @@ export function Tasks() {
         position="right"
         size="60rem"
         title={
-          <Text fw={700}>
-            {editingTask ? t('tasks.editTask') : t('tasks.createTask')}
-          </Text>
+          <ModalTitle
+            feature="tasks"
+            title={editingTask ? t('tasks.editTask') : t('tasks.createTask')}
+            subtitle={editingTask?.task_id}
+          />
         }
       >
         <TaskFormPanel
@@ -540,9 +543,11 @@ export function Tasks() {
         position="right"
         size="60rem"
         title={
-          <Text fw={700}>
-            {selectedTask?.task_id}
-          </Text>
+          <ModalTitle
+            feature="tasks"
+            title={selectedTask?.task_id}
+            subtitle={selectedTask?.task_name}
+          />
         }
       >
         {selectedTask && (

@@ -1,10 +1,8 @@
 ﻿import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { ColorPresetId } from '@shared/theme/colorPresets';
 import { defaultColorPresetId } from '@shared/theme/colorPresets';
-import { defaultEventThemeId, getAutoEventTheme } from '@shared/theme/eventThemes';
-import type { EventThemeId } from '@shared/theme/eventThemes';
 
-export type { ColorPresetId, EventThemeId };
+export type { ColorPresetId };
 export type WorkspaceLanguage = 'vi' | 'en';
 export type AppearanceMode = 'light' | 'dark' | 'auto';
 export type ResolvedColorScheme = 'light' | 'dark';
@@ -18,7 +16,6 @@ type WorkspacePreferencesContextValue = {
   contrastLevel: number;
   density: DensityPreference;
   dimLevel: number;
-  eventTheme: EventThemeId;
   language: WorkspaceLanguage;
   resetFineTune: () => void;
   resolvedColorScheme: ResolvedColorScheme;
@@ -29,7 +26,6 @@ type WorkspacePreferencesContextValue = {
   setContrastLevel: (value: number) => void;
   setDensity: (density: DensityPreference) => void;
   setDimLevel: (value: number) => void;
-  setEventTheme: (theme: EventThemeId) => void;
   setLanguage: (language: WorkspaceLanguage) => void;
   setVisualTheme: (visualTheme: VisualTheme) => void;
   toggleSidebar: () => void;
@@ -42,11 +38,8 @@ const VISUAL_THEME_STORAGE_KEY = 'kbfe.preferences.visual-theme';
 const DENSITY_STORAGE_KEY = 'kbfe.preferences.density';
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'kbfe.preferences.sidebar-collapsed';
 const COLOR_PRESET_STORAGE_KEY = 'kbfe.preferences.color-preset';
-const EVENT_THEME_STORAGE_KEY = 'kbfe.preferences.event-theme';
 const LEGACY_EVENT_THEME_STORAGE_KEY = 'kbfe.preferences.event-theme-legacy';
-const COLOR_INTENSITY_STORAGE_KEY = 'kbfe.preferences.color-intensity';
 const DIM_LEVEL_STORAGE_KEY = 'kbfe.preferences.dim-level';
-const CONTRAST_LEVEL_STORAGE_KEY = 'kbfe.preferences.contrast-level';
 
 const FINE_TUNE_DEFAULTS = {
   colorIntensity: 100,
@@ -94,14 +87,6 @@ function readStoredVisualTheme(): VisualTheme {
     return 'eye-comfort';
   }
 
-  const legacyValue = window.localStorage.getItem(LEGACY_EVENT_THEME_STORAGE_KEY);
-  if (legacyValue === 'high-contrast') {
-    return 'high-contrast';
-  }
-  if (legacyValue === 'night-shift') {
-    return 'eye-comfort';
-  }
-
   return 'standard';
 }
 
@@ -113,11 +98,6 @@ function readStoredDensity(): DensityPreference {
   const value = window.localStorage.getItem(DENSITY_STORAGE_KEY);
   if (value === 'compact') {
     return value;
-  }
-
-  const legacyValue = window.localStorage.getItem(LEGACY_EVENT_THEME_STORAGE_KEY);
-  if (legacyValue === 'compact') {
-    return 'compact';
   }
 
   return 'standard';
@@ -148,23 +128,6 @@ function readStoredColorPreset(): ColorPresetId {
   return defaultColorPresetId;
 }
 
-const VALID_EVENT_THEMES: EventThemeId[] = [
-  'none', 'tet', 'valentine', 'mid-autumn', 'christmas', 'new-year', 'halloween', 'womens-day', 'national-day',
-];
-
-function readStoredEventTheme(): EventThemeId {
-  if (typeof window === 'undefined') {
-    return defaultEventThemeId;
-  }
-
-  const value = window.localStorage.getItem(EVENT_THEME_STORAGE_KEY);
-  if (value && VALID_EVENT_THEMES.includes(value as EventThemeId)) {
-    return value as EventThemeId;
-  }
-
-  return defaultEventThemeId;
-}
-
 function readStoredFineTune(key: string, fallback: number): number {
   if (typeof window === 'undefined') {
     return fallback;
@@ -178,6 +141,14 @@ function readStoredFineTune(key: string, fallback: number): number {
   return Math.min(100, Math.max(0, value));
 }
 
+if (typeof window !== 'undefined') {
+  // One-time cleanup of removed preferences (event theme, persisted fine-tune values).
+  window.localStorage.removeItem('kbfe.preferences.event-theme');
+  window.localStorage.removeItem(LEGACY_EVENT_THEME_STORAGE_KEY);
+  window.localStorage.removeItem('kbfe.preferences.color-intensity');
+  window.localStorage.removeItem('kbfe.preferences.contrast-level');
+}
+
 export function WorkspacePreferencesProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState<WorkspaceLanguage>(readStoredLanguage);
   const [appearanceMode, setAppearanceModeState] = useState<AppearanceMode>(readStoredAppearanceMode);
@@ -185,16 +156,13 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
   const [density, setDensityState] = useState<DensityPreference>(readStoredDensity);
   const [sidebarCollapsed, setSidebarCollapsedState] = useState<boolean>(readStoredSidebarCollapsed);
   const [colorPreset, setColorPresetState] = useState<ColorPresetId>(readStoredColorPreset);
-  const [eventTheme, setEventThemeState] = useState<EventThemeId>(readStoredEventTheme);
-  const [colorIntensity, setColorIntensityState] = useState<number>(() =>
-    readStoredFineTune(COLOR_INTENSITY_STORAGE_KEY, FINE_TUNE_DEFAULTS.colorIntensity),
-  );
+  // Contrast/color-intensity always start at full strength on every load/login —
+  // they are session-only and never restored from a previous visit.
+  const [colorIntensity, setColorIntensityState] = useState<number>(FINE_TUNE_DEFAULTS.colorIntensity);
   const [dimLevel, setDimLevelState] = useState<number>(() =>
     readStoredFineTune(DIM_LEVEL_STORAGE_KEY, FINE_TUNE_DEFAULTS.dimLevel),
   );
-  const [contrastLevel, setContrastLevelState] = useState<number>(() =>
-    readStoredFineTune(CONTRAST_LEVEL_STORAGE_KEY, FINE_TUNE_DEFAULTS.contrastLevel),
-  );
+  const [contrastLevel, setContrastLevelState] = useState<number>(FINE_TUNE_DEFAULTS.contrastLevel);
   const [resolvedColorScheme, setResolvedColorScheme] = useState<ResolvedColorScheme>(() => {
     const storedAppearanceMode = readStoredAppearanceMode();
     return storedAppearanceMode === 'auto' ? getSystemColorScheme() : storedAppearanceMode;
@@ -229,7 +197,6 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
     document.documentElement.dataset.kbfeResolvedColorScheme = resolvedColorScheme;
     document.documentElement.dataset.kbfeVisualTheme = visualTheme;
     document.documentElement.dataset.kbfeColorPreset = colorPreset;
-    document.documentElement.dataset.kbfeEventTheme = eventTheme;
     document.documentElement.style.setProperty('--kbfe-user-intensity', String(colorIntensity / 100));
     document.documentElement.style.setProperty('--kbfe-user-dim', String(dimLevel / 100));
     document.documentElement.style.setProperty('--kbfe-user-contrast', String(contrastLevel / 100));
@@ -240,7 +207,6 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
     contrastLevel,
     density,
     dimLevel,
-    eventTheme,
     language,
     resolvedColorScheme,
     visualTheme,
@@ -289,19 +255,9 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
     }
   };
 
-  const setEventTheme = (nextTheme: EventThemeId) => {
-    setEventThemeState(nextTheme);
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(EVENT_THEME_STORAGE_KEY, nextTheme);
-    }
-  };
-
   const setColorIntensity = (nextValue: number) => {
     const clamped = Math.min(100, Math.max(0, nextValue));
     setColorIntensityState(clamped);
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(COLOR_INTENSITY_STORAGE_KEY, String(clamped));
-    }
   };
 
   const setDimLevel = (nextValue: number) => {
@@ -315,9 +271,6 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
   const setContrastLevel = (nextValue: number) => {
     const clamped = Math.min(100, Math.max(0, nextValue));
     setContrastLevelState(clamped);
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(CONTRAST_LEVEL_STORAGE_KEY, String(clamped));
-    }
   };
 
   const resetFineTune = () => {
@@ -334,7 +287,6 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
       contrastLevel,
       density,
       dimLevel,
-      eventTheme,
       language,
       resetFineTune,
       resolvedColorScheme,
@@ -345,7 +297,6 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
       setContrastLevel,
       setDensity,
       setDimLevel,
-      setEventTheme,
       setLanguage,
       setVisualTheme,
       toggleSidebar,
@@ -358,7 +309,6 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
       contrastLevel,
       density,
       dimLevel,
-      eventTheme,
       language,
       resolvedColorScheme,
       sidebarCollapsed,

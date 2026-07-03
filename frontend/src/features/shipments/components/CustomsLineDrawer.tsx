@@ -9,6 +9,7 @@ import {
 } from '@shared/api/customsDeclarations';
 import { queryKeys } from '@shared/api/queryKeys';
 import { fetchShipmentLines } from '@shared/api/shipments';
+import { ModalTitle } from '@shared/components/ModalTitle';
 import { useI18n } from '@shared/i18n';
 
 import { customsLineTax } from '../model/shipmentModel';
@@ -116,7 +117,11 @@ export function CustomsLineDrawer({
       position="right"
       size="md"
       title={
-        <Text fw={700}>{mode === 'create' ? t('shipments.addLine') : t('shipments.editLine')}</Text>
+        <ModalTitle
+          feature="shipments"
+          title={mode === 'create' ? t('shipments.addLine') : t('shipments.editLine')}
+          subtitle={mode === 'edit' ? itemLabel : undefined}
+        />
       }
     >
       <Stack gap="md">

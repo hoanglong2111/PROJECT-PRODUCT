@@ -21,7 +21,7 @@ import {
   consolidateDomesticTransportOrder,
   createDomesticTransportOrderFromShipment,
 } from '@shared/api/domesticTransportOrders';
-import { DateField } from '@shared/components/DateField';
+import { DateTimeField } from '@shared/components/DateField';
 import type { ShipmentRecord } from '@shared/api/logistics';
 import {
   createShipmentContainer,
@@ -341,7 +341,7 @@ export function CreateDtoFromShipmentPanel({
           value={warehouse}
           onChange={(event) => setWarehouse(event.currentTarget.value)}
         />
-        <DateField
+        <DateTimeField
           label={t('shipments.scheduledPickup')}
           value={pickupDate}
           onChange={(value) => setPickupDate(value ?? '')}

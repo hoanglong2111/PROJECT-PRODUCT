@@ -1,4 +1,4 @@
-import { Alert, Select, SimpleGrid, Textarea, TextInput } from '@mantine/core';
+import { Alert, Select, SimpleGrid, Switch, Textarea, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -20,6 +20,7 @@ type CarrierFormValues = {
   serviceRouteNote: string;
   contactBooking: string;
   contactEmail: string;
+  isActive: boolean;
   note: string;
 };
 
@@ -31,6 +32,7 @@ const emptyValues: CarrierFormValues = {
   serviceRouteNote: '',
   contactBooking: '',
   contactEmail: '',
+  isActive: true,
   note: '',
 };
 
@@ -64,6 +66,7 @@ export function CarrierModal({
       serviceRouteNote: editing.service_route_note ?? '',
       contactBooking: editing.contact_booking ?? '',
       contactEmail: editing.contact_email ?? '',
+      isActive: editing.is_active !== false,
       note: editing.note ?? '',
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -83,6 +86,7 @@ export function CarrierModal({
         service_route_note: optionalString(form.values.serviceRouteNote),
         contact_booking: optionalString(form.values.contactBooking),
         contact_email: optionalString(form.values.contactEmail),
+        is_active: form.values.isActive,
         note: optionalString(form.values.note),
       };
 
@@ -134,6 +138,7 @@ export function CarrierModal({
           <TextInput label={t('masterData.serviceRouteNote')} {...form.getInputProps('serviceRouteNote')} />
           <TextInput label={t('masterData.contactBooking')} {...form.getInputProps('contactBooking')} />
           <TextInput label={t('masterData.contactEmail')} {...form.getInputProps('contactEmail')} />
+          <Switch label={t('masterData.active')} {...form.getInputProps('isActive', { type: 'checkbox' })} />
         </SimpleGrid>
       </MasterDataFormSection>
       <MasterDataFormSection>

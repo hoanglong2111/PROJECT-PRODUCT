@@ -48,7 +48,7 @@ function revCostColor(value: string) {
   return 'teal';
 }
 
-export function buildItemColumns(t: T): Array<ReferenceColumn<Item>> {
+export function buildItemColumns(t: T, onToggleActive?: (record: Item) => void): Array<ReferenceColumn<Item>> {
   return [
     {
       key: 'identity',
@@ -119,12 +119,12 @@ export function buildItemColumns(t: T): Array<ReferenceColumn<Item>> {
       label: t('common.status'),
       align: 'center',
       width: 96,
-      render: (item) => <StatusToggle active={item.is_active !== false} />,
+      render: (item) => <StatusToggle active={item.is_active !== false} onToggle={onToggleActive ? () => onToggleActive(item) : undefined} />,
     },
   ];
 }
 
-export function buildCurrencyColumns(t: T): Array<ReferenceColumn<Currency>> {
+export function buildCurrencyColumns(t: T, onToggleActive?: (record: Currency) => void): Array<ReferenceColumn<Currency>> {
   return [
     {
       key: 'code',
@@ -158,7 +158,7 @@ export function buildCurrencyColumns(t: T): Array<ReferenceColumn<Currency>> {
       label: t('common.status'),
       align: 'center',
       width: 96,
-      render: (currency) => <StatusToggle active={currency.is_active} />,
+      render: (currency) => <StatusToggle active={currency.is_active} onToggle={onToggleActive ? () => onToggleActive(currency) : undefined} />,
     },
     {
       key: 'updated',
@@ -169,7 +169,7 @@ export function buildCurrencyColumns(t: T): Array<ReferenceColumn<Currency>> {
   ];
 }
 
-export function buildIncotermColumns(t: T): Array<ReferenceColumn<Incoterm>> {
+export function buildIncotermColumns(t: T, onToggleActive?: (record: Incoterm) => void): Array<ReferenceColumn<Incoterm>> {
   return [
     {
       key: 'code',
@@ -207,12 +207,12 @@ export function buildIncotermColumns(t: T): Array<ReferenceColumn<Incoterm>> {
       label: t('common.status'),
       align: 'center',
       width: 96,
-      render: (incoterm) => <StatusToggle active={incoterm.is_active} />,
+      render: (incoterm) => <StatusToggle active={incoterm.is_active} onToggle={onToggleActive ? () => onToggleActive(incoterm) : undefined} />,
     },
   ];
 }
 
-export function buildTransportModeColumns(t: T): Array<ReferenceColumn<TransportMode>> {
+export function buildTransportModeColumns(t: T, onToggleActive?: (record: TransportMode) => void): Array<ReferenceColumn<TransportMode>> {
   return [
     {
       key: 'code',
@@ -248,12 +248,12 @@ export function buildTransportModeColumns(t: T): Array<ReferenceColumn<Transport
       label: t('common.status'),
       align: 'center',
       width: 96,
-      render: (mode) => <StatusToggle active={mode.is_active} />,
+      render: (mode) => <StatusToggle active={mode.is_active} onToggle={onToggleActive ? () => onToggleActive(mode) : undefined} />,
     },
   ];
 }
 
-export function buildChargeCodeColumns(t: T): Array<ReferenceColumn<ChargeCode>> {
+export function buildChargeCodeColumns(t: T, onToggleActive?: (record: ChargeCode) => void): Array<ReferenceColumn<ChargeCode>> {
   const groupLabelMap = Object.fromEntries(CHARGE_GROUPS.map((group) => [group.value, group.docLabel]));
   const categoryLabelMap = Object.fromEntries(CHARGE_CATEGORIES.map((category) => [category.value, category.docLabel]));
 
@@ -367,12 +367,12 @@ export function buildChargeCodeColumns(t: T): Array<ReferenceColumn<ChargeCode>>
       label: t('common.status'),
       align: 'center',
       width: 96,
-      render: (chargeCode) => <StatusToggle active={chargeCode.is_active} />,
+      render: (chargeCode) => <StatusToggle active={chargeCode.is_active} onToggle={onToggleActive ? () => onToggleActive(chargeCode) : undefined} />,
     },
   ];
 }
 
-export function buildUomColumns(t: T): Array<ReferenceColumn<Uom>> {
+export function buildUomColumns(t: T, onToggleActive?: (record: Uom) => void): Array<ReferenceColumn<Uom>> {
   return [
     {
       key: 'identity',
@@ -406,7 +406,7 @@ export function buildUomColumns(t: T): Array<ReferenceColumn<Uom>> {
       label: t('common.status'),
       align: 'center',
       width: 96,
-      render: (uom) => <StatusToggle active={uom.is_active} />,
+      render: (uom) => <StatusToggle active={uom.is_active} onToggle={onToggleActive ? () => onToggleActive(uom) : undefined} />,
     },
     {
       key: 'updated',
@@ -417,7 +417,7 @@ export function buildUomColumns(t: T): Array<ReferenceColumn<Uom>> {
   ];
 }
 
-export function buildSupplierColumns(t: T): Array<ReferenceColumn<Supplier>> {
+export function buildSupplierColumns(t: T, onToggleActive?: (record: Supplier) => void): Array<ReferenceColumn<Supplier>> {
   return [
     {
       key: 'identity',
@@ -498,12 +498,12 @@ export function buildSupplierColumns(t: T): Array<ReferenceColumn<Supplier>> {
       label: t('common.status'),
       align: 'center',
       width: 96,
-      render: (supplier) => <StatusToggle active={supplier.is_active} />,
+      render: (supplier) => <StatusToggle active={supplier.is_active} onToggle={onToggleActive ? () => onToggleActive(supplier) : undefined} />,
     },
   ];
 }
 
-export function buildForwarderColumns(t: T): Array<ReferenceColumn<Forwarder>> {
+export function buildForwarderColumns(t: T, onToggleActive?: (record: Forwarder) => void): Array<ReferenceColumn<Forwarder>> {
   return [
     {
       key: 'identity',
@@ -571,12 +571,12 @@ export function buildForwarderColumns(t: T): Array<ReferenceColumn<Forwarder>> {
       label: t('common.status'),
       align: 'center',
       width: 96,
-      render: (forwarder) => <StatusToggle active={forwarder.is_active !== false} />,
+      render: (forwarder) => <StatusToggle active={forwarder.is_active !== false} onToggle={onToggleActive ? () => onToggleActive(forwarder) : undefined} />,
     },
   ];
 }
 
-export function buildCarrierColumns(t: T): Array<ReferenceColumn<Carrier>> {
+export function buildCarrierColumns(t: T, onToggleActive?: (record: Carrier) => void): Array<ReferenceColumn<Carrier>> {
   return [
     {
       key: 'identity',
@@ -628,7 +628,7 @@ export function buildCarrierColumns(t: T): Array<ReferenceColumn<Carrier>> {
       label: t('common.status'),
       align: 'center',
       width: 96,
-      render: (carrier) => <StatusToggle active={carrier.is_active !== false} />,
+      render: (carrier) => <StatusToggle active={carrier.is_active !== false} onToggle={onToggleActive ? () => onToggleActive(carrier) : undefined} />,
     },
   ];
 }
