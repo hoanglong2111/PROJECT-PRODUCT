@@ -114,6 +114,9 @@ export function ShipmentDetailView({
           <Tabs.Tab value="carrier-do" leftSection={<IconFileInvoice size={14} />}>
             {t('shipments.carrierDo')}
           </Tabs.Tab>
+          <Tabs.Tab value="fds-do" leftSection={<IconFileInvoice size={14} />}>
+            {t('shipments.fdsDo')}
+          </Tabs.Tab>
           <Tabs.Tab value="dtos" leftSection={<IconTruck size={14} />}>
             DTOs
           </Tabs.Tab>
@@ -166,6 +169,11 @@ export function ShipmentDetailView({
         </Tabs.Panel>
 
         <Tabs.Panel value="carrier-do" pt="sm">
+          <ShipmentCarrierDoPanel shipment={shipment} />
+        </Tabs.Panel>
+
+        {/* FDS-only permissions are deferred; UI is visible for now. */}
+        <Tabs.Panel value="fds-do" pt="sm">
           <ShipmentCarrierDoPanel shipment={shipment} />
         </Tabs.Panel>
 
