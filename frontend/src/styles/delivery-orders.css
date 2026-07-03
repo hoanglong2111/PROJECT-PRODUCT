@@ -187,8 +187,15 @@
 }
 
 .delivery-order-gate-sidebar {
+  width: 100%;
   min-width: 0;
 }
+
+.delivery-order-gate-sidebar .ops-panel,
+.delivery-order-update-panel {
+  width: 100%;
+}
+
 @media (min-width: 75em) {
   .delivery-order-gate-sidebar {
     position: sticky;

@@ -265,10 +265,10 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
       </Paper>
 
       <Grid gap="md" className="delivery-order-control-grid">
-        <Grid.Col span={{ base: 12, xl: 9 }}>
+        <Grid.Col span={{ base: 12, xl: 6 }}>
           <UpdateDeliveryOrderForm deliveryOrder={deliveryOrder} />
         </Grid.Col>
-        <Grid.Col span={{ base: 12, xl: 3 }}>
+        <Grid.Col span={{ base: 12, xl: 6 }}>
           <div className="delivery-order-gate-sidebar">
             <OperationalGateSummary deliveryOrder={deliveryOrder} gates={gates} risks={risks} />
           </div>
@@ -525,11 +525,11 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
                 label={t('deliveryOrders.polPod')}
                 value={`${deliveryOrder.logistics_shipping.port_of_departure} ${t('deliveryOrders.routeConnector')} ${deliveryOrder.logistics_shipping.port_of_destination}`}
               />
-      <DeliveryOrderFact label={t('deliveryOrders.ofAfDebitNote')} value={gates.find((gate) => gate.id === 'documents')?.passed ? t('deliveryOrders.ready') : t('deliveryOrders.waitingDocuments')} />
-      <DeliveryOrderFact label={t('deliveryOrders.finalDebitNote')} value={gates.find((gate) => gate.id === 'finance')?.passed ? t('deliveryOrders.ready') : t('deliveryOrders.waitingOpsGates')} />
-      <DeliveryOrderFact label={t('deliveryOrders.podArchive')} value={deliveryOrder.warehouse_tracking.actual_entry_date ? t('deliveryOrders.ready') : t('deliveryOrders.waitingWarehouse')} />
-    </SimpleGrid>
-  </Stack>
+              <DeliveryOrderFact label={t('deliveryOrders.ofAfDebitNote')} value={gates.find((gate) => gate.id === 'documents')?.passed ? t('deliveryOrders.ready') : t('deliveryOrders.waitingDocuments')} />
+              <DeliveryOrderFact label={t('deliveryOrders.finalDebitNote')} value={gates.find((gate) => gate.id === 'finance')?.passed ? t('deliveryOrders.ready') : t('deliveryOrders.waitingOpsGates')} />
+              <DeliveryOrderFact label={t('deliveryOrders.podArchive')} value={deliveryOrder.warehouse_tracking.actual_entry_date ? t('deliveryOrders.ready') : t('deliveryOrders.waitingWarehouse')} />
+            </SimpleGrid>
+          </Stack>
         </Tabs.Panel >
 
         <Tabs.Panel value="documents" pt="md">
@@ -588,56 +588,56 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
         </Tabs.Panel>
       </Tabs >
 
-    <Modal
-      opened={closeConfirmOpen}
-      onClose={() => setCloseConfirmOpen(false)}
-      title={
-        <ModalTitle
-          feature="delivery-orders"
-          icon={<IconCircleCheck size={18} stroke={1.8} />}
-          title={t('deliveryOrders.closeConfirmTitle')}
-          subtitle={deliveryOrder.order_info.order_number}
-        />
-      }
-      centered
-    >
-      <Stack gap="md">
-        <Alert color="orange" icon={<IconAlertTriangle size={18} />}>
-          {t('deliveryOrders.closeConfirmDescription')}
-        </Alert>
-        <List spacing="xs" size="sm" center>
-          {closureChecklist.map((item) => (
-            <List.Item
-              key={item.label}
-              icon={
-                item.ok ? (
-                  <IconCircleCheck size={18} color="var(--mantine-color-teal-6)" />
-                ) : (
-                  <IconCircleX size={18} color="var(--mantine-color-gray-5)" />
-                )
-              }
+      <Modal
+        opened={closeConfirmOpen}
+        onClose={() => setCloseConfirmOpen(false)}
+        title={
+          <ModalTitle
+            feature="delivery-orders"
+            icon={<IconCircleCheck size={18} stroke={1.8} />}
+            title={t('deliveryOrders.closeConfirmTitle')}
+            subtitle={deliveryOrder.order_info.order_number}
+          />
+        }
+        centered
+      >
+        <Stack gap="md">
+          <Alert color="orange" icon={<IconAlertTriangle size={18} />}>
+            {t('deliveryOrders.closeConfirmDescription')}
+          </Alert>
+          <List spacing="xs" size="sm" center>
+            {closureChecklist.map((item) => (
+              <List.Item
+                key={item.label}
+                icon={
+                  item.ok ? (
+                    <IconCircleCheck size={18} color="var(--mantine-color-teal-6)" />
+                  ) : (
+                    <IconCircleX size={18} color="var(--mantine-color-gray-5)" />
+                  )
+                }
+              >
+                {item.label}
+              </List.Item>
+            ))}
+          </List>
+          <Group justify="flex-end" gap="xs">
+            <Button variant="subtle" onClick={() => setCloseConfirmOpen(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              color="teal"
+              loading={actionMutation.isPending}
+              onClick={() => {
+                actionMutation.mutate('close');
+                setCloseConfirmOpen(false);
+              }}
             >
-              {item.label}
-            </List.Item>
-          ))}
-        </List>
-        <Group justify="flex-end" gap="xs">
-          <Button variant="subtle" onClick={() => setCloseConfirmOpen(false)}>
-            {t('common.cancel')}
-          </Button>
-          <Button
-            color="teal"
-            loading={actionMutation.isPending}
-            onClick={() => {
-              actionMutation.mutate('close');
-              setCloseConfirmOpen(false);
-            }}
-          >
-            {t('deliveryOrders.closeDoAction')}
-          </Button>
-        </Group>
-      </Stack>
-    </Modal>
+              {t('deliveryOrders.closeDoAction')}
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Stack >
   );
 }
