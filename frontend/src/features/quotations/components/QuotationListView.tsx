@@ -1,8 +1,9 @@
-import { ActionIcon, Paper, SimpleGrid, Stack, Text, TextInput, Title, Tooltip } from '@mantine/core';
+import { ActionIcon, Badge, Group, Paper, SimpleGrid, Stack, Text, TextInput, Title, Tooltip } from '@mantine/core';
 import { IconClock, IconEye, IconFileInvoice, IconSearch, IconX } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 
 import type { QuotationV1 } from '@shared/api/quotations';
+import { CopyValue } from '@shared/components/CopyValue';
 import { EmptyState } from '@shared/components/EmptyState';
 import { ListPagination, useListPagination } from '@shared/components/ListPagination';
 import { StatusBadge } from '@shared/components/StatusBadge';
@@ -12,9 +13,12 @@ import { formatMoney } from '@shared/utils/money';
 import {
   quotationTabItems,
   quotationDisplayTotal,
+  quotationTypeFullLabelKeys,
+  quotationTypeShortLabels,
   type QuotationTab,
 } from '../model/quotationModel';
 import { useQuotationsUiStore } from '../model/quotationsUiStore';
+import { QuotationValidityBadge } from './QuotationValidityBadge';
 
 type QuotationListViewProps = {
   filteredQuotations: QuotationV1[];
@@ -119,12 +123,22 @@ export function QuotationListView({ filteredQuotations, onInspect, tabCounts }: 
                       <Text size="xs" c="dimmed" className="rfq-list-mobile-label">
                         {t('quotations.quoteNumber')}
                       </Text>
-                      <Text fw={800} size="sm">
-                        {quotation.quotation_no}
-                      </Text>
-                      <Text size="xs" c="dimmed">
-                        {quotation.valid_until ?? '-'}
-                      </Text>
+                      <Group gap={6} wrap="nowrap" align="center">
+                        <CopyValue value={quotation.quotation_no} hoverReveal>
+                          <Text component="span" fw={800} size="sm" className="dl-code-text">
+                            {quotation.quotation_no}
+                          </Text>
+                        </CopyValue>
+                        {quotation.version > 1 ? (
+                          <Badge size="xs" variant="light" color="gray">{`v${quotation.version}`}</Badge>
+                        ) : null}
+                        {quotation.is_final ? (
+                          <Badge size="xs" variant="light" color="blue">
+                            {t('quotations.final')}
+                          </Badge>
+                        ) : null}
+                      </Group>
+                      <QuotationValidityBadge validUntil={quotation.valid_until} />
                     </div>
 
                     <div className="rfq-list-cell">
@@ -134,6 +148,11 @@ export function QuotationListView({ filteredQuotations, onInspect, tabCounts }: 
                       <Text size="sm" fw={600}>
                         {quotation.customer_ref ?? '-'}
                       </Text>
+                      {quotation.supplier?.supplier_name ? (
+                        <Text size="xs" c="dimmed">
+                          {t('quotations.supplierShort')}: {quotation.supplier.supplier_name}
+                        </Text>
+                      ) : null}
                     </div>
 
                     <div className="rfq-list-cell rfq-list-route">
@@ -143,9 +162,16 @@ export function QuotationListView({ filteredQuotations, onInspect, tabCounts }: 
                       <Text size="sm" fw={600}>
                         {quotation.mode ?? '-'}
                       </Text>
-                      <Text size="xs" c="dimmed">
-                        {quotation.incoterm_code ?? '-'}
-                      </Text>
+                      <Group gap={6} wrap="nowrap" align="center">
+                        <Text size="xs" c="dimmed">
+                          {quotation.incoterm_code ?? '-'}
+                        </Text>
+                        <Tooltip label={t(quotationTypeFullLabelKeys[quotation.quotation_type])}>
+                          <Badge size="xs" variant="light" color="grape">
+                            {quotationTypeShortLabels[quotation.quotation_type]}
+                          </Badge>
+                        </Tooltip>
+                      </Group>
                     </div>
 
                     <div className="rfq-list-cell rfq-list-money">
