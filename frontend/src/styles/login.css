@@ -20,6 +20,26 @@
   pointer-events: none;
 }
 
+/* Same dot-grid texture used behind the rest of the app (base.css body::before).
+   The shell's own opaque gradient background sits above <body>, hiding that
+   texture on this screen — repeat it here so the login page matches the
+   app's shared background instead of looking like a different surface. */
+.login-page-shell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle at center, var(--kbfe-decorative-dot-color) 1px, transparent 1.6px);
+  background-size: 22px 22px;
+  opacity: 0.6;
+}
+
+html[data-kbfe-visual-theme='high-contrast'] .login-page-shell::before,
+html[data-kbfe-visual-theme='high-contrast'] .login-page-shell::after {
+  display: none;
+}
+
 .login-card {
   background: var(--kbfe-surface-elevated) !important;
   backdrop-filter: blur(16px);

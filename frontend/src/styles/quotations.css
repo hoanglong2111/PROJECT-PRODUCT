@@ -488,10 +488,21 @@
 }
 
 .rfq-list-head {
-  padding: 0.5rem calc(0.75rem + 1px);
-  color: var(--kbfe-text-secondary, var(--kbfe-text-primary));
-  font-size: 0.72rem;
+  padding: 0.625rem calc(0.75rem + 1px);
+  border-bottom: 1px solid color-mix(in srgb, var(--kbfe-primary-color) 14%, var(--kbfe-border-primary));
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--kbfe-primary-color) 12%, var(--kbfe-surface-elevated)),
+      color-mix(in srgb, var(--kbfe-surface-subtle) 76%, var(--kbfe-surface-elevated) 24%)
+    );
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--kbfe-surface-elevated) 78%, transparent),
+    inset 0 -2px 0 color-mix(in srgb, var(--kbfe-primary-color) 13%, transparent);
+  color: var(--kbfe-text-primary);
+  font-size: 0.875rem;
   font-weight: 800;
+  line-height: 1.25;
 }
 
 .rfq-list-head span {
@@ -503,21 +514,22 @@
 
 .rfq-list-rows {
   display: grid;
-  gap: 0.625rem;
+  gap: 0;
 }
 
 .rfq-list-row {
-  padding: 0.75rem;
-  border: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 76%, transparent);
-  border-radius: 0.5rem;
+  padding: 0.75rem calc(0.75rem + 1px);
+  border-bottom: 0.5px solid color-mix(in srgb, var(--kbfe-border-primary) 72%, transparent);
   background: var(--kbfe-surface-elevated);
   transition:
-    border-color 160ms ease,
     background-color 160ms ease;
 }
 
+.rfq-list-row:last-child {
+  border-bottom: 0;
+}
+
 .rfq-list-row:hover {
-  border-color: color-mix(in srgb, var(--kbfe-primary-color) 26%, var(--kbfe-border-primary));
   background: var(--kbfe-row-hover-background);
 }
 

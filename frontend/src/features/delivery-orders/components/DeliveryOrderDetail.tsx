@@ -39,6 +39,7 @@ import {
 } from '@shared/api/deliveryOrders';
 import { queryKeys } from '@shared/api/queryKeys';
 import { BackActionButton } from '@shared/components/BackActionButton';
+import { CopyValue } from '@shared/components/CopyValue';
 import { DelayBadge } from '@shared/components/DelayBadge';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { useI18n } from '@shared/i18n';
@@ -148,7 +149,11 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
         <div className="delivery-order-detail-hero-grid">
           <Stack gap="sm" className="delivery-order-detail-main">
             <Group gap="xs" align="center" wrap="wrap">
-              <Title order={3}>{deliveryOrder.order_info.order_number}</Title>
+              <Title order={3}>
+                <CopyValue value={deliveryOrder.order_info.order_number}>
+                  {deliveryOrder.order_info.order_number}
+                </CopyValue>
+              </Title>
               <StatusBadge status={deliveryOrder.order_info.status} />
               <FlowTagBadge tags={deliveryOrder.flow_tags} />
             </Group>
@@ -601,7 +606,11 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
             </Paper>
 
             <SimpleGrid cols={{ base: 1, md: 3 }} className="delivery-order-ops-facts">
-              <DeliveryOrderFact label={t('deliveryOrders.efmsBooking')} value={deliveryOrder.order_info.tracking_number ?? deliveryOrder.order_info.order_number} />
+              <DeliveryOrderFact
+                label={t('deliveryOrders.efmsBooking')}
+                value={deliveryOrder.order_info.tracking_number ?? deliveryOrder.order_info.order_number}
+                copyValue={deliveryOrder.order_info.tracking_number ?? deliveryOrder.order_info.order_number}
+              />
               <DeliveryOrderFact label={t('deliveryOrders.mblVessel')} value={`${deliveryOrder.logistics_shipping.shipping_line ?? '-'} / ${deliveryOrder.logistics_shipping.vessel_code ?? '-'}`} />
               <DeliveryOrderFact
                 label={t('deliveryOrders.polPod')}
@@ -689,14 +698,16 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
   );
 }
 
-function DeliveryOrderFact({ label, value }: { label: ReactNode; value: ReactNode }) {
+function DeliveryOrderFact({ copyValue, label, value }: { copyValue?: string; label: ReactNode; value: ReactNode }) {
+  const title = typeof value === 'string' ? value : undefined;
+
   return (
     <div className="delivery-order-detail-fact">
       <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
         {label}
       </Text>
-      <Text fw={700} lineClamp={1} title={typeof value === 'string' ? value : undefined}>
-        {value}
+      <Text fw={700} lineClamp={1} title={title}>
+        {copyValue && typeof value === 'string' ? <CopyValue value={copyValue}>{value}</CopyValue> : value}
       </Text>
     </div>
   );

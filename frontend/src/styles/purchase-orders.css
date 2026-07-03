@@ -629,10 +629,18 @@
   vertical-align: top;
 }
 
+.purchase-order-list-table tbody td {
+  vertical-align: middle;
+}
+
 .purchase-order-list-table tbody tr,
 .purchase-order-po-lines-table tbody tr,
 .purchase-order-confirmation-table tbody tr {
   transition: background-color 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.purchase-order-list-table tbody tr:not(:last-child) td {
+  border-bottom: 0.5px solid color-mix(in srgb, var(--kbfe-border-primary) 72%, transparent);
 }
 
 .purchase-order-list-table tbody tr:hover td,

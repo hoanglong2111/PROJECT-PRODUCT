@@ -10,6 +10,7 @@ import {
 } from '@shared/api/purchaseOrders';
 import { queryKeys } from '@shared/api/queryKeys';
 import { BackActionButton } from '@shared/components/BackActionButton';
+import { CopyValue } from '@shared/components/CopyValue';
 import { PageError } from '@shared/components/PageFeedback';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { getApiErrorMessage } from '@shared/lib/errors';
@@ -112,13 +113,15 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
         <Group justify="space-between" align="flex-start" className="purchase-order-detail-hero-inner">
           <div className="purchase-order-detail-title">
             <Group gap="xs" className="purchase-order-detail-title-row">
-              <Title order={3}>{order.po_no}</Title>
+              <Title order={3}>
+                <CopyValue value={order.po_no}>{order.po_no}</CopyValue>
+              </Title>
               <StatusBadge status={order.status} />
               <Badge size="sm" variant="light" className="purchase-order-nowrap-badge">
                 {order.po_type || 'STANDARD'}
               </Badge>
               <Badge size="sm" variant="light" color="blue" className="purchase-order-nowrap-badge">
-                Contract {order.contract_no}
+                <CopyValue value={order.contract_no ?? ''}>Contract {order.contract_no ?? '-'}</CopyValue>
               </Badge>
             </Group>
             <Text c="dimmed" size="sm" mt={4}>

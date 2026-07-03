@@ -22,7 +22,7 @@ export function Login() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const form = useForm<LoginForm>({
     initialValues: {
-      email: 'admin@kbfe.local',
+      email: 'admin@fadosolution.com',
       password: 'admin123',
     },
     validate: {
@@ -50,7 +50,7 @@ export function Login() {
           </div>
 
           <Alert icon={<IconInfoCircle size={16} />} color="blue" variant="light">
-            {t('login.sampleAccount')} <strong>manager@kbfe.local / manager123</strong>
+            {t('login.sampleAccount')} <strong>manager@kbi.com / manager123</strong>
           </Alert>
 
           {error ? (
@@ -74,7 +74,7 @@ export function Login() {
             })}
           >
             <Stack>
-              <TextInput label="Email" placeholder="manager@kbfe.local" {...form.getInputProps('email')} />
+              <TextInput label="Email" placeholder="manager@kbi.com" {...form.getInputProps('email')} />
               <PasswordInput label={t('common.password')} placeholder="••••••••" {...form.getInputProps('password')} />
               <Button type="submit" loading={isSubmitting}>
                 {t('login.submit')}

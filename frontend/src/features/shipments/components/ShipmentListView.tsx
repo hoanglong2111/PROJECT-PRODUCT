@@ -7,6 +7,7 @@ import type { ShipmentRecord } from '@shared/api/logistics';
 import type { ShipmentModeV1 } from '@shared/api/shipments';
 import { DateField } from '@shared/components/DateField';
 import { BackActionButton } from '@shared/components/BackActionButton';
+import { CopyValue } from '@shared/components/CopyValue';
 import { EmptyState } from '@shared/components/EmptyState';
 import { EntityLink } from '@entities/logistics';
 import { FilterToolbar } from '@shared/components/FilterToolbar';
@@ -351,7 +352,9 @@ export function ShipmentListView({
                       </Tooltip>
                     </Table.Td>
                     <Table.Td>
-                      <Text fw={700} className="dl-code-text">{shp.shipment_number}</Text>
+                      <CopyValue value={shp.shipment_number} hoverReveal>
+                        <Text component="span" fw={700} className="dl-code-text">{shp.shipment_number}</Text>
+                      </CopyValue>
                     </Table.Td>
                     <Table.Td>
                       <Stack gap={2} align="flex-start">

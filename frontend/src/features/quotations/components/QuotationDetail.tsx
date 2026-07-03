@@ -15,6 +15,7 @@ import {
   type QuotationV1,
 } from '@shared/api/quotations';
 import { queryKeys } from '@shared/api/queryKeys';
+import { CopyValue } from '@shared/components/CopyValue';
 import { DateTimeText } from '@shared/components/DateTimeText';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { useI18n } from '@shared/i18n';
@@ -118,7 +119,9 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
               </div>
               <div className="rfq-detail-title-copy">
                 <Group gap="xs" align="center">
-                  <Title order={3}>{quotation.quotation_no}</Title>
+                  <Title order={3}>
+                    <CopyValue value={quotation.quotation_no}>{quotation.quotation_no}</CopyValue>
+                  </Title>
                   <StatusBadge status={status} />
                 </Group>
                 <Text c="dimmed" size="sm">

@@ -24,6 +24,7 @@ import {
   releaseCarrierDeliveryOrder,
   type CarrierDeliveryOrderV1,
 } from '@shared/api/carrierDeliveryOrders';
+import { CopyValue } from '@shared/components/CopyValue';
 import { DateField } from '@shared/components/DateField';
 import type { ShipmentRecord } from '@shared/api/logistics';
 import { queryKeys } from '@shared/api/queryKeys';
@@ -210,7 +211,11 @@ export function ShipmentCarrierDoPanel({ shipment }: { shipment: ShipmentRecord 
               <Table.Tbody>
                 {carrierDos.map((cdo) => (
                   <Table.Tr key={cdo.id}>
-                    <Table.Td><Text fw={700}>{cdo.carrier_do_no ?? cdo.id}</Text></Table.Td>
+                    <Table.Td>
+                      <Text fw={700}>
+                        <CopyValue value={cdo.carrier_do_no ?? cdo.id}>{cdo.carrier_do_no ?? cdo.id}</CopyValue>
+                      </Text>
+                    </Table.Td>
                     <Table.Td>{cdo.forwarder?.supplier_name ?? forwarderName(cdo.forwarder_id)}</Table.Td>
                     <Table.Td>{cdo.release_location ?? '-'}</Table.Td>
                     <Table.Td>{cdo.issued_date ?? '-'}</Table.Td>

@@ -6,7 +6,7 @@ const uiDefaultUser: AuthUser = {
   avatarUrl: null,
   defaultWarehouseCode: null,
   department: 'Purchasing',
-  email: 'manager@kbfe.local',
+  email: 'manager@kbi.com',
   fullName: 'KBFE Manager',
   id: 'ui-manager',
   operationFocus: null,

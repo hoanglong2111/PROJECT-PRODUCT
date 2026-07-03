@@ -20,6 +20,7 @@ import {
 import { IconAlertTriangle, IconChecklist, IconEye, IconSearch, IconTruckDelivery, IconX } from '@tabler/icons-react';
 
 import type { BusinessFlowTag, DeliveryOrder } from '@shared/api/logistics';
+import { CopyValue } from '@shared/components/CopyValue';
 import { DelayBadge } from '@shared/components/DelayBadge';
 import { EmptyState } from '@shared/components/EmptyState';
 import { FilterSegment } from '@shared/components/FilterSegment';
@@ -224,9 +225,11 @@ export function DeliveryOrderListView({
                 return (
                   <Table.Tr key={deliveryOrder.id}>
                     <Table.Td className="table-cell-truncate" style={{ maxWidth: '17rem' }}>
-                      <Text fw={700} lineClamp={1} title={deliveryOrder.order_info.order_number} className="dl-code-text">
-                        {deliveryOrder.order_info.order_number}
-                      </Text>
+                      <CopyValue value={deliveryOrder.order_info.order_number} hoverReveal>
+                        <Text component="span" fw={700} lineClamp={1} title={deliveryOrder.order_info.order_number} className="dl-code-text">
+                          {deliveryOrder.order_info.order_number}
+                        </Text>
+                      </CopyValue>
                       <Text size="xs" c="dimmed" lineClamp={1}>
                         {deliveryOrder.source_lot_no ?? deliveryOrder.product_details.lot_number ?? t('deliveryOrders.lotPending')}
                       </Text>
