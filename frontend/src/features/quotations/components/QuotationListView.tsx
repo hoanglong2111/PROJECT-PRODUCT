@@ -123,18 +123,18 @@ export function QuotationListView({ filteredQuotations, onInspect, tabCounts }: 
                       <Text size="xs" c="dimmed" className="rfq-list-mobile-label">
                         {t('quotations.quoteNumber')}
                       </Text>
-                      <Group gap={6} wrap="nowrap" align="center">
-                        <CopyValue value={quotation.quotation_no} hoverReveal>
+                      <CopyValue value={quotation.quotation_no} hoverReveal>
+                        <Group gap={6} wrap="nowrap" component="span" align="center">
                           <Text component="span" fw={800} size="sm" className="dl-code-text">
                             {quotation.quotation_no}
                           </Text>
-                        </CopyValue>
-                        {quotation.is_final ? (
-                          <Badge size="xs" variant="light" color="blue">
-                            FINAL
-                          </Badge>
-                        ) : null}
-                      </Group>
+                          {quotation.is_final ? (
+                            <Badge size="xs" variant="light" color="blue">
+                              FINAL
+                            </Badge>
+                          ) : null}
+                        </Group>
+                      </CopyValue>
                       <QuotationValidityBadge validUntil={quotation.valid_until} />
                     </div>
 
