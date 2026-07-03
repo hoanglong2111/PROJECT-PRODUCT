@@ -23,6 +23,8 @@
 .rfq-lifecycle-steps,
 .rfq-mobile-submit-bar,
 .rfq-list-toolbar,
+.rfq-list-filter-row,
+.rfq-list-filter-dates,
 .rfq-list-body {
   min-width: 0;
 }
@@ -443,6 +445,12 @@
   min-width: 0;
 }
 
+.rfq-list-tabs.dl-chip-row,
+.rfq-list-toolbar .dl-chip-row {
+  width: fit-content;
+  max-width: 100%;
+}
+
 .rfq-list-tabs .mantine-Tabs-list {
   display: flex;
   flex-wrap: wrap;
@@ -469,6 +477,30 @@
 .rfq-list-search .mantine-Input-input {
   min-height: 2.25rem;
   background: color-mix(in srgb, var(--kbfe-surface-elevated) 94%, var(--kbfe-background-secondary) 6%);
+}
+
+.rfq-list-filter-row {
+  display: grid;
+  grid-template-columns: minmax(18rem, 1.35fr) minmax(9rem, 0.58fr) minmax(13rem, 0.85fr) minmax(18rem, 1.05fr) auto;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.rfq-list-filter-row > * {
+  min-width: 0;
+}
+
+.rfq-list-filter-dates {
+  grid-template-columns: repeat(2, minmax(9rem, 1fr));
+  align-items: end;
+}
+
+.rfq-list-filter-actions {
+  align-self: end;
+}
+
+.rfq-list-filter-clear {
+  min-width: 6.75rem;
 }
 
 .rfq-list-body {
@@ -864,6 +896,19 @@
     grid-template-columns: 1fr;
   }
 
+  .rfq-list-filter-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rfq-list-search,
+  .rfq-list-filter-dates {
+    grid-column: 1 / -1;
+  }
+
+  .rfq-list-filter-actions {
+    justify-content: flex-start;
+  }
+
   .rfq-list-head {
     display: none;
   }
@@ -1071,6 +1116,16 @@
   .rfq-list-toolbar,
   .rfq-list-hero {
     padding-inline: 0.75rem;
+  }
+
+  .rfq-list-filter-row,
+  .rfq-list-filter-dates {
+    grid-template-columns: 1fr;
+  }
+
+  .rfq-list-filter-actions,
+  .rfq-list-filter-clear {
+    width: 100%;
   }
 
   .rfq-list-row {

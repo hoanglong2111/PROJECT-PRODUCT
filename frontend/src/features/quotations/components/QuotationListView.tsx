@@ -1,11 +1,12 @@
 import { ActionIcon, Badge, Button, Group, Paper, Select, SimpleGrid, Stack, Text, TextInput, Title, Tooltip } from '@mantine/core';
-import { IconCalendarPlus, IconClock, IconEye, IconFileInvoice, IconSearch, IconX } from '@tabler/icons-react';
+import { IconCalendarPlus, IconCalendarStats, IconClock, IconEye, IconFileInvoice, IconSearch, IconX } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 
 import type { QuotationV1 } from '@shared/api/quotations';
 import { CopyValue } from '@shared/components/CopyValue';
 import { DateField } from '@shared/components/DateField';
 import { EmptyState } from '@shared/components/EmptyState';
+import { FilterSegment } from '@shared/components/FilterSegment';
 import { ListPagination, useListPagination } from '@shared/components/ListPagination';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { useI18n } from '@shared/i18n';
@@ -27,6 +28,15 @@ type QuotationListViewProps = {
   supplierOptions: { value: string; label: string }[];
   tabCounts: Record<QuotationTab, number>;
   onInspect: (quotation: QuotationV1) => void;
+};
+
+const quotationTabColors: Record<QuotationTab, string> = {
+  all: 'gray',
+  rfq: 'cyan',
+  draft: 'gray',
+  pending: 'yellow',
+  confirmed: 'teal',
+  rejected: 'red',
 };
 
 export function QuotationListView({ filteredQuotations, onInspect, supplierOptions, tabCounts }: QuotationListViewProps) {
@@ -86,24 +96,17 @@ export function QuotationListView({ filteredQuotations, onInspect, supplierOptio
         <div className="rfq-list-toolbar">
           <div className="dl-filter-head">
             <div className="dl-filter-head__control">
-              <div className="dl-chip-row rfq-list-tabs" aria-label={t('quotations.status')} role="group">
-                {quotationTabItems.map((tab) => {
-                  const isActive = activeTab === tab.value;
-                  return (
-                    <button
-                      aria-pressed={isActive}
-                      className={isActive ? 'dl-chip is-active' : 'dl-chip'}
-                      key={tab.value}
-                      onClick={() => setActiveTab(tab.value)}
-                      type="button"
-                    >
-                      <span className="dl-chip-dot" aria-hidden="true" />
-                      <span>{t(tab.labelKey)}</span>
-                      <span className="dl-chip-count">{tabCounts[tab.value]}</span>
-                    </button>
-                  );
-                })}
-              </div>
+              <FilterSegment
+                ariaLabel={t('quotations.status')}
+                value={activeTab}
+                onChange={(value) => setActiveTab(value as QuotationTab)}
+                options={quotationTabItems.map((tab) => ({
+                  value: tab.value,
+                  label: t(tab.labelKey),
+                  count: tabCounts[tab.value],
+                  color: quotationTabColors[tab.value],
+                }))}
+              />
             </div>
             <div className="dl-filter-result">
               <Text size="sm" c="dimmed">
@@ -112,16 +115,17 @@ export function QuotationListView({ filteredQuotations, onInspect, supplierOptio
             </div>
           </div>
 
-          <TextInput
-            leftSection={<IconSearch size={16} />}
-            label={t('common.search')}
-            placeholder={t('quotations.searchPlaceholder')}
-            value={search}
-            onChange={(event) => setSearch(event.currentTarget.value)}
-            className="rfq-list-search dl-filter-search"
-          />
           <div className="rfq-list-filter-row dl-filter-row">
+            <TextInput
+              leftSection={<IconSearch size={16} />}
+              label={t('common.search')}
+              placeholder={t('quotations.searchPlaceholder')}
+              value={search}
+              onChange={(event) => setSearch(event.currentTarget.value)}
+              className="rfq-list-search dl-filter-search"
+            />
             <Select
+              className="rfq-list-type-filter"
               label={t('quotations.filterType')}
               value={typeFilter}
               onChange={(value) => setTypeFilter((value ?? 'all') as typeof typeFilter)}
@@ -134,6 +138,7 @@ export function QuotationListView({ filteredQuotations, onInspect, supplierOptio
               ]}
             />
             <Select
+              className="rfq-list-supplier-filter"
               label={t('common.supplier')}
               placeholder={t('common.all')}
               value={supplierFilter}
@@ -143,24 +148,31 @@ export function QuotationListView({ filteredQuotations, onInspect, supplierOptio
               clearable
               nothingFoundMessage={t('common.all')}
             />
-            <DateField
-              label={t('quotations.filterCreatedFrom')}
-              value={createdFrom}
-              onChange={(value) => setCreatedFrom(value ?? '')}
-            />
-            <DateField
-              label={t('quotations.filterCreatedTo')}
-              value={createdTo}
-              onChange={(value) => setCreatedTo(value ?? '')}
-            />
-            <Button
-              variant={hasActiveFilters ? 'light' : 'subtle'}
-              leftSection={<IconX size={16} />}
-              onClick={clearFilters}
-              disabled={!hasActiveFilters}
-            >
-              {t('common.clear')}
-            </Button>
+            <div className="rfq-list-filter-dates dl-filter-dates">
+              <DateField
+                label={t('quotations.filterCreatedFrom')}
+                leftSection={<IconCalendarStats size={16} />}
+                value={createdFrom}
+                onChange={(value) => setCreatedFrom(value ?? '')}
+              />
+              <DateField
+                label={t('quotations.filterCreatedTo')}
+                leftSection={<IconCalendarStats size={16} />}
+                value={createdTo}
+                onChange={(value) => setCreatedTo(value ?? '')}
+              />
+            </div>
+            <Group className="rfq-list-filter-actions dl-filter-actions" gap="xs" wrap="nowrap">
+              <Button
+                className="rfq-list-filter-clear"
+                variant={hasActiveFilters ? 'light' : 'subtle'}
+                leftSection={<IconX size={16} />}
+                onClick={clearFilters}
+                disabled={!hasActiveFilters}
+              >
+                {t('common.clear')}
+              </Button>
+            </Group>
           </div>
         </div>
       </Paper>

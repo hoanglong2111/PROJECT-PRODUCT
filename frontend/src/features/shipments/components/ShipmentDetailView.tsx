@@ -115,14 +115,14 @@ export function ShipmentDetailView({
           <Tabs.Tab value="tasks" leftSection={<IconChecklist size={14} />}>
             {t('shipments.tasks')}
           </Tabs.Tab>
-          <Tabs.Tab value="carrier-do" leftSection={<IconFileInvoice size={14} />}>
-            {t('shipments.carrierDo')}
-          </Tabs.Tab>
           <AdminOnly>
-            <Tabs.Tab value="fds-do" leftSection={<IconFileInvoice size={14} />}>
-              {t('shipments.fdsDo')}
+            <Tabs.Tab value="carrier-do" leftSection={<IconFileInvoice size={14} />}>
+              {t('shipments.carrierDo')}
             </Tabs.Tab>
           </AdminOnly>
+          <Tabs.Tab value="fds-do" leftSection={<IconFileInvoice size={14} />}>
+            {t('shipments.fdsDo')}
+          </Tabs.Tab>
           <Tabs.Tab value="dtos" leftSection={<IconTruck size={14} />}>
             DTOs
           </Tabs.Tab>
@@ -174,16 +174,16 @@ export function ShipmentDetailView({
           <ShipmentTasksPanel tasks={shipment.po_tasks} />
         </Tabs.Panel>
 
-        <Tabs.Panel value="carrier-do" pt="sm">
-          <ShipmentCarrierDoPanel shipment={shipment} />
-        </Tabs.Panel>
-
         {/* FDS-only tab: hidden in the demo view, revealed via /fds-admin. */}
         <AdminOnly>
-          <Tabs.Panel value="fds-do" pt="sm">
+          <Tabs.Panel value="carrier-do" pt="sm">
             <ShipmentCarrierDoPanel shipment={shipment} />
           </Tabs.Panel>
         </AdminOnly>
+
+        <Tabs.Panel value="fds-do" pt="sm">
+          <ShipmentCarrierDoPanel shipment={shipment} />
+        </Tabs.Panel>
 
         <Tabs.Panel value="dtos" pt="sm">
           <ShipmentDtosPanel shipment={shipment} />
