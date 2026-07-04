@@ -352,7 +352,8 @@ export function getPoLineLotState(line: PurchaseOrderLineV1) {
 export type PoLineReceiptState = 'none' | 'full' | 'short' | 'pending';
 
 // Received vs Shipped reconciliation at the PO line (procurement view).
-// Shipped = "đã đưa lên lô vận chuyển quốc tế"; Received = "đã nhận đủ so với Shipped".
+// Shipped means assigned to an international shipment; Received means fully
+// received against Shipped quantity.
 // Warehouse-delivery completeness (DTO/container) is intentionally out of scope here.
 export function getPoLineReceiptState(line: PurchaseOrderLineV1): { state: PoLineReceiptState; shortfall: number } {
   const shipped = toNumber(line.qty_shipped);

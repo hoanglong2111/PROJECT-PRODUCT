@@ -112,7 +112,7 @@ export function Gd1PoTasksBoard() {
                 return (
                   <Table.Tr
                     key={task.id}
-                    style={{ backgroundColor: isCompleted ? 'rgba(46, 125, 50, 0.02)' : undefined }}
+                    className={isCompleted ? 'task-row-completed' : undefined}
                   >
                     <Table.Td>
                       <Checkbox

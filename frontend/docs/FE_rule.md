@@ -688,6 +688,8 @@ fields (`quote_amount` / `quote_currency`) are saved via `PATCH /api/v1/domestic
 - Refetch or replace board after mutations.
 - Disable invalid actions based on status.
 - Keep LOT Planning free of Slot.
+- Use `docs/I18N_GLOSSARY.md` as the source of truth for forwarding terminology
+  when adding or changing UI translations.
 - Depend on the API contract (`docs/API_CONTRACT.md`), not on the backend
   implementation. Dev-only mock scaffolding (deterministic IDs, `/v1/mock/:collection`,
   seed data) must stay inside `src/shared/api` adapters and never leak into features.

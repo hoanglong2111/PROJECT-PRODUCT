@@ -21,8 +21,8 @@ describe('master-data enum labels are doc-grounded, not translated', () => {
 
   it('maps milestone/department codes to doc text', () => {
     expect(getMilestoneLabel('MS1_BOOKING_CONFIRMED', t)).toBe('MS-1 Booking confirmed');
-    expect(getDepartmentLabel('FDS_ACCOUNTING', t)).toBe('FDS Kế toán');
-    expect(getDepartmentLabel('KBI_PURCHASING', t)).toBe('KBI – Mua hàng');
+    expect(getDepartmentLabel('FDS_ACCOUNTING', t)).toBe('FDS K\u1ebf to\u00e1n');
+    expect(getDepartmentLabel('KBI_PURCHASING', t)).toBe('KBI \u2013 Mua h\u00e0ng');
   });
 
   it('maps rev_cost to the doc English word', () => {

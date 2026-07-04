@@ -186,11 +186,24 @@
 
 .lot-line-static-meta {
   letter-spacing: 0;
+  color: var(--kbfe-text-secondary);
 }
 
 .lot-line-static-meta span {
   margin-inline: 0.375rem;
-  color: var(--mantine-color-gray-4);
+  color: color-mix(in srgb, var(--kbfe-text-secondary) 64%, transparent);
+}
+
+.lot-line-item-code {
+  color: var(--kbfe-code-text);
+  font-family: "Geist Mono Variable", "Geist Variable", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+.lot-line-item-name {
+  color: color-mix(in srgb, var(--kbfe-text-primary) 88%, var(--kbfe-text-secondary));
+  letter-spacing: 0;
 }
 
 .lot-line-right {

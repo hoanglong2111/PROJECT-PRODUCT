@@ -35,7 +35,7 @@ export function NotFound() {
               width: '350px',
               height: '350px',
               borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(13, 148, 136, 0.15) 0%, transparent 70%)',
+              background: 'radial-gradient(circle, color-mix(in srgb, var(--kbfe-primary-color) 15%, transparent) 0%, transparent 70%)',
               zIndex: 0,
               pointerEvents: 'none',
             }}
@@ -48,7 +48,7 @@ export function NotFound() {
                   <IconMapPinOff size={24} />
                 </ThemeIcon>
                 <Text size="sm" fw={700} lts="0.05em" tt="uppercase" c="teal">
-                  Error 404
+                  {t('notFound.errorCodeLabel')}
                 </Text>
               </Group>
 
@@ -81,7 +81,7 @@ export function NotFound() {
             <Center>
               <Stack gap="md" style={{ width: '100%' }}>
                 <Text size="xs" fw={700} lts="0.05em" tt="uppercase" c="dimmed">
-                  Quick Navigation
+                  {t('notFound.quickNavigation')}
                 </Text>
 
                 <Paper
@@ -108,7 +108,7 @@ export function NotFound() {
                       {t('shell.dashboard')}
                     </Text>
                     <Text size="xs" c="dimmed">
-                      Control tower hub & real-time analytics
+                      {t('notFound.dashboardHint')}
                     </Text>
                   </div>
                 </Paper>
@@ -137,7 +137,7 @@ export function NotFound() {
                       {t('shell.tasks')}
                     </Text>
                     <Text size="xs" c="dimmed">
-                      Your checklist & logistical operations
+                      {t('notFound.tasksHint')}
                     </Text>
                   </div>
                 </Paper>
@@ -166,7 +166,7 @@ export function NotFound() {
                       {t('shell.settings')}
                     </Text>
                     <Text size="xs" c="dimmed">
-                      Theme preferences & local customizations
+                      {t('notFound.settingsHint')}
                     </Text>
                   </div>
                 </Paper>

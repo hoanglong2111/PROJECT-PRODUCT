@@ -80,8 +80,8 @@ const DEPARTMENT_DOC_LABELS: Record<string, string> = {
   FDS_SALES: 'FDS Sales',
   FDS_OPS: 'FDS Ops',
   FDS_OPS_CUSTOMS: 'FDS Ops (Customs)',
-  FDS_ACCOUNTING: 'FDS Kế toán',
-  KBI_PURCHASING: 'KBI – Mua hàng',
+  FDS_ACCOUNTING: 'FDS K\u1ebf to\u00e1n',
+  KBI_PURCHASING: 'KBI \u2013 Mua h\u00e0ng',
   KBI_WAREHOUSE: 'KBI Kho',
 };
 

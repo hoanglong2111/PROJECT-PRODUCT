@@ -188,7 +188,7 @@ export function CustomsLineDrawer({
 
         <TextInput label={t('shipments.note')} value={note} onChange={(e) => setNote(e.currentTarget.value)} />
 
-        <Paper withBorder p="sm" bg="var(--mantine-color-gray-0)">
+        <Paper withBorder p="sm" bg="var(--kbfe-surface-subtle)">
           <Text size="xs" c="dimmed" mb={4}>{t('shipments.taxImpact')}</Text>
           <Group justify="space-between">
             <Text size="sm" c="dimmed">{t('shipments.estimatedDuty')}</Text>

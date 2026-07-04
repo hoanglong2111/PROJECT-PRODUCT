@@ -377,15 +377,29 @@ html[data-kbfe-visual-theme='high-contrast'] .mantine-AppShell-navbar {
 }
 
 .notification-bell-item {
+  width: 100%;
   padding: var(--kbfe-space-sm) var(--kbfe-space-md);
   border-bottom: 1px solid var(--kbfe-border-primary);
+  border-top: 0;
+  border-right: 0;
+  border-left: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
   display: flex;
   align-items: flex-start;
   gap: var(--kbfe-space-xs);
+  text-align: left;
+  font: inherit;
 }
 
 .notification-bell-item:last-child {
   border-bottom: none;
+}
+
+.notification-bell-item:focus-visible {
+  outline: 2px solid var(--kbfe-focus-ring);
+  outline-offset: -2px;
 }
 
 .notification-bell-item.is-unread {

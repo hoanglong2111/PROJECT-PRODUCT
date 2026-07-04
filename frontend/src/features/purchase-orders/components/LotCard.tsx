@@ -218,14 +218,14 @@ export function LotCard({
                         <IconGripVertical size={14} color="var(--mantine-color-gray-4)" />
                         <div className="lot-line-item-text">
                           <Text size="sm" truncate title={`${itemCode} - ${itemName}`}>
-                            <Text span fw={800} c="var(--mantine-color-gray-9)">
+                            <Text span fw={800} className="lot-line-item-code">
                               {itemCode}
                             </Text>{' '}
-                            <Text span fw={400} size="sm" c="dimmed">
+                            <Text span fw={500} size="sm" className="lot-line-item-name">
                               {itemName}
                             </Text>
                           </Text>
-                          <Text size="xs" c="dimmed" mt={4} className="lot-line-static-meta" truncate>
+                          <Text size="xs" mt={4} className="lot-line-static-meta" truncate>
                             HSCODE: {hsCode || '-'} <span aria-hidden="true">|</span> Weight:{' '}
                             {formatWeightKg(grossWeightKg) || '-'}
                           </Text>

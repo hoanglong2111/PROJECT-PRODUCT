@@ -65,7 +65,9 @@ export function buildItemColumns(t: T, onToggleActive?: (record: Item) => void):
       render: (item) => (
         <Stack gap={4}>
           <Group gap="xs" wrap="nowrap">
-            <Badge variant="light">{item.item_code}</Badge>
+            <Text component="span" size="sm" className="dl-code-text" title={item.item_code}>
+              {item.item_code}
+            </Text>
             <Text size="sm" fw={700} lineClamp={1} title={item.item_name}>
               {item.item_name}
             </Text>
