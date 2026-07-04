@@ -4,7 +4,7 @@ import { normalizeChargeCode } from '../chargeCodes';
 import { normalizeCarrier, normalizeForwarder } from '../forwarders';
 import { normalizeItem } from '../items';
 import { normalizeTaskTemplate } from '../taskTemplates';
-import { normalizeSupplier } from '../tradeMasterData';
+import { normalizeIncoterm, normalizeSupplier } from '../tradeMasterData';
 
 describe('master data mappers', () => {
   it('normalizes item fields with sensible defaults', () => {
@@ -122,5 +122,32 @@ describe('master data mappers', () => {
       note: null,
       sort_order: 3,
     });
+  });
+});
+
+describe('normalizeIncoterm scope defaults', () => {
+  const base = {
+    id: '1',
+    incoterm_code: 'CIF',
+    incoterm_name: 'CIF',
+    incoterm_name_vn: '',
+    description: null,
+    is_active: true,
+  };
+
+  it('fills scope from the Incoterms 2020 seed when backend omits it', () => {
+    const result = normalizeIncoterm(base);
+    expect(result.charge_group_scope).toEqual(['DOCUMENTATION_FILING', 'DESTINATION_IMPORT']);
+    expect(result.insurance_required).toBe(true);
+  });
+
+  it('keeps backend-provided scope untouched (swap-friendly)', () => {
+    const result = normalizeIncoterm({
+      ...base,
+      charge_group_scope: ['MAIN_FREIGHT'],
+      insurance_required: false,
+    });
+    expect(result.charge_group_scope).toEqual(['MAIN_FREIGHT']);
+    expect(result.insurance_required).toBe(false);
   });
 });
