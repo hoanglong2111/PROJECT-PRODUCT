@@ -109,12 +109,16 @@ export function ShipmentDetailView({
           <Tabs.Tab value="customs" leftSection={<IconShield size={14} />}>
             {t('shipments.customs')}
           </Tabs.Tab>
-          <Tabs.Tab value="costs" leftSection={<IconHourglassHigh size={14} />}>
-            {t('shipments.costs')}
-          </Tabs.Tab>
+          {/* Hide for KBI */}
+          <AdminOnly>
+            <Tabs.Tab value="costs" leftSection={<IconHourglassHigh size={14} />}>
+              {t('shipments.costs')}
+            </Tabs.Tab>
+          </AdminOnly>
           <Tabs.Tab value="tasks" leftSection={<IconChecklist size={14} />}>
             {t('shipments.tasks')}
           </Tabs.Tab>
+          {/* Hide for KBI */}
           <AdminOnly>
             <Tabs.Tab value="carrier-do" leftSection={<IconFileInvoice size={14} />}>
               {t('shipments.carrierDo')}
