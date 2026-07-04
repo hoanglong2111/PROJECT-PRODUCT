@@ -14,7 +14,6 @@ import {
   Table,
   Text,
   TextInput,
-  Title,
   Tooltip,
   Tabs,
 } from '@mantine/core';
@@ -26,11 +25,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 import { EmptyState } from '@shared/components/EmptyState';
-import { BackActionButton } from '@shared/components/BackActionButton';
 import { FilterSegment } from '@shared/components/FilterSegment';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { ListPagination, useListPagination } from '@shared/components/ListPagination';
+import { Metric } from '@shared/components/Metric';
 import { ModalTitle } from '@shared/components/ModalTitle';
+import { PageHeader } from '@shared/components/PageHeader';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import {
@@ -47,7 +47,6 @@ import { MILESTONE_CODES } from '@shared/api/taskTemplates';
 import { departmentLabel, milestoneLabel, priorityColor } from './model/tasksModel';
 import { useTasksUiStore } from './model/tasksUiStore';
 import { Gd1PoTasksBoard } from './components/Gd1PoTasksBoard';
-import { Metric } from './components/Metric';
 import { TaskDetail } from './components/TaskDetail';
 import { TaskFormPanel } from './components/TaskFormPanel';
 
@@ -274,22 +273,20 @@ export function Tasks() {
 
   return (
     <Stack gap="lg">
-      <Group justify="space-between" align="flex-start" gap="md" className="dl-page-header">
-        <div className="dl-page-title-block">
-          <Title order={1}>{t('tasks.title')}</Title>
-          <Text c="dimmed" mt={4}>
-            {t('tasks.subtitle')}
-          </Text>
-        </div>
-        <Group gap="sm" className="dl-page-actions">
+      <PageHeader
+        title={t('tasks.title')}
+        subtitle={t('tasks.subtitle')}
+        actions={
+          <>
           <Button leftSection={<IconPlus size={16} />} onClick={openCreateTask}>
             {t('tasks.createTask')}
           </Button>
           <Badge leftSection={<IconUserCheck size={14} />} size="lg" variant="light">
             {t('tasks.completionBadge', { percent: completionRate })}
           </Badge>
-        </Group>
-      </Group>
+          </>
+        }
+      />
 
       <Tabs defaultValue="closure">
         <Tabs.List mb="md">

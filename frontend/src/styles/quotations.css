@@ -46,12 +46,14 @@
 .quotations-page-actions,
 .quotations-primary-action,
 .quotations-back-action,
+.quotations-subheader .kbfe-back-action,
 .quotations-api-badge {
   flex: 0 0 auto;
 }
 
 .quotations-primary-action .mantine-Button-label,
-.quotations-back-action .mantine-Button-label {
+.quotations-back-action .mantine-Button-label,
+.quotations-subheader .kbfe-back-action .mantine-Button-label {
   white-space: nowrap;
 }
 

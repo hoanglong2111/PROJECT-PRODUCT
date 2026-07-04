@@ -253,59 +253,60 @@ export function CreateDtoFromShipmentPanel({
           </Checkbox.Group>
         )}
 
-        <Paper withBorder p="sm" mt="sm">
+        <Paper withBorder p="sm" mt="sm" className="shipment-dto-container-composer">
           <Stack gap="xs">
             <Text size="xs" c="dimmed">{t('shipments.dtoAddContainerHint')}</Text>
-            <Group gap="xs" align="flex-end" wrap="wrap">
+            <div className="shipment-dto-container-form">
               {isConsolidation && (
                 <Select
+                  className="shipment-dto-field-target"
                   label={t('shipments.dtoAddContainerTarget')}
                   data={shipmentTargetOptions}
                   value={addTargetShipmentId}
                   onChange={setAddTargetShipmentId}
                   allowDeselect={false}
-                  w={170}
                 />
               )}
               <TextInput
+                className="shipment-dto-field-container-no"
                 label={t('shipments.containerNumber')}
                 placeholder={t('shipments.containerNumberPlaceholder')}
                 value={newContainerNo}
                 onChange={(event) => setNewContainerNo(event.currentTarget.value)}
-                style={{ flex: 1, minWidth: 140 }}
               />
               <Select
+                className="shipment-dto-field-type"
                 label={t('shipments.containerType')}
                 data={CONTAINER_TYPE_OPTIONS}
                 value={newContainerType}
                 onChange={setNewContainerType}
                 allowDeselect={false}
-                w={100}
               />
               <TextInput
+                className="shipment-dto-field-seal"
                 label={t('shipments.sealNumber')}
                 placeholder={t('shipments.sealNumberPlaceholder')}
                 value={newSeal}
                 onChange={(event) => setNewSeal(event.currentTarget.value)}
-                w={120}
               />
               <NumberInput
+                className="shipment-dto-field-gross"
                 label={t('shipments.grossWeightKg')}
                 placeholder="0"
                 value={newGross}
                 onChange={setNewGross}
                 min={0}
-                w={110}
               />
               <NumberInput
+                className="shipment-dto-field-cbm"
                 label={t('shipments.volumeCbm')}
                 placeholder="0"
                 value={newCbm}
                 onChange={setNewCbm}
                 min={0}
-                w={100}
               />
               <Button
+                className="shipment-dto-container-add"
                 variant="light"
                 leftSection={<IconPlus size={16} />}
                 loading={addContainerMutation.isPending}
@@ -314,7 +315,7 @@ export function CreateDtoFromShipmentPanel({
               >
                 {t('shipments.addContainer')}
               </Button>
-            </Group>
+            </div>
             {addContainerMutation.isError && (
               <Text size="xs" c="red">
                 {addContainerMutation.error instanceof Error
@@ -326,18 +327,17 @@ export function CreateDtoFromShipmentPanel({
         </Paper>
       </div>
 
-      <Select
-        label={t('shipments.truckVendor')}
-        placeholder={t('shipments.truckVendorDefault')}
-        data={truckVendorOptions}
-        value={truckVendorId}
-        onChange={setTruckVendorId}
-        searchable
-        clearable
-        nothingFoundMessage={truckVendorsQuery.isLoading ? t('domesticTransportOrders.loadingVendors') : t('domesticTransportOrders.noVendor')}
-      />
-
-      <Group grow>
+      <div className="shipment-dto-dispatch-grid">
+        <Select
+          label={t('shipments.truckVendor')}
+          placeholder={t('shipments.truckVendorDefault')}
+          data={truckVendorOptions}
+          value={truckVendorId}
+          onChange={setTruckVendorId}
+          searchable
+          clearable
+          nothingFoundMessage={truckVendorsQuery.isLoading ? t('domesticTransportOrders.loadingVendors') : t('domesticTransportOrders.noVendor')}
+        />
         <TextInput
           label={t('shipments.warehouse')}
           value={warehouse}
@@ -348,7 +348,7 @@ export function CreateDtoFromShipmentPanel({
           value={pickupDate}
           onChange={(value) => setPickupDate(value ?? '')}
         />
-      </Group>
+      </div>
 
       <Textarea
         label={t('shipments.note')}

@@ -33,6 +33,7 @@ import { DateTimeText } from '@shared/components/DateTimeText';
 import { EmptyState } from '@shared/components/EmptyState';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { ListPagination } from '@shared/components/ListPagination';
+import { Metric } from '@shared/components/Metric';
 import { useI18n } from '@shared/i18n';
 
 import {
@@ -43,7 +44,6 @@ import {
 } from '../model/purchaseOrderModel';
 import { usePurchaseOrdersUiStore } from '../model/purchaseOrdersUiStore';
 import { LogisticsRouteCell } from './LogisticsRouteCell';
-import { Metric } from './Metric';
 import { PoStageBadge } from './PoStageBadge';
 import { PoStageFilter } from './PoStageFilter';
 

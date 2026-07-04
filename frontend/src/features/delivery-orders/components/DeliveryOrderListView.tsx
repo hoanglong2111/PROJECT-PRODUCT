@@ -26,6 +26,7 @@ import { EmptyState } from '@shared/components/EmptyState';
 import { FilterSegment } from '@shared/components/FilterSegment';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { ListPagination, useListPagination } from '@shared/components/ListPagination';
+import { Metric } from '@shared/components/Metric';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { useI18n } from '@shared/i18n';
 import { EntityLink, calcDelay } from '@entities/logistics';
@@ -38,7 +39,6 @@ import {
   type DeliveryOrderTab,
 } from '../model/deliveryOrderModel';
 import { useDeliveryOrdersUiStore } from '../model/deliveryOrdersUiStore';
-import { Metric } from './Metric';
 
 export function DeliveryOrderListView({
   deliveryOrders,

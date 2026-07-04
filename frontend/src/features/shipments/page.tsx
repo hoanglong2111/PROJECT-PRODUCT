@@ -14,7 +14,11 @@ import { IconAnchor, IconCheck, IconClock, IconPlus, IconShield, IconX } from '@
 import { useEffect, useMemo, useState } from 'react';
 
 import { DateField } from '@shared/components/DateField';
+import { FieldPair } from '@shared/components/FieldPair';
+import { Metric } from '@shared/components/Metric';
+import { PageHeader } from '@shared/components/PageHeader';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
+import { WorkbenchHeader } from '@shared/components/WorkbenchHeader';
 import { fetchShipments, createShipment } from '@shared/api/logistics';
 import { fetchDeliveryOrdersV1 } from '@shared/api/deliveryOrders';
 import {
@@ -44,7 +48,6 @@ import {
   type ShipmentWorkbench,
 } from './model/shipmentModel';
 import { useShipmentsUiStore } from './model/shipmentsUiStore';
-import { Metric } from './components/Metric';
 import { ShipmentDetailView } from './components/ShipmentDetailView';
 import { ShipmentListView } from './components/ShipmentListView';
 
@@ -373,31 +376,17 @@ export function Shipments() {
   return (
     <Stack gap="lg">
       {workbench === 'list' ? (
-        <Group justify="space-between" align="flex-start" gap="md" className="dl-page-header">
-          <div className="dl-page-title-block">
-            <Title order={1}>{t('shipments.title')}</Title>
-            <Text c="dimmed" mt={4}>
-              {t('shipments.subtitle')}
-            </Text>
-          </div>
-          <Group gap="xs" className="dl-page-actions">
+        <PageHeader
+          title={t('shipments.title')}
+          subtitle={t('shipments.subtitle')}
+          actions={
             <Button onClick={openCreate} leftSection={<IconPlus size={16} />}>
               {t('shipments.create')}
             </Button>
-          </Group>
-        </Group>
+          }
+        />
       ) : (
-        <Group justify="space-between" align="center" gap="md" className="dl-page-header">
-          <Group gap="xs" align="center" className="dl-page-title-block">
-            <Button onClick={closeWorkbench} leftSection={<IconX size={16} />} variant="subtle" size="sm">
-              {t('common.backToList')}
-            </Button>
-            <Text c="dimmed" size="sm">·</Text>
-            <Text fw={600} size="sm">
-              {workbench === 'create' ? t('shipments.create') : selectedShipment?.shipment_number ?? ''}
-            </Text>
-          </Group>
-        </Group>
+        <WorkbenchHeader onBack={closeWorkbench} />
       )}
 
       {workbench === 'list' ? (
@@ -451,9 +440,10 @@ export function Shipments() {
                   required
                 />
                 <div className="shipment-create-facts">
-                  <CreateFact label={t('shipments.linkedDo')} value={newDoNumber || '-'} />
-                  <CreateFact label={t('shipments.linkedPo')} value={newPoNumber || t('shipments.poNumberPlaceholder')} />
-                  <CreateFact
+                  <FieldPair className="shipment-create-fact" label={t('shipments.linkedDo')} value={newDoNumber || '-'} />
+                  <FieldPair className="shipment-create-fact" label={t('shipments.linkedPo')} value={newPoNumber || t('shipments.poNumberPlaceholder')} />
+                  <FieldPair
+                    className="shipment-create-fact"
                     label={t('shipments.shipmentMode')}
                     value={translatedShipmentModeOptions.find((option) => option.value === newMode)?.label ?? newMode}
                   />
@@ -582,18 +572,5 @@ export function Shipments() {
         />
       ) : null}
     </Stack>
-  );
-}
-
-function CreateFact({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="shipment-create-fact">
-      <Text size="xs" c="dimmed" fw={700}>
-        {label}
-      </Text>
-      <Text size="sm" fw={700} lineClamp={1} title={value}>
-        {value}
-      </Text>
-    </div>
   );
 }

@@ -15,7 +15,6 @@ import {
   Text,
   Textarea,
   TextInput,
-  Title,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconPhoto, IconShieldLock, IconUpload, IconUserCircle } from '@tabler/icons-react';
@@ -25,6 +24,7 @@ import { useSearchParams } from 'react-router-dom';
 import { getApiErrorMessage } from '@shared/lib/errors';
 import type { AuthUser } from '@shared/auth/types';
 import { useAuth } from '@shared/auth/useAuth';
+import { PageHeader } from '@shared/components/PageHeader';
 import { PageLoading } from '@shared/components/PageFeedback';
 import { useI18n } from '@shared/i18n';
 import { getAllowedWorkspaceModules } from '@shared/navigation/workspaceModules';
@@ -177,17 +177,15 @@ export function Profile() {
 
   return (
     <Stack gap="lg">
-      <Group justify="space-between" align="flex-start" className="dl-page-header">
-        <div className="dl-page-title-block">
-          <Title order={1}>{t('profile.title')}</Title>
-          <Text c="dimmed" mt={4}>
-            {t('profile.description')}
-          </Text>
-        </div>
-        <Badge leftSection={<IconUserCircle size={14} />} size="lg" variant="light" className="dl-page-actions">
-          {roleLabel(user.role)}
-        </Badge>
-      </Group>
+      <PageHeader
+        title={t('profile.title')}
+        subtitle={t('profile.description')}
+        actions={
+          <Badge leftSection={<IconUserCircle size={14} />} size="lg" variant="light">
+            {roleLabel(user.role)}
+          </Badge>
+        }
+      />
 
       {error ? <Alert color="red">{error}</Alert> : null}
       {message ? <Alert color="teal">{message}</Alert> : null}

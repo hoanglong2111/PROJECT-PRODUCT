@@ -1,4 +1,4 @@
-import { Alert, Badge, Button, Drawer, Group, Paper, Select, SimpleGrid, Stack, Text, TextInput, Title } from '@mantine/core';
+import { Alert, Badge, Button, Drawer, Group, Paper, Select, SimpleGrid, Stack, TextInput } from '@mantine/core';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   IconCircleCheck,
@@ -22,8 +22,9 @@ import {
 import { fetchShipments, type ShipmentRecord } from '@shared/api/logistics';
 import { queryKeys } from '@shared/api/queryKeys';
 import { fetchForwarders } from '@shared/api/forwarders';
-import { BackActionButton } from '@shared/components/BackActionButton';
+import { Metric } from '@shared/components/Metric';
 import { ModalTitle } from '@shared/components/ModalTitle';
+import { PageHeader } from '@shared/components/PageHeader';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
 import { useEntityParam } from '@shared/hooks/useEntityParam';
 import { useI18n } from '@shared/i18n';
@@ -42,7 +43,6 @@ import {
 } from './model/domesticTransportOrderModel';
 import { DomesticTransportOrderDetail } from './components/DomesticTransportOrderDetail';
 import { DtoListTable } from './components/DtoListTable';
-import { Metric } from './components/Metric';
 
 export function DomesticTransportOrders() {
   const { statusLabel, t } = useI18n();
@@ -248,17 +248,20 @@ export function DomesticTransportOrders() {
   return (
     <Stack gap="lg" className="dto-page">
       <Paper withBorder p="lg" className="dto-page-hero">
-        <Group justify="space-between" align="flex-start" gap="lg" className="dto-page-header dl-page-header">
-          <div className="dto-title-block dl-page-title-block">
-            <Badge leftSection={<IconTruckDelivery size={14} />} variant="light" mb="xs">
-              {t('domesticTransportOrders.kicker')}
-            </Badge>
-            <Title order={1} className="dto-page-title">{t('domesticTransportOrders.title')}</Title>
-            <Text c="dimmed" mt={6} maw={760}>
-              {t('domesticTransportOrders.subtitle')}
-            </Text>
-          </div>
-          <Group gap="xs" className="dto-page-actions dl-page-actions">
+        <PageHeader
+          className="dto-page-header"
+          titleClassName="dto-title-block"
+          actionsClassName="dto-page-actions"
+          title={
+            <>
+              <Badge leftSection={<IconTruckDelivery size={14} />} variant="light" mb="xs">
+                {t('domesticTransportOrders.kicker')}
+              </Badge>
+              <span className="dto-page-title">{t('domesticTransportOrders.title')}</span>
+            </>
+          }
+          subtitle={t('domesticTransportOrders.subtitle')}
+          actions={
             <Button
               leftSection={<IconPlus size={16} />}
               disabled={!selectedShipment || availableShipmentsQuery.isLoading}
@@ -266,15 +269,15 @@ export function DomesticTransportOrders() {
             >
               {t('domesticTransportOrders.create')}
             </Button>
-          </Group>
-        </Group>
+          }
+        />
       </Paper>
 
       <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} className="dto-metric-grid dl-metrics-strip">
-        <Metric label={t('domesticTransportOrders.metricTotal')} value={counts.total} color="gray" icon={<IconClipboardList size={22} />} />
-        <Metric label={t('domesticTransportOrders.metricActive')} value={counts.active} color="blue" icon={<IconTruckDelivery size={22} />} />
-        <Metric label={t('domesticTransportOrders.metricDispatched')} value={counts.dispatched} color="cyan" icon={<IconRoute size={22} />} />
-        <Metric label={t('domesticTransportOrders.metricClosed')} value={counts.closed} color="teal" icon={<IconCircleCheck size={22} />} />
+        <Metric className="dto-metric-card dto-metric-card-gray" valueClassName="dto-metric-value" label={t('domesticTransportOrders.metricTotal')} value={counts.total} color="gray" icon={<IconClipboardList size={22} />} />
+        <Metric className="dto-metric-card dto-metric-card-blue" valueClassName="dto-metric-value" label={t('domesticTransportOrders.metricActive')} value={counts.active} color="blue" icon={<IconTruckDelivery size={22} />} />
+        <Metric className="dto-metric-card dto-metric-card-cyan" valueClassName="dto-metric-value" label={t('domesticTransportOrders.metricDispatched')} value={counts.dispatched} color="cyan" icon={<IconRoute size={22} />} />
+        <Metric className="dto-metric-card dto-metric-card-teal" valueClassName="dto-metric-value" label={t('domesticTransportOrders.metricClosed')} value={counts.closed} color="teal" icon={<IconCircleCheck size={22} />} />
       </SimpleGrid>
 
       <Paper withBorder p="md" className="dto-filter-panel dl-filter-panel">

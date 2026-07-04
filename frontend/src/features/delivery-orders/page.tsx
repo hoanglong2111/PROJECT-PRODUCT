@@ -1,10 +1,11 @@
-import { Group, Paper, Stack, Text, Title } from '@mantine/core';
+import { Paper, Stack, Text } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
-import { BackActionButton } from '@shared/components/BackActionButton';
+import { PageHeader } from '@shared/components/PageHeader';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
+import { WorkbenchHeader } from '@shared/components/WorkbenchHeader';
 import { fetchDeliveryOrders } from '@shared/api/logistics';
 import { queryKeys } from '@shared/api/queryKeys';
 import { useEntityParam } from '@shared/hooks/useEntityParam';
@@ -200,22 +201,9 @@ export function DeliveryOrders() {
   return (
     <Stack gap="md">
       {!selectedDeliveryOrder ? (
-        <Group justify="space-between" align="flex-start" gap="md" className="dl-page-header">
-          <div className="dl-page-title-block">
-            <Title order={1}>{t('deliveryOrders.title')}</Title>
-            <Text c="dimmed" mt={4}>
-              {t('deliveryOrders.subtitle')}
-            </Text>
-          </div>
-        </Group>
+        <PageHeader title={t('deliveryOrders.title')} subtitle={t('deliveryOrders.subtitle')} />
       ) : (
-        <Group justify="space-between" align="center" gap="md" className="dl-page-header">
-          <Group gap="xs" align="center">
-            <BackActionButton onClick={closeDetail} />
-            <Text c="dimmed" size="sm">·</Text>
-            <Text fw={600} size="sm">{selectedDeliveryOrder.order_info.order_number}</Text>
-          </Group>
-        </Group>
+        <WorkbenchHeader onBack={closeDetail} />
       )}
 
       {focusedDo || focusedPo ? (

@@ -1,7 +1,7 @@
 import { Alert, Badge, Button, Group, Loader, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core';
 import { IconAlertTriangle, IconCircleCheck, IconPencil, IconSend, IconX } from '@tabler/icons-react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { type ReactNode, useState } from 'react';
+import { useState } from 'react';
 
 import {
   fetchPurchaseOrder,
@@ -11,8 +11,10 @@ import {
 import { queryKeys } from '@shared/api/queryKeys';
 import { BackActionButton } from '@shared/components/BackActionButton';
 import { CopyValue } from '@shared/components/CopyValue';
+import { FieldPair } from '@shared/components/FieldPair';
 import { PageError } from '@shared/components/PageFeedback';
 import { StatusBadge } from '@shared/components/StatusBadge';
+import { useI18n } from '@shared/i18n';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
 import { usePoInvalidation } from '../hooks/usePoInvalidation';
@@ -25,6 +27,7 @@ import { PurchaseOrderForm } from './PurchaseOrderForm';
 import { SupplierConfirmationModal } from './SupplierConfirmationModal';
 
 export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage: boolean; id: string; onClose: () => void }) {
+  const { t } = useI18n();
   const [editOpen, setEditOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const invalidatePo = usePoInvalidation(id);
@@ -84,7 +87,7 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
         <Group justify="space-between" align="center" gap="md" className="dl-page-header purchase-order-edit-header">
           <Group gap="xs" align="center" wrap="wrap">
             <BackActionButton
-              label="Back"
+              label={t('common.back')}
               onClick={() => setEditOpen(false)}
             />
             <Text c="dimmed" size="sm">/</Text>
@@ -130,7 +133,7 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
           </div>
           <Group gap="xs" wrap="nowrap" className="purchase-order-detail-actions">
             <Button className="purchase-order-action-button" variant="subtle" leftSection={<IconX size={16} />} onClick={onClose}>
-              Close
+              {t('common.close')}
             </Button>
             <Button
               className="purchase-order-action-button"
@@ -162,10 +165,10 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
           </Group>
         </Group>
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="sm" className="purchase-order-detail-signal-grid">
-          <PoHeroFact label="Supplier" value={order.supplier?.supplier_name ?? order.supplier_id} />
-          <PoHeroFact label="Lines" value={String(lines.length)} />
-          <PoHeroFact label="Amount" value={amount || '-'} />
-          <PoHeroFact label="LOT / ETA" value={`${lotCount} LOT / ${containerCount} cont / ${eta}`} />
+          <FieldPair className="purchase-order-detail-signal" label="Supplier" value={order.supplier?.supplier_name ?? order.supplier_id} />
+          <FieldPair className="purchase-order-detail-signal" label="Lines" value={String(lines.length)} />
+          <FieldPair className="purchase-order-detail-signal" label="Amount" value={amount || '-'} />
+          <FieldPair className="purchase-order-detail-signal" label="LOT / ETA" value={`${lotCount} LOT / ${containerCount} cont / ${eta}`} />
         </SimpleGrid>
         {sendMutation.isError ? (
           <Alert color="red" icon={<IconAlertTriangle size={18} />} mt="md">
@@ -210,18 +213,5 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
         }}
       />
     </Stack>
-  );
-}
-
-function PoHeroFact({ label, value }: { label: ReactNode; value: ReactNode }) {
-  return (
-    <div className="purchase-order-detail-signal">
-      <Text size="xs" c="dimmed" fw={700}>
-        {label}
-      </Text>
-      <Text size="sm" fw={700} component="div">
-        {value}
-      </Text>
-    </div>
   );
 }
