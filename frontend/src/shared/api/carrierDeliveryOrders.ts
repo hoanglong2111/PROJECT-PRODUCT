@@ -1,7 +1,7 @@
 import { apiClient } from './axiosConfig';
 import type { ApiDecimal, V1ApiError, V1Response } from './purchaseOrders';
 import type { ShipmentV1 } from './shipments';
-import type { Supplier } from './tradeMasterData';
+import type { Forwarder } from './forwarders';
 
 export type CarrierDeliveryOrderStatusV1 = 'PENDING' | 'ISSUED' | 'RELEASED' | 'EXPIRED' | 'CANCELLED';
 
@@ -23,7 +23,7 @@ export type CarrierDeliveryOrderV1 = {
   delete_at?: string | null;
   is_delete?: boolean;
   shipment?: ShipmentV1 | null;
-  forwarder?: Supplier | null;
+  forwarder?: Forwarder | null;
 };
 
 export type CreateCarrierDeliveryOrderPayload = {

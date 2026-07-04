@@ -75,7 +75,7 @@ export function DomesticTransportOrderDetail({
   const isClosed = ['CLOSED', 'CANCELLED'].includes(order.status);
   const linkedShipments = order.shipments?.length ? order.shipments : order.shipment ? [order.shipment] : [];
   const containerList = Array.isArray(order.container_no) ? order.container_no : order.container_no ? [order.container_no] : [];
-  const truckVendor = order.truck_vendor?.supplier_name ?? order.truck_vendor_id ?? '-';
+  const truckVendor = order.truck_vendor?.forwarder_name ?? order.truck_vendor_id ?? '-';
   const carrierDo = order.carrier_delivery_order?.carrier_do_no ?? order.carrier_delivery_order_id ?? '-';
   const quoteDisplay = order.quote_amount != null
     ? `${formatNumber(order.quote_amount)} ${order.quote_currency ?? ''}`.trim()

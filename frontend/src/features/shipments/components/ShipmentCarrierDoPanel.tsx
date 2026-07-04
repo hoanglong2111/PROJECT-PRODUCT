@@ -28,7 +28,7 @@ import { CopyValue } from '@shared/components/CopyValue';
 import { DateTimeField } from '@shared/components/DateField';
 import type { ShipmentRecord } from '@shared/api/logistics';
 import { queryKeys } from '@shared/api/queryKeys';
-import { fetchSuppliers } from '@shared/api/tradeMasterData';
+import { fetchForwarders } from '@shared/api/forwarders';
 import { EmptyState } from '@shared/components/EmptyState';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { StatusBadge } from '@shared/components/StatusBadge';
@@ -56,16 +56,16 @@ export function ShipmentCarrierDoPanel({ shipment }: { shipment: ShipmentRecord 
   const carrierDos: CarrierDeliveryOrderV1[] = carrierDosQuery.data ?? [];
 
   const forwardersQuery = useQuery({
-    queryKey: queryKeys.suppliers({ page: 1, limit: 100 }),
-    queryFn: () => fetchSuppliers({ page: 1, limit: 100 }),
+    queryKey: queryKeys.forwarders({ page: 1, limit: 100, is_active: true }),
+    queryFn: () => fetchForwarders({ page: 1, limit: 100, is_active: true }),
   });
   const forwarders = forwardersQuery.data?.data ?? [];
-  const forwarderOptions = forwarders.map((supplier) => ({
-    label: `${supplier.supplier_code} - ${supplier.supplier_name}`,
-    value: supplier.id,
+  const forwarderOptions = forwarders.map((forwarder) => ({
+    label: `${forwarder.forwarder_code} - ${forwarder.forwarder_name}`,
+    value: forwarder.id,
   }));
   const forwarderName = (id: string | null) =>
-    forwarders.find((supplier) => supplier.id === id)?.supplier_name ?? id ?? '-';
+    forwarders.find((forwarder) => forwarder.id === id)?.forwarder_name ?? id ?? '-';
 
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: queryKeys.shipmentCarrierDeliveryOrders(shipment.id) });
@@ -129,7 +129,7 @@ export function ShipmentCarrierDoPanel({ shipment }: { shipment: ShipmentRecord 
               value={forwarderId}
               disabled={!isCleared}
               onChange={setForwarderId}
-              nothingFoundMessage={forwardersQuery.isLoading ? t('shipments.loadingSuppliers') : t('shipments.noSupplierFound')}
+              nothingFoundMessage={forwardersQuery.isLoading ? t('shipments.loadingForwarders') : t('shipments.noForwarderFound')}
             />
             <TextInput
               label={t('shipments.releaseLocation')}
@@ -216,7 +216,7 @@ export function ShipmentCarrierDoPanel({ shipment }: { shipment: ShipmentRecord 
                         <CopyValue value={cdo.carrier_do_no ?? cdo.id}>{cdo.carrier_do_no ?? cdo.id}</CopyValue>
                       </Text>
                     </Table.Td>
-                    <Table.Td>{cdo.forwarder?.supplier_name ?? forwarderName(cdo.forwarder_id)}</Table.Td>
+                    <Table.Td>{cdo.forwarder?.forwarder_name ?? forwarderName(cdo.forwarder_id)}</Table.Td>
                     <Table.Td>{cdo.release_location ?? '-'}</Table.Td>
                     <Table.Td>{cdo.issued_date ?? '-'}</Table.Td>
                     <Table.Td><StatusBadge status={cdo.status} /></Table.Td>

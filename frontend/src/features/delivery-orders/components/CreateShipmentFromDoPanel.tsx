@@ -1,18 +1,19 @@
 import { Alert, Button, Group, Paper, Select, SimpleGrid, Stack, Text, TextInput } from '@mantine/core';
 import { IconAlertTriangle, IconAnchor } from '@tabler/icons-react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { DateTimeField } from '@shared/components/DateField';
 import type { DeliveryOrder } from '@shared/api/logistics';
 import { createShipment } from '@shared/api/logistics';
+import { fetchCarriers } from '@shared/api/forwarders';
 import type { ShipmentLoadTypeV1, ShipmentModeV1 } from '@shared/api/shipments';
 import { queryKeys } from '@shared/api/queryKeys';
 import { useTradeMasterDataOptions } from '@shared/hooks/useTradeMasterDataOptions';
 import { useI18n } from '@shared/i18n';
 import { getApiErrorMessage } from '@shared/lib/errors';
-import { loadTypeForMode } from '@features/shipments/model/shipmentModel';
+import { carrierTypeForMode, loadTypeForMode } from '@features/shipments/model/shipmentModel';
 
 function inferMode(shippingMethod: DeliveryOrder['logistics_shipping']['shipping_method']): ShipmentModeV1 {
   if (shippingMethod === 'AIR') return 'AIR';
@@ -41,7 +42,7 @@ export function CreateShipmentFromDoPanel({
   const [shipmentNumber, setShipmentNumber] = useState('');
   const [mode, setMode] = useState<ShipmentModeV1>(inferMode(shipping.shipping_method));
   const [loadType, setLoadType] = useState<ShipmentLoadTypeV1 | null>(loadTypeForMode(inferMode(shipping.shipping_method))[0]?.value ?? null);
-  const [carrier, setCarrier] = useState('');
+  const [carrierId, setCarrierId] = useState<string | null>(null);
   const [vesselVoyage, setVesselVoyage] = useState('');
   const [blAwbNo, setBlAwbNo] = useState('');
   const [originPort, setOriginPort] = useState(shipping.port_of_departure ?? '');
@@ -63,6 +64,19 @@ export function CreateShipmentFromDoPanel({
     label: t(option.labelKey),
     value: option.value,
   }));
+  const carriersQuery = useQuery({
+    queryKey: queryKeys.carriers({ page: 1, limit: 100, is_active: true }),
+    queryFn: () => fetchCarriers({ page: 1, limit: 100, is_active: true }),
+  });
+  const wantedCarrierType = carrierTypeForMode(mode);
+  const carriers = (carriersQuery.data?.data ?? []).filter(
+    (carrier) => !wantedCarrierType || carrier.carrier_type === wantedCarrierType,
+  );
+  const carrierOptions = carriers.map((carrier) => ({
+    label: `${carrier.carrier_code} - ${carrier.carrier_name}`,
+    value: carrier.id,
+  }));
+  const selectedCarrier = carriers.find((carrier) => carrier.id === carrierId) ?? null;
 
   // Re-seed the form from the DO every time the panel opens so prefilled
   // route/date values follow the currently selected delivery order.
@@ -72,7 +86,7 @@ export function CreateShipmentFromDoPanel({
     const inferredMode = inferMode(shipping.shipping_method);
     setMode(inferredMode);
     setLoadType(loadTypeForMode(inferredMode)[0]?.value ?? null);
-    setCarrier('');
+    setCarrierId(null);
     setVesselVoyage('');
     setBlAwbNo('');
     setOriginPort(shipping.port_of_departure ?? '');
@@ -90,7 +104,8 @@ export function CreateShipmentFromDoPanel({
         shipmentNumber: shipmentNumber.trim() || undefined,
         shippingMode: mode,
         loadType,
-        carrierName: carrier.trim() || undefined,
+        carrierId: carrierId || undefined,
+        carrierName: selectedCarrier?.carrier_name || undefined,
         vesselVoyage: vesselVoyage.trim() || undefined,
         blAwbNo: blAwbNo.trim() || undefined,
         originPort: originPort.trim() || undefined,
@@ -131,6 +146,7 @@ export function CreateShipmentFromDoPanel({
               const nextMode = (value as ShipmentModeV1 | null) ?? currentMode;
               const nextLoadTypes = loadTypeForMode(nextMode);
               setMode(nextMode);
+              setCarrierId(null);
               setLoadType((current) => (
                 current && nextLoadTypes.some((option) => option.value === current)
                   ? current
@@ -146,7 +162,16 @@ export function CreateShipmentFromDoPanel({
               onChange={(value) => setLoadType(value as ShipmentLoadTypeV1 | null)}
             />
           ) : null}
-          <TextInput label={t('quotations.carrier')} placeholder={t('shipments.carrierPlaceholder')} value={carrier} onChange={(event) => setCarrier(event.currentTarget.value)} />
+          <Select
+            label={t('quotations.carrier')}
+            placeholder={t('shipments.carrierPlaceholder')}
+            data={carrierOptions}
+            value={carrierId}
+            onChange={setCarrierId}
+            searchable
+            clearable
+            nothingFoundMessage={carriersQuery.isLoading ? t('shipments.loadingCarriers') : t('shipments.noCarrierFound')}
+          />
           <TextInput label={t('shipments.vesselVoyage')} value={vesselVoyage} onChange={(event) => setVesselVoyage(event.currentTarget.value)} />
           <TextInput label={t('shipments.blAwb')} value={blAwbNo} onChange={(event) => setBlAwbNo(event.currentTarget.value)} />
           <TextInput label="POL" placeholder={t('shipments.portOfLoading')} value={originPort} onChange={(event) => setOriginPort(event.currentTarget.value)} />

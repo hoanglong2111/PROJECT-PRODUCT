@@ -124,7 +124,7 @@ export function ShipmentDtosPanel({ shipment }: { shipment: ShipmentRecord }) {
                 {dtos.map((dto) => (
                   <Table.Tr key={dto.id}>
                     <Table.Td><Text fw={700}>{dto.dto_no}</Text></Table.Td>
-                    <Table.Td>{dto.truck_vendor?.supplier_name ?? dto.truck_vendor_id ?? '-'}</Table.Td>
+                    <Table.Td>{dto.truck_vendor?.forwarder_name ?? dto.truck_vendor_id ?? '-'}</Table.Td>
                     <Table.Td>
                       <Text size="sm">{dto.origin ?? '-'}</Text>
                       <Text size="xs" c="dimmed">{dto.destination ?? '-'}</Text>

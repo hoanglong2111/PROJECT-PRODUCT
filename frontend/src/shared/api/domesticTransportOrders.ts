@@ -3,7 +3,7 @@ import type { ApiDecimal, PaginationMeta, PoLot, PurchaseOrderLineV1, V1ApiError
 import type { ShipmentLineV1, ShipmentV1 } from './shipments';
 import { apiClient } from './axiosConfig';
 import { parseContract, domesticTransportOrderListSchema } from './contracts';
-import type { Supplier } from './tradeMasterData';
+import type { Forwarder } from './forwarders';
 
 export type DomesticTransportOrderStatusV1 =
   | 'DRAFT'
@@ -92,7 +92,7 @@ export type DomesticTransportOrderV1 = {
   shipment?: ShipmentV1 | null;
   shipments?: ShipmentV1[];
   carrier_delivery_order?: CarrierDeliveryOrderV1 | null;
-  truck_vendor?: Supplier | null;
+  truck_vendor?: Forwarder | null;
   lines?: DomesticTransportOrderLineV1[];
 };
 

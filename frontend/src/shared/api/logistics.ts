@@ -431,6 +431,7 @@ export type CreateShipmentPayload = {
   shippingMode: ShipmentModeV1;
   loadType?: ShipmentLoadTypeV1 | null;
   carrierName?: string | null;
+  carrierId?: string | null;
   vesselVoyage?: string | null;
   voyageNo?: string | null;
   blAwbNo?: string | null;
@@ -1201,7 +1202,7 @@ function mapV1Shipment(shipment: ShipmentV1): ShipmentRecordWithQuotation {
   const hasCleared = shipment.status === 'CUSTOMS_CLEARED' || shipment.status === 'DELIVERED';
 
   return {
-    carrier_name: shipment.carrier ?? shipment.forwarder?.supplier_name ?? '',
+    carrier_name: shipment.carrier ?? shipment.forwarder?.forwarder_name ?? '',
     customs: {
       clearance_date: hasCleared ? dateOnly(shipment.update_at) : undefined,
       lane_status: hasCleared ? shipment.customs_channel ?? '' : '',
@@ -1393,6 +1394,7 @@ export async function createShipment(payload: CreateShipmentPayload) {
   const requestPayload: CreateShipmentFromDeliveryOrderPayload = {
     bl_awb_no: payload.blAwbNo ?? null,
     carrier: payload.carrierName ?? null,
+    carrier_id: payload.carrierId ?? null,
     container_no: payload.containerNo ?? null,
     delivery_order_id: deliveryOrderId,
     eta: payload.eta ?? null,
