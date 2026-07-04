@@ -1,4 +1,5 @@
 import { apiClient } from './axiosConfig';
+import { defaultScopeForIncoterm } from '@shared/lib/incotermChargeScope';
 
 export type ApiDecimal = number | string;
 
@@ -57,6 +58,8 @@ export type Incoterm = {
   incoterm_name: string;
   incoterm_name_vn: string;
   description: string | null;
+  charge_group_scope?: string[];
+  insurance_required?: boolean;
   is_active: boolean;
   create_at?: string;
   update_at?: string;
@@ -233,11 +236,15 @@ function normalizeTransportMode(mode: TransportMode): TransportMode {
   };
 }
 
-function normalizeIncoterm(incoterm: Incoterm): Incoterm {
+export function normalizeIncoterm(incoterm: Incoterm): Incoterm {
+  const fallback = defaultScopeForIncoterm(incoterm.incoterm_code);
+
   return {
     ...incoterm,
     incoterm_name_vn: incoterm.incoterm_name_vn ?? '',
     description: incoterm.description ?? null,
+    charge_group_scope: incoterm.charge_group_scope ?? fallback.groups,
+    insurance_required: incoterm.insurance_required ?? fallback.insuranceRequired,
     is_active: incoterm.is_active !== false,
   };
 }

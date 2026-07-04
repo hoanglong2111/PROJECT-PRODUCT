@@ -1,35 +1,21 @@
 import type { ChargeCode } from '@shared/api/chargeCodes';
 import type { QuotationChargeTypeV1 } from '@shared/api/quotations';
-import { CHARGE_GROUPS } from '@shared/lib/chargeCategories';
+import { defaultScopeForIncoterm } from '@shared/lib/incotermChargeScope';
 import type { ShippingMode } from '@shared/model/logistics';
 
 /**
  * Doc-grounded quotation charge helpers.
  *
- * Incoterm only decides which charge-code master groups are in buyer scope.
- * Actual suggested rows come from Charge Code master data filtered by group,
- * transport-mode flags, and is_active. Prices are never defaulted here.
+ * Incoterm scope now comes from the Incoterms 2020 seed in incotermChargeScope.ts
+ * (or a backend-provided override on the Incoterm record). Actual suggested rows
+ * come from Charge Code master data filtered by group, transport-mode flags, and
+ * is_active. Prices are never defaulted here.
  */
 
 export type QuotationChargeModeFlag = 'sea_fcl' | 'sea_lcl' | 'air';
 
-const PRIMARY_CHARGE_GROUPS = CHARGE_GROUPS.slice(0, 5).map((group) => group.value);
-
-const INCOTERM_GROUP_SCOPE: Record<string, string[]> = {
-  EXW: ['ORIGIN_EXPORT', 'MAIN_FREIGHT', 'FREIGHT_SURCHARGE', 'DOCUMENTATION_FILING', 'DESTINATION_IMPORT'],
-  FCA: ['MAIN_FREIGHT', 'FREIGHT_SURCHARGE', 'DOCUMENTATION_FILING', 'DESTINATION_IMPORT'],
-  FOB: ['MAIN_FREIGHT', 'FREIGHT_SURCHARGE', 'DOCUMENTATION_FILING', 'DESTINATION_IMPORT'],
-  CFR: ['DESTINATION_IMPORT'],
-  CIF: ['DESTINATION_IMPORT'],
-  DDP: [],
-};
-
 export function incotermChargeGroups(incotermCode?: string | null): string[] {
-  const normalized = (incotermCode ?? '').trim().toUpperCase();
-  if (Object.prototype.hasOwnProperty.call(INCOTERM_GROUP_SCOPE, normalized)) {
-    return INCOTERM_GROUP_SCOPE[normalized];
-  }
-  return PRIMARY_CHARGE_GROUPS;
+  return defaultScopeForIncoterm(incotermCode).groups;
 }
 
 export function modeToChargeFlag(mode?: ShippingMode | string | null): QuotationChargeModeFlag {
