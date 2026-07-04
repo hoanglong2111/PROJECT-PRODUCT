@@ -74,18 +74,18 @@ export function Dashboard() {
             <span className="dashboard-header-icon">
               <IconPackageExport size={20} />
             </span>
-            <Title order={1}>Dashboard</Title>
+            <Title order={1}>{t('dashboard.title')}</Title>
           </Group>
           <Text c="dimmed" maw={920}>
-            Theo dõi Yêu cầu mua hàng, Lô hàng, chứng từ logistics, dòng Công việc và rủi ro trễ nhập kho.
+            {t('dashboard.subtitle')}
           </Text>
         </Stack>
         <SegmentedControl
           defaultValue="6m"
           data={[
-            { label: '7 ngày', value: '7d' },
-            { label: '30 ngày', value: '30d' },
-            { label: '6 tháng', value: '6m' },
+            { label: t('dashboard.timeRange7d'), value: '7d' },
+            { label: t('dashboard.timeRange30d'), value: '30d' },
+            { label: t('dashboard.timeRange6m'), value: '6m' },
           ]}
           radius="md"
           size="sm"
@@ -100,13 +100,13 @@ export function Dashboard() {
               <IconShoppingCart size={16} />
             </span>
             <Text size="sm" fw={800}>
-              Tổng quan PO
+              {t('dashboard.poOverview')}
             </Text>
           </Group>
           <SimpleGrid cols={3} spacing={0} className="dashboard-po-split">
-            <KpiStat label="Tổng PO" value={purchaseOrders.length} color="orange" />
-            <KpiStat label="PO Đã giao hàng" value={poDelivered} color="teal" />
-            <KpiStat label="PO đang xử lý" value={poProcessing} color="orange" />
+            <KpiStat label={t('dashboard.poTotal')} value={purchaseOrders.length} color="orange" />
+            <KpiStat label={t('dashboard.poDelivered')} value={poDelivered} color="teal" />
+            <KpiStat label={t('dashboard.poProcessing')} value={poProcessing} color="orange" />
           </SimpleGrid>
         </Paper>
 
@@ -118,7 +118,7 @@ export function Dashboard() {
                   <IconPackageExport size={16} />
                 </span>
                 <Text size="sm" c="dimmed" fw={800}>
-                  Lô hàng
+                  {t('dashboard.shipmentsOverview')}
                 </Text>
               </Group>
               <Title order={1} fw={900} c="blue" className="tabular-nums">
@@ -126,10 +126,10 @@ export function Dashboard() {
               </Title>
             </Stack>
             <Stack gap={7} className="dashboard-shipment-metrics">
-              <BadgeMetric color="blue" label="Đang vận chuyển" value={shipmentMetrics.inTransit} />
-              <BadgeMetric color="orange" label="Chờ NCC giao hàng" value={shipmentMetrics.awaitingSupplier} />
-              <BadgeMetric color="yellow" label="Đã về cảng" value={shipmentMetrics.arrivedPort} />
-              <BadgeMetric color="teal" label="Đã giao hàng" value={shipmentMetrics.delivered} />
+              <BadgeMetric color="blue" label={t('dashboard.shipmentInTransit')} value={shipmentMetrics.inTransit} />
+              <BadgeMetric color="orange" label={t('dashboard.shipmentAwaitingSupplier')} value={shipmentMetrics.awaitingSupplier} />
+              <BadgeMetric color="yellow" label={t('dashboard.shipmentArrivedPort')} value={shipmentMetrics.arrivedPort} />
+              <BadgeMetric color="teal" label={t('dashboard.shipmentDelivered')} value={shipmentMetrics.delivered} />
             </Stack>
           </div>
         </Paper>
@@ -142,14 +142,16 @@ export function Dashboard() {
                   <IconClockBolt size={16} />
                 </span>
                 <Text size="sm" c="dimmed" fw={800}>
-                  Công việc cần xử lý gấp
+                  {t('dashboard.urgentWorkTitle')}
                 </Text>
               </Group>
               <Text fw={900} size="lg">
-                {urgentTasks.length > 0 ? `${urgentTasks.length} công việc cần xử lý ngay` : 'Không có công việc khẩn cấp mới'}
+                {urgentTasks.length > 0
+                  ? t('dashboard.urgentWorkCount', { count: urgentTasks.length })
+                  : t('dashboard.urgentWorkEmpty')}
               </Text>
               <Text size="xs" c="dimmed">
-                Tính theo task URGENT, BLOCKED hoặc quá hạn.
+                {t('dashboard.urgentWorkDescription')}
               </Text>
             </Stack>
             <span className="dashboard-warning-icon">

@@ -575,9 +575,9 @@ export function PurchaseOrderForm({
                       <Stack gap={4}>
                         <Group gap="xs" wrap="wrap">
                           <Text fw={700}>Editing line #{activeLineIndex + 1}</Text>
-                          <Badge variant="light" size="sm">
+                          <Text component="span" size="sm" className="dl-code-text">
                             {activeLineItem?.item_code ?? 'Item pending'}
-                          </Badge>
+                          </Text>
                         </Group>
                         <Text size="sm" c="dimmed">
                           {activeLineItem?.item_name ?? activeLine.item_description ?? 'Select an item, then complete quantity, pricing, ETA, and notes.'}

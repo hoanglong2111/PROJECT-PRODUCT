@@ -21,6 +21,8 @@ type ListMetric = {
   value: number;
 };
 
+type Translate = (key: string, params?: Record<string, number | string>) => string;
+
 export function DashboardCharts({
   deliveryOrders,
   purchaseOrders,
@@ -41,9 +43,9 @@ export function DashboardCharts({
     processingPurchaseOrderStatuses.includes(purchaseOrder.status),
   ).length;
   const poBars = [
-    { color: 'orange' as const, label: 'Tổng PO', value: purchaseOrders.length },
-    { color: 'teal' as const, label: 'PO Đã giao hàng', value: poDelivered },
-    { color: 'blue' as const, label: 'PO đang xử lý', value: poProcessing },
+    { color: 'orange' as const, label: t('dashboard.poTotal'), value: purchaseOrders.length },
+    { color: 'teal' as const, label: t('dashboard.poDelivered'), value: poDelivered },
+    { color: 'blue' as const, label: t('dashboard.poProcessing'), value: poProcessing },
   ];
 
   return (
@@ -51,18 +53,18 @@ export function DashboardCharts({
       <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="md">
         <Paper withBorder p="lg" className="metric-card dashboard-card dashboard-chart-card">
           <CardHeader
-            title="Purchase order"
-            description="So sánh tổng PO, PO đã giao hàng và PO đang xử lý trong kỳ 6 tháng."
+            title={t('dashboard.purchaseOrderChartTitle')}
+            description={t('dashboard.purchaseOrderChartDescription')}
           />
-          <PoBarChart data={poBars} />
+          <PoBarChart ariaLabel={t('dashboard.purchaseOrderChartAria')} data={poBars} />
         </Paper>
 
-        <MetricListCard title="DO trễ hạn" metrics={getDeliveryDelayMetrics(deliveryOrders)} />
+        <MetricListCard title={t('dashboard.deliveryDelayTitle')} metrics={getDeliveryDelayMetrics(deliveryOrders, t)} />
       </SimpleGrid>
 
       <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="md">
-        <MetricListCard title="Công việc trễ hạn" metrics={getOverdueTaskMetrics(tasks, deliveryOrders)} />
-        <MetricListCard title="Số lượng DO trễ theo thời gian" metrics={getDelayAgeMetrics(deliveryOrders)} />
+        <MetricListCard title={t('dashboard.overdueWorkTitle')} metrics={getOverdueTaskMetrics(tasks, deliveryOrders, t)} />
+        <MetricListCard title={t('dashboard.delayAgeTitle')} metrics={getDelayAgeMetrics(deliveryOrders, t)} />
       </SimpleGrid>
 
       <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="md">
@@ -136,12 +138,12 @@ function CardHeader({ description, title }: { description?: string; title: strin
   );
 }
 
-function PoBarChart({ data }: { data: Array<{ color: MetricColor; label: string; value: number }> }) {
+function PoBarChart({ ariaLabel, data }: { ariaLabel: string; data: Array<{ color: MetricColor; label: string; value: number }> }) {
   const maxValue = Math.max(...data.map((item) => item.value), 1);
 
   return (
     <Stack gap="md">
-      <div className="dashboard-bar-chart" aria-label="Purchase order chart">
+      <div className="dashboard-bar-chart" aria-label={ariaLabel}>
         {data.map((item) => {
           const height = Math.max((item.value / maxValue) * 100, item.value > 0 ? 12 : 4);
           return (
@@ -239,52 +241,52 @@ const transportStatuses: DeliveryOrderStatus[] = ['ASSIGNED_TO_SHIPMENT', 'IN_TR
 const portStatuses: DeliveryOrderStatus[] = ['ARRIVED_PORT', 'CUSTOMS_PROCESSING', 'WAREHOUSE_PENDING'];
 const finalDeliveryStatuses: DeliveryOrderStatus[] = ['WAREHOUSE_PENDING', 'DELAYED'];
 
-function getDeliveryDelayMetrics(deliveryOrders: DeliveryOrder[]): ListMetric[] {
+function getDeliveryDelayMetrics(deliveryOrders: DeliveryOrder[], t: Translate): ListMetric[] {
   return [
-    { color: 'orange', label: 'DO trễ hạn giao hàng từ nhà CC', value: countDelayedOrders(deliveryOrders, supplierPendingStatuses) },
-    { color: 'blue', label: 'DO trễ hạn vận chuyển', value: countDelayedOrders(deliveryOrders, transportStatuses, 'eta') },
-    { color: 'yellow', label: 'DO trễ hạn thông quan', value: countDelayedOrders(deliveryOrders, portStatuses) },
-    { color: 'red', label: 'DO Trễ hạn giao hàng', value: countDelayedOrders(deliveryOrders, finalDeliveryStatuses) },
+    { color: 'orange', label: t('dashboard.deliveryDelaySupplier'), value: countDelayedOrders(deliveryOrders, supplierPendingStatuses) },
+    { color: 'blue', label: t('dashboard.deliveryDelayTransport'), value: countDelayedOrders(deliveryOrders, transportStatuses, 'eta') },
+    { color: 'yellow', label: t('dashboard.deliveryDelayCustoms'), value: countDelayedOrders(deliveryOrders, portStatuses) },
+    { color: 'red', label: t('dashboard.deliveryDelayFinal'), value: countDelayedOrders(deliveryOrders, finalDeliveryStatuses) },
   ];
 }
 
-function getOverdueTaskMetrics(tasks: LogisticsTask[], deliveryOrders: DeliveryOrder[]): ListMetric[] {
+function getOverdueTaskMetrics(tasks: LogisticsTask[], deliveryOrders: DeliveryOrder[], t: Translate): ListMetric[] {
   return [
     {
       color: 'orange',
-      label: 'Báo giá',
-      value: countOverdueTasks(tasks, ['bao gia', 'báo giá', 'quotation']) + countOrdersByStatus(deliveryOrders, ['READY_FOR_QUOTATION']),
+      label: t('dashboard.overdueQuotation'),
+      value: countOverdueTasks(tasks, ['bao gia', 'quotation']) + countOrdersByStatus(deliveryOrders, ['READY_FOR_QUOTATION']),
     },
     {
       color: 'blue',
-      label: 'Booking',
+      label: t('dashboard.overdueBooking'),
       value: countOverdueTasks(tasks, ['booking']) + countOrdersByStatus(deliveryOrders, ['QUOTATION_CONFIRMED']),
     },
     {
       color: 'yellow',
-      label: 'Xử lý chứng từ',
-      value: countOverdueTasks(tasks, ['chung tu', 'chứng từ', 'document']) + countMissingDocumentOrders(deliveryOrders),
+      label: t('dashboard.overdueDocuments'),
+      value: countOverdueTasks(tasks, ['chung tu', 'document']) + countMissingDocumentOrders(deliveryOrders),
     },
     {
       color: 'teal',
-      label: 'Mở tờ khai',
-      value: countOverdueTasks(tasks, ['to khai', 'tờ khai', 'customs']) + countOrdersByStatus(deliveryOrders, ['CUSTOMS_PROCESSING']),
+      label: t('dashboard.overdueCustomsOpen'),
+      value: countOverdueTasks(tasks, ['to khai', 'customs']) + countOrdersByStatus(deliveryOrders, ['CUSTOMS_PROCESSING']),
     },
     {
       color: 'red',
-      label: 'Giao hàng',
-      value: countOverdueTasks(tasks, ['giao hang', 'giao hàng', 'delivery']) + countDelayedOrders(deliveryOrders, finalDeliveryStatuses),
+      label: t('dashboard.overdueDelivery'),
+      value: countOverdueTasks(tasks, ['giao hang', 'delivery']) + countDelayedOrders(deliveryOrders, finalDeliveryStatuses),
     },
   ];
 }
 
-function getDelayAgeMetrics(deliveryOrders: DeliveryOrder[]): ListMetric[] {
+function getDelayAgeMetrics(deliveryOrders: DeliveryOrder[], t: Translate): ListMetric[] {
   const delayDays = deliveryOrders.map(getDelayDays).filter((days) => days > 0);
 
   return [
-    { color: 'yellow', label: 'Trễ dưới 3 ngày', value: delayDays.filter((days) => days < 3).length },
-    { color: 'orange', label: 'Trễ từ 3-7 ngày', value: delayDays.filter((days) => days >= 3 && days <= 7).length },
-    { color: 'red', label: 'Trễ hơn 7 ngày', value: delayDays.filter((days) => days > 7).length },
+    { color: 'yellow', label: t('dashboard.delayUnder3Days'), value: delayDays.filter((days) => days < 3).length },
+    { color: 'orange', label: t('dashboard.delay3To7Days'), value: delayDays.filter((days) => days >= 3 && days <= 7).length },
+    { color: 'red', label: t('dashboard.delayOver7Days'), value: delayDays.filter((days) => days > 7).length },
   ];
 }
 
@@ -332,5 +334,5 @@ function isPastDue(value: string | null) {
 }
 
 function removeVietnameseTones(value: string) {
-  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\u0111/g, 'd').replace(/\u0110/g, 'D');
 }

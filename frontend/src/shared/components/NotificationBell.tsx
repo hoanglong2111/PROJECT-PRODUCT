@@ -9,7 +9,7 @@ interface NotificationItem {
   titleKey: string;
   messageKey: string;
   unread: boolean;
-  timeText: string;
+  timeKey: string;
 }
 
 const INITIAL_NOTIFICATIONS: NotificationItem[] = [
@@ -18,21 +18,21 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
     titleKey: 'notifications.mock.poApprovedTitle',
     messageKey: 'notifications.mock.poApprovedMessage',
     unread: true,
-    timeText: '10m ago',
+    timeKey: 'notifications.mock.poApprovedTime',
   },
   {
     id: '2',
     titleKey: 'notifications.mock.shipmentDelayedTitle',
     messageKey: 'notifications.mock.shipmentDelayedMessage',
     unread: true,
-    timeText: '2h ago',
+    timeKey: 'notifications.mock.shipmentDelayedTime',
   },
   {
     id: '3',
     titleKey: 'notifications.mock.taskDueTitle',
     messageKey: 'notifications.mock.taskDueMessage',
     unread: false,
-    timeText: '1d ago',
+    timeKey: 'notifications.mock.taskDueTime',
   },
 ];
 
@@ -106,19 +106,19 @@ export function NotificationBell() {
         ) : (
           <ScrollArea.Autosize mah={300}>
             {notifications.map((item) => (
-              <div
+              <button
+                type="button"
                 key={item.id}
                 className={`notification-bell-item${item.unread ? ' is-unread' : ''}`}
                 onClick={() => markAsRead(item.id)}
-                style={{ cursor: 'pointer' }}
               >
                 <div style={{ flex: 1 }}>
                   <Text size="xs" fw={600}>{t(item.titleKey)}</Text>
                   <Text size="xs" c="dimmed" lineClamp={2} style={{ marginBlock: 2 }}>{t(item.messageKey)}</Text>
-                  <Text style={{ fontSize: '10px' }} c="dimmed">{item.timeText}</Text>
+                  <Text style={{ fontSize: '10px' }} c="dimmed">{t(item.timeKey)}</Text>
                 </div>
-                {item.unread ? <div className="notification-bell-dot" /> : null}
-              </div>
+                {item.unread ? <span className="notification-bell-dot" aria-hidden="true" /> : null}
+              </button>
             ))}
           </ScrollArea.Autosize>
         )}
@@ -126,4 +126,3 @@ export function NotificationBell() {
     </Popover>
   );
 }
-

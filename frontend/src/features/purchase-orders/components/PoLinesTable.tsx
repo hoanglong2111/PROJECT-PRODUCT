@@ -4,6 +4,7 @@ import { IconChevronDown, IconSearch } from '@tabler/icons-react';
 import { useMemo, useState, type ReactNode } from 'react';
 
 import type { PurchaseOrderLineV1 } from '@shared/api/purchaseOrders';
+import { useI18n } from '@shared/i18n';
 import { formatMoney as formatMoneyValue } from '@shared/utils/money';
 
 import { dateOnly, formatWeightKg, getPoLineLotState, getPoLineReceiptState, toNumber } from '../model/purchaseOrderModel';
@@ -11,11 +12,11 @@ import { dateOnly, formatWeightKg, getPoLineLotState, getPoLineReceiptState, toN
 type LotState = ReturnType<typeof getPoLineLotState>;
 type LineFilter = 'all' | 'full' | 'partial' | 'needs-lot';
 
-const LOT_CONFIG: Record<LotState, { label: string; color: string }> = {
-  full: { label: 'Lotted', color: 'teal' },
-  partial: { label: 'Partial', color: 'orange' },
-  'needs-lot': { label: 'Needs LOT', color: 'red' },
-  none: { label: 'No LOT', color: 'gray' },
+const LOT_CONFIG: Record<LotState, { labelKey: string; color: string }> = {
+  full: { labelKey: 'purchaseOrders.poLinesLotStateFull', color: 'teal' },
+  partial: { labelKey: 'purchaseOrders.poLinesLotStatePartial', color: 'orange' },
+  'needs-lot': { labelKey: 'purchaseOrders.poLinesLotStateNeedsLot', color: 'red' },
+  none: { labelKey: 'purchaseOrders.poLinesLotStateNone', color: 'gray' },
 };
 
 const RECEIPT_CONFIG: Record<ReturnType<typeof getPoLineReceiptState>['state'], { color: string }> = {
@@ -26,6 +27,7 @@ const RECEIPT_CONFIG: Record<ReturnType<typeof getPoLineReceiptState>['state'], 
 };
 
 export function PoLinesTable({ currencyCode, lines }: { currencyCode: string; lines: PurchaseOrderLineV1[] }) {
+  const { t } = useI18n();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<LineFilter>('all');
 
@@ -71,26 +73,26 @@ export function PoLinesTable({ currencyCode, lines }: { currencyCode: string; li
       <Stack gap="sm" p="sm" className="purchase-order-po-lines-header">
         <Group justify="space-between" align="flex-start" wrap="nowrap">
           <Stack gap={2}>
-            <Text fw={700}>PO lines</Text>
+            <Text fw={700}>{t('purchaseOrders.poLinesTitle')}</Text>
             <Text size="sm" c="dimmed">
-              Fulfillment pipeline per line — expand a row for customs &amp; pricing detail.
+              {t('purchaseOrders.poLinesDescription')}
             </Text>
           </Stack>
           <Group gap={6} wrap="nowrap" className="purchase-order-po-lines-badges">
-            <FilterBadge label={`${lines.length} lines`} active={filter === 'all'} onClick={() => setFilter('all')} />
+            <FilterBadge label={t('purchaseOrders.poLinesCount', { count: lines.length })} active={filter === 'all'} onClick={() => setFilter('all')} />
             {lines.some((line) => toNumber(line.qty_shipped) > 0) ? (
               <Badge color="teal" variant="light" className="purchase-order-nowrap-badge">
-                {fullyReceived}/{lines.length} đã nhận đủ
+                {t('purchaseOrders.poLinesReceivedCount', { received: fullyReceived, total: lines.length })}
               </Badge>
             ) : null}
             {lotMetrics.full > 0 ? (
-              <FilterBadge color="teal" label={`${lotMetrics.full} lotted`} active={filter === 'full'} onClick={() => setFilter(filter === 'full' ? 'all' : 'full')} />
+              <FilterBadge color="teal" label={t('purchaseOrders.poLinesFilterLotted', { count: lotMetrics.full })} active={filter === 'full'} onClick={() => setFilter(filter === 'full' ? 'all' : 'full')} />
             ) : null}
             {lotMetrics.partial > 0 ? (
-              <FilterBadge color="orange" label={`${lotMetrics.partial} partial`} active={filter === 'partial'} onClick={() => setFilter(filter === 'partial' ? 'all' : 'partial')} />
+              <FilterBadge color="orange" label={t('purchaseOrders.poLinesFilterPartial', { count: lotMetrics.partial })} active={filter === 'partial'} onClick={() => setFilter(filter === 'partial' ? 'all' : 'partial')} />
             ) : null}
             {lotMetrics.needsLot > 0 ? (
-              <FilterBadge color="red" label={`${lotMetrics.needsLot} needs LOT`} active={filter === 'needs-lot'} onClick={() => setFilter(filter === 'needs-lot' ? 'all' : 'needs-lot')} />
+              <FilterBadge color="red" label={t('purchaseOrders.poLinesFilterNeedsLot', { count: lotMetrics.needsLot })} active={filter === 'needs-lot'} onClick={() => setFilter(filter === 'needs-lot' ? 'all' : 'needs-lot')} />
             ) : null}
           </Group>
         </Group>
@@ -99,7 +101,7 @@ export function PoLinesTable({ currencyCode, lines }: { currencyCode: string; li
             size="xs"
             value={query}
             onChange={(event) => setQuery(event.currentTarget.value)}
-            placeholder="Search item, code or HS…"
+            placeholder={t('purchaseOrders.poLinesSearchPlaceholder')}
             leftSection={<IconSearch size={14} />}
             className="po-line-card-search"
           />
@@ -108,11 +110,11 @@ export function PoLinesTable({ currencyCode, lines }: { currencyCode: string; li
 
       {lines.length === 0 ? (
         <Text p="sm" size="sm" c="dimmed">
-          No line items.
+          {t('purchaseOrders.poLinesEmpty')}
         </Text>
       ) : visibleLines.length === 0 ? (
         <Text p="sm" size="sm" c="dimmed">
-          No lines match the current search or filter.
+          {t('purchaseOrders.poLinesNoMatch')}
         </Text>
       ) : (
         <div className="po-lines-table-wrap">
@@ -123,18 +125,22 @@ export function PoLinesTable({ currencyCode, lines }: { currencyCode: string; li
               <tr>
                 <th className="col-toggle" aria-hidden="true" />
                 <th className="col-no">#</th>
-                <th className="col-item">Item</th>
-                <th className="col-qty num col-ordered">Ordered</th>
-                <th className="col-qty num col-confirmed">Confirmed</th>
-                <th className="col-qty num col-lotted">Lotted</th>
+                <th className="col-item">{t('purchaseOrders.poLinesHeaderItem')}</th>
+                <th className="col-qty num col-ordered">{t('purchaseOrders.poLinesHeaderOrdered')}</th>
+                <th className="col-qty num col-confirmed">{t('purchaseOrders.poLinesHeaderConfirmed')}</th>
+                <th className="col-qty num col-lotted">{t('purchaseOrders.poLinesHeaderLotted')}</th>
                 <th className="col-qty num col-shipped">
-                  <Tooltip label="Đã đưa lên lô vận chuyển quốc tế" withArrow><span>Shipped</span></Tooltip>
+                  <Tooltip label={t('purchaseOrders.poLinesShippedTooltip')} withArrow><span>{t('purchaseOrders.poLinesHeaderShipped')}</span></Tooltip>
                 </th>
                 <th className="col-qty num col-received">
-                  <Tooltip label="Đã nhận đủ so với Shipped (cấp shipment, sau thông quan)" withArrow><span>Received</span></Tooltip>
+                  <Tooltip label={t('purchaseOrders.poLinesReceivedTooltip')} withArrow><span>{t('purchaseOrders.poLinesHeaderReceived')}</span></Tooltip>
                 </th>
-                <th className="col-status">Status</th>
-                <th className="col-amount num">{currencyCode ? `Amount · ${currencyCode}` : 'Amount'}</th>
+                <th className="col-status">{t('purchaseOrders.poLinesHeaderStatus')}</th>
+                <th className="col-amount num">
+                  {currencyCode
+                    ? t('purchaseOrders.poLinesHeaderAmountCurrency', { currency: currencyCode })
+                    : t('purchaseOrders.poLinesHeaderAmount')}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -150,6 +156,7 @@ export function PoLinesTable({ currencyCode, lines }: { currencyCode: string; li
 }
 
 function PoLineRow({ line, currencyCode }: { line: PurchaseOrderLineV1; currencyCode: string }) {
+  const { t } = useI18n();
   const [open, { toggle }] = useDisclosure(false);
 
   const lotState = getPoLineLotState(line);
@@ -170,12 +177,12 @@ function PoLineRow({ line, currencyCode }: { line: PurchaseOrderLineV1; currency
   // measured against the one before it so any shortfall (e.g. shipped < lotted)
   // surfaces consistently. On wide screens every stage is its own column; on
   // narrow screens the trailing columns hide and this list carries the full set.
-  const stages: { key: string; label: string; value: number }[] = [
-    { key: 'ordered', label: 'Ordered', value: ordered },
-    { key: 'confirmed', label: 'Confirmed', value: confirmed },
-    { key: 'lotted', label: 'Lotted', value: lotted },
-    { key: 'shipped', label: 'Shipped', value: shipped },
-    { key: 'received', label: 'Received', value: received },
+  const stages: { key: string; labelKey: string; value: number }[] = [
+    { key: 'ordered', labelKey: 'purchaseOrders.poLinesHeaderOrdered', value: ordered },
+    { key: 'confirmed', labelKey: 'purchaseOrders.poLinesHeaderConfirmed', value: confirmed },
+    { key: 'lotted', labelKey: 'purchaseOrders.poLinesHeaderLotted', value: lotted },
+    { key: 'shipped', labelKey: 'purchaseOrders.poLinesHeaderShipped', value: shipped },
+    { key: 'received', labelKey: 'purchaseOrders.poLinesHeaderReceived', value: received },
   ];
 
   return (
@@ -186,7 +193,7 @@ function PoLineRow({ line, currencyCode }: { line: PurchaseOrderLineV1; currency
             type="button"
             className={`po-line-row-toggle${open ? ' is-open' : ''}`}
             aria-expanded={open}
-            aria-label={open ? 'Collapse line detail' : 'Expand line detail'}
+            aria-label={open ? t('purchaseOrders.poLinesCollapseDetail') : t('purchaseOrders.poLinesExpandDetail')}
           >
             <IconChevronDown size={16} />
           </button>
@@ -210,19 +217,26 @@ function PoLineRow({ line, currencyCode }: { line: PurchaseOrderLineV1; currency
           </span>
           {shipped > 0 ? (
             <Badge size="xs" mt={2} color={RECEIPT_CONFIG[receipt.state].color} variant={receipt.state === 'full' ? 'light' : 'outline'}>
-              {receipt.state === 'full' ? 'Đủ' : receipt.state === 'pending' ? 'Chưa nhận' : `Thiếu ${receipt.shortfall.toLocaleString()}`}
+              {receipt.state === 'full'
+                ? t('purchaseOrders.poLinesReceiptFull')
+                : receipt.state === 'pending'
+                  ? t('purchaseOrders.poLinesReceiptPending')
+                  : t('purchaseOrders.poLinesReceiptShortfall', { count: receipt.shortfall.toLocaleString() })}
             </Badge>
           ) : null}
         </td>
         <td className="col-status">
           <Badge size="sm" color={lot.color} variant={lotState === 'none' ? 'outline' : 'light'} className="purchase-order-nowrap-badge">
-            {lot.label}
+            {t(lot.labelKey)}
           </Badge>
         </td>
         <td className="col-amount num">
           <span
             className="po-line-amount tabular-nums"
-            title={`${lineAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${currencyCode ? ` ${currencyCode}` : ''} — ordered qty × unit price (before tax and discount)`}
+            title={t('purchaseOrders.poLinesAmountTitle', {
+              amount: lineAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+              currency: currencyCode ? ` ${currencyCode}` : '',
+            })}
           >
             {compactMoney(lineAmount)}
           </span>
@@ -240,14 +254,14 @@ function PoLineRow({ line, currencyCode }: { line: PurchaseOrderLineV1; currency
                   const shortfall = delta < 0 ? Math.abs(delta) : 0;
                   return (
                     <div className="po-line-detail-stage" key={stage.key}>
-                      <span className="po-line-meta-label">{stage.label}</span>
+                      <span className="po-line-meta-label">{t(stage.labelKey)}</span>
                       <span className="po-line-meta-value tabular-nums">
                         <NumberFormatter value={stage.value} thousandSeparator />
                         {unit ? ` ${unit}` : ''}
                       </span>
                       {shortfall > 0 ? (
                         <span className="po-qty-delta tabular-nums">
-                          −<NumberFormatter value={shortfall} thousandSeparator /> left
+                          {t('purchaseOrders.poLinesShortfallLeft', { count: shortfall.toLocaleString() })}
                         </span>
                       ) : null}
                     </div>
@@ -255,15 +269,15 @@ function PoLineRow({ line, currencyCode }: { line: PurchaseOrderLineV1; currency
                 })}
               </div>
               <div className="po-line-card-meta">
-                <MetaCell label="HS code" value={line.item_customs_profile?.hs_code ?? '-'} />
-                <MetaCell label="CO form" value={line.item_customs_profile?.co_form ?? '-'} />
-                <MetaCell label="ETA" value={dateOnly(line.expected_eta_line) || '-'} />
-                <MetaCell label="Unit price" value={formatMoney(line.unit_price, currencyCode)} />
-                <MetaCell label="Tax" value={`${toNumber(line.tax_rate)}%`} />
-                <MetaCell label="Discount" value={`${toNumber(line.discount_pct)}%`} />
-                <MetaCell label="Unit" value={unit || '-'} />
-                <MetaCell label="Weight" value={formatWeightKg(toNumber(line.gross_weight_kg)) || '-'} />
-                <MetaCell label="Note" value={line.notes?.trim() || '-'} wide />
+                <MetaCell label={t('purchaseOrders.poLinesMetaHsCode')} value={line.item_customs_profile?.hs_code ?? '-'} />
+                <MetaCell label={t('purchaseOrders.poLinesMetaCoForm')} value={line.item_customs_profile?.co_form ?? '-'} />
+                <MetaCell label={t('purchaseOrders.poLinesMetaEta')} value={dateOnly(line.expected_eta_line) || '-'} />
+                <MetaCell label={t('purchaseOrders.poLinesMetaUnitPrice')} value={formatMoney(line.unit_price, currencyCode)} />
+                <MetaCell label={t('purchaseOrders.poLinesMetaTax')} value={`${toNumber(line.tax_rate)}%`} />
+                <MetaCell label={t('purchaseOrders.poLinesMetaDiscount')} value={`${toNumber(line.discount_pct)}%`} />
+                <MetaCell label={t('purchaseOrders.poLinesMetaUnit')} value={unit || '-'} />
+                <MetaCell label={t('purchaseOrders.poLinesMetaWeight')} value={formatWeightKg(toNumber(line.gross_weight_kg)) || '-'} />
+                <MetaCell label={t('purchaseOrders.poLinesMetaNote')} value={line.notes?.trim() || '-'} wide />
               </div>
             </div>
           </Collapse>

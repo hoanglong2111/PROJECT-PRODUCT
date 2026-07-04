@@ -1087,9 +1087,18 @@
 }
 
 .po-line-item-code {
+  display: inline-block;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.05rem 0.3rem;
+  border: 1px solid var(--kbfe-code-border);
+  border-radius: var(--kbfe-radius-sm);
+  background: var(--kbfe-code-background);
   font-size: 0.8125rem;
   font-weight: 600;
   color: var(--kbfe-code-text);
+  font-family: "Geist Mono Variable", "Geist Variable", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
 }
 
 .po-line-item-name {

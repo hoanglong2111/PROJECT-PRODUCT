@@ -54,6 +54,32 @@
   white-space: nowrap;
 }
 
+/* --- Global surface bridges: route Mantine default surfaces through --kbfe-* --- */
+.mantine-Paper-root {
+  background: var(--kbfe-surface-elevated);
+}
+
+[data-mantine-color-scheme] .mantine-Popover-dropdown,
+[data-mantine-color-scheme] .mantine-Menu-dropdown,
+[data-mantine-color-scheme] .mantine-Combobox-dropdown,
+[data-mantine-color-scheme] .mantine-HoverCard-dropdown {
+  background: var(--kbfe-surface-elevated);
+  border-color: var(--kbfe-border-primary);
+}
+
+[data-mantine-color-scheme] .mantine-Combobox-option:hover,
+[data-mantine-color-scheme] .mantine-Menu-item:hover {
+  background-color: var(--kbfe-hover-background);
+}
+
+[data-mantine-color-scheme] .mantine-Modal-content {
+  background: var(--kbfe-surface-elevated);
+}
+
+[data-mantine-color-scheme] .mantine-Drawer-content {
+  background: var(--kbfe-page-background);
+}
+
 /* Token-driven card chrome. Depth stays restrained, but a faint top edge and
    tinted shadow keep dashboards from reading as flat default cards. */
 .metric-card {

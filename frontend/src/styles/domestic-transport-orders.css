@@ -5,21 +5,6 @@
   max-width: 100%;
 }
 
-.dto-detail-drawer-content {
-  background:
-    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--kbfe-primary-color) 8%, transparent), transparent 28%),
-    var(--kbfe-page-background);
-}
-
-.dto-detail-drawer-header {
-  display: none;
-}
-
-.dto-detail-drawer-body {
-  min-width: 0;
-  padding: 1rem;
-}
-
 .dto-page-hero,
 .dto-filter-panel,
 .dto-list-panel,
@@ -831,12 +816,6 @@
 
 .dto-error-alert {
   box-shadow: var(--kbfe-shadow-xs);
-}
-
-@media (max-width: 48em) {
-  .dto-detail-drawer-body {
-    padding: 0.75rem;
-  }
 }
 
 @media (max-width: 62em) {
