@@ -211,10 +211,14 @@ macro group (`ORIGIN_EXPORT`, `MAIN_FREIGHT`, `FREIGHT_SURCHARGE`,
 `06_UOM.html` and do not include `category`. Currency DTOs are identity/display data
 only; exchange rates are transactional and do not belong to the currency master.
 Incoterm DTOs include `incoterm_code`, `incoterm_name`, `incoterm_name_vn`,
-`description`, and `is_active`; seeded codes are the supplier-doc set `EXW`, `FOB`,
-`CIF`, `DDP`, plus quotation-required `FCA` and `CFR`. Transport modes are `SEA`,
-`AIR`, `ROAD`, and `RAIL`; FCL/LCL is modeled on shipment `load_type` and
-charge-code applicability, and `is_international` is not part of the DTO.
+`description`, optional `charge_group_scope` (charge-code groups in buyer scope;
+FE defaults from Incoterms 2020 when omitted), optional `insurance_required`
+(info flag for seller-arranged insurance, for example CIF; FE defaults from
+Incoterms 2020 when omitted), and `is_active`; seeded codes are the supplier-doc
+set `EXW`, `FOB`, `CIF`, `DDP`, plus quotation-required `FCA` and `CFR`.
+Transport modes are `SEA`, `AIR`, `ROAD`, and `RAIL`; FCL/LCL is modeled on
+shipment `load_type` and charge-code applicability, and `is_international` is not
+part of the DTO.
 
 ---
 

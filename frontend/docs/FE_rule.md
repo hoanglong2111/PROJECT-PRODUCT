@@ -426,15 +426,23 @@ goods line items.
 Quotation charge suggestions are derived only from `05_Charge_Code` master data:
 `charge_code.group` must be inside the Incoterm scope, the quotation mode must match the
 row's mode flag (`sea_fcl`, `sea_lcl`, or `air`), and the row must be active. Incoterm
-drives scope only; it never supplies a price. Every suggested `unit_price` starts blank
-and sales enters the commercial price manually.
+drives scope only; it never supplies a price. Every suggested `unit_price` starts blank,
+sales enters the commercial price manually, and every suggested fee stays removable by
+unchecking the row.
 
-`@shared/lib/quotationCharges.incotermChargeGroups` defines the buyer-scope groups:
+Incoterm-to-suggested-charge scope is seeded from the Incoterms 2020 cost-allocation
+matrix in `@shared/lib/incotermChargeScope.ts`, then exposed through
+`@shared/lib/quotationCharges.incotermChargeGroups`. A backend-provided
+`Incoterm.charge_group_scope` can override the FE seed. `insurance_required` renders an
+info note only and never creates a charge line. Only the six real Incoterms
+(`EXW`, `FCA`, `FOB`, `CFR`, `CIF`, `DDP`) and seven real charge groups are used.
+
+The buyer-scope groups are:
 
 ```txt
 EXW      -> ORIGIN_EXPORT, MAIN_FREIGHT, FREIGHT_SURCHARGE, DOCUMENTATION_FILING, DESTINATION_IMPORT
 FCA/FOB  -> MAIN_FREIGHT, FREIGHT_SURCHARGE, DOCUMENTATION_FILING, DESTINATION_IMPORT
-CFR/CIF  -> DESTINATION_IMPORT
+CFR/CIF  -> DOCUMENTATION_FILING, DESTINATION_IMPORT
 DDP      -> none
 unknown  -> all five primary groups
 ```
