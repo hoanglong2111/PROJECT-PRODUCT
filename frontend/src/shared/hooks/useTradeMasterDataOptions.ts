@@ -55,6 +55,7 @@ export function useTradeMasterDataOptions({ supplierRole }: UseTradeMasterDataOp
 
   const suppliers = suppliersQuery.data?.data ?? [];
   const transportModes = transportModesQuery.data?.data ?? [];
+  const incoterms = incotermsQuery.data?.data ?? [];
 
   return {
     currencyOptions: useMemo<Option[]>(
@@ -67,11 +68,11 @@ export function useTradeMasterDataOptions({ supplierRole }: UseTradeMasterDataOp
     ),
     incotermOptions: useMemo<Option[]>(
       () =>
-        (incotermsQuery.data?.data ?? []).map((incoterm) => ({
+        incoterms.map((incoterm) => ({
           label: `${incoterm.incoterm_code} - ${incoterm.incoterm_name}`,
           value: incoterm.incoterm_code,
         })),
-      [incotermsQuery.data],
+      [incoterms],
     ),
     isLoading:
       currenciesQuery.isLoading ||
@@ -87,6 +88,7 @@ export function useTradeMasterDataOptions({ supplierRole }: UseTradeMasterDataOp
       [suppliers],
     ),
     suppliers,
+    incoterms,
     transportModeOptions: useMemo<Option[]>(
       () =>
         transportModes.map((mode) => ({
