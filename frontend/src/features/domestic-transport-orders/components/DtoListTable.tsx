@@ -88,8 +88,8 @@ export function DtoListTable({
                   <Text size="xs" c="dimmed">{formatContainers(order.shipment?.container_no)}</Text>
                 </Table.Td>
                 <Table.Td className="table-cell-truncate dto-vendor-cell dto-col-vendor" style={{ maxWidth: '18rem' }}>
-                  <Text size="sm" fw={600} lineClamp={1} title={order.truck_vendor?.supplier_name ?? order.truck_vendor_id ?? '-'}>
-                    {order.truck_vendor?.supplier_name ?? order.truck_vendor_id ?? '-'}
+                  <Text size="sm" fw={600} lineClamp={1} title={order.truck_vendor?.forwarder_name ?? order.truck_vendor_id ?? '-'}>
+                    {order.truck_vendor?.forwarder_name ?? order.truck_vendor_id ?? '-'}
                   </Text>
                 </Table.Td>
                 <Table.Td className="table-cell-truncate dto-route-cell dto-col-route" style={{ maxWidth: '22rem' }}>

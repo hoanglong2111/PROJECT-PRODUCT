@@ -28,7 +28,7 @@ import {
   fetchShipmentContainers,
   type ShipmentContainerV1,
 } from '@shared/api/shipmentContainers';
-import { fetchSuppliers } from '@shared/api/tradeMasterData';
+import { fetchForwarders } from '@shared/api/forwarders';
 import { queryKeys } from '@shared/api/queryKeys';
 import { useI18n } from '@shared/i18n';
 
@@ -100,15 +100,17 @@ export function CreateDtoFromShipmentPanel({
     queries: [
       {
         enabled: opened,
-        queryKey: queryKeys.suppliers({ page: 1, limit: 100, role: 'TRUCKING_VENDOR', is_active: true }),
-        queryFn: () => fetchSuppliers({ page: 1, limit: 100, role: 'TRUCKING_VENDOR', is_active: true }),
+        queryKey: queryKeys.forwarders({ page: 1, limit: 100, is_active: true }),
+        queryFn: () => fetchForwarders({ page: 1, limit: 100, is_active: true }),
       },
     ],
   })[0];
-  const truckVendorOptions = (truckVendorsQuery.data?.data ?? []).map((supplier) => ({
-    label: `${supplier.supplier_code} - ${supplier.supplier_name}`,
-    value: supplier.id,
-  }));
+  const truckVendorOptions = (truckVendorsQuery.data?.data ?? [])
+    .filter((forwarder) => forwarder.forwarder_type === 'TRUCKING' || forwarder.forwarder_type === 'MULTI')
+    .map((forwarder) => ({
+      label: `${forwarder.forwarder_code} - ${forwarder.forwarder_name}`,
+      value: forwarder.id,
+    }));
 
   useEffect(() => {
     if (opened) {

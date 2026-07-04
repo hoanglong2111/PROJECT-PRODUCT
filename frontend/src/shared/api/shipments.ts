@@ -1,8 +1,9 @@
 import { apiClient } from './axiosConfig';
 import type { DeliveryOrderV1 } from './deliveryOrders';
+import type { Forwarder } from './forwarders';
 import type { ApiDecimal, PaginationMeta, V1ApiError, V1Response } from './purchaseOrders';
 import type { QuotationV1 } from './quotations';
-import type { Supplier, TransportMode } from './tradeMasterData';
+import type { TransportMode } from './tradeMasterData';
 
 export type ShipmentStatusV1 =
   | 'BOOKING_PENDING'
@@ -151,6 +152,7 @@ export type ShipmentV1 = {
   transport_mode_id: string | null;
   forwarder_id: string | null;
   carrier: string | null;
+  carrier_id: string | null;
   mode: ShipmentModeV1;
   load_type: ShipmentLoadTypeV1 | null;
   vessel_flight: string | null;
@@ -177,7 +179,7 @@ export type ShipmentV1 = {
   delivery_order?: DeliveryOrderV1 | null;
   final_quotation?: QuotationV1 | null;
   transport_mode?: TransportMode | null;
-  forwarder?: Supplier | null;
+  forwarder?: Forwarder | null;
   lines?: ShipmentLineV1[];
   milestones?: ShipmentMilestoneV1[];
   documents?: ShipmentDocumentV1[];
@@ -206,6 +208,7 @@ export type CreateShipmentFromDeliveryOrderPayload = {
   transport_mode_id?: string | null;
   forwarder_id?: string | null;
   carrier?: string | null;
+  carrier_id?: string | null;
   mode?: ShipmentModeV1;
   load_type?: ShipmentLoadTypeV1 | null;
   vessel_flight?: string | null;
@@ -226,6 +229,7 @@ export type UpdateShipmentPayload = Partial<
     | 'ata'
     | 'bl_awb_no'
     | 'carrier'
+    | 'carrier_id'
     | 'container_no'
     | 'customs_channel'
     | 'eta'

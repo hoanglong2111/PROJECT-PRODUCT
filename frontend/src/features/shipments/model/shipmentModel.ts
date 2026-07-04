@@ -67,6 +67,13 @@ export function loadTypeForMode(mode: ShipmentModeV1 | string | null | undefined
   return [];
 }
 
+export function carrierTypeForMode(mode?: string | null): 'SHIPPING_LINE' | 'AIRLINE' | null {
+  const normalized = (mode ?? '').toUpperCase();
+  if (normalized === 'AIR') return 'AIRLINE';
+  if (normalized === 'SEA') return 'SHIPPING_LINE';
+  return null;
+}
+
 /**
  * DO statuses from which a shipment can no longer be created. Mirrors the backend gate in
  * `createShipmentFromDeliveryOrder` and FE_rule §10 (reversed flow: quotation no longer gates the DO).

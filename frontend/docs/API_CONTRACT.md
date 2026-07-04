@@ -157,6 +157,8 @@ exact request/response types.)
 - `POST /v1/shipments/from-delivery-order` — quotation no longer lives on the DO, so the old `QUOTATION_CONFIRMED` gate is dropped; only `CANCELLED`/`CLOSED`/`ASSIGNED_TO_SHIPMENT` DOs are blocked. Booking info (carrier/BL/vessel) is captured on the shipment here.
 - `POST /v1/shipments/:id/cancel`
 - Shipment create/update payloads carry `mode` plus nullable `load_type` (`FCL`/`LCL` for sea, `FTL`/`LTL` for road).
+- `carrier_id: string | null` references Carrier master (`carrier_type` `SHIPPING_LINE`/`AIRLINE`); `carrier: string | null` is the denormalized carrier name kept for display/filter and set alongside `carrier_id` when chosen.
+- Shipment DTOs may embed `forwarder?: Forwarder`; `forwarder_id` references the Forwarder master, not Suppliers.
 - `GET /v1/shipments/:id/lines`
 - `GET /v1/shipments/:id/milestones`
 - `POST /v1/shipments/:id/milestones/:code/done`
@@ -176,6 +178,7 @@ exact request/response types.)
 
 ### Carrier Delivery Orders (inside Shipment detail)
 - `GET|POST /v1/shipments/:id/carrier-delivery-orders`
+- Carrier-DO DTOs embed `forwarder?: Forwarder`; `forwarder_id` references the Forwarder master.
 - `POST /v1/carrier-delivery-orders/:id/issue`
 - `POST /v1/carrier-delivery-orders/:id/release`
 - `POST /v1/carrier-delivery-orders/:id/cancel`
@@ -183,6 +186,7 @@ exact request/response types.)
 ### Domestic Transport Orders (DTO)
 - `GET /v1/domestic-transport-orders` · `GET|PATCH /v1/domestic-transport-orders/:id`
 - `POST /v1/shipments/:id/domestic-transport-orders` — create from one shipment
+- DTO responses embed `truck_vendor?: Forwarder`; `truck_vendor_id` references the Forwarder master and should be a domestic trucking-capable forwarder (`forwarder_type` `TRUCKING` or `MULTI`), not a Supplier.
 - `POST /v1/domestic-transport-orders/consolidate` — atomic multi-shipment (LCL) create
 - `GET /v1/shipments/:id/domestic-transport-orders`
 - `POST /v1/shipments/:id/domestic-transport-orders/link`

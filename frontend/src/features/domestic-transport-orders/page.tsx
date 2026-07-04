@@ -21,7 +21,7 @@ import {
 } from '@shared/api/domesticTransportOrders';
 import { fetchShipments, type ShipmentRecord } from '@shared/api/logistics';
 import { queryKeys } from '@shared/api/queryKeys';
-import { fetchSuppliers } from '@shared/api/tradeMasterData';
+import { fetchForwarders } from '@shared/api/forwarders';
 import { BackActionButton } from '@shared/components/BackActionButton';
 import { ModalTitle } from '@shared/components/ModalTitle';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
@@ -152,13 +152,15 @@ export function DomesticTransportOrders() {
   }, [availableShipments, availableShipmentsQuery.isLoading, selectedShipmentId]);
 
   const truckVendorsQuery = useQuery({
-    queryKey: queryKeys.suppliers({ page: 1, limit: 100, role: 'TRUCKING_VENDOR', is_active: true }),
-    queryFn: () => fetchSuppliers({ page: 1, limit: 100, role: 'TRUCKING_VENDOR', is_active: true }),
+    queryKey: queryKeys.forwarders({ page: 1, limit: 100, is_active: true }),
+    queryFn: () => fetchForwarders({ page: 1, limit: 100, is_active: true }),
   });
-  const truckVendors = truckVendorsQuery.data?.data ?? [];
-  const truckVendorOptions = truckVendors.map((supplier) => ({
-    label: `${supplier.supplier_code} - ${supplier.supplier_name}`,
-    value: supplier.id,
+  const truckVendors = (truckVendorsQuery.data?.data ?? []).filter(
+    (forwarder) => forwarder.forwarder_type === 'TRUCKING' || forwarder.forwarder_type === 'MULTI',
+  );
+  const truckVendorOptions = truckVendors.map((forwarder) => ({
+    label: `${forwarder.forwarder_code} - ${forwarder.forwarder_name}`,
+    value: forwarder.id,
   }));
   const statusOptions = useMemo(
     () =>
