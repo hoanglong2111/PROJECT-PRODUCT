@@ -75,7 +75,7 @@ const EMPTY_CHARGE_CODES: ChargeCode[] = [];
 export function QuotationForm({ onCancel, onCreated, sourceQuotation }: QuotationFormProps) {
   const { language, t } = useI18n();
   const queryClient = useQueryClient();
-  const { incotermOptions, currencyOptions } = useTradeMasterDataOptions();
+  const { incotermOptions, currencyOptions, incoterms } = useTradeMasterDataOptions();
   const isRevise = Boolean(sourceQuotation);
 
   const [customerRef, setCustomerRef] = useState(sourceQuotation?.customer_ref ?? '');
@@ -102,7 +102,14 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
   });
   const chargeCodes = chargeCodesQuery.data?.data ?? EMPTY_CHARGE_CODES;
 
-  const includedGroups = useMemo(() => incotermChargeGroups(incoterm), [incoterm]);
+  const selectedIncoterm = useMemo(
+    () => incoterms.find((record) => record.incoterm_code === incoterm),
+    [incoterms, incoterm],
+  );
+  const includedGroups = useMemo(
+    () => selectedIncoterm?.charge_group_scope ?? incotermChargeGroups(incoterm),
+    [selectedIncoterm, incoterm],
+  );
   const modeFlag = modeToChargeFlag(shippingMode);
   const suggestedChargeCodes = useMemo(() => {
     const included = new Set(includedGroups);
@@ -481,6 +488,12 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
                   </Text>
                 </Group>
               </div>
+
+              {selectedIncoterm?.insurance_required ? (
+                <Alert color="blue" variant="light" mt="xs">
+                  {t('quotations.insuranceIncludedNote', { incoterm: incoterm ?? '' })}
+                </Alert>
+              ) : null}
 
               <div className="rfq-charge-board">
                 {sections.map((section, index) => {
