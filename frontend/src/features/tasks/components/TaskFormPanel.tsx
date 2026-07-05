@@ -13,6 +13,7 @@ import {
   type TaskStatus,
 } from '@shared/api/logistics';
 import { DateTimeField } from '@shared/components/DateField';
+import { FieldPair } from '@shared/components/FieldPair';
 import { fetchTaskTemplates } from '@shared/api/taskTemplates';
 import { queryKeys } from '@shared/api/queryKeys';
 import { getApiErrorMessage } from '@shared/lib/errors';
@@ -212,9 +213,9 @@ export function TaskFormPanel({
             </Text>
             {selectedTemplate ? (
               <SimpleGrid cols={{ base: 1, xs: 3 }} spacing="xs" mt="xs" className="task-form-template-facts">
-                <TemplateFact label={t('tasks.milestone')} value={milestoneLabel(selectedTemplate.milestone_code)} />
-                <TemplateFact label={t('tasks.department')} value={departmentLabel(selectedTemplate.department)} />
-                <TemplateFact label={t('tasks.sla')} value={templateSlaLabel(selectedTemplate)} />
+                <FieldPair className="task-form-template-fact" label={t('tasks.milestone')} value={milestoneLabel(selectedTemplate.milestone_code)} />
+                <FieldPair className="task-form-template-fact" label={t('tasks.department')} value={departmentLabel(selectedTemplate.department)} />
+                <FieldPair className="task-form-template-fact" label={t('tasks.sla')} value={templateSlaLabel(selectedTemplate)} />
               </SimpleGrid>
             ) : (
               <Text size="sm" c="dimmed" mt={6}>
@@ -276,18 +277,5 @@ export function TaskFormPanel({
         </Group>
       </Stack>
     </Paper>
-  );
-}
-
-function TemplateFact({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="task-form-template-fact">
-      <Text size="xs" c="dimmed" fw={700}>
-        {label}
-      </Text>
-      <Text size="sm" fw={700} lineClamp={1} title={value}>
-        {value}
-      </Text>
-    </div>
   );
 }

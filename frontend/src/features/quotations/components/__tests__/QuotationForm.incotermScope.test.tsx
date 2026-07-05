@@ -135,8 +135,7 @@ describe('QuotationForm Incoterm suggested fee scope', () => {
 
 async function flushQueries() {
   await act(async () => {
-    await Promise.resolve();
-    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
   });
 }
 

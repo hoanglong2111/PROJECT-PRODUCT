@@ -44,6 +44,7 @@ describe('QuotationValidityBadge', () => {
     });
     container.remove();
     vi.clearAllMocks();
+    vi.useRealTimers();
   });
 
   async function render(ui: React.ReactNode) {
@@ -58,10 +59,10 @@ describe('QuotationValidityBadge', () => {
   });
 
   it('renders the expired label with a positive day magnitude', async () => {
-    const past = new Date();
-    past.setDate(past.getDate() - 5);
-    const iso = past.toISOString().slice(0, 10);
-    await render(<QuotationValidityBadge validUntil={iso} />);
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-05T12:00:00+07:00'));
+
+    await render(<QuotationValidityBadge validUntil="2026-06-30" />);
     expect(container.textContent).toContain('quotations.validity.expired');
     expect(container.textContent).toContain('"days":5');
   });

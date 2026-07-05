@@ -1,7 +1,6 @@
 import { ActionIcon, Alert, Button, Collapse, Group, Paper, Stack, Table, Text, Textarea, Title, Tooltip } from '@mantine/core';
 import { IconCheck, IconChevronDown, IconEdit, IconFileInvoice, IconSend, IconShoppingCart, IconX } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -17,6 +16,7 @@ import {
 import { queryKeys } from '@shared/api/queryKeys';
 import { CopyValue } from '@shared/components/CopyValue';
 import { DateTimeText } from '@shared/components/DateTimeText';
+import { FieldPair } from '@shared/components/FieldPair';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { useI18n } from '@shared/i18n';
 import { formatDate } from '@shared/utils/date';
@@ -141,12 +141,12 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
         </div>
 
         <div className="rfq-detail-fact-strip">
-          <Fact label={t('quotations.customer')} value={quotation.customer_ref ?? '—'} />
-          <Fact label={t('quotations.incoterm')} value={quotation.incoterm_code ?? '—'} />
-          <Fact label={t('quotations.mode')} value={quotation.mode ?? '—'} />
-          <Fact label={t('quotations.currency')} value={quotation.currency_code ?? '—'} />
-          <Fact label={t('quotations.validUntil')} value={formatDate(quotation.valid_until)} />
-          <Fact label={t('quotations.createdAt')} value={<DateTimeText value={quotation.create_at} showZone />} />
+          <FieldPair className="rfq-fact" label={t('quotations.customer')} value={quotation.customer_ref ?? '—'} />
+          <FieldPair className="rfq-fact" label={t('quotations.incoterm')} value={quotation.incoterm_code ?? '—'} />
+          <FieldPair className="rfq-fact" label={t('quotations.mode')} value={quotation.mode ?? '—'} />
+          <FieldPair className="rfq-fact" label={t('quotations.currency')} value={quotation.currency_code ?? '—'} />
+          <FieldPair className="rfq-fact" label={t('quotations.validUntil')} value={formatDate(quotation.valid_until)} />
+          <FieldPair className="rfq-fact" label={t('quotations.createdAt')} value={<DateTimeText value={quotation.create_at} showZone />} />
         </div>
       </Paper>
 
@@ -451,14 +451,5 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
         </aside>
       </div>
     </Stack>
-  );
-}
-
-function Fact({ label, value }: { label: string; value: ReactNode }) {
-  return (
-    <div className="rfq-fact">
-      <Text size="xs" c="dimmed">{label}</Text>
-      <Text size="sm" fw={600}>{value}</Text>
-    </div>
   );
 }

@@ -14,7 +14,6 @@ import {
   Tabs,
   Text,
   TextInput,
-  Title,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useDebouncedValue, useDisclosure } from '@mantine/hooks';
@@ -31,6 +30,7 @@ import { useAuth } from '@shared/auth/useAuth';
 import { EmptyState } from '@shared/components/EmptyState';
 import { ListPagination, useListPagination } from '@shared/components/ListPagination';
 import { ModalTitle } from '@shared/components/ModalTitle';
+import { PageHeader } from '@shared/components/PageHeader';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
 import { useI18n } from '@shared/i18n';
 import {
@@ -180,17 +180,15 @@ export function Settings() {
 
   return (
     <Stack gap="lg">
-      <Group justify="space-between" align="flex-start" className="dl-page-header">
-        <div className="dl-page-title-block">
-          <Title order={1}>{t('settings.title')}</Title>
-          <Text c="dimmed" mt={4}>
-            {t('settings.subtitle')}
-          </Text>
-        </div>
-        <Badge leftSection={<IconSettings size={14} />} size="lg" variant="light" className="dl-page-actions">
-          {t('settings.preferences')}
-        </Badge>
-      </Group>
+      <PageHeader
+        title={t('settings.title')}
+        subtitle={t('settings.subtitle')}
+        actions={
+          <Badge leftSection={<IconSettings size={14} />} size="lg" variant="light">
+            {t('settings.preferences')}
+          </Badge>
+        }
+      />
 
       <Tabs
         value={activeSection}

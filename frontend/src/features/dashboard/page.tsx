@@ -18,6 +18,7 @@ import {
   IconShoppingCart,
 } from '@tabler/icons-react';
 
+import { PageHeader } from '@shared/components/PageHeader';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
 import { useI18n } from '@shared/i18n';
 import type { DeliveryOrderStatus, LogisticsTask, PurchaseOrderStatus } from '@shared/api/logistics';
@@ -68,30 +69,31 @@ export function Dashboard() {
 
   return (
     <Stack gap="lg" className="dashboard-page">
-      <Group justify="space-between" align="flex-start" gap="md" className="dashboard-header dl-page-header">
-        <Stack gap={4} className="dl-page-title-block">
-          <Group gap="xs">
+      <PageHeader
+        className="dashboard-header"
+        title={
+          <>
             <span className="dashboard-header-icon">
               <IconPackageExport size={20} />
             </span>
-            <Title order={1}>{t('dashboard.title')}</Title>
-          </Group>
-          <Text c="dimmed" maw={920}>
-            {t('dashboard.subtitle')}
-          </Text>
-        </Stack>
-        <SegmentedControl
-          defaultValue="6m"
-          data={[
-            { label: t('dashboard.timeRange7d'), value: '7d' },
-            { label: t('dashboard.timeRange30d'), value: '30d' },
-            { label: t('dashboard.timeRange6m'), value: '6m' },
-          ]}
-          radius="md"
-          size="sm"
-          className="dashboard-time-filter"
-        />
-      </Group>
+            {t('dashboard.title')}
+          </>
+        }
+        subtitle={t('dashboard.subtitle')}
+        actions={
+          <SegmentedControl
+            defaultValue="6m"
+            data={[
+              { label: t('dashboard.timeRange7d'), value: '7d' },
+              { label: t('dashboard.timeRange30d'), value: '30d' },
+              { label: t('dashboard.timeRange6m'), value: '6m' },
+            ]}
+            radius="md"
+            size="sm"
+            className="dashboard-time-filter"
+          />
+        }
+      />
 
       <SimpleGrid cols={{ base: 1, lg: 3 }} spacing="md" className="dl-metrics-strip">
         <Paper withBorder p="md" className="metric-card dashboard-card dashboard-kpi-card dashboard-po-card">

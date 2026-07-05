@@ -56,6 +56,64 @@
   min-height: 2.25rem;
 }
 
+.shipment-dto-container-composer {
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 94%, var(--kbfe-surface-subtle) 6%);
+  border-color: var(--kbfe-border-primary) !important;
+}
+
+.shipment-dto-container-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+  align-items: flex-end;
+  min-width: 0;
+}
+
+.shipment-dto-container-form > * {
+  min-width: 0;
+}
+
+.shipment-dto-field-target {
+  flex: 0 1 12.5rem;
+}
+
+.shipment-dto-field-container-no {
+  flex: 0 1 11.5rem;
+}
+
+.shipment-dto-field-type {
+  flex: 0 1 7.25rem;
+}
+
+.shipment-dto-field-seal {
+  flex: 0 1 9.25rem;
+}
+
+.shipment-dto-field-gross {
+  flex: 0 1 8.75rem;
+}
+
+.shipment-dto-field-cbm {
+  flex: 0 1 7.75rem;
+}
+
+.shipment-dto-container-add {
+  flex: 0 0 auto;
+  min-width: 8.75rem;
+}
+
+.shipment-dto-dispatch-grid {
+  display: grid;
+  grid-template-columns: minmax(18rem, 1.25fr) minmax(12rem, 0.8fr) minmax(12rem, 0.8fr);
+  gap: 0.75rem;
+  align-items: end;
+  min-width: 0;
+}
+
+.shipment-dto-dispatch-grid > * {
+  min-width: 0;
+}
+
 .shipment-create-command,
 .shipment-create-layout,
 .shipment-create-source,
@@ -627,6 +685,10 @@
     grid-template-columns: 1fr;
   }
 
+  .shipment-dto-dispatch-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .shipment-progress-tile:nth-child(odd) {
     border-left: 0;
   }
@@ -708,8 +770,35 @@
   }
 
   .shipment-filter-primary,
-  .shipment-filter-dates {
+  .shipment-filter-dates,
+  .shipment-dto-dispatch-grid {
     grid-template-columns: 1fr;
+  }
+
+  .shipment-dto-container-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .shipment-dto-field-target,
+  .shipment-dto-field-container-no,
+  .shipment-dto-field-type,
+  .shipment-dto-field-seal,
+  .shipment-dto-field-gross,
+  .shipment-dto-field-cbm,
+  .shipment-dto-container-add {
+    width: auto;
+    min-width: 0;
+  }
+
+  .shipment-dto-field-target,
+  .shipment-dto-field-container-no,
+  .shipment-dto-container-add {
+    grid-column: 1 / -1;
+  }
+
+  .shipment-dto-container-add {
+    width: 100%;
   }
 
   .shipment-create-command {

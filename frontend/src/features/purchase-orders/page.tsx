@@ -1,4 +1,4 @@
-import { Button, Group, Stack, Text, Title } from '@mantine/core';
+import { Button, Stack } from '@mantine/core';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { IconPlus } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -17,8 +17,9 @@ import {
 } from '@shared/api/tradeMasterData';
 import { Can } from '@shared/auth/Can';
 import { useCan } from '@shared/auth/useCan';
-import { BackActionButton } from '@shared/components/BackActionButton';
+import { PageHeader } from '@shared/components/PageHeader';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
+import { WorkbenchHeader } from '@shared/components/WorkbenchHeader';
 import { useEntityParam } from '@shared/hooks/useEntityParam';
 
 import {
@@ -195,14 +196,13 @@ export function PurchaseOrders() {
   return (
     <Stack gap="lg" className="purchase-orders-workbench">
       {workbench === 'list' ? (
-        <Group justify="space-between" align="flex-start" className="purchase-orders-page-header dl-page-header">
-          <div className="purchase-orders-page-title dl-page-title-block">
-            <Title order={1}>Purchase Orders</Title>
-            <Text c="dimmed" mt={4}>
-              Operational PO intake, supplier confirmation, and LOT planning.
-            </Text>
-          </div>
-          <Group gap="xs" wrap="nowrap" className="purchase-orders-page-actions dl-page-actions">
+        <PageHeader
+          className="purchase-orders-page-header"
+          titleClassName="purchase-orders-page-title"
+          actionsClassName="purchase-orders-page-actions"
+          title="Purchase Orders"
+          subtitle="Operational PO intake, supplier confirmation, and LOT planning."
+          actions={
             <Can capability="purchaseOrders.manage">
               <Button
                 className="purchase-orders-primary-action"
@@ -216,12 +216,10 @@ export function PurchaseOrders() {
                 Create PO
               </Button>
             </Can>
-          </Group>
-        </Group>
+          }
+        />
       ) : (
-        <Group justify="space-between" className="purchase-orders-subheader dl-page-header">
-          <BackActionButton className="purchase-orders-back-action" onClick={closeWorkbench} />
-        </Group>
+        <WorkbenchHeader className="purchase-orders-subheader" onBack={closeWorkbench} />
       )}
 
       {workbench === 'create' ? (

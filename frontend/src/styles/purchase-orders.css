@@ -50,6 +50,7 @@
 
 .purchase-orders-primary-action .mantine-Button-label,
 .purchase-orders-back-action .mantine-Button-label,
+.purchase-orders-subheader .kbfe-back-action .mantine-Button-label,
 .purchase-order-action-button .mantine-Button-label,
 .lot-planning-action-button .mantine-Button-label {
   white-space: nowrap;

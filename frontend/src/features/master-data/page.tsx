@@ -1,4 +1,4 @@
-import { Alert, Badge, Group, Select, Stack, Tabs, Text, Title } from '@mantine/core';
+import { Alert, Badge, Group, Select, Stack, Tabs, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -57,6 +57,7 @@ import { useCan } from '@shared/auth/useCan';
 import { useI18n } from '@shared/i18n';
 import { CHARGE_CATEGORIES, CHARGE_GROUPS } from '@shared/lib/chargeCategories';
 import { useMasterDataStore } from './model/masterDataStore';
+import { PageHeader } from '@shared/components/PageHeader';
 
 import {
   getItemCategoryLabel,
@@ -697,19 +698,15 @@ export function MasterData() {
 
   return (
     <Stack gap="lg">
-      <Group justify="space-between" align="center" className="dl-page-header">
-        <div className="dl-page-title-block">
-          <Title order={1}>{t('masterData.title')}</Title>
-          <Text c="dimmed" mt={4}>
-            {t('masterData.subtitle')}
-          </Text>
-        </div>
-        {!canManageMasterData && (
+      <PageHeader
+        title={t('masterData.title')}
+        subtitle={t('masterData.subtitle')}
+        actions={!canManageMasterData && (
           <Badge color="blue" variant="filled" size="lg" leftSection={<IconAlertCircle size={14} />}>
             {t('masterData.readOnlyBadge')}
           </Badge>
         )}
-      </Group>
+      />
 
       {!canManageMasterData && (
         <Alert color="blue" variant="light" title={t('masterData.readOnlyBadge')} icon={<IconAlertCircle size={18} />}>

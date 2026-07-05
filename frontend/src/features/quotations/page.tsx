@@ -1,12 +1,13 @@
-import { Button, Group, Stack, Text, Title } from '@mantine/core';
+import { Button, Stack } from '@mantine/core';
 import { IconPlus } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { fetchQuotationsV1, type QuotationV1 } from '@shared/api/quotations';
-import { BackActionButton } from '@shared/components/BackActionButton';
+import { PageHeader } from '@shared/components/PageHeader';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
+import { WorkbenchHeader } from '@shared/components/WorkbenchHeader';
 import { queryKeys } from '@shared/api/queryKeys';
 import { useI18n } from '@shared/i18n';
 
@@ -177,14 +178,13 @@ export function Quotations() {
   return (
     <Stack gap="lg" className="quotations-workbench">
       {showList ? (
-        <Group justify="space-between" align="flex-start" className="quotations-page-header dl-page-header">
-          <div className="quotations-page-title dl-page-title-block">
-            <Title order={1}>{t('quotations.title')}</Title>
-            <Text c="dimmed" mt={4}>
-              {t('quotations.subtitle')}
-            </Text>
-          </div>
-          <Group gap="xs" wrap="nowrap" className="quotations-page-actions dl-page-actions">
+        <PageHeader
+          className="quotations-page-header"
+          titleClassName="quotations-page-title"
+          actionsClassName="quotations-page-actions"
+          title={t('quotations.title')}
+          subtitle={t('quotations.subtitle')}
+          actions={
             <Button
               className="quotations-primary-action"
               leftSection={<IconPlus size={16} />}
@@ -192,25 +192,13 @@ export function Quotations() {
             >
               {t('quotations.newQuotation')}
             </Button>
-          </Group>
-        </Group>
+          }
+        />
       ) : (
-        <Group justify="space-between" align="center" gap="md" className="quotations-subheader dl-page-header">
-          <Group gap="xs" align="center" wrap="wrap">
-            <BackActionButton className="quotations-back-action" onClick={closeWorkbench} />
-            {selectedQuotation ? (
-              <>
-                <Text c="dimmed" size="sm">/</Text>
-                <Text fw={600} size="sm">{selectedQuotation.quotation_no}</Text>
-              </>
-            ) : (
-              <>
-                <Text c="dimmed" size="sm">/</Text>
-                <Text fw={600} size="sm">{formSource ? t('quotations.reviseTitle') : t('quotations.newQuotation')}</Text>
-              </>
-            )}
-          </Group>
-        </Group>
+        <WorkbenchHeader
+          className="quotations-subheader"
+          onBack={closeWorkbench}
+        />
       )}
 
       {showForm ? (

@@ -71,6 +71,12 @@
   padding: 0.25rem 0 0.125rem;
 }
 
+.dashboard-header .mantine-Title-root {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .dashboard-header-icon,
 .dashboard-mini-icon {
   display: grid;
