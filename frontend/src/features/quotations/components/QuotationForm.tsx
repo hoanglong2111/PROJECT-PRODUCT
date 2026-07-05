@@ -1,6 +1,7 @@
 import {
   ActionIcon,
   Alert,
+  Badge,
   Button,
   Chip,
   Collapse,
@@ -444,29 +445,46 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
             <section className="rfq-form-section">
               <div className="rfq-section-head">
                 <Text fw={800}>{t('quotations.setupSection')}</Text>
-                <Text size="xs" c="dimmed">
+                <Text size="xs" c="dimmed" className="rfq-section-summary">
                   {scopeSummary}
                 </Text>
               </div>
 
-              <SimpleGrid cols={{ base: 1, sm: 2 }} mt="md" spacing="md">
+              <SimpleGrid cols={{ base: 1, sm: 2 }} mt="md" spacing="md" className="rfq-setup-grid">
                 <TextInput
+                  className="rfq-scope-field"
                   label={t('quotations.customer')}
                   placeholder={t('quotations.customerPlaceholder')}
+                  leftSection={<IconFileInvoice size={16} />}
+                  leftSectionPointerEvents="none"
                   value={customerRef}
                   onChange={(event) => setCustomerRef(event.currentTarget.value)}
                 />
                 <Select
+                  className="rfq-scope-field"
                   label={t('quotations.incoterm')}
                   data={incotermOptions}
+                  leftSection={<IconRoute size={16} />}
+                  leftSectionPointerEvents="none"
                   value={incoterm}
                   onChange={setIncoterm}
                   searchable
                 />
-                <Select label={t('quotations.mode')} data={quotationModeOptions} value={mode} onChange={setMode} />
                 <Select
+                  className="rfq-scope-field"
+                  label={t('quotations.mode')}
+                  data={quotationModeOptions}
+                  leftSection={<IconRoute size={16} />}
+                  leftSectionPointerEvents="none"
+                  value={mode}
+                  onChange={setMode}
+                />
+                <Select
+                  className="rfq-scope-field"
                   label={t('quotations.currency')}
                   data={currencyOptions}
+                  leftSection={<IconWallet size={16} />}
+                  leftSectionPointerEvents="none"
                   value={currency}
                   onChange={setCurrency}
                   searchable
@@ -483,9 +501,13 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
                       {t('quotations.optionalChargesHint')}
                     </Text>
                   </div>
-                  <Text size="xs" fw={700} c="dimmed" className="tabular-nums">
+                  <Badge
+                    className="rfq-section-progress tabular-nums"
+                    color={feeProgress.selected > 0 ? 'teal' : 'gray'}
+                    variant="light"
+                  >
                     {feeProgress.selected}/{feeProgress.total}
-                  </Text>
+                  </Badge>
                 </Group>
               </div>
 
@@ -514,7 +536,7 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
                     : t('quotations.expandCharges');
 
                   return (
-                    <div key={section.id} className="rfq-charge-group">
+                    <div key={section.id} className="rfq-charge-group" data-selected={selectedInSection > 0 ? 'true' : undefined}>
                       <div className="rfq-charge-group-head">
                         <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
                           <div>
@@ -525,25 +547,34 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
                               {t('quotations.selectedCharges', { count: selectedInSection, total: rows.length })}
                             </Text>
                           </div>
-                          <Tooltip label={sectionToggleLabel}>
-                            <ActionIcon
-                              aria-expanded={isExpanded}
-                              aria-label={sectionToggleLabel}
-                              className="rfq-breakdown-toggle"
+                          <Group gap="xs" wrap="nowrap">
+                            <Badge
+                              className="rfq-charge-count tabular-nums"
+                              color={selectedInSection > 0 ? 'teal' : 'gray'}
                               variant="light"
-                              onClick={() =>
-                                setExpandedSections((current) => ({
-                                  ...current,
-                                  [section.id]: !isExpanded,
-                                }))
-                              }
                             >
-                              <IconChevronDown
-                                className={isExpanded ? 'rfq-breakdown-chevron is-open' : 'rfq-breakdown-chevron'}
-                                size={18}
-                              />
-                            </ActionIcon>
-                          </Tooltip>
+                              {selectedInSection}/{rows.length}
+                            </Badge>
+                            <Tooltip label={sectionToggleLabel}>
+                              <ActionIcon
+                                aria-expanded={isExpanded}
+                                aria-label={sectionToggleLabel}
+                                className="rfq-breakdown-toggle"
+                                variant="light"
+                                onClick={() =>
+                                  setExpandedSections((current) => ({
+                                    ...current,
+                                    [section.id]: !isExpanded,
+                                  }))
+                                }
+                              >
+                                <IconChevronDown
+                                  className={isExpanded ? 'rfq-breakdown-chevron is-open' : 'rfq-breakdown-chevron'}
+                                  size={18}
+                                />
+                              </ActionIcon>
+                            </Tooltip>
+                          </Group>
                         </Group>
                       </div>
                       <Collapse expanded={isExpanded}>
@@ -566,7 +597,12 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
 
             <section className="rfq-form-section">
               <div className="rfq-section-head">
-                <Text fw={800}>{t('quotations.otherFees')}</Text>
+                <Group justify="space-between" align="center" gap="sm">
+                  <Text fw={800}>{t('quotations.otherFees')}</Text>
+                  <Badge className="rfq-section-progress tabular-nums" color={otherLines.length > 0 ? 'blue' : 'gray'} variant="light">
+                    {otherLines.length}
+                  </Badge>
+                </Group>
               </div>
 
               <Group gap="xs" mt="md" mb="md" wrap="wrap" className="rfq-chip-row">
@@ -585,10 +621,15 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
 
               <Stack gap="sm">
                 {otherLines.length === 0 ? (
-                  <div className="rfq-empty-lines">
-                    <Text size="sm" c="dimmed">
-                      {t('quotations.noOtherFees')}
-                    </Text>
+                  <div className="rfq-empty-lines rfq-empty-lines--actionable">
+                    <div className="rfq-empty-lines-icon">
+                      <IconReceipt2 size={18} />
+                    </div>
+                    <div>
+                      <Text size="sm" fw={700}>
+                        {t('quotations.noOtherFees')}
+                      </Text>
+                    </div>
                   </div>
                 ) : (
                   <QuotationFeeTable

@@ -78,7 +78,13 @@ export function QuotationFeeTable({
         const formattedTotal = showTotal ? formatMoney(total, currency) : '-';
 
         return (
-          <div className="rfq-fee-row" data-disabled={showToggle && !row.enabled ? 'true' : undefined} key={row.key}>
+          <div
+            className="rfq-fee-row"
+            data-disabled={showToggle && !row.enabled ? 'true' : undefined}
+            data-enabled={row.enabled ? 'true' : 'false'}
+            data-has-total={showTotal ? 'true' : undefined}
+            key={row.key}
+          >
             {showToggle ? (
               <div className="rfq-fee-cell rfq-fee-toggle">
                 <Checkbox
