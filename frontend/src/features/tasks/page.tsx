@@ -354,7 +354,7 @@ export function Tasks() {
 
                 <SimpleGrid className="tasks-filter-secondary" cols={{ base: 1, sm: 2, lg: 4 }}>
                   <TextInput
-                    className="tasks-filter-search dl-filter-search"
+                    className="tasks-filter-search dl-filter-search kbfe-search-input"
                     label={t('common.search')}
                     placeholder={t('tasks.searchPlaceholder')}
                     leftSection={<IconSearch size={16} />}

@@ -63,6 +63,7 @@ export function Gd1PoTasksBoard() {
       <Paper withBorder p="md">
         <Group gap="md">
           <TextInput
+            className="kbfe-search-input"
             placeholder={t('tasks.poChecklistSearch')}
             value={search}
             onChange={(e) => setSearch(e.currentTarget.value)}

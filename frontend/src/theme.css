@@ -260,6 +260,9 @@ html {
   --kbfe-icon-background: color-mix(in srgb, var(--kbfe-primary-color) 9%, var(--kbfe-surface-elevated));
   --kbfe-icon-border: color-mix(in srgb, var(--kbfe-primary-color) 18%, var(--kbfe-border-primary));
   --kbfe-icon-color: color-mix(in srgb, var(--kbfe-primary-color) 72%, var(--kbfe-text-primary));
+  --kbfe-scrollbar-thumb: color-mix(in srgb, var(--kbfe-primary-color) 45%, transparent);
+  --kbfe-scrollbar-thumb-hover: color-mix(in srgb, var(--kbfe-primary-color) 70%, transparent);
+  --kbfe-scrollbar-track: transparent;
   --kbfe-chart-grid: color-mix(in srgb, var(--kbfe-border-primary) 52%, transparent);
   --kbfe-status-blue: color-mix(in srgb, color-mix(in srgb, var(--mantine-color-blue-6), var(--kbfe-text-secondary-base) var(--kbfe-desat-pct)) 72%, var(--kbfe-text-primary));
   --kbfe-status-blue-bg: color-mix(in srgb, color-mix(in srgb, var(--mantine-color-blue-6), var(--kbfe-text-secondary-base) var(--kbfe-desat-pct)) calc(10% * var(--kbfe-user-intensity, 1)), var(--kbfe-surface-elevated));
@@ -358,6 +361,8 @@ html[data-kbfe-visual-theme='high-contrast'] {
   --kbfe-icon-background: var(--kbfe-surface-elevated);
   --kbfe-icon-border: var(--kbfe-border-strong);
   --kbfe-icon-color: var(--kbfe-text-primary);
+  --kbfe-scrollbar-thumb: color-mix(in srgb, var(--kbfe-primary-color) 85%, transparent);
+  --kbfe-scrollbar-thumb-hover: var(--kbfe-primary-color);
   --kbfe-chart-grid: var(--kbfe-border-primary);
   --kbfe-status-blue: var(--kbfe-text-primary);
   --kbfe-status-blue-bg: var(--kbfe-surface-elevated);

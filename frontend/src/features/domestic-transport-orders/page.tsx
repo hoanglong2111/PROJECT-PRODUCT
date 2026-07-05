@@ -283,7 +283,7 @@ export function DomesticTransportOrders() {
       <Paper withBorder p="md" className="dto-filter-panel dl-filter-panel">
         <div className="dto-filter-grid dl-filter-row">
           <TextInput
-            className="dto-filter-search dl-filter-search"
+            className="dto-filter-search dl-filter-search kbfe-search-input"
             label={t('common.search')}
             placeholder={t('domesticTransportOrders.searchPlaceholder')}
             leftSection={<IconSearch size={16} />}

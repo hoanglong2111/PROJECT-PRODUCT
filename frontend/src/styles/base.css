@@ -131,6 +131,38 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Themed scrollbars: thumb tracks the active color preset via --kbfe-primary-color
+   (see theme.css derivation), so it re-colors automatically on preset/theme change. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--kbfe-scrollbar-thumb) var(--kbfe-scrollbar-track);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--kbfe-scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--kbfe-scrollbar-thumb);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--kbfe-scrollbar-thumb-hover);
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 /* NavLink hover effect transition (sidebar navigation) */
 .mantine-NavLink-root {
   transition:

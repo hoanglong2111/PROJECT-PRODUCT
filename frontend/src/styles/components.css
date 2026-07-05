@@ -8,6 +8,25 @@
   height: 0.625rem;
 }
 
+.mantine-ScrollArea-thumb {
+  background-color: var(--kbfe-scrollbar-thumb);
+}
+
+.mantine-ScrollArea-scrollbar:hover .mantine-ScrollArea-thumb,
+.mantine-ScrollArea-thumb:active {
+  background-color: var(--kbfe-scrollbar-thumb-hover);
+}
+
+/* Search inputs: themed magnifier icon + mode-inverting placeholder. */
+.kbfe-search-input .mantine-Input-section[data-position='left'] {
+  color: var(--kbfe-primary-color);
+}
+
+.kbfe-search-input input::placeholder {
+  color: var(--kbfe-text-primary);
+  opacity: 1;
+}
+
 .table-cell-truncate {
   max-width: var(--cell-max-width, 16rem);
   min-width: 0;

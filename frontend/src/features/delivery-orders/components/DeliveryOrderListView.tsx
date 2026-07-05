@@ -133,7 +133,7 @@ export function DeliveryOrderListView({
 
           <div className="delivery-order-filter-shell dl-filter-row">
             <TextInput
-              className="delivery-order-filter-search dl-filter-search"
+              className="delivery-order-filter-search dl-filter-search kbfe-search-input"
               label={t('common.search')}
               placeholder={t('deliveryOrders.searchPlaceholder')}
               leftSection={<IconSearch size={16} />}

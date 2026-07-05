@@ -122,7 +122,7 @@ export function QuotationListView({ filteredQuotations, onInspect, supplierOptio
               placeholder={t('quotations.searchPlaceholder')}
               value={search}
               onChange={(event) => setSearch(event.currentTarget.value)}
-              className="rfq-list-search dl-filter-search"
+              className="rfq-list-search dl-filter-search kbfe-search-input"
             />
             <Select
               className="rfq-list-type-filter"

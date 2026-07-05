@@ -84,7 +84,7 @@ export function GlobalSearch() {
         <Popover.Target>
           <TextInput
             aria-label={t('search.placeholder')}
-            className="global-search-input"
+            className="global-search-input kbfe-search-input"
             ref={searchInputRef}
             leftSection={<IconSearch size={16} />}
             onBlur={() => setOpened(false)}

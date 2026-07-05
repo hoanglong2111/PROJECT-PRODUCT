@@ -380,6 +380,7 @@ export function Settings() {
 
                   <Group gap="sm" mb="md" wrap="wrap" className="dl-filter-panel">
                     <TextInput
+                      className="kbfe-search-input"
                       leftSection={<IconSearch size={16} />}
                       placeholder={t('settings.searchAccounts')}
                       value={search}

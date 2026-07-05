@@ -302,33 +302,35 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
                   <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
                     {t('deliveryOrders.supplierAllocationHeader')}
                   </Text>
-                  <Stack gap={6}>
-                    <Group gap="xs" align="center" wrap="wrap">
-                      <EntityLink type="po" id={sourcePoNumber} compact />
-                      <Badge color="gray" variant="light">
-                        {sourceLotNumber}
-                      </Badge>
-                    </Group>
-                    <Text size="sm" fw={600} lineClamp={1} title={supplierName}>
-                      {supplierName}
-                    </Text>
-                    <Text size="xs" c="dimmed" lineClamp={1} title={deliveryOrder.product_details.item_name_requested}>
-                      {deliveryOrder.product_details.item_name_requested}
-                    </Text>
-                  </Stack>
-                  <div className="do-kpi-row">
-                    <DeliveryOrderFact label={t('deliveryOrders.overviewItems')} value={<NumberFormatter value={deliveryOrder.source_lines.length} thousandSeparator />} />
-                    <DeliveryOrderFact label={deliveryOrder.product_details.unit || 'PCS'} value={<NumberFormatter value={deliveryOrder.product_details.quantity} thousandSeparator />} />
-                    <DeliveryOrderFact label="kg" value={<NumberFormatter value={allocationWeightKg} thousandSeparator />} />
-                    <DeliveryOrderFact label={t('deliveryOrders.overviewContainers')} value={<NumberFormatter value={containerCount} thousandSeparator />} />
+                  <div className="do-supplier-body">
+                    <Stack gap={6}>
+                      <Group gap="xs" align="center" wrap="wrap">
+                        <EntityLink type="po" id={sourcePoNumber} compact />
+                        <Badge color="gray" variant="light">
+                          {sourceLotNumber}
+                        </Badge>
+                      </Group>
+                      <Text size="sm" fw={600} lineClamp={1} title={supplierName}>
+                        {supplierName}
+                      </Text>
+                      <Text size="xs" c="dimmed" lineClamp={1} title={deliveryOrder.product_details.item_name_requested}>
+                        {deliveryOrder.product_details.item_name_requested}
+                      </Text>
+                    </Stack>
+                    <div className="do-kpi-row do-kpi-grid">
+                      <DeliveryOrderFact label={t('deliveryOrders.overviewItems')} value={<NumberFormatter value={deliveryOrder.source_lines.length} thousandSeparator />} />
+                      <DeliveryOrderFact label={deliveryOrder.product_details.unit || 'PCS'} value={<NumberFormatter value={deliveryOrder.product_details.quantity} thousandSeparator />} />
+                      <DeliveryOrderFact label="kg" value={<NumberFormatter value={allocationWeightKg} thousandSeparator />} />
+                      <DeliveryOrderFact label={t('deliveryOrders.overviewContainers')} value={<NumberFormatter value={containerCount} thousandSeparator />} />
+                    </div>
                   </div>
                 </Stack>
               </Paper>
 
               <Paper withBorder p="sm">
                 <SimpleGrid cols={{ base: 1, md: 2 }} spacing="sm">
-                  <Stack gap="sm">
-                    <Group gap="sm" align="flex-start" wrap="nowrap">
+                  <Stack gap="sm" className="do-detail-col">
+                    <Group gap="sm" align="flex-start" wrap="nowrap" className="do-detail-col-head">
                       <ShippingIcon size={22} />
                       <Stack gap={4}>
                         <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
@@ -347,8 +349,8 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
                     </div>
                   </Stack>
 
-                  <Stack gap="sm">
-                    <div>
+                  <Stack gap="sm" className="do-detail-col">
+                    <div className="do-detail-col-head">
                       <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
                         {t('forms.warehouse')}
                       </Text>
@@ -514,7 +516,7 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
               </Paper>
             </SimpleGrid>
 
-            <SimpleGrid cols={{ base: 1, sm: 2, xl: 4 }} spacing={0} className="do-fact-strip delivery-order-ops-facts">
+            <SimpleGrid cols={{ base: 2, md: 3, xl: 6 }} spacing={0} className="do-fact-strip delivery-order-ops-facts">
               <DeliveryOrderFact
                 label={t('deliveryOrders.efmsBooking')}
                 value={deliveryOrder.order_info.tracking_number ?? deliveryOrder.order_info.order_number}
@@ -660,7 +662,7 @@ function DeliveryOrderFact({ copyValue, label, value }: { copyValue?: string; la
 function DetailListRow({ label, value }: { label: ReactNode; value: ReactNode }) {
   return (
     <div className="do-detail-list-row">
-      <Text size="sm" c="dimmed" lineClamp={1}>
+      <Text size="sm" c="dimmed" lineClamp={1} title={typeof label === 'string' ? label : undefined}>
         {label}
       </Text>
       <Text component="div" size="sm" fw={700} lineClamp={1} title={typeof value === 'string' ? value : undefined}>

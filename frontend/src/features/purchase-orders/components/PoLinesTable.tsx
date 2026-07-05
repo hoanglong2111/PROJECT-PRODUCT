@@ -103,7 +103,7 @@ export function PoLinesTable({ currencyCode, lines }: { currencyCode: string; li
             onChange={(event) => setQuery(event.currentTarget.value)}
             placeholder={t('purchaseOrders.poLinesSearchPlaceholder')}
             leftSection={<IconSearch size={14} />}
-            className="po-line-card-search"
+            className="po-line-card-search kbfe-search-input"
           />
         ) : null}
       </Stack>

@@ -158,6 +158,7 @@ export function ShipmentListView({
                 label={t('common.search')}
                 placeholder={t('shipments.searchPlaceholder')}
                 leftSection={<IconSearch size={16} />}
+                className="kbfe-search-input"
                 value={search}
                 onChange={(event) => onSearchChange(event.currentTarget.value)}
               />

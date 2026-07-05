@@ -48,7 +48,7 @@ export function MasterDataToolbar({
     <Paper withBorder p="sm" className="dl-filter-panel md-toolbar">
       <Group align="flex-end" gap="sm" wrap="wrap" className="dl-filter-row md-toolbar-filters">
         <TextInput
-          className="dl-filter-search"
+          className="dl-filter-search kbfe-search-input"
           label={searchLabel}
           placeholder={searchPlaceholder}
           leftSection={<IconSearch size={16} />}

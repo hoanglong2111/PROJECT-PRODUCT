@@ -162,7 +162,7 @@ export function PurchaseOrderListView({
 
           <div className="purchase-order-filter-primary dl-filter-row">
             <TextInput
-              className="purchase-order-filter-search dl-filter-search"
+              className="purchase-order-filter-search dl-filter-search kbfe-search-input"
               label="Search"
               leftSection={<IconSearch size={16} />}
               placeholder="PO, contract, type, notes"
