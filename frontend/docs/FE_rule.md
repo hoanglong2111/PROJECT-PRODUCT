@@ -419,11 +419,19 @@ PO route display rule:
 
 RFQ is now a **top-level feature** at `/quotation-requests`. It represents the inbound
 KBI-entered request phase before FDS drafts a quotation. RFQ records are PO-shaped:
-customer ref, optional free-text KBI SAP `customer_po_ref`, real supplier, incoterm,
-mode, currency, POL/POD, desired cargo-ready date, cargo hints, item lines, note,
-and responding quotations. Do not use a picker into FDS UI PO entities here.
+customer ref, optional free-text KBI SAP `customer_po_ref`, optional KBI
+`customer_contract_ref`, real supplier, incoterm, mode, currency, POL/POD, desired
+cargo-ready date, cargo hints, item lines, note, and responding quotations. Do not
+use a picker into FDS UI PO entities here.
 RFQ status flow: `SUBMITTED -> RECEIVED -> QUOTED -> CONFIRMED`, with `CANCELLED`
 available before confirmation.
+
+The RFQ create form shares the order-intake core with PO create through
+`@shared/components/order-intake`. It captures KBI-owned values with near-PO field
+parity, excluding FDS-internal `exchange_rate`, `po_type`, `payment_term`,
+line-level customs profile, tax, discount, line ETA, and `quotation_id`. RFQ payloads
+remain code-based (`incoterm_code`, `currency_code`, `mode`); PO payloads remain
+id-based (`incoterm_id`, `currency_id`, `transport_mode_id`).
 
 Quotation records link back to RFQ through `rfq_id`, inherit customer/supplier/
 route/mode/incoterm/currency, and expose quote options. The quotation UI must show

@@ -128,8 +128,8 @@ exact request/response types.)
 > PO-shaped top-level entity at `/quotation-requests`, separate from quotations and
 > not derived from FDS internal PO records.
 - `GET /v1/quotation-requests` - supports `page`, `limit`, `search`, and `status`; returns RFQs with responding `quotations[]` when available.
-- `GET /v1/quotation-requests/:id` - returns RFQ detail, `customer_po_ref`, `supplier`, child `lines[]` with item display data, and responding `quotations[]`.
-- `POST /v1/quotation-requests` - creates a `SUBMITTED` RFQ with customer, free-text KBI SAP PO ref, supplier, incoterm, mode, currency, POL/POD, desired cargo-ready date, cargo hints, `lines[]`, and note.
+- `GET /v1/quotation-requests/:id` - returns RFQ detail, `customer_po_ref`, `customer_contract_ref`, `supplier`, child `lines[]` with item display data, and responding `quotations[]`.
+- `POST /v1/quotation-requests` - creates a `SUBMITTED` RFQ with customer, free-text KBI SAP PO ref, optional KBI `customer_contract_ref`, supplier, incoterm, mode, currency, POL/POD, desired cargo-ready date, cargo hints, `lines[]`, and note.
 - `POST /v1/quotation-requests/:id/receive` - `SUBMITTED -> RECEIVED`.
 - `POST /v1/quotation-requests/:id/cancel` - terminal cancel unless already `CONFIRMED`.
 - `POST /v1/quotation-requests/:id/quotations` - body `{ currency_code?, valid_until?, charge_lines? }`; drafts a quotation with `rfq_id`, copies customer/supplier/route/mode/incoterm from the RFQ, persists caller-supplied manual charge lines, and flips the RFQ to `QUOTED`.
