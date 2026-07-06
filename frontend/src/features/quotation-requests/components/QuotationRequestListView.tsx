@@ -1,5 +1,5 @@
-import { ActionIcon, Badge, Button, Group, Paper, SimpleGrid, Stack, Table, Text, TextInput, Title, Tooltip } from '@mantine/core';
-import { IconEye, IconFileText, IconPlus, IconSearch, IconSend, IconTags } from '@tabler/icons-react';
+import { ActionIcon, Badge, Paper, SimpleGrid, Stack, Table, Text, TextInput, Title, Tooltip } from '@mantine/core';
+import { IconEye, IconFileText, IconSearch, IconSend, IconTags } from '@tabler/icons-react';
 import { useMemo, useState, type ReactNode } from 'react';
 
 import { buildRfqRouteLabel, type QuotationRequestV1 } from '@shared/api/quotationRequests';
@@ -23,7 +23,6 @@ type QuotationRequestListViewProps = {
   activeTab: QuotationRequestTab;
   onTabChange: (tab: QuotationRequestTab) => void;
   onInspect: (id: string) => void;
-  onNew: () => void;
 };
 
 const tabColors: Record<QuotationRequestTab, string> = {
@@ -39,7 +38,6 @@ export function QuotationRequestListView({
   activeTab,
   isLoading = false,
   onInspect,
-  onNew,
   onTabChange,
   requests,
 }: QuotationRequestListViewProps) {
@@ -114,9 +112,11 @@ export function QuotationRequestListView({
               }))}
             />
           </div>
-          <Button leftSection={<IconPlus size={16} />} onClick={onNew}>
-            {t('quotationRequests.new')}
-          </Button>
+          <div className="dl-filter-result">
+            <Text size="sm" c="dimmed">
+              {t('common.shown', { count: filteredRequests.length })}
+            </Text>
+          </div>
         </div>
 
         <TextInput

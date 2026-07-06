@@ -1,4 +1,5 @@
-import { Stack } from '@mantine/core';
+import { Button, Stack } from '@mantine/core';
+import { IconPlus } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -64,7 +65,18 @@ export function QuotationRequests() {
   return (
     <Stack gap="lg" className="quotations-workbench">
       {!createRequested && !focusedRequest ? (
-        <PageHeader title={t('quotationRequests.title')} subtitle={t('quotationRequests.subtitle')} />
+        <PageHeader
+          className="quotations-page-header"
+          titleClassName="quotations-page-title"
+          actionsClassName="quotations-page-actions"
+          title={t('quotationRequests.title')}
+          subtitle={t('quotationRequests.subtitle')}
+          actions={
+            <Button className="quotations-primary-action" leftSection={<IconPlus size={16} />} onClick={openCreateForm}>
+              {t('quotationRequests.new')}
+            </Button>
+          }
+        />
       ) : (
         <WorkbenchHeader className="quotations-subheader" onBack={closeWorkbench} />
       )}
@@ -85,7 +97,6 @@ export function QuotationRequests() {
           onTabChange={setActiveTab}
           isLoading={requestsQuery.isFetching}
           onInspect={openRequest}
-          onNew={openCreateForm}
         />
       )}
     </Stack>

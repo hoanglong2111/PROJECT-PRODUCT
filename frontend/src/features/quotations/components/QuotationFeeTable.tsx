@@ -1,12 +1,11 @@
-import { ActionIcon, NumberInput, Select, Text, TextInput } from '@mantine/core';
+import { ActionIcon, NumberInput, Select, Text } from '@mantine/core';
 import { IconTrash } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 
 import type { ChargeCode } from '@shared/api/chargeCodes';
 import type { Uom } from '@shared/api/uoms';
-import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { useI18n } from '@shared/i18n';
-import { convertMoney, formatMoney } from '@shared/utils/money';
+import { formatMoney } from '@shared/utils/money';
 
 export type ChargeLineState = {
   chargeCode: string | null;
@@ -29,8 +28,6 @@ type Props = {
   uoms: Uom[];
   chargeCodeOptions: { label: string; value: string }[];
   currencyOptions: { label: string; value: string }[];
-  defaultCurrency: string;
-  rateToVnd: (code: string | null | undefined) => number;
   removable?: boolean;
   onChange: (key: string, patch: Partial<ChargeLineState>) => void;
   onRemove?: (key: string) => void;
@@ -39,10 +36,8 @@ type Props = {
 export function QuotationFeeTable({
   chargeCodeOptions,
   currencyOptions,
-  defaultCurrency,
   onChange,
   onRemove,
-  rateToVnd,
   removable = false,
   rows,
   uoms,
@@ -63,24 +58,14 @@ export function QuotationFeeTable({
         <span>{t('quotations.unitPrice')}</span>
         <span>{t('quotations.lineCurrency')}</span>
         <span>{t('quotations.lineTotal')}</span>
-        <span>
-          <HeaderLabel label={t('quotations.lineTotalDefault', { currency: defaultCurrency })} hint={t('quotations.lineTotalDefaultHint')} />
-        </span>
         {removable ? <span /> : null}
       </div>
 
       {rows.map((row) => {
-        const lineCurrency = row.state.currency ?? defaultCurrency;
+        const lineCurrency = row.state.currency;
         const total = Number(row.state.quantity) * Number(row.state.unitPrice);
         const showTotal = Number.isFinite(total) && Number(row.state.unitPrice) > 0;
         const formattedTotal = showTotal ? formatMoney(total, lineCurrency) : '-';
-        const vndEquivalent =
-          showTotal && (lineCurrency ?? '').toUpperCase() !== 'VND'
-            ? formatMoney(convertMoney(total, lineCurrency, 'VND', rateToVnd), 'VND')
-            : null;
-        const defaultTotal = showTotal
-          ? formatMoney(convertMoney(total, lineCurrency, defaultCurrency, rateToVnd), defaultCurrency)
-          : '-';
 
         return (
           <div
@@ -137,11 +122,6 @@ export function QuotationFeeTable({
                 size="xs"
                 styles={{ input: { textAlign: 'right' } }}
               />
-              {vndEquivalent ? (
-                <Text size="xs" c="dimmed" mt={2}>
-                  ≈ {vndEquivalent}
-                </Text>
-              ) : null}
             </div>
 
             <div className="rfq-fee-cell rfq-fee-currency">
@@ -161,17 +141,6 @@ export function QuotationFeeTable({
               <Text size="sm" fw={700} c={showTotal ? undefined : 'dimmed'}>
                 {formattedTotal}
               </Text>
-            </div>
-
-            <div className="rfq-fee-cell rfq-fee-default-total tabular-nums">
-              <span className="rfq-fee-cell-label">{t('quotations.lineTotalDefault', { currency: defaultCurrency })}</span>
-              <TextInput
-                aria-label={t('quotations.lineTotalDefault', { currency: defaultCurrency })}
-                value={defaultTotal}
-                disabled
-                size="xs"
-                styles={{ input: { textAlign: 'right' } }}
-              />
             </div>
 
             {removable ? (
@@ -196,13 +165,13 @@ export function QuotationFeeTable({
 
 export function seedLineState(
   chargeCode: ChargeCode | null | undefined,
-  defaultCurrency: string | null = 'USD',
+  initialCurrency: string | null = null,
 ): ChargeLineState {
   return {
     chargeCode: chargeCode?.charge_code ?? null,
     quantity: 1,
     unit: chargeCode?.default_uom ?? null,
     unitPrice: '',
-    currency: defaultCurrency,
+    currency: initialCurrency,
   };
 }

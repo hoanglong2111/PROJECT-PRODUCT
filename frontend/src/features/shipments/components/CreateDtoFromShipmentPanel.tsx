@@ -14,9 +14,14 @@ import {
   Textarea,
 } from '@mantine/core';
 import { IconAlertTriangle, IconBox, IconPlus, IconTruck, IconX } from '@tabler/icons-react';
-import { useMutation, useQueries, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 
+import {
+  containerTypeSelectOptions,
+  fetchContainerTypes,
+  findContainerType,
+} from '@shared/api/containerTypes';
 import {
   consolidateDomesticTransportOrder,
   createDomesticTransportOrderFromShipment,
@@ -32,9 +37,11 @@ import { fetchForwarders } from '@shared/api/forwarders';
 import { queryKeys } from '@shared/api/queryKeys';
 import { useI18n } from '@shared/i18n';
 
-import { CONTAINER_TYPE_OPTIONS } from '../model/shipmentModel';
-
 type ContainerRow = ShipmentContainerV1 & { _shipmentNumber: string };
+
+function formatSpecValue(value: number | null | undefined, suffix: string) {
+  return value === null || value === undefined ? '-' : `${value.toLocaleString()} ${suffix}`;
+}
 
 export function CreateDtoFromShipmentPanel({
   onClose,
@@ -59,6 +66,8 @@ export function CreateDtoFromShipmentPanel({
   const [newSeal, setNewSeal] = useState('');
   const [newGross, setNewGross] = useState<number | string>('');
   const [newCbm, setNewCbm] = useState<number | string>('');
+  const [grossEdited, setGrossEdited] = useState(false);
+  const [cbmEdited, setCbmEdited] = useState(false);
   const [addTargetShipmentId, setAddTargetShipmentId] = useState<string | null>(shipments[0]?.id ?? null);
 
   const isConsolidation = shipments.length > 1;
@@ -112,6 +121,15 @@ export function CreateDtoFromShipmentPanel({
       value: forwarder.id,
     }));
 
+  const containerTypesQuery = useQuery({
+    enabled: opened,
+    queryKey: queryKeys.containerTypes({ page: 1, limit: 100, is_active: true }),
+    queryFn: () => fetchContainerTypes({ page: 1, limit: 100, is_active: true }),
+  });
+  const containerTypes = containerTypesQuery.data?.data ?? [];
+  const containerTypeOptions = useMemo(() => containerTypeSelectOptions(containerTypes), [containerTypes]);
+  const selectedContainerType = findContainerType(containerTypes, newContainerType);
+
   useEffect(() => {
     if (opened) {
       setSelectedContainerIds([]);
@@ -124,9 +142,17 @@ export function CreateDtoFromShipmentPanel({
       setNewSeal('');
       setNewGross('');
       setNewCbm('');
+      setGrossEdited(false);
+      setCbmEdited(false);
       setAddTargetShipmentId(shipments[0]?.id ?? null);
     }
   }, [opened, shipments.map((shipment) => shipment.id).join(',')]);
+
+  useEffect(() => {
+    if (!opened || containerTypeOptions.length === 0) return;
+    if (newContainerType && containerTypeOptions.some((option) => option.value === newContainerType)) return;
+    setNewContainerType(containerTypeOptions.some((option) => option.value === '40HC') ? '40HC' : containerTypeOptions[0].value);
+  }, [containerTypeOptions, newContainerType, opened]);
 
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -195,12 +221,22 @@ export function CreateDtoFromShipmentPanel({
       setNewSeal('');
       setNewGross('');
       setNewCbm('');
+      setGrossEdited(false);
+      setCbmEdited(false);
     },
   });
 
   const handleAddContainer = () => {
     if (!newContainerNo.trim()) return;
     addContainerMutation.mutate();
+  };
+
+  const handleContainerTypeChange = (value: string | null) => {
+    setNewContainerType(value);
+    const selected = findContainerType(containerTypes, value);
+    if (!selected) return;
+    if (!grossEdited && selected.gross_kg !== null) setNewGross(selected.gross_kg);
+    if (!cbmEdited && selected.capacity_cbm !== null) setNewCbm(selected.capacity_cbm);
   };
 
   const content = (
@@ -274,14 +310,22 @@ export function CreateDtoFromShipmentPanel({
                 value={newContainerNo}
                 onChange={(event) => setNewContainerNo(event.currentTarget.value)}
               />
-              <Select
-                className="shipment-dto-field-type"
-                label={t('shipments.containerType')}
-                data={CONTAINER_TYPE_OPTIONS}
-                value={newContainerType}
-                onChange={setNewContainerType}
-                allowDeselect={false}
-              />
+              <Stack className="shipment-dto-field-type" gap={4}>
+                <Select
+                  label={t('shipments.containerType')}
+                  data={containerTypeOptions}
+                  value={newContainerType}
+                  onChange={handleContainerTypeChange}
+                  allowDeselect={false}
+                  searchable
+                  nothingFoundMessage={containerTypesQuery.isLoading ? t('masterData.loadingReferenceData') : t('masterData.noContainerTypes')}
+                />
+                {selectedContainerType ? (
+                  <Text size="xs" c="dimmed">
+                    Tare {formatSpecValue(selectedContainerType.tare_kg, 'kg')} | Max gross {formatSpecValue(selectedContainerType.gross_kg, 'kg')} | Capacity {formatSpecValue(selectedContainerType.capacity_cbm, 'CBM')}
+                  </Text>
+                ) : null}
+              </Stack>
               <TextInput
                 className="shipment-dto-field-seal"
                 label={t('shipments.sealNumber')}
@@ -294,7 +338,10 @@ export function CreateDtoFromShipmentPanel({
                 label={t('shipments.grossWeightKg')}
                 placeholder="0"
                 value={newGross}
-                onChange={setNewGross}
+                onChange={(value) => {
+                  setGrossEdited(true);
+                  setNewGross(value);
+                }}
                 min={0}
               />
               <NumberInput
@@ -302,7 +349,10 @@ export function CreateDtoFromShipmentPanel({
                 label={t('shipments.volumeCbm')}
                 placeholder="0"
                 value={newCbm}
-                onChange={setNewCbm}
+                onChange={(value) => {
+                  setCbmEdited(true);
+                  setNewCbm(value);
+                }}
                 min={0}
               />
               <Button

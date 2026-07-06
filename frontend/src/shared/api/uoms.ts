@@ -50,6 +50,13 @@ function normalizePaginatedResponse<T>(
   };
 }
 
+export function uomSelectOptions(list: Uom[]) {
+  return list.map((uom) => ({
+    value: uom.uom_code,
+    label: `${uom.uom_code} - ${uom.uom_name_en}`,
+  }));
+}
+
 export async function fetchUoms(params: ListParams = {}) {
   const response = await apiClient.get<PaginatedResponse<Uom>>('/uoms', { params });
   return normalizePaginatedResponse(response.data, normalizeUom);

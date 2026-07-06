@@ -18,8 +18,13 @@ import {
 } from '@mantine/core';
 import { IconBox, IconPlus, IconTrash, IconX } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
+import {
+  containerTypeSelectOptions,
+  fetchContainerTypes,
+  findContainerType,
+} from '@shared/api/containerTypes';
 import type { ShipmentRecord } from '@shared/api/logistics';
 import {
   createShipmentContainer,
@@ -35,8 +40,6 @@ import { CopyValue } from '@shared/components/CopyValue';
 import { EmptyState } from '@shared/components/EmptyState';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { useI18n } from '@shared/i18n';
-
-import { CONTAINER_TYPE_OPTIONS } from '../model/shipmentModel';
 
 const CONTAINER_STATUS_KEYS: Array<{ labelKey: string; value: ShipmentContainerStatusV1 }> = [
   { labelKey: 'shipments.containerStatusPlanned', value: 'PLANNED' },
@@ -56,6 +59,10 @@ function statusColor(status: ShipmentContainerStatusV1) {
   }
 }
 
+function formatSpecValue(value: number | null | undefined, suffix: string) {
+  return value === null || value === undefined ? '-' : `${value.toLocaleString()} ${suffix}`;
+}
+
 export function ShipmentContainersPanel({ shipment }: { shipment: ShipmentRecord }) {
   const { t } = useI18n();
   const containerStatusOptions = CONTAINER_STATUS_KEYS.map((option) => ({
@@ -68,12 +75,27 @@ export function ShipmentContainersPanel({ shipment }: { shipment: ShipmentRecord
   const [newSeal, setNewSeal] = useState('');
   const [newGross, setNewGross] = useState<number | string>('');
   const [newCbm, setNewCbm] = useState<number | string>('');
+  const [grossEdited, setGrossEdited] = useState(false);
+  const [cbmEdited, setCbmEdited] = useState(false);
 
   const containersQuery = useQuery({
     queryKey: queryKeys.shipmentContainers(shipment.id),
     queryFn: () => fetchShipmentContainers(shipment.id),
   });
   const containers: ShipmentContainerV1[] = containersQuery.data ?? [];
+  const containerTypesQuery = useQuery({
+    queryKey: queryKeys.containerTypes({ page: 1, limit: 100, is_active: true }),
+    queryFn: () => fetchContainerTypes({ page: 1, limit: 100, is_active: true }),
+  });
+  const containerTypes = containerTypesQuery.data?.data ?? [];
+  const containerTypeOptions = useMemo(() => containerTypeSelectOptions(containerTypes), [containerTypes]);
+  const selectedContainerType = findContainerType(containerTypes, newType);
+
+  useEffect(() => {
+    if (containerTypeOptions.length === 0) return;
+    if (newType && containerTypeOptions.some((option) => option.value === newType)) return;
+    setNewType(containerTypeOptions.some((option) => option.value === '40HC') ? '40HC' : containerTypeOptions[0].value);
+  }, [containerTypeOptions, newType]);
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: queryKeys.shipmentContainers(shipment.id) });
@@ -87,6 +109,8 @@ export function ShipmentContainersPanel({ shipment }: { shipment: ShipmentRecord
       setNewSeal('');
       setNewGross('');
       setNewCbm('');
+      setGrossEdited(false);
+      setCbmEdited(false);
       invalidate();
     },
   });
@@ -113,6 +137,14 @@ export function ShipmentContainersPanel({ shipment }: { shipment: ShipmentRecord
     });
   };
 
+  const handleTypeChange = (value: string | null) => {
+    setNewType(value);
+    const selected = findContainerType(containerTypes, value);
+    if (!selected) return;
+    if (!grossEdited && selected.gross_kg !== null) setNewGross(selected.gross_kg);
+    if (!cbmEdited && selected.capacity_cbm !== null) setNewCbm(selected.capacity_cbm);
+  };
+
   const mutationError = createMutation.error ?? updateMutation.error ?? deleteMutation.error;
 
   return (
@@ -130,12 +162,21 @@ export function ShipmentContainersPanel({ shipment }: { shipment: ShipmentRecord
             onChange={(event) => setNewNo(event.currentTarget.value)}
             required
           />
-          <Select
-            label={<HeaderLabel label={t('shipments.containerType')} hint={t('glossary.containerType')} />}
-            data={CONTAINER_TYPE_OPTIONS}
-            value={newType}
-            onChange={setNewType}
-          />
+          <Stack gap={4}>
+            <Select
+              label={<HeaderLabel label={t('shipments.containerType')} hint={t('glossary.containerType')} />}
+              data={containerTypeOptions}
+              value={newType}
+              onChange={handleTypeChange}
+              searchable
+              nothingFoundMessage={containerTypesQuery.isLoading ? t('masterData.loadingReferenceData') : t('masterData.noContainerTypes')}
+            />
+            {selectedContainerType ? (
+              <Text size="xs" c="dimmed">
+                Tare {formatSpecValue(selectedContainerType.tare_kg, 'kg')} | Max gross {formatSpecValue(selectedContainerType.gross_kg, 'kg')} | Capacity {formatSpecValue(selectedContainerType.capacity_cbm, 'CBM')}
+              </Text>
+            ) : null}
+          </Stack>
           <TextInput
             label={<HeaderLabel label={t('shipments.sealNumber')} hint={t('glossary.seal')} />}
             placeholder={t('shipments.sealNumberPlaceholder')}
@@ -146,14 +187,20 @@ export function ShipmentContainersPanel({ shipment }: { shipment: ShipmentRecord
             label={<HeaderLabel label={t('shipments.grossWeightKg')} hint={t('glossary.grossWeight')} />}
             placeholder="0"
             value={newGross}
-            onChange={setNewGross}
+            onChange={(value) => {
+              setGrossEdited(true);
+              setNewGross(value);
+            }}
             min={0}
           />
           <NumberInput
             label={<HeaderLabel label={t('shipments.volumeCbm')} hint={t('glossary.cbm')} />}
             placeholder="0"
             value={newCbm}
-            onChange={setNewCbm}
+            onChange={(value) => {
+              setCbmEdited(true);
+              setNewCbm(value);
+            }}
             min={0}
           />
           <Group align="flex-end">

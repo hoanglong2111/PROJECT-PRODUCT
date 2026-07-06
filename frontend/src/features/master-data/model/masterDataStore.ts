@@ -2,6 +2,7 @@ import { create } from 'zustand';
 
 type MasterDataTab =
   | 'chargeCodes'
+  | 'containerTypes'
   | 'currencies'
   | 'forwarders'
   | 'incoterms'
@@ -18,6 +19,7 @@ type MasterDataState = {
   supplierStatusFilter: boolean | null;
   itemStatusFilter: boolean | null;
   uomStatusFilter: boolean | null;
+  containerTypeStatusFilter: boolean | null;
   currencyStatusFilter: boolean | null;
   incotermStatusFilter: boolean | null;
   transportModeStatusFilter: boolean | null;
@@ -42,6 +44,7 @@ type MasterDataState = {
   setSupplierStatusFilter: (supplierStatusFilter: boolean | null) => void;
   setItemStatusFilter: (itemStatusFilter: boolean | null) => void;
   setUomStatusFilter: (uomStatusFilter: boolean | null) => void;
+  setContainerTypeStatusFilter: (containerTypeStatusFilter: boolean | null) => void;
   setCurrencyStatusFilter: (currencyStatusFilter: boolean | null) => void;
   setIncotermStatusFilter: (incotermStatusFilter: boolean | null) => void;
   setTransportModeStatusFilter: (transportModeStatusFilter: boolean | null) => void;
@@ -64,6 +67,7 @@ type MasterDataState = {
   clearSupplierFilters: () => void;
   clearItemFilters: () => void;
   clearUomFilters: () => void;
+  clearContainerTypeFilters: () => void;
   clearCurrencyFilters: () => void;
   clearIncotermFilters: () => void;
   clearTransportModeFilters: () => void;
@@ -79,6 +83,7 @@ export const useMasterDataStore = create<MasterDataState>((set) => ({
   supplierStatusFilter: null,
   itemStatusFilter: null,
   uomStatusFilter: null,
+  containerTypeStatusFilter: null,
   currencyStatusFilter: null,
   incotermStatusFilter: null,
   transportModeStatusFilter: null,
@@ -103,6 +108,7 @@ export const useMasterDataStore = create<MasterDataState>((set) => ({
   setSupplierStatusFilter: (supplierStatusFilter) => set({ supplierStatusFilter }),
   setItemStatusFilter: (itemStatusFilter) => set({ itemStatusFilter, itemPage: 1 }),
   setUomStatusFilter: (uomStatusFilter) => set({ uomStatusFilter }),
+  setContainerTypeStatusFilter: (containerTypeStatusFilter) => set({ containerTypeStatusFilter }),
   setCurrencyStatusFilter: (currencyStatusFilter) => set({ currencyStatusFilter }),
   setIncotermStatusFilter: (incotermStatusFilter) => set({ incotermStatusFilter }),
   setTransportModeStatusFilter: (transportModeStatusFilter) => set({ transportModeStatusFilter }),
@@ -137,6 +143,7 @@ export const useMasterDataStore = create<MasterDataState>((set) => ({
     itemPage: 1,
   }),
   clearUomFilters: () => set({ uomStatusFilter: null }),
+  clearContainerTypeFilters: () => set({ containerTypeStatusFilter: null }),
   clearCurrencyFilters: () => set({ currencyStatusFilter: null }),
   clearIncotermFilters: () => set({ incotermStatusFilter: null }),
   clearTransportModeFilters: () => set({ transportModeStatusFilter: null }),

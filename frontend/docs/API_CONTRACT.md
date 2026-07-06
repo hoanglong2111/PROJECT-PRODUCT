@@ -168,7 +168,7 @@ allowed before confirmation.
 - `PATCH|DELETE /v1/quotation-options/:id`
 - `POST /v1/quotations/:id/select-option` - body `{ option_id }`; marks one option selected and clears other options for that quotation.
 - Confirm/finalize requires `selected_option_id`; otherwise the API returns `BUSINESS_RULE_VIOLATION`. Confirmation also moves a linked RFQ to `CONFIRMED`.
-- `GET|POST /v1/quotations/:id/charge-lines` - charge-line DTOs carry per-line `currency_code` and `charge_group` (`FREIGHT|ORIGIN|DESTINATION`). The quotation form stores charges in three manual groups; each line renders in its own currency while comparison totals convert into the quotation/default currency on the client using `/v1/currency-rates`; the VND total is shown only as an approximate helper when the default currency is not VND.
+- `GET|POST /v1/quotations/:id/charge-lines` - charge-line DTOs carry per-line `currency_code` and `charge_group` (`FREIGHT|ORIGIN|DESTINATION`). The quotation form stores charges in three manual groups; each line renders in its own currency, and the frontend shows subtotals by currency instead of merging different currencies into one customer-facing total. `/v1/currency-rates` is used only for the quote-level reference rate and optional internal VND-equivalent calculation.
 - `PATCH|DELETE /v1/quotation-charge-lines/:id`
 - `GET /v1/quotations/:id/events`
 

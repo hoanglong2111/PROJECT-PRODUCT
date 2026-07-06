@@ -1,12 +1,8 @@
-import { ActionIcon, Badge, Button, Group, Modal, Paper, Select, SimpleGrid, Stack, Text, TextInput, Title, Tooltip } from '@mantine/core';
-import { IconCalendarPlus, IconCalendarStats, IconClock, IconEye, IconFileInvoice, IconPlus, IconSearch, IconX } from '@tabler/icons-react';
-import { useQuery } from '@tanstack/react-query';
-import { useState, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { ActionIcon, Badge, Button, Group, Paper, Select, SimpleGrid, Stack, Text, TextInput, Title, Tooltip } from '@mantine/core';
+import { IconCalendarPlus, IconCalendarStats, IconClock, IconEye, IconFileInvoice, IconSearch, IconX } from '@tabler/icons-react';
+import type { ReactNode } from 'react';
 
 import type { QuotationV1 } from '@shared/api/quotations';
-import { fetchQuotationRequests } from '@shared/api/quotationRequests';
-import { queryKeys } from '@shared/api/queryKeys';
 import { CopyValue } from '@shared/components/CopyValue';
 import { DateField } from '@shared/components/DateField';
 import { EmptyState } from '@shared/components/EmptyState';
@@ -46,9 +42,6 @@ const quotationTabColors: Record<QuotationTab, string> = {
 export function QuotationListView({ filteredQuotations, onInspect, supplierOptions, tabCounts }: QuotationListViewProps) {
   const { t } = useI18n();
   const { rateToVnd } = useExchangeRates();
-  const navigate = useNavigate();
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [pickedRfq, setPickedRfq] = useState<string | null>(null);
   const activeTab = useQuotationsUiStore((s) => s.activeTab);
   const setActiveTab = useQuotationsUiStore((s) => s.setActiveTab);
   const search = useQuotationsUiStore((s) => s.search);
@@ -76,43 +69,8 @@ export function QuotationListView({ filteredQuotations, onInspect, supplierOptio
     createdFrom,
     createdTo,
   ]);
-  const rfqQuery = useQuery({
-    queryKey: queryKeys.quotationRequestsList({ status: '', page: 1, limit: 100 }),
-    queryFn: () => fetchQuotationRequests({ page: 1, limit: 100 }),
-    enabled: pickerOpen,
-  });
-  const rfqOptions = (rfqQuery.data?.data ?? [])
-    .filter((request) => request.status === 'SUBMITTED' || request.status === 'RECEIVED')
-    .map((request) => ({
-      value: request.id,
-      label: `${request.rfq_no} - ${request.customer_ref ?? ''}`,
-    }));
-
   return (
     <Stack gap="md" className="rfq-list">
-      <Modal opened={pickerOpen} onClose={() => setPickerOpen(false)} title={t('quotations.pickRfqTitle')}>
-        <Select
-          data={rfqOptions}
-          value={pickedRfq}
-          onChange={setPickedRfq}
-          searchable
-          placeholder={t('quotations.pickRfqPlaceholder')}
-          nothingFoundMessage={t('quotationRequests.emptyTitle')}
-        />
-        <Button
-          mt="md"
-          fullWidth
-          disabled={!pickedRfq}
-          onClick={() => {
-            if (pickedRfq) {
-              navigate(`/quotations?create=1&rfq=${pickedRfq}`);
-            }
-          }}
-        >
-          {t('quotations.createFromRfq')}
-        </Button>
-      </Modal>
-
       <SimpleGrid cols={{ base: 1, sm: 3 }} className="rfq-metric-grid">
         <Metric
           label={t('quotations.metricShown')}
@@ -205,13 +163,6 @@ export function QuotationListView({ filteredQuotations, onInspect, supplierOptio
               />
             </div>
             <Group className="rfq-list-filter-actions dl-filter-actions" gap="xs" wrap="nowrap">
-              <Button
-                leftSection={<IconPlus size={16} />}
-                onClick={() => setPickerOpen(true)}
-                loading={pickerOpen && rfqQuery.isLoading}
-              >
-                {t('quotations.createFromRfq')}
-              </Button>
               <Button
                 className="rfq-list-filter-clear"
                 variant={hasActiveFilters ? 'light' : 'subtle'}
