@@ -31,6 +31,7 @@ export type QuotationRequestV1 = {
   status: QuotationRequestStatusV1;
   customer_ref: string | null;
   customer_po_ref: string | null;
+  customer_contract_ref: string | null;
   supplier_id: string | null;
   incoterm_code: string | null;
   mode: string | null;
@@ -74,6 +75,7 @@ export type CreateQuotationRequestLinePayload = {
 export type CreateQuotationRequestPayload = {
   customer_ref?: string | null;
   customer_po_ref?: string | null;
+  customer_contract_ref?: string | null;
   supplier_id?: string | null;
   incoterm_code?: string | null;
   mode?: string | null;
