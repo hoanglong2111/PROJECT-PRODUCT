@@ -127,6 +127,11 @@ export function QuotationRequestDetail({ onBack, requestId }: QuotationRequestDe
           <FieldPair className="rfq-fact" label={t('quotationRequests.field.customerPoRef')} value={request.customer_po_ref ?? '-'} />
           <FieldPair
             className="rfq-fact"
+            label={t('quotationRequests.field.customerContractRef')}
+            value={request.customer_contract_ref ?? '-'}
+          />
+          <FieldPair
+            className="rfq-fact"
             label={t('quotationRequests.field.supplier')}
             value={request.supplier ? `${request.supplier.supplier_code} - ${request.supplier.supplier_name}` : request.supplier_id ?? '-'}
           />
