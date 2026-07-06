@@ -450,11 +450,14 @@ all active charge codes; Incoterm no longer filters or auto-suggests fee rows, a
 there is no per-code checkbox include/exclude mode. The group is determined by the
 section where the fee is added and is persisted as `charge_group` on the line.
 
-Every charge line has its own `currency_code`. The form shows the line total in the
-line currency and a live VND helper using seeded `GET /v1/currency-rates`
-(`vnd_rate`, VND base = 1, no live bank/API source). Quote comparison totals are
-VND-normalized with those rates. `chargeCodeToChargeType(code, mode)` stays in use
-to populate `charge_type` for shipment-margin roll-ups.
+Every charge line has its own `currency_code`; there is no global default currency,
+and new charge lines stay blank until the user chooses a currency. The form and
+detail screens show subtotals per currency and never merge different currencies
+into one customer-facing total. Seeded `GET /v1/currency-rates` (`vnd_rate`, VND
+base = 1, no live bank/API source) appears once as a quote-level reference rate.
+Any VND grand total is an internal reference only, never the customer total.
+`chargeCodeToChargeType(code, mode)` stays in use to populate `charge_type` for
+shipment-margin roll-ups.
 
 "Tạo báo giá" opens the manual form first; it creates a quotation only when the user
 confirms/submits the form via `POST /v1/quotation-requests/:id/quotations` with

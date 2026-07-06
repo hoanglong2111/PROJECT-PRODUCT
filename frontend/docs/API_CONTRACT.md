@@ -141,7 +141,8 @@ allowed before confirmation.
 - `GET /v1/currency-rates` - returns seeded exchange rates in the v1 envelope:
   `{ data: [{ code, vnd_rate }], meta: { total }, errors: [] }`.
 - VND is the base rate (`vnd_rate = 1`). The frontend uses this table for
-  quotation fee helpers and comparison totals; no bank/live API is called.
+  quotation reference rates and internal VND-equivalent calculations; no bank/live
+  API is called.
 
 ### Quotations
 > **Reversed flow (top-level feature):** A quotation is a standalone **pre-PO freight
@@ -165,7 +166,7 @@ allowed before confirmation.
 - `PATCH|DELETE /v1/quotation-options/:id`
 - `POST /v1/quotations/:id/select-option` - body `{ option_id }`; marks one option selected and clears other options for that quotation.
 - Confirm/finalize requires `selected_option_id`; otherwise the API returns `BUSINESS_RULE_VIOLATION`. Confirmation also moves a linked RFQ to `CONFIRMED`.
-- `GET|POST /v1/quotations/:id/charge-lines` - charge-line DTOs carry per-line `currency_code` and `charge_group` (`FREIGHT|ORIGIN|DESTINATION`). The quotation form stores charges in three manual groups; each line renders in its own currency while comparison totals normalize to VND on the client using `/v1/currency-rates`.
+- `GET|POST /v1/quotations/:id/charge-lines` - charge-line DTOs carry per-line `currency_code` and `charge_group` (`FREIGHT|ORIGIN|DESTINATION`). The quotation form stores charges in three manual groups; each line renders in its own currency, clients present quote totals as per-currency subtotals, and any VND-equivalent grand total is an optional internal reference only. Clients use `/v1/currency-rates` for the single quote-level reference rate and internal VND equivalent; they must not present a merged cross-currency customer total.
 - `PATCH|DELETE /v1/quotation-charge-lines/:id`
 - `GET /v1/quotations/:id/events`
 
