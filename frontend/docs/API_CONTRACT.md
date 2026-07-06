@@ -128,8 +128,8 @@ exact request/response types.)
 > PO-shaped top-level entity at `/quotation-requests`, separate from quotations and
 > not derived from FDS internal PO records.
 - `GET /v1/quotation-requests` - supports `page`, `limit`, `search`, and `status`; returns RFQs with responding `quotations[]` when available.
-- `GET /v1/quotation-requests/:id` - returns RFQ detail, `customer_po_ref`, `supplier`, child `lines[]` with item display data, and responding `quotations[]`.
-- `POST /v1/quotation-requests` - creates a `SUBMITTED` RFQ with customer, free-text KBI SAP PO ref, supplier, incoterm, mode, currency, POL/POD, desired cargo-ready date, cargo hints, `lines[]`, and note.
+- `GET /v1/quotation-requests/:id` - returns RFQ detail, `customer_po_ref`, `customer_contract_ref`, `supplier`, child `lines[]` with item display data, and responding `quotations[]`.
+- `POST /v1/quotation-requests` - creates a `SUBMITTED` RFQ with customer, free-text KBI SAP PO ref, optional KBI `customer_contract_ref`, supplier, incoterm, mode, currency, POL/POD, desired cargo-ready date, cargo hints, `lines[]`, and note.
 - `POST /v1/quotation-requests/:id/receive` - `SUBMITTED -> RECEIVED`.
 - `POST /v1/quotation-requests/:id/cancel` - terminal cancel unless already `CONFIRMED`.
 - `POST /v1/quotation-requests/:id/quotations` - body `{ currency_code?, valid_until?, charge_lines? }`; drafts a quotation with `rfq_id`, copies customer/supplier/route/mode/incoterm from the RFQ, persists caller-supplied manual charge lines, and flips the RFQ to `QUOTED`.
@@ -141,7 +141,8 @@ allowed before confirmation.
 - `GET /v1/currency-rates` - returns seeded exchange rates in the v1 envelope:
   `{ data: [{ code, vnd_rate }], meta: { total }, errors: [] }`.
 - VND is the base rate (`vnd_rate = 1`). The frontend uses this table for
-  quotation fee helpers and comparison totals; no bank/live API is called.
+  quotation reference rates and internal VND-equivalent calculations; no bank/live
+  API is called.
 
 ### Quotations
 > **Reversed flow (top-level feature):** A quotation is a standalone **pre-PO freight
@@ -165,7 +166,7 @@ allowed before confirmation.
 - `PATCH|DELETE /v1/quotation-options/:id`
 - `POST /v1/quotations/:id/select-option` - body `{ option_id }`; marks one option selected and clears other options for that quotation.
 - Confirm/finalize requires `selected_option_id`; otherwise the API returns `BUSINESS_RULE_VIOLATION`. Confirmation also moves a linked RFQ to `CONFIRMED`.
-- `GET|POST /v1/quotations/:id/charge-lines` - charge-line DTOs carry per-line `currency_code` and `charge_group` (`FREIGHT|ORIGIN|DESTINATION`). The quotation form stores charges in three manual groups; each line renders in its own currency while comparison totals normalize to VND on the client using `/v1/currency-rates`.
+- `GET|POST /v1/quotations/:id/charge-lines` - charge-line DTOs carry per-line `currency_code` and `charge_group` (`FREIGHT|ORIGIN|DESTINATION`). The quotation form stores charges in three manual groups; each line renders in its own currency, clients present quote totals as per-currency subtotals, and any VND-equivalent grand total is an optional internal reference only. Clients use `/v1/currency-rates` for the single quote-level reference rate and internal VND equivalent; they must not present a merged cross-currency customer total.
 - `PATCH|DELETE /v1/quotation-charge-lines/:id`
 - `GET /v1/quotations/:id/events`
 

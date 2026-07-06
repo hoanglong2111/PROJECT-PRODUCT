@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 import type { ChargeCode } from '@shared/api/chargeCodes';
 import type { Uom } from '@shared/api/uoms';
 import { useI18n } from '@shared/i18n';
-import { convertToBase, formatMoney } from '@shared/utils/money';
+import { formatMoney } from '@shared/utils/money';
 
 export type ChargeLineState = {
   chargeCode: string | null;
@@ -28,7 +28,6 @@ type Props = {
   uoms: Uom[];
   chargeCodeOptions: { label: string; value: string }[];
   currencyOptions: { label: string; value: string }[];
-  rateToVnd: (code: string | null | undefined) => number;
   removable?: boolean;
   onChange: (key: string, patch: Partial<ChargeLineState>) => void;
   onRemove?: (key: string) => void;
@@ -39,7 +38,6 @@ export function QuotationFeeTable({
   currencyOptions,
   onChange,
   onRemove,
-  rateToVnd,
   removable = false,
   rows,
   uoms,
@@ -68,10 +66,6 @@ export function QuotationFeeTable({
         const total = Number(row.state.quantity) * Number(row.state.unitPrice);
         const showTotal = Number.isFinite(total) && Number(row.state.unitPrice) > 0;
         const formattedTotal = showTotal ? formatMoney(total, lineCurrency) : '-';
-        const vndEquivalent =
-          showTotal && (lineCurrency ?? '').toUpperCase() !== 'VND'
-            ? formatMoney(convertToBase(total, rateToVnd(lineCurrency), 'VND'), 'VND')
-            : null;
 
         return (
           <div
@@ -128,11 +122,6 @@ export function QuotationFeeTable({
                 size="xs"
                 styles={{ input: { textAlign: 'right' } }}
               />
-              {vndEquivalent ? (
-                <Text size="xs" c="dimmed" mt={2}>
-                  ≈ {vndEquivalent}
-                </Text>
-              ) : null}
             </div>
 
             <div className="rfq-fee-cell rfq-fee-currency">
@@ -176,7 +165,7 @@ export function QuotationFeeTable({
 
 export function seedLineState(
   chargeCode: ChargeCode | null | undefined,
-  defaultCurrency: string | null = 'USD',
+  defaultCurrency: string | null = null,
 ): ChargeLineState {
   return {
     chargeCode: chargeCode?.charge_code ?? null,

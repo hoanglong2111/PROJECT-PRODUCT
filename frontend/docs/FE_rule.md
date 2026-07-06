@@ -419,11 +419,19 @@ PO route display rule:
 
 RFQ is now a **top-level feature** at `/quotation-requests`. It represents the inbound
 KBI-entered request phase before FDS drafts a quotation. RFQ records are PO-shaped:
-customer ref, optional free-text KBI SAP `customer_po_ref`, real supplier, incoterm,
-mode, currency, POL/POD, desired cargo-ready date, cargo hints, item lines, note,
-and responding quotations. Do not use a picker into FDS UI PO entities here.
+customer ref, optional free-text KBI SAP `customer_po_ref`, optional KBI
+`customer_contract_ref`, real supplier, incoterm, mode, currency, POL/POD, desired
+cargo-ready date, cargo hints, item lines, note, and responding quotations. Do not
+use a picker into FDS UI PO entities here.
 RFQ status flow: `SUBMITTED -> RECEIVED -> QUOTED -> CONFIRMED`, with `CANCELLED`
 available before confirmation.
+
+The RFQ create form shares the order-intake core with PO create through
+`@shared/components/order-intake`. It captures KBI-owned values with near-PO field
+parity, excluding FDS-internal `exchange_rate`, `po_type`, `payment_term`,
+line-level customs profile, tax, discount, line ETA, and `quotation_id`. RFQ payloads
+remain code-based (`incoterm_code`, `currency_code`, `mode`); PO payloads remain
+id-based (`incoterm_id`, `currency_id`, `transport_mode_id`).
 
 Quotation records link back to RFQ through `rfq_id`, inherit customer/supplier/
 route/mode/incoterm/currency, and expose quote options. The quotation UI must show
@@ -450,11 +458,14 @@ all active charge codes; Incoterm no longer filters or auto-suggests fee rows, a
 there is no per-code checkbox include/exclude mode. The group is determined by the
 section where the fee is added and is persisted as `charge_group` on the line.
 
-Every charge line has its own `currency_code`. The form shows the line total in the
-line currency and a live VND helper using seeded `GET /v1/currency-rates`
-(`vnd_rate`, VND base = 1, no live bank/API source). Quote comparison totals are
-VND-normalized with those rates. `chargeCodeToChargeType(code, mode)` stays in use
-to populate `charge_type` for shipment-margin roll-ups.
+Every charge line has its own `currency_code`; there is no global default currency,
+and new charge lines stay blank until the user chooses a currency. The form and
+detail screens show subtotals per currency and never merge different currencies
+into one customer-facing total. Seeded `GET /v1/currency-rates` (`vnd_rate`, VND
+base = 1, no live bank/API source) appears once as a quote-level reference rate.
+Any VND grand total is an internal reference only, never the customer total.
+`chargeCodeToChargeType(code, mode)` stays in use to populate `charge_type` for
+shipment-margin roll-ups.
 
 "Tạo báo giá" opens the manual form first; it creates a quotation only when the user
 confirms/submits the form via `POST /v1/quotation-requests/:id/quotations` with

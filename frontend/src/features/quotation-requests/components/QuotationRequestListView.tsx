@@ -75,6 +75,7 @@ export function QuotationRequestListView({
           request.rfq_no,
           request.customer_ref,
           request.customer_po_ref,
+          request.customer_contract_ref,
           request.supplier?.supplier_code,
           request.supplier?.supplier_name,
           request.mode,

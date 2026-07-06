@@ -13,11 +13,10 @@ import {
   Text,
   Textarea,
   TextInput,
-  UnstyledButton,
 } from '@mantine/core';
-import { IconAlertTriangle, IconDeviceFloppy, IconLink, IconPlus, IconTrash, IconX } from '@tabler/icons-react';
+import { IconAlertTriangle, IconDeviceFloppy, IconLink, IconX } from '@tabler/icons-react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 
 import {
   createPurchaseOrder,
@@ -31,6 +30,7 @@ import { fetchQuotationRequest } from '@shared/api/quotationRequests';
 import { queryKeys } from '@shared/api/queryKeys';
 import { DateTimeField } from '@shared/components/DateField';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
+import { FormSection, OrderLineItemsEditor, SummaryTile, type OrderLineDraft } from '@shared/components/order-intake';
 import { useI18n } from '@shared/i18n';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
@@ -52,6 +52,36 @@ import {
   type PoLineDraft,
 } from '../model/purchaseOrderModel';
 
+const poLineToOrderLine = (line: PoLineDraft): OrderLineDraft => ({
+  clientId: line.clientId,
+  line_no: line.line_no,
+  item_id: line.item_id,
+  item_description: line.item_description,
+  qty: line.qty_ordered,
+  unit: line.unit,
+  unit_price: line.unit_price,
+  gross_weight_kg: line.gross_weight_kg,
+  note: line.notes,
+  item_customs_profile_id: line.item_customs_profile_id,
+  tax_rate: line.tax_rate,
+  discount_pct: line.discount_pct,
+  expected_eta_line: line.expected_eta_line,
+});
+
+const orderPatchToPoPatch = (patch: Partial<OrderLineDraft>): Partial<PoLineDraft> => ({
+  ...(patch.item_id !== undefined ? { item_id: patch.item_id } : {}),
+  ...(patch.item_description !== undefined ? { item_description: patch.item_description } : {}),
+  ...(patch.qty !== undefined ? { qty_ordered: patch.qty } : {}),
+  ...(patch.unit !== undefined ? { unit: patch.unit } : {}),
+  ...(patch.unit_price !== undefined ? { unit_price: patch.unit_price } : {}),
+  ...(patch.gross_weight_kg !== undefined ? { gross_weight_kg: patch.gross_weight_kg } : {}),
+  ...(patch.note !== undefined ? { notes: patch.note } : {}),
+  ...(patch.item_customs_profile_id !== undefined ? { item_customs_profile_id: patch.item_customs_profile_id } : {}),
+  ...(patch.tax_rate !== undefined ? { tax_rate: patch.tax_rate } : {}),
+  ...(patch.discount_pct !== undefined ? { discount_pct: patch.discount_pct } : {}),
+  ...(patch.expected_eta_line !== undefined ? { expected_eta_line: patch.expected_eta_line } : {}),
+});
+
 export function PurchaseOrderForm({
   mode,
   onCancel,
@@ -72,12 +102,7 @@ export function PurchaseOrderForm({
   const invalidatePo = usePoInvalidation(order?.id);
   const masterData = usePoMasterData();
   const { t } = useI18n();
-  const itemInputRef = useRef<HTMLInputElement>(null);
-  const railListRef = useRef<HTMLDivElement>(null);
   const rfqPrefillAppliedRef = useRef<string | null>(null);
-  // When a line is added we want to jump straight into editing it: remember its
-  // id so an effect can focus the Item field and scroll the rail entry into view.
-  const [focusLineId, setFocusLineId] = useState<string | null>(null);
 
   useEffect(() => {
     const nextDraft = createInitialPoDraft(order);
@@ -93,8 +118,6 @@ export function PurchaseOrderForm({
     queryFn: () => fetchQuotationRequest(quotation?.rfq_id ?? ''),
   });
 
-  // Create-from-quotation: link the quotation, prefill the commercial header,
-  // and, when present, bring the originating RFQ goods lines into the internal PO.
   useEffect(() => {
     if (mode !== 'create' || !quotation) return;
     setDraft((current) => {
@@ -135,28 +158,12 @@ export function PurchaseOrderForm({
   const selectedTransportMode = masterData.transportModes.find((transportMode) => transportMode.id === draft.transport_mode_id);
   const originCountry = selectedSupplier?.country ?? '-';
   const poTotal = totalPoAmount(draft.lines);
-  // A line is only saved if it has an item and a positive quantity (buildPoPayload
-  // drops the rest). Surface that here so incomplete lines aren't silently lost.
   const lineIsComplete = (line: PoLineDraft) => Boolean(line.item_id) && toNumber(line.qty_ordered) > 0;
   const validLineCount = draft.lines.filter(lineIsComplete).length;
   const incompleteLineCount = draft.lines.length - validLineCount;
   const canSubmit =
     Boolean(draft.po_no.trim() && draft.supplier_id && draft.incoterm_id) &&
     (mode === 'edit' || (validLineCount > 0 && Boolean(draft.quotation_id)));
-  const activeLine = draft.lines.find((line) => line.clientId === activeLineId) ?? draft.lines[0] ?? null;
-  const activeLineIndex = activeLine ? draft.lines.findIndex((line) => line.clientId === activeLine.clientId) : -1;
-  const activeLineItem = masterData.items.find((candidate) => candidate.id === activeLine?.item_id);
-  const activeCustomsOptions = buildCustomsOptions(activeLineItem);
-  const activeLineAmount = activeLine ? toNumber(activeLine.qty_ordered) * toNumber(activeLine.unit_price) : 0;
-
-  useEffect(() => {
-    if (!focusLineId || activeLine?.clientId !== focusLineId) return;
-    itemInputRef.current?.focus({ preventScroll: true });
-    railListRef.current
-      ?.querySelector<HTMLElement>(`[data-line-id="${focusLineId}"]`)
-      ?.scrollIntoView({ block: 'nearest' });
-    setFocusLineId(null);
-  }, [focusLineId, activeLine]);
 
   const updateLine = (clientId: string, patch: Partial<PoLineDraft>) => {
     setDraft((current) => ({
@@ -184,7 +191,6 @@ export function PurchaseOrderForm({
       lines: [...current.lines, nextLine],
     }));
     setActiveLineId(nextLine.clientId);
-    setFocusLineId(nextLine.clientId);
   };
 
   const handleSubmit = (event: FormEvent) => {
@@ -211,8 +217,7 @@ export function PurchaseOrderForm({
 
         {mode === 'create' && !draft.quotation_id ? (
           <Alert color="yellow" icon={<IconAlertTriangle size={18} />} title="Confirmed quotation required">
-            A PO can only be created from a CONFIRMED quotation. Open a confirmed quotation and use
-            “Create PO from quotation”.
+            A PO can only be created from a CONFIRMED quotation. Open a confirmed quotation and use "Create PO from quotation".
           </Alert>
         ) : null}
 
@@ -265,10 +270,7 @@ export function PurchaseOrderForm({
         </Paper>
 
         <div className="purchase-order-form-core-grid">
-          <FormSection
-            title="Order identification"
-            description="Short, searchable operational references."
-          >
+          <FormSection title="Order identification" description="Short, searchable operational references.">
             <SimpleGrid cols={{ base: 1, sm: 2, lg: 1, xl: 2 }} spacing="sm">
               <TextInput
                 label="PO no"
@@ -311,7 +313,7 @@ export function PurchaseOrderForm({
                 label={
                   <HeaderLabel
                     label="PO type"
-                    hint="Commercial lane (sea / air / domestic). Drives SOP task templates — not the booked container mode."
+                    hint="Commercial lane (sea / air / domestic). Drives SOP task templates, not the booked container mode."
                   />
                 }
                 data={poTypeOptions.map((type) => ({ label: type, value: type }))}
@@ -340,7 +342,7 @@ export function PurchaseOrderForm({
                     incoterm_id: supplier?.default_incoterm_id ?? current.incoterm_id,
                     payment_term: supplier?.payment_term ?? current.payment_term,
                     transport_mode_id:
-                      supplier?.supplier_transport_modes?.find((mode) => mode.is_default)?.transport_mode_id ??
+                      supplier?.supplier_transport_modes?.find((modeItem) => modeItem.is_default)?.transport_mode_id ??
                       current.transport_mode_id,
                   }));
                 }}
@@ -489,292 +491,33 @@ export function PurchaseOrderForm({
               <Group gap={6} className="purchase-order-line-notice is-warning">
                 <IconAlertTriangle size={15} />
                 <Text size="xs">
-                  {incompleteLineCount} incomplete line{incompleteLineCount > 1 ? 's' : ''} (missing item or quantity) won’t be
+                  {incompleteLineCount} incomplete line{incompleteLineCount > 1 ? 's' : ''} (missing item or quantity) will not be
                   saved.
                 </Text>
               </Group>
             ) : null}
-            <div className="purchase-order-line-workspace">
-              <div className="purchase-order-line-rail">
-                <Group justify="space-between" className="purchase-order-line-rail-header">
-                  <Text size="xs" fw={800} c="dimmed">
-                    Lines
-                  </Text>
-                  <Text size="xs" c="dimmed" className="tabular-nums">
-                    {activeLineIndex + 1}/{draft.lines.length}
-                  </Text>
-                </Group>
-                <div className="purchase-order-line-rail-list" ref={railListRef}>
-                  {draft.lines.map((line, index) => {
-                    const item = masterData.items.find((candidate) => candidate.id === line.item_id);
-                    const selectedCustoms = buildCustomsOptions(item).find((option) => option.value === line.item_customs_profile_id);
-                    const lineAmount = toNumber(line.qty_ordered) * toNumber(line.unit_price);
-                    const isActive = activeLine?.clientId === line.clientId;
-                    const isComplete = lineIsComplete(line);
-
-                    return (
-                      <div
-                        key={line.clientId}
-                        role="button"
-                        tabIndex={0}
-                        data-line-id={line.clientId}
-                        onClick={() => setActiveLineId(line.clientId)}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter' || event.key === ' ') {
-                            event.preventDefault();
-                            setActiveLineId(line.clientId);
-                          }
-                        }}
-                        className={`purchase-order-line-rail-item${isActive ? ' is-active' : ''}${isComplete ? '' : ' is-incomplete'}`}
-                      >
-                        <div className="purchase-order-line-rail-item-main">
-                          <div className="purchase-order-line-rail-index">
-                            #{index + 1}
-                            {isComplete ? null : (
-                              <span
-                                className="purchase-order-line-rail-dot"
-                                title="Missing item or quantity — this line won’t be saved"
-                                aria-label="Incomplete line"
-                              />
-                            )}
-                          </div>
-                          <div className="purchase-order-line-rail-copy">
-                            <Text fw={700} size="sm" lineClamp={1}>
-                              {item?.item_code ?? line.item_description ?? 'Choose item'}
-                            </Text>
-                            <Text size="xs" c="dimmed" lineClamp={1}>
-                              {item?.item_name ?? line.item_description ?? 'Item not selected'}
-                            </Text>
-                          </div>
-                        </div>
-                        <div className="purchase-order-line-rail-side">
-                          <Text fw={800} size="sm" className="tabular-nums">
-                            <NumberFormatter value={lineAmount} thousandSeparator decimalScale={2} />
-                          </Text>
-                          <Text size="xs" c="dimmed">
-                            {line.expected_eta_line ? `ETA ${line.expected_eta_line}` : 'ETA pending'}
-                          </Text>
-                        </div>
-                        <Text size="xs" c="dimmed" className="purchase-order-line-rail-meta" lineClamp={1}>
-                          <NumberFormatter value={line.qty_ordered} thousandSeparator decimalScale={4} /> {line.unit ?? ''} |{' '}
-                          {selectedCustoms?.label ?? 'HS code pending'}
-                        </Text>
-                        <ActionIcon
-                          className="purchase-order-line-rail-delete"
-                          variant="subtle"
-                          color="red"
-                          size="sm"
-                          aria-label="Delete line"
-                          disabled={draft.lines.length === 1}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            removeLine(line.clientId);
-                          }}
-                        >
-                          <IconTrash size={14} />
-                        </ActionIcon>
-                      </div>
-                    );
-                  })}
-                  <UnstyledButton
-                    type="button"
-                    className="purchase-order-line-rail-add"
-                    onClick={addLine}
-                  >
-                    <IconPlus size={14} />
-                    <span>Add line</span>
-                  </UnstyledButton>
-                </div>
-              </div>
-
-              <div className="purchase-order-line-detail">
-                {activeLine ? (
-                  <Stack gap="sm">
-                    <Group justify="space-between" align="flex-start" gap="sm" className="purchase-order-line-detail-header">
-                      <Stack gap={4}>
-                        <Group gap="xs" wrap="wrap">
-                          <Text fw={700}>Editing line #{activeLineIndex + 1}</Text>
-                          <Text component="span" size="sm" className="dl-code-text">
-                            {activeLineItem?.item_code ?? 'Item pending'}
-                          </Text>
-                        </Group>
-                        <Text size="sm" c="dimmed">
-                          {activeLineItem?.item_name ?? activeLine.item_description ?? 'Select an item, then complete quantity, pricing, ETA, and notes.'}
-                        </Text>
-                      </Stack>
-                    </Group>
-
-                    <SummaryTile
-                      label="Line amount (qty × unit price)"
-                      tone="accent"
-                      value={
-                        <>
-                          <NumberFormatter value={activeLineAmount} thousandSeparator decimalScale={2} />
-                          {selectedCurrency?.currency_code ? ` ${selectedCurrency.currency_code}` : ''}
-                        </>
-                      }
-                    />
-
-                    <div className="purchase-order-line-detail-grid">
-                      <div className="purchase-order-line-field-group is-wide">
-                        <Text size="xs" fw={800} c="dimmed">
-                          Item and customs
-                        </Text>
-                        <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="sm">
-                          <Select
-                            ref={itemInputRef}
-                            label="Item"
-                            data={masterData.itemOptions}
-                            value={activeLine.item_id}
-                            placeholder="Choose item"
-                            onChange={(value) => {
-                              const selectedItem = masterData.items.find((candidate) => candidate.id === value);
-                              updateLine(activeLine.clientId, {
-                                item_id: value ?? '',
-                                item_customs_profile_id:
-                                  selectedItem?.customs_profiles?.find((profile) => profile.is_default)?.id ??
-                                  selectedItem?.customs_profiles?.[0]?.id ??
-                                  '',
-                                item_description: selectedItem?.note ?? selectedItem?.item_name ?? '',
-                                unit: selectedItem?.base_uom ?? activeLine.unit,
-                              });
-                            }}
-                            searchable
-                            required
-                          />
-                          <Select
-                            label="HS code"
-                            data={activeCustomsOptions}
-                            value={activeLine.item_customs_profile_id}
-                            onChange={(value) => updateLine(activeLine.clientId, { item_customs_profile_id: value ?? '' })}
-                            placeholder="Choose customs profile"
-                            searchable
-                            clearable
-                          />
-                        </SimpleGrid>
-                      </div>
-
-                      <div className="purchase-order-line-field-group is-wide">
-                        <Text size="xs" fw={800} c="dimmed">
-                          Quantity and schedule
-                        </Text>
-                        <SimpleGrid cols={{ base: 1, xs: 2, lg: 4 }} spacing="sm">
-                          <NumberInput
-                            label="Qty"
-                            min={0.0001}
-                            value={activeLine.qty_ordered}
-                            thousandSeparator=","
-                            decimalScale={4}
-                            onChange={(value) => updateLine(activeLine.clientId, { qty_ordered: toNumber(value, 1) })}
-                          />
-                          <TextInput
-                            label="Unit"
-                            value={activeLine.unit}
-                            onChange={(event) => updateLine(activeLine.clientId, { unit: event.currentTarget.value })}
-                          />
-                          <NumberInput
-                            label="Gross kg"
-                            min={0}
-                            value={activeLine.gross_weight_kg}
-                            thousandSeparator=","
-                            decimalScale={3}
-                            onChange={(value) => updateLine(activeLine.clientId, { gross_weight_kg: toNumber(value) })}
-                          />
-                          <DateTimeField
-                            label="Line ETA"
-                            value={activeLine.expected_eta_line}
-                            onChange={(value) => updateLine(activeLine.clientId, { expected_eta_line: value ?? '' })}
-                          />
-                        </SimpleGrid>
-                      </div>
-
-                      <div className="purchase-order-line-field-group">
-                        <Text size="xs" fw={800} c="dimmed">
-                          Pricing
-                        </Text>
-                        <SimpleGrid cols={{ base: 1, xs: 2, lg: 3 }} spacing="sm">
-                          <NumberInput
-                            label="Unit price"
-                            min={0}
-                            value={activeLine.unit_price}
-                            thousandSeparator=","
-                            decimalScale={2}
-                            onChange={(value) => updateLine(activeLine.clientId, { unit_price: toNumber(value) })}
-                          />
-                          <NumberInput
-                            label="Tax %"
-                            min={0}
-                            max={100}
-                            suffix="%"
-                            value={activeLine.tax_rate}
-                            decimalScale={2}
-                            onChange={(value) => updateLine(activeLine.clientId, { tax_rate: toNumber(value) })}
-                          />
-                          <NumberInput
-                            label="Disc %"
-                            min={0}
-                            max={100}
-                            suffix="%"
-                            value={activeLine.discount_pct}
-                            decimalScale={2}
-                            onChange={(value) => updateLine(activeLine.clientId, { discount_pct: toNumber(value) })}
-                          />
-                        </SimpleGrid>
-                      </div>
-                    </div>
-
-                    <Textarea
-                      label="Line note"
-                      value={activeLine.notes}
-                      placeholder="Packing, QC, or supplier note"
-                      onChange={(event) => updateLine(activeLine.clientId, { notes: event.currentTarget.value })}
-                      autosize
-                      minRows={3}
-                    />
-                  </Stack>
-                ) : null}
-              </div>
-            </div>
+            <OrderLineItemsEditor
+              lines={draft.lines.map(poLineToOrderLine)}
+              activeId={activeLineId}
+              onActiveChange={setActiveLineId}
+              onChange={(clientId, patch) => updateLine(clientId, orderPatchToPoPatch(patch))}
+              onAdd={addLine}
+              onRemove={removeLine}
+              items={masterData.items}
+              itemOptions={masterData.itemOptions}
+              currencyCode={selectedCurrency?.currency_code ?? null}
+              fields={{ customsProfile: true, taxRate: true, discountPct: true, lineEta: true }}
+              customsOptionsFor={(item) => buildCustomsOptions(item)}
+              onItemSelected={(clientId, item) =>
+                updateLine(clientId, {
+                  item_customs_profile_id:
+                    item?.customs_profiles?.find((profile) => profile.is_default)?.id ?? item?.customs_profiles?.[0]?.id ?? '',
+                })
+              }
+            />
           </Paper>
         ) : null}
       </Stack>
     </form>
-  );
-}
-
-function FormSection({
-  children,
-  description,
-  title,
-}: {
-  children: ReactNode;
-  description: ReactNode;
-  title: string;
-}) {
-  return (
-    <Paper withBorder p="sm" className="purchase-order-form-section">
-      <Stack gap="sm">
-        <Stack gap={1} className="purchase-order-form-section-title">
-          <Text fw={700}>{title}</Text>
-          <Text size="sm" c="dimmed">
-            {description}
-          </Text>
-        </Stack>
-        {children}
-      </Stack>
-    </Paper>
-  );
-}
-
-function SummaryTile({ label, tone = 'default', value }: { label: string; tone?: 'default' | 'accent'; value: ReactNode }) {
-  return (
-    <div className={`purchase-order-form-summary-tile ${tone === 'accent' ? 'is-accent' : ''}`}>
-      <Text size="xs" c="dimmed" fw={700}>
-        {label}
-      </Text>
-      <Text component="div" fw={800} size="sm" lineClamp={1} className="tabular-nums">
-        {value}
-      </Text>
-    </div>
   );
 }
