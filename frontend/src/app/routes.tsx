@@ -27,6 +27,7 @@ const Login = lazyFeature(() => import('@features/login/page'), 'Login');
 const NotFound = lazyFeature(() => import('@features/not-found/page'), 'NotFound');
 const Profile = lazyFeature(() => import('@features/profile/page'), 'Profile');
 const PurchaseOrders = lazyFeature(() => import('@features/purchase-orders/page'), 'PurchaseOrders');
+const QuotationRequests = lazyFeature(() => import('@features/quotation-requests/page'), 'QuotationRequests');
 const Quotations = lazyFeature(() => import('@features/quotations/page'), 'Quotations');
 const Settings = lazyFeature(() => import('@features/settings/page'), 'Settings');
 const Tasks = lazyFeature(() => import('@features/tasks/page'), 'Tasks');
@@ -41,6 +42,7 @@ const publicRoutes: RouteConfig[] = [
 
 const workspaceRoutes: RouteConfig[] = [
   { index: true, element: withCapability(<Dashboard />, routeCapabilities.dashboard) },
+  { path: 'quotation-requests', element: withCapability(<QuotationRequests />, routeCapabilities.quotationRequests) },
   { path: 'quotations', element: withCapability(<Quotations />, routeCapabilities.quotations) },
   { path: 'purchase-orders', element: withCapability(<PurchaseOrders />, routeCapabilities.purchaseOrders) },
   { path: 'delivery-orders', element: withCapability(<DeliveryOrders />, routeCapabilities.deliveryOrders) },

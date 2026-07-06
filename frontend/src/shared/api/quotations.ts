@@ -13,6 +13,7 @@ export type QuotationStatusV1 =
 
 export type QuotationTypeV1 = 'FREIGHT' | 'LOCAL_CHARGE' | 'CUSTOMS' | 'TRUCKING' | 'MIXED';
 export type QuotationRefTypeV1 = 'DELIVERY_ORDER' | 'PO' | 'SHIPMENT' | 'CARRIER_DO' | 'DTO';
+export type QuotationChargeGroup = 'FREIGHT' | 'ORIGIN' | 'DESTINATION';
 
 export type QuotationChargeTypeV1 =
   | 'OCEAN_FREIGHT'
@@ -43,6 +44,8 @@ export type QuotationChargeLineV1 = {
   line_no: number;
   charge_type: QuotationChargeTypeV1;
   charge_code?: string | null;
+  charge_group?: QuotationChargeGroup | null;
+  currency_code?: string | null;
   description: string;
   quantity: ApiDecimal;
   unit: string | null;
@@ -74,6 +77,40 @@ export type QuotationEventV1 = {
   is_delete?: boolean;
 };
 
+export type QuotationOptionV1 = {
+  id: string;
+  quotation_id: string;
+  option_no: number;
+  carrier_code: string | null;
+  carrier_name: string | null;
+  vessel_or_flight: string | null;
+  voyage_flight_no: string | null;
+  etd: string | null;
+  eta: string | null;
+  transit_time_days: number | null;
+  risk_warning: string | null;
+  headline_amount: ApiDecimal | null;
+  is_recommended: boolean;
+  is_selected: boolean;
+  create_at?: string;
+  update_at?: string;
+  delete_at?: string | null;
+  is_delete?: boolean;
+};
+
+export type CreateQuotationOptionPayload = {
+  carrier_code?: string | null;
+  carrier_name?: string | null;
+  vessel_or_flight?: string | null;
+  voyage_flight_no?: string | null;
+  etd?: string | null;
+  eta?: string | null;
+  transit_time_days?: number | null;
+  risk_warning?: string | null;
+  headline_amount?: number | null;
+  is_recommended?: boolean;
+};
+
 export type QuotationV1 = {
   id: string;
   quotation_group_id: string;
@@ -86,6 +123,10 @@ export type QuotationV1 = {
   customer_ref?: string | null;
   incoterm_code?: string | null;
   mode?: string | null;
+  rfq_id?: string | null;
+  origin_port?: string | null;
+  destination_port?: string | null;
+  selected_option_id?: string | null;
   supplier_id: string;
   quotation_type: QuotationTypeV1;
   currency_id?: string;
@@ -110,6 +151,7 @@ export type QuotationV1 = {
   is_delete?: boolean;
   supplier?: Supplier | null;
   currency?: Currency | null;
+  options?: QuotationOptionV1[];
   charge_lines?: QuotationChargeLineV1[];
   events?: QuotationEventV1[];
 };
@@ -135,6 +177,8 @@ export type QuotationChargeLinePayload = {
   line_no: number;
   charge_type: QuotationChargeTypeV1;
   charge_code?: string | null;
+  charge_group?: QuotationChargeGroup | null;
+  currency_code?: string | null;
   description: string;
   quantity?: number;
   unit?: string | null;
@@ -171,7 +215,10 @@ export type CreateQuotationVersionPayload = {
   customer_ref?: string | null;
   incoterm_code?: string | null;
   mode?: string | null;
+  origin_port?: string | null;
+  destination_port?: string | null;
   currency_code?: string;
+  valid_until?: string | null;
   charge_lines?: QuotationChargeLinePayload[];
 };
 
@@ -238,6 +285,8 @@ export type CreateQuotationPayload = {
   quotation_type?: QuotationTypeV1;
   incoterm_code?: string | null;
   mode?: string | null;
+  origin_port?: string | null;
+  destination_port?: string | null;
   currency_id?: string | null;
   currency_code?: string;
   exchange_rate?: number;
@@ -342,5 +391,37 @@ export async function fetchQuotationEvents(id: string) {
   const response = await apiClient.get<V1Response<QuotationEventV1[], { total: number }>>(
     `/v1/quotations/${id}/events`,
   );
+  return unwrapV1Data(response);
+}
+
+export async function fetchQuotationOptions(id: string) {
+  const response = await apiClient.get<V1Response<QuotationOptionV1[], { total: number }>>(
+    `/v1/quotations/${id}/options`,
+  );
+  return unwrapV1Data(response);
+}
+
+export async function createQuotationOption(id: string, payload: CreateQuotationOptionPayload) {
+  const response = await apiClient.post<V1Response<QuotationOptionV1>>(`/v1/quotations/${id}/options`, payload);
+  return unwrapV1Data(response);
+}
+
+export async function updateQuotationOption(optionId: string, payload: Partial<CreateQuotationOptionPayload>) {
+  const response = await apiClient.patch<V1Response<QuotationOptionV1>>(
+    `/v1/quotation-options/${optionId}`,
+    payload,
+  );
+  return unwrapV1Data(response);
+}
+
+export async function deleteQuotationOption(optionId: string) {
+  const response = await apiClient.delete<V1Response<QuotationOptionV1>>(`/v1/quotation-options/${optionId}`);
+  return unwrapV1Data(response);
+}
+
+export async function selectQuotationOption(id: string, optionId: string) {
+  const response = await apiClient.post<V1Response<QuotationV1>>(`/v1/quotations/${id}/select-option`, {
+    option_id: optionId,
+  });
   return unwrapV1Data(response);
 }

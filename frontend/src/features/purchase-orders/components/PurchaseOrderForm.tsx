@@ -16,7 +16,7 @@ import {
   UnstyledButton,
 } from '@mantine/core';
 import { IconAlertTriangle, IconDeviceFloppy, IconLink, IconPlus, IconTrash, IconX } from '@tabler/icons-react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 
 import {
@@ -27,6 +27,8 @@ import {
   type UpdatePurchaseOrderV1Payload,
 } from '@shared/api/purchaseOrders';
 import type { QuotationV1 } from '@shared/api/quotations';
+import { fetchQuotationRequest } from '@shared/api/quotationRequests';
+import { queryKeys } from '@shared/api/queryKeys';
 import { DateTimeField } from '@shared/components/DateField';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { useI18n } from '@shared/i18n';
@@ -36,6 +38,7 @@ import { usePoInvalidation } from '../hooks/usePoInvalidation';
 import { usePoMasterData } from '../hooks/usePoMasterData';
 import {
   applyQuotationPrefill,
+  applyRfqLinesPrefill,
   buildCustomsOptions,
   buildPoPatchPayload,
   buildPoPayload,
@@ -71,27 +74,43 @@ export function PurchaseOrderForm({
   const { t } = useI18n();
   const itemInputRef = useRef<HTMLInputElement>(null);
   const railListRef = useRef<HTMLDivElement>(null);
+  const rfqPrefillAppliedRef = useRef<string | null>(null);
   // When a line is added we want to jump straight into editing it: remember its
   // id so an effect can focus the Item field and scroll the rail entry into view.
   const [focusLineId, setFocusLineId] = useState<string | null>(null);
 
   useEffect(() => {
     const nextDraft = createInitialPoDraft(order);
+    rfqPrefillAppliedRef.current = null;
     setDraft(nextDraft);
     setActiveLineId(nextDraft.lines[0]?.clientId ?? null);
     setContractAutoSync(!order?.contract_no);
-  }, [order]);
+  }, [order, quotation?.id]);
 
-  // Create-from-quotation: link the quotation and prefill the commercial header.
-  // Lines are still entered normally, so the PO line -> LOT logic is untouched.
+  const sourceRfqQuery = useQuery({
+    enabled: mode === 'create' && Boolean(quotation?.rfq_id),
+    queryKey: queryKeys.quotationRequestDetail(quotation?.rfq_id ?? ''),
+    queryFn: () => fetchQuotationRequest(quotation?.rfq_id ?? ''),
+  });
+
+  // Create-from-quotation: link the quotation, prefill the commercial header,
+  // and, when present, bring the originating RFQ goods lines into the internal PO.
   useEffect(() => {
     if (mode !== 'create' || !quotation) return;
-    setDraft((current) => applyQuotationPrefill(current, quotation, {
-      currencies: masterData.currencies,
-      incoterms: masterData.incoterms,
-      transportModes: masterData.transportModes,
-    }));
-  }, [mode, quotation, masterData.currencies, masterData.incoterms, masterData.transportModes]);
+    setDraft((current) => {
+      const withHeader = applyQuotationPrefill(current, quotation, {
+        currencies: masterData.currencies,
+        incoterms: masterData.incoterms,
+        transportModes: masterData.transportModes,
+      });
+      const rfq = sourceRfqQuery.data;
+      if (!rfq?.lines?.length || rfqPrefillAppliedRef.current === rfq.id) {
+        return withHeader;
+      }
+      rfqPrefillAppliedRef.current = rfq.id;
+      return applyRfqLinesPrefill(withHeader, rfq.lines);
+    });
+  }, [mode, quotation, masterData.currencies, masterData.incoterms, masterData.transportModes, sourceRfqQuery.data]);
 
   const createMutation = useMutation({
     mutationFn: (payload: CreatePurchaseOrderV1Payload) => createPurchaseOrder(payload),

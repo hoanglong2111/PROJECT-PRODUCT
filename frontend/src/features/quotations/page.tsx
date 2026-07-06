@@ -1,10 +1,10 @@
-import { Button, Stack } from '@mantine/core';
-import { IconPlus } from '@tabler/icons-react';
+import { Stack } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { fetchQuotationsV1, type QuotationV1 } from '@shared/api/quotations';
+import { fetchQuotationRequest } from '@shared/api/quotationRequests';
 import { PageHeader } from '@shared/components/PageHeader';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
 import { WorkbenchHeader } from '@shared/components/WorkbenchHeader';
@@ -23,8 +23,10 @@ import { useQuotationsUiStore } from './model/quotationsUiStore';
 
 const EMPTY_QUOTATIONS: QuotationV1[] = [];
 const QUOTE_PARAM = 'quote';
-const CREATE_PARAM = 'create';
+const VIEW_PARAM = 'view';
 const REVISE_PARAM = 'revise';
+const CREATE_PARAM = 'create';
+const RFQ_PARAM = 'rfq';
 
 const inDateRange = (value: string | null | undefined, from: string, to: string) => {
   if (!from && !to) return true;
@@ -38,9 +40,9 @@ const inDateRange = (value: string | null | undefined, from: string, to: string)
 export function Quotations() {
   const { t } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
-  const focusedQuote = searchParams.get(QUOTE_PARAM);
-  const createRequested = searchParams.get(CREATE_PARAM) === '1';
+  const focusedQuote = searchParams.get(QUOTE_PARAM) ?? searchParams.get(VIEW_PARAM);
   const reviseQuote = searchParams.get(REVISE_PARAM);
+  const createRfqId = searchParams.get(CREATE_PARAM) ? searchParams.get(RFQ_PARAM) : null;
 
   const activeTab = useQuotationsUiStore((s) => s.activeTab);
   const search = useQuotationsUiStore((s) => s.search);
@@ -52,6 +54,11 @@ export function Quotations() {
   const quotationsQuery = useQuery({
     queryKey: queryKeys.quotations,
     queryFn: () => fetchQuotationsV1({ page: 1, limit: 100 }),
+  });
+  const rfqQuery = useQuery({
+    queryKey: queryKeys.quotationRequestDetail(createRfqId ?? 'none'),
+    queryFn: () => fetchQuotationRequest(createRfqId as string),
+    enabled: Boolean(createRfqId),
   });
   const quotations = quotationsQuery.data?.data ?? EMPTY_QUOTATIONS;
 
@@ -89,7 +96,7 @@ export function Quotations() {
           counts[tab.value] = quotations.filter((quotation) => statuses.includes(quotation.status)).length;
           return counts;
         },
-        { all: 0, rfq: 0, draft: 0, pending: 0, confirmed: 0, rejected: 0 },
+        { all: 0, draft: 0, pending: 0, confirmed: 0, rejected: 0 },
       ),
     [quotations],
   );
@@ -100,7 +107,8 @@ export function Quotations() {
   };
   const selectedQuotation = findQuotation(focusedQuote);
   const formSource = findQuotation(reviseQuote);
-  const showForm = createRequested || Boolean(formSource);
+  const isCreateFromRfq = Boolean(createRfqId);
+  const showForm = Boolean(formSource) || isCreateFromRfq;
   const showList = !showForm && !selectedQuotation;
 
   const supplierOptions = useMemo(() => {
@@ -124,8 +132,10 @@ export function Quotations() {
     updateWorkbenchParams(
       (nextParams) => {
         nextParams.delete(QUOTE_PARAM);
-        nextParams.delete(CREATE_PARAM);
+        nextParams.delete(VIEW_PARAM);
         nextParams.delete(REVISE_PARAM);
+        nextParams.delete(CREATE_PARAM);
+        nextParams.delete(RFQ_PARAM);
       },
       { replace: true },
     );
@@ -135,26 +145,22 @@ export function Quotations() {
     updateWorkbenchParams(
       (nextParams) => {
         nextParams.set(QUOTE_PARAM, quotation.quotation_no);
-        nextParams.delete(CREATE_PARAM);
+        nextParams.delete(VIEW_PARAM);
         nextParams.delete(REVISE_PARAM);
+        nextParams.delete(CREATE_PARAM);
+        nextParams.delete(RFQ_PARAM);
       },
       options,
     );
-  };
-
-  const openCreateForm = () => {
-    updateWorkbenchParams((nextParams) => {
-      nextParams.set(CREATE_PARAM, '1');
-      nextParams.delete(QUOTE_PARAM);
-      nextParams.delete(REVISE_PARAM);
-    });
   };
 
   const openReviseForm = (quotation: QuotationV1) => {
     updateWorkbenchParams((nextParams) => {
       nextParams.set(REVISE_PARAM, quotation.id);
       nextParams.delete(QUOTE_PARAM);
+      nextParams.delete(VIEW_PARAM);
       nextParams.delete(CREATE_PARAM);
+      nextParams.delete(RFQ_PARAM);
     });
   };
 
@@ -184,15 +190,6 @@ export function Quotations() {
           actionsClassName="quotations-page-actions"
           title={t('quotations.title')}
           subtitle={t('quotations.subtitle')}
-          actions={
-            <Button
-              className="quotations-primary-action"
-              leftSection={<IconPlus size={16} />}
-              onClick={openCreateForm}
-            >
-              {t('quotations.newQuotation')}
-            </Button>
-          }
         />
       ) : (
         <WorkbenchHeader
@@ -201,9 +198,21 @@ export function Quotations() {
         />
       )}
 
-      {showForm ? (
+      {isCreateFromRfq && rfqQuery.isLoading ? (
+        <PageLoading title={t('quotations.formTitle')} description={t('quotationRequests.loadingDescription')} />
+      ) : isCreateFromRfq && (rfqQuery.isError || !rfqQuery.data) ? (
+        <PageError
+          title={t('quotationRequests.errorTitle')}
+          description={t('quotationRequests.errorDescription')}
+          error={rfqQuery.error}
+          onRetry={() => {
+            void rfqQuery.refetch();
+          }}
+        />
+      ) : showForm ? (
         <QuotationForm
           sourceQuotation={formSource ?? undefined}
+          rfq={isCreateFromRfq ? rfqQuery.data : undefined}
           onCancel={closeWorkbench}
           onCreated={(quotation) => {
             openQuotation(quotation, { replace: true });

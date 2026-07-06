@@ -12,6 +12,7 @@ import type {
   UpdatePurchaseOrderV1Payload,
 } from '@shared/api/purchaseOrders';
 import type { QuotationV1 } from '@shared/api/quotations';
+import type { QuotationRequestLineV1 } from '@shared/api/quotationRequests';
 import type { Currency, Incoterm, TransportMode } from '@shared/api/tradeMasterData';
 import { toShippingMode } from '@features/quotations/model/quotationModel';
 
@@ -218,6 +219,29 @@ export function applyQuotationPrefill(
     draft.exchange_rate === nextDraft.exchange_rate
     ? draft
     : nextDraft;
+}
+
+export function applyRfqLinesPrefill(
+  draft: PoFormDraft,
+  rfqLines: QuotationRequestLineV1[],
+): PoFormDraft {
+  if (rfqLines.length === 0) {
+    return draft;
+  }
+
+  return {
+    ...draft,
+    lines: rfqLines.map((line, index) => ({
+      ...newLineDraft(index),
+      item_id: line.item_id ?? '',
+      item_description: line.item_description ?? line.item?.item_name_en ?? line.item?.item_name ?? '',
+      qty_ordered: toNumber(line.qty, 1),
+      unit: line.unit ?? line.item?.base_uom ?? 'PCS',
+      unit_price: toNumber(line.unit_price),
+      gross_weight_kg: toNumber(line.gross_weight_kg),
+      notes: line.note ?? '',
+    })),
+  };
 }
 
 function resolveQuotationTransportModeId(mode: string | null | undefined, transportModes: TransportMode[]) {

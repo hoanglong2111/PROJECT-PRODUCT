@@ -1,11 +1,12 @@
 import {
   ActionIcon,
   Alert,
+  Anchor,
   Badge,
   Button,
-  Chip,
   Collapse,
   Group,
+  NumberInput,
   Paper,
   Select,
   SimpleGrid,
@@ -25,112 +26,159 @@ import {
   IconWallet,
 } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 
 import { fetchChargeCodes, type ChargeCode } from '@shared/api/chargeCodes';
 import {
-  createQuotation,
+  createQuotationOption,
   createQuotationVersion,
+  type CreateQuotationOptionPayload,
+  type QuotationChargeGroup,
   type QuotationChargeLinePayload,
+  type QuotationOptionV1,
   type QuotationV1,
 } from '@shared/api/quotations';
+import { createQuotationFromRequest, type QuotationRequestV1 } from '@shared/api/quotationRequests';
 import { queryKeys } from '@shared/api/queryKeys';
 import { fetchUoms } from '@shared/api/uoms';
+import { useExchangeRates } from '@shared/hooks/useExchangeRates';
 import { useTradeMasterDataOptions } from '@shared/hooks/useTradeMasterDataOptions';
 import { useI18n } from '@shared/i18n';
-import { CHARGE_GROUPS } from '@shared/lib/chargeCategories';
-import { chargeCodeToChargeType, incotermChargeGroups, modeToChargeFlag } from '@shared/lib/quotationCharges';
-import { formatMoney } from '@shared/utils/money';
+import { QUOTATION_CHARGE_GROUPS } from '@shared/lib/quotationChargeGroups';
+import { chargeCodeToChargeType } from '@shared/lib/quotationCharges';
+import { convertToBase, formatMoney, sumMoney } from '@shared/utils/money';
 
-import { quotationModeOptions, toShippingMode } from '../model/quotationModel';
-import {
-  type ChargeLineState,
-  type FeeRow,
-  QuotationFeeTable,
-  seedLineState,
-} from './QuotationFeeTable';
+import { toShippingMode } from '../model/quotationModel';
+import { type ChargeLineState, type FeeRow, QuotationFeeTable, seedLineState } from './QuotationFeeTable';
+import { hasMinimumOptions, QuotationOptionsTable } from './QuotationOptionsTable';
 
 type QuotationFormProps = {
   onCancel: () => void;
   onCreated: (quotation: QuotationV1) => void;
   sourceQuotation?: QuotationV1;
+  rfq?: QuotationRequestV1;
 };
 
-type MandatoryLineState = ChargeLineState & { enabled: boolean };
-
-type OtherLine = ChargeLineState & { uid: string };
-
-type SuggestedChargeSection = {
+type GroupLine = ChargeLineState & { uid: string };
+type GroupLines = Record<QuotationChargeGroup, GroupLine[]>;
+type DraftQuotationOption = CreateQuotationOptionPayload & {
   id: string;
-  titleKey: (typeof CHARGE_GROUPS)[number]['labelKey'];
-  charges: ChargeCode[];
+  option_no: number;
+  is_selected: boolean;
 };
-
-let uidCounter = 0;
-function nextUid() {
-  return `other-${++uidCounter}`;
-}
 
 const EMPTY_CHARGE_CODES: ChargeCode[] = [];
+let uidCounter = 0;
 
-export function QuotationForm({ onCancel, onCreated, sourceQuotation }: QuotationFormProps) {
+function nextUid() {
+  uidCounter += 1;
+  return `fee-${uidCounter}`;
+}
+
+function emptyGroups(): GroupLines {
+  return { FREIGHT: [], ORIGIN: [], DESTINATION: [] };
+}
+
+function numberOrNull(value: number | string | null | undefined): number | null {
+  if (value === '' || value == null) return null;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function seedGroupsFromQuotation(quotation: QuotationV1 | undefined, defaultCurrency: string): GroupLines {
+  const groups = emptyGroups();
+
+  for (const line of quotation?.charge_lines ?? []) {
+    const group = line.charge_group ?? 'FREIGHT';
+    groups[group].push({
+      uid: nextUid(),
+      chargeCode: line.charge_code ?? null,
+      quantity: String(line.quantity ?? 1),
+      unit: line.unit ?? null,
+      unitPrice: line.unit_price == null ? '' : String(line.unit_price),
+      currency: line.currency_code ?? defaultCurrency,
+    });
+  }
+
+  return groups;
+}
+
+function ReadOnlyContext({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="rfq-scope-field">
+      <Text size="xs" c="dimmed" fw={700} mb={4}>
+        {label}
+      </Text>
+      <Text size="sm" fw={800}>
+        {value}
+      </Text>
+    </div>
+  );
+}
+
+export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: QuotationFormProps) {
   const { language, t } = useI18n();
   const queryClient = useQueryClient();
-  const { incotermOptions, currencyOptions, incoterms } = useTradeMasterDataOptions();
+  const { currencyOptions } = useTradeMasterDataOptions();
+  const { rateToVnd } = useExchangeRates();
   const isRevise = Boolean(sourceQuotation);
 
-  const [customerRef, setCustomerRef] = useState(sourceQuotation?.customer_ref ?? '');
-  const [incoterm, setIncoterm] = useState<string | null>(sourceQuotation?.incoterm_code ?? 'FOB');
-  const [mode, setMode] = useState<string | null>(sourceQuotation?.mode ?? 'SEA_FCL');
-  const [currency, setCurrency] = useState<string | null>(sourceQuotation?.currency_code ?? 'USD');
+  const header = {
+    customer: sourceQuotation?.customer_ref ?? rfq?.customer_ref ?? '-',
+    supplier:
+      sourceQuotation?.supplier?.supplier_name ??
+      sourceQuotation?.supplier_id ??
+      rfq?.supplier?.supplier_name ??
+      rfq?.supplier_id ??
+      '-',
+    origin: sourceQuotation?.origin_port ?? rfq?.origin_port ?? '-',
+    destination: sourceQuotation?.destination_port ?? rfq?.destination_port ?? '-',
+    mode: sourceQuotation?.mode ?? rfq?.mode ?? '-',
+    incoterm: sourceQuotation?.incoterm_code ?? rfq?.incoterm_code ?? '-',
+    rfqId: sourceQuotation?.rfq_id ?? rfq?.id ?? null,
+  };
+  const shippingMode = toShippingMode(header.mode);
 
-  // mandatory: keyed by real Charge Code master data charge_code
-  const [mandatory, setMandatory] = useState<Record<string, MandatoryLineState>>({});
-  // other/arising lines
-  const [otherLines, setOtherLines] = useState<OtherLine[]>([]);
-  // group filter for "other" section (default ANCILLARY)
-  const [otherGroup, setOtherGroup] = useState<string>('ANCILLARY_ACCESSORIAL');
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  const [currency, setCurrency] = useState<string | null>(sourceQuotation?.currency_code ?? rfq?.currency_code ?? 'USD');
+  const [validUntil, setValidUntil] = useState(sourceQuotation?.valid_until?.slice(0, 10) ?? '');
+  const [groups, setGroups] = useState<GroupLines>(() => seedGroupsFromQuotation(sourceQuotation, currency ?? 'USD'));
+  const [expanded, setExpanded] = useState<Record<QuotationChargeGroup, boolean>>({
+    FREIGHT: true,
+    ORIGIN: false,
+    DESTINATION: false,
+  });
 
-  // guard: seed source lines only once after chargeCodes load
-  const seededRef = useRef(false);
-
-  const shippingMode = toShippingMode(mode);
+  const [draftOptions, setDraftOptions] = useState<DraftQuotationOption[]>(
+    (sourceQuotation?.options ?? []).map((option) => ({
+      id: option.id,
+      option_no: option.option_no,
+      carrier_code: option.carrier_code,
+      carrier_name: option.carrier_name,
+      vessel_or_flight: option.vessel_or_flight,
+      voyage_flight_no: option.voyage_flight_no,
+      etd: option.etd,
+      eta: option.eta,
+      transit_time_days: option.transit_time_days,
+      risk_warning: option.risk_warning,
+      headline_amount: Number(option.headline_amount ?? 0),
+      is_recommended: option.is_recommended,
+      is_selected: option.is_selected,
+    })),
+  );
+  const [optionCarrier, setOptionCarrier] = useState('');
+  const [optionVessel, setOptionVessel] = useState('');
+  const [optionEtd, setOptionEtd] = useState('');
+  const [optionEta, setOptionEta] = useState('');
+  const [optionTransitDays, setOptionTransitDays] = useState<number | string>('');
+  const [optionRisk, setOptionRisk] = useState('');
+  const [optionAmount, setOptionAmount] = useState<number | string>('');
 
   const chargeCodesQuery = useQuery({
     queryKey: queryKeys.chargeCodes({ page: 1, limit: 200, is_active: true }),
     queryFn: () => fetchChargeCodes({ page: 1, limit: 200, is_active: true }),
   });
   const chargeCodes = chargeCodesQuery.data?.data ?? EMPTY_CHARGE_CODES;
-
-  const selectedIncoterm = useMemo(
-    () => incoterms.find((record) => record.incoterm_code === incoterm),
-    [incoterms, incoterm],
-  );
-  const includedGroups = useMemo(
-    () => selectedIncoterm?.charge_group_scope ?? incotermChargeGroups(incoterm),
-    [selectedIncoterm, incoterm],
-  );
-  const modeFlag = modeToChargeFlag(shippingMode);
-  const suggestedChargeCodes = useMemo(() => {
-    const included = new Set(includedGroups);
-    return chargeCodes.filter((chargeCode) => chargeCode.is_active && included.has(chargeCode.group) && chargeCode[modeFlag] === true);
-  }, [chargeCodes, includedGroups, modeFlag]);
-  const suggestedChargeCodeSet = useMemo(
-    () => new Set(suggestedChargeCodes.map((chargeCode) => chargeCode.charge_code)),
-    [suggestedChargeCodes],
-  );
-  const sections = useMemo<SuggestedChargeSection[]>(() => {
-    const included = new Set(includedGroups);
-    return CHARGE_GROUPS.filter((group) => included.has(group.value))
-      .map((group) => ({
-        id: group.value,
-        titleKey: group.labelKey,
-        charges: suggestedChargeCodes.filter((chargeCode) => chargeCode.group === group.value),
-      }))
-      // Drop in-scope groups that the transport-mode filter leaves empty so no "0/0" accordion renders.
-      .filter((section) => section.charges.length > 0);
-  }, [includedGroups, suggestedChargeCodes]);
 
   const uomsQuery = useQuery({
     queryKey: queryKeys.uoms({ limit: 200, is_active: true }),
@@ -139,251 +187,185 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
   const uoms = uomsQuery.data?.data ?? [];
 
   const chargeCodeOptions = useMemo(() => {
-    const unique = Array.from(new Map(chargeCodes.map((c) => [c.charge_code, c])).values());
-    return unique.map((c) => ({ label: `${c.charge_code} - ${c.charge_name_en}`, value: c.charge_code }));
+    const unique = Array.from(new Map(chargeCodes.map((chargeCode) => [chargeCode.charge_code, chargeCode])).values());
+    return unique.map((chargeCode) => ({
+      label: `${chargeCode.charge_code} - ${chargeCode.charge_name_en}`,
+      value: chargeCode.charge_code,
+    }));
   }, [chargeCodes]);
 
-  const filteredChargeCodeOptions = useMemo(() => {
-    const filtered = chargeCodes.filter((c) => c.group === otherGroup);
-    const unique = Array.from(new Map(filtered.map((c) => [c.charge_code, c])).values());
-    return unique.map((c) => ({ label: `${c.charge_code} - ${c.charge_name_en}`, value: c.charge_code }));
-  }, [chargeCodes, otherGroup]);
-
-  function findChargeCode(code: string | null | undefined): ChargeCode | null {
-    return chargeCodes.find((c) => c.charge_code === code) ?? null;
+  function findChargeCode(code: string | null | undefined) {
+    return chargeCodes.find((chargeCode) => chargeCode.charge_code === code) ?? null;
   }
 
-  const getMandatoryLine = useCallback(
-    (chargeCode: string): MandatoryLineState => {
-      if (mandatory[chargeCode]) return mandatory[chargeCode];
-      const cc = findChargeCode(chargeCode);
-      return { enabled: false, ...seedLineState(cc), chargeCode };
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [mandatory, chargeCodes],
-  );
-
-  // Seed revise mode lines once, after chargeCodes load from the query.
-  // Only runs once (seededRef guard) so subsequent chargeCodes refetches don't overwrite edits.
-  useEffect(() => {
-    if (seededRef.current || !isRevise || !sourceQuotation?.charge_lines?.length || chargeCodes.length === 0) {
-      return;
-    }
-    seededRef.current = true;
-    let cancelled = false;
-
-    const sourceLines = sourceQuotation.charge_lines;
-    const newMandatory: Record<string, MandatoryLineState> = {};
-    const newOtherLines: OtherLine[] = [];
-    const takenSuggestedCodes = new Set<string>();
-    let firstUnmatchedGroup = 'ANCILLARY_ACCESSORIAL';
-
-    for (const srcLine of sourceLines) {
-      const code = srcLine.charge_code ?? null;
-      const cc = chargeCodes.find((candidate) => candidate.charge_code === code) ?? null;
-      if (code && suggestedChargeCodeSet.has(code) && !takenSuggestedCodes.has(code)) {
-        takenSuggestedCodes.add(code);
-        newMandatory[code] = {
-          enabled: true,
-          chargeCode: code,
-          quantity: String(srcLine.quantity ?? 1),
-          unit: srcLine.unit ?? cc?.default_uom ?? null,
-          unitPrice: srcLine.unit_price == null ? '' : String(srcLine.unit_price),
-        };
-      } else {
-        if (newOtherLines.length === 0 && cc?.group) {
-          firstUnmatchedGroup = cc.group;
-        }
-        newOtherLines.push({
-          uid: nextUid(),
-          chargeCode: code,
-          quantity: String(srcLine.quantity ?? 1),
-          unit: srcLine.unit ?? cc?.default_uom ?? null,
-          unitPrice: srcLine.unit_price == null ? '' : String(srcLine.unit_price),
-        });
-      }
-    }
-
-    queueMicrotask(() => {
-      if (cancelled) return;
-      if (Object.keys(newMandatory).length > 0) setMandatory(newMandatory);
-      if (newOtherLines.length > 0) {
-        setOtherLines(newOtherLines);
-        setOtherGroup(firstUnmatchedGroup);
-      }
-    });
-
-    return () => {
-      cancelled = true;
-    };
-    // sourceQuotation and incoterm/mode are stable for this component's lifetime — intentionally omitted
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chargeCodes, isRevise, suggestedChargeCodeSet]);
-
-  function updateMandatory(chargeCode: string, patch: Partial<MandatoryLineState>) {
-    setMandatory((prev) => ({
-      ...prev,
-      [chargeCode]: { ...getMandatoryLine(chargeCode), ...prev[chargeCode], ...patch },
+  function addLine(group: QuotationChargeGroup) {
+    setGroups((current) => ({
+      ...current,
+      [group]: [...current[group], { uid: nextUid(), ...seedLineState(null, currency ?? 'USD') }],
     }));
   }
 
-  function toggleMandatory(chargeCode: string, enabled: boolean) {
-    const current = getMandatoryLine(chargeCode);
-    setMandatory((prev) => ({
-      ...prev,
-      [chargeCode]: { ...current, enabled },
-    }));
-  }
-
-  function addOtherLine() {
-    const defaultCode = filteredChargeCodeOptions[0]?.value ?? null;
-    const cc = findChargeCode(defaultCode);
-    setOtherLines((prev) => [...prev, { uid: nextUid(), ...seedLineState(cc), chargeCode: defaultCode }]);
-  }
-
-  function updateOtherLine(uid: string, patch: Partial<ChargeLineState>) {
-    setOtherLines((prev) =>
-      prev.map((line) => {
+  function updateLine(group: QuotationChargeGroup, uid: string, patch: Partial<ChargeLineState>) {
+    setGroups((current) => ({
+      ...current,
+      [group]: current[group].map((line) => {
         if (line.uid !== uid) return line;
         const updated = { ...line, ...patch };
         if (patch.chargeCode !== undefined && patch.chargeCode !== line.chargeCode) {
-          const cc = findChargeCode(patch.chargeCode);
-          updated.unit = cc?.default_uom ?? updated.unit;
+          updated.unit = findChargeCode(patch.chargeCode)?.default_uom ?? updated.unit;
         }
         return updated;
       }),
+    }));
+  }
+
+  function removeLine(group: QuotationChargeGroup, uid: string) {
+    setGroups((current) => ({ ...current, [group]: current[group].filter((line) => line.uid !== uid) }));
+  }
+
+  const allLines = useMemo(
+    () => QUOTATION_CHARGE_GROUPS.flatMap((group) => groups[group.value].map((line) => ({ group: group.value, line }))),
+    [groups],
+  );
+
+  const totalVnd = useMemo(() => {
+    const totals = allLines.map(({ line }) => {
+      const amount = Number(line.quantity) * Number(line.unitPrice);
+      if (!Number.isFinite(amount) || amount <= 0) return 0;
+      const chargeCode = findChargeCode(line.chargeCode);
+      const withTax = amount * (chargeCode?.taxable ? 1.1 : 1);
+      return convertToBase(withTax, rateToVnd(line.currency), 'VND');
+    });
+    return sumMoney(totals, 'VND');
+    // chargeCodes affects findChargeCode and is intentionally tracked.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allLines, chargeCodes, rateToVnd]);
+
+  const filledLineCount = allLines.filter(({ line }) => line.chargeCode && Number(line.unitPrice) > 0).length;
+  const canSubmit = filledLineCount > 0 && Boolean(currency);
+
+  function buildChargeLines(): QuotationChargeLinePayload[] {
+    return allLines
+      .filter(({ line }) => line.chargeCode && Number(line.unitPrice) > 0)
+      .map(({ group, line }, index) => {
+        const chargeCode = findChargeCode(line.chargeCode);
+        return {
+          line_no: index + 1,
+          charge_type: chargeCode ? chargeCodeToChargeType(chargeCode, shippingMode) : 'OTHER',
+          charge_code: line.chargeCode,
+          charge_group: group,
+          currency_code: line.currency,
+          description: chargeCode
+            ? language === 'vi' && chargeCode.charge_name_vn
+              ? chargeCode.charge_name_vn
+              : chargeCode.charge_name_en
+            : line.chargeCode ?? '',
+          quantity: Number(line.quantity) || 1,
+          unit: line.unit ?? chargeCode?.default_uom ?? 'SET',
+          unit_price: Number(line.unitPrice),
+          tax_rate: chargeCode?.taxable ? 10 : 0,
+          note: chargeCode ? `Rev/Cost: ${chargeCode.rev_cost}` : null,
+        };
+      });
+  }
+
+  function addDraftOption() {
+    setDraftOptions((current) => [
+      ...current,
+      {
+        id: `draft-option-${Date.now()}`,
+        option_no: current.length + 1,
+        carrier_code: optionCarrier.trim() || null,
+        carrier_name: optionCarrier.trim() || null,
+        vessel_or_flight: optionVessel.trim() || null,
+        voyage_flight_no: null,
+        etd: optionEtd || null,
+        eta: optionEta || null,
+        transit_time_days: numberOrNull(optionTransitDays),
+        risk_warning: optionRisk.trim() || null,
+        headline_amount: numberOrNull(optionAmount),
+        is_recommended: current.length === 0,
+        is_selected: false,
+      },
+    ]);
+    setOptionCarrier('');
+    setOptionVessel('');
+    setOptionEtd('');
+    setOptionEta('');
+    setOptionTransitDays('');
+    setOptionRisk('');
+    setOptionAmount('');
+  }
+
+  function removeDraftOption(option: QuotationOptionV1) {
+    setDraftOptions((current) =>
+      current.filter((item) => item.id !== option.id).map((item, index) => ({ ...item, option_no: index + 1 })),
     );
   }
 
-  function removeOtherLine(uid: string) {
-    setOtherLines((prev) => prev.filter((l) => l.uid !== uid));
-  }
-
-  const totals = useMemo(() => {
-    const addLine = (running: { subtotal: number; estimatedTax: number }, line: ChargeLineState) => {
-      const val = Number(line.unitPrice);
-      const qty = Number(line.quantity);
-      const amount = Number.isFinite(val) && Number.isFinite(qty) ? qty * val : 0;
-      const cc = findChargeCode(line.chargeCode);
-      return {
-        subtotal: running.subtotal + amount,
-        estimatedTax: running.estimatedTax + (cc?.taxable ? amount * 0.1 : 0),
-      };
-    };
-
-    const mandatoryTotals = sections
-      .flatMap((s) => s.charges)
-      .reduce<{ subtotal: number; estimatedTax: number }>(
-        (running, chargeCode) => {
-          const line = getMandatoryLine(chargeCode.charge_code);
-          if (!line.enabled) return running;
-          return addLine(running, line);
-        },
-        { subtotal: 0, estimatedTax: 0 },
-      );
-
-    const allTotals = otherLines.reduce(addLine, mandatoryTotals);
-
+  function toTableOption(option: DraftQuotationOption): QuotationOptionV1 {
     return {
-      ...allTotals,
-      grandTotal: allTotals.subtotal + allTotals.estimatedTax,
+      id: option.id,
+      quotation_id: sourceQuotation?.id ?? 'draft',
+      option_no: option.option_no,
+      carrier_code: option.carrier_code ?? null,
+      carrier_name: option.carrier_name ?? null,
+      vessel_or_flight: option.vessel_or_flight ?? null,
+      voyage_flight_no: option.voyage_flight_no ?? null,
+      etd: option.etd ?? null,
+      eta: option.eta ?? null,
+      transit_time_days: option.transit_time_days ?? null,
+      risk_warning: option.risk_warning ?? null,
+      headline_amount: option.headline_amount ?? null,
+      is_recommended: Boolean(option.is_recommended),
+      is_selected: Boolean(option.is_selected),
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sections, otherLines, getMandatoryLine, chargeCodes]);
-  const subtotal = totals.subtotal;
-  const feeProgress = useMemo(() => {
-    const charges = sections.flatMap((section) => section.charges);
-    return {
-      selected: charges.filter((chargeCode) => getMandatoryLine(chargeCode.charge_code).enabled).length,
-      total: charges.length,
-    };
-  }, [sections, getMandatoryLine]);
-
-  const canSubmit = Boolean(incoterm && mode && currency && subtotal > 0);
-  const formatCurrencyAmount = (amount: number) => formatMoney(amount, currency);
-
-  function buildChargeLines(): QuotationChargeLinePayload[] {
-    const mandatoryLines: QuotationChargeLinePayload[] = sections
-      .flatMap((s) => s.charges)
-      .flatMap((chargeCode) => {
-        const line = getMandatoryLine(chargeCode.charge_code);
-        if (!line.enabled || !(Number(line.unitPrice) > 0)) return [];
-        const cc = findChargeCode(line.chargeCode);
-        const entry: QuotationChargeLinePayload = {
-          line_no: 0,
-          charge_type: chargeCodeToChargeType(cc ?? chargeCode, shippingMode),
-          charge_code: line.chargeCode ?? cc?.charge_code,
-          description: cc?.charge_name_en ?? chargeCode.charge_name_en,
-          quantity: Number(line.quantity) || 1,
-          unit: line.unit ?? cc?.default_uom ?? chargeCode.default_uom,
-          unit_price: Number(line.unitPrice),
-          tax_rate: cc?.taxable ? 10 : 0,
-          note: cc ? `Rev/Cost: ${cc.rev_cost}` : null,
-        };
-        return [entry];
-      });
-
-    const otherChargeLines: QuotationChargeLinePayload[] = otherLines
-      .filter((line) => Number(line.unitPrice) > 0 && line.chargeCode)
-      .map((line) => {
-        const cc = findChargeCode(line.chargeCode);
-        const entry: QuotationChargeLinePayload = {
-          line_no: 0,
-          charge_type: cc ? chargeCodeToChargeType(cc, shippingMode) : 'OTHER',
-          charge_code: line.chargeCode,
-          description: cc?.charge_name_en ?? line.chargeCode ?? '',
-          quantity: Number(line.quantity) || 1,
-          unit: line.unit ?? cc?.default_uom ?? 'SHPT',
-          unit_price: Number(line.unitPrice),
-          tax_rate: cc?.taxable ? 10 : 0,
-          note: cc ? `Rev/Cost: ${cc.rev_cost}` : null,
-        };
-        return entry;
-      });
-
-    return [...mandatoryLines, ...otherChargeLines].map((l, i) => ({ ...l, line_no: i + 1 }));
   }
 
   const createMutation = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       const chargeLines = buildChargeLines();
-      if (isRevise && sourceQuotation) {
-        return createQuotationVersion(sourceQuotation.id, {
-          status: 'DRAFT',
-          customer_ref: customerRef.trim() || null,
-          incoterm_code: incoterm,
-          mode,
-          currency_code: currency ?? 'USD',
-          charge_lines: chargeLines,
+      const quotation = isRevise
+        ? await createQuotationVersion(sourceQuotation!.id, {
+            status: 'DRAFT',
+            currency_code: currency ?? 'USD',
+            valid_until: validUntil || null,
+            charge_lines: chargeLines,
+          })
+        : await createQuotationFromRequest(rfq!.id, {
+            currency_code: currency ?? 'USD',
+            valid_until: validUntil || null,
+            charge_lines: chargeLines,
+          });
+
+      for (const option of draftOptions) {
+        await createQuotationOption(quotation.id, {
+          carrier_code: option.carrier_code,
+          carrier_name: option.carrier_name,
+          vessel_or_flight: option.vessel_or_flight,
+          voyage_flight_no: option.voyage_flight_no,
+          etd: option.etd,
+          eta: option.eta,
+          transit_time_days: option.transit_time_days,
+          risk_warning: option.risk_warning,
+          headline_amount: option.headline_amount,
+          is_recommended: option.is_recommended,
         });
       }
-      return createQuotation({
-        customer_ref: customerRef.trim() || null,
-        incoterm_code: incoterm,
-        mode,
-        currency_code: currency ?? 'USD',
-        status: 'DRAFT',
-        charge_lines: chargeLines,
-      });
+
+      return quotation;
     },
     onSuccess: (quotation) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.quotations });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.quotationRequests });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.quotationOptions(quotation.id) });
       onCreated(quotation);
     },
   });
 
   const formTitle = isRevise ? t('quotations.reviseTitle') : t('quotations.formTitle');
-  const formSubtitle = isRevise ? t('quotations.reviseSubtitle') : t('quotations.formSubtitle');
-  const submitLabel = isRevise ? t('quotations.actionResubmit') : t('quotations.create');
-  const includedGroupNames = CHARGE_GROUPS.filter((group) => includedGroups.includes(group.value))
-    .map((group) => t(group.labelKey))
-    .join(', ');
-  const scopeSummary = t('quotations.incotermScopeHint', {
-    count: includedGroups.length,
-    groups: includedGroupNames || '-',
-  });
-  const chargeName = (chargeCode: ChargeCode) =>
-    language === 'vi' && chargeCode.charge_name_vn ? chargeCode.charge_name_vn : chargeCode.charge_name_en;
+  const formSubtitle = isRevise ? t('quotations.reviseSubtitle') : t('quotations.createFromRfqOnly');
+  const submitLabel = t('quotations.actionResubmit');
 
   return (
     <Stack gap="md" className="rfq-form">
@@ -401,16 +383,15 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
                 </Text>
               </div>
             </Group>
-
             <div className="rfq-form-hero-metrics">
               <div className="rfq-form-hero-metric">
                 <IconRoute size={16} />
                 <div>
                   <Text size="xs" c="dimmed">
-                    {t('quotations.incotermsGroup')}
+                    {t('quotations.rfqContext')}
                   </Text>
                   <Text size="sm" fw={800}>
-                    {incoterm ?? '-'}
+                    {header.incoterm} / {header.mode}
                   </Text>
                 </div>
               </div>
@@ -418,10 +399,10 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
                 <IconReceipt2 size={16} />
                 <div>
                   <Text size="xs" c="dimmed">
-                    {t('quotations.selectedCharges', { count: feeProgress.selected, total: feeProgress.total })}
+                    {t('quotations.chargeLinesCount', { count: filledLineCount })}
                   </Text>
                   <Text size="sm" fw={800}>
-                    {otherLines.length} {t('quotations.otherFees')}
+                    {formatMoney(totalVnd, 'VND')}
                   </Text>
                 </div>
               </div>
@@ -432,56 +413,36 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
         <div className="rfq-form-layout">
           <div className="rfq-form-main">
             {isRevise && sourceQuotation?.reject_reason ? (
-              <Alert
-                color="red"
-                icon={<IconAlertTriangle size={16} />}
-                title={t('quotations.reviseFromRejectedBanner')}
-                mb="md"
-              >
+              <Alert color="red" icon={<IconAlertTriangle size={16} />} title={t('quotations.reviseFromRejectedBanner')} mb="md">
                 {sourceQuotation.reject_reason}
               </Alert>
             ) : null}
 
             <section className="rfq-form-section">
               <div className="rfq-section-head">
-                <Text fw={800}>{t('quotations.setupSection')}</Text>
-                <Text size="xs" c="dimmed" className="rfq-section-summary">
-                  {scopeSummary}
-                </Text>
+                <Text fw={800}>{t('quotations.rfqContext')}</Text>
               </div>
-
               <SimpleGrid cols={{ base: 1, sm: 2 }} mt="md" spacing="md" className="rfq-setup-grid">
-                <TextInput
-                  className="rfq-scope-field"
-                  label={t('quotations.customer')}
-                  placeholder={t('quotations.customerPlaceholder')}
-                  leftSection={<IconFileInvoice size={16} />}
-                  leftSectionPointerEvents="none"
-                  value={customerRef}
-                  onChange={(event) => setCustomerRef(event.currentTarget.value)}
+                <ReadOnlyContext label={t('quotations.customer')} value={header.customer} />
+                <ReadOnlyContext label={t('quotationRequests.field.supplier')} value={header.supplier} />
+                <ReadOnlyContext label={t('quotationRequests.field.route')} value={`${header.origin} -> ${header.destination}`} />
+                <ReadOnlyContext label={t('quotations.mode')} value={header.mode} />
+                <ReadOnlyContext label={t('quotations.incoterm')} value={header.incoterm} />
+                <ReadOnlyContext
+                  label={t('quotations.rfqLink')}
+                  value={
+                    header.rfqId ? (
+                      <Anchor component={Link} to={`/quotation-requests?view=${header.rfqId}`}>
+                        {header.rfqId}
+                      </Anchor>
+                    ) : (
+                      '-'
+                    )
+                  }
                 />
                 <Select
                   className="rfq-scope-field"
-                  label={t('quotations.incoterm')}
-                  data={incotermOptions}
-                  leftSection={<IconRoute size={16} />}
-                  leftSectionPointerEvents="none"
-                  value={incoterm}
-                  onChange={setIncoterm}
-                  searchable
-                />
-                <Select
-                  className="rfq-scope-field"
-                  label={t('quotations.mode')}
-                  data={quotationModeOptions}
-                  leftSection={<IconRoute size={16} />}
-                  leftSectionPointerEvents="none"
-                  value={mode}
-                  onChange={setMode}
-                />
-                <Select
-                  className="rfq-scope-field"
-                  label={t('quotations.currency')}
+                  label={t('quotations.defaultCurrency')}
                   data={currencyOptions}
                   leftSection={<IconWallet size={16} />}
                   leftSectionPointerEvents="none"
@@ -489,176 +450,115 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
                   onChange={setCurrency}
                   searchable
                 />
+                <TextInput
+                  className="rfq-scope-field"
+                  label={t('quotations.validUntil')}
+                  type="date"
+                  value={validUntil}
+                  onChange={(event) => setValidUntil(event.currentTarget.value)}
+                />
               </SimpleGrid>
             </section>
 
             <section className="rfq-form-section">
               <div className="rfq-section-head">
-                <Group justify="space-between" align="flex-start" gap="sm">
-                  <div>
-                    <Text fw={800}>{t('quotations.mandatoryFees')}</Text>
-                    <Text size="xs" c="dimmed">
-                      {t('quotations.optionalChargesHint')}
-                    </Text>
-                  </div>
-                  <Badge
-                    className="rfq-section-progress tabular-nums"
-                    color={feeProgress.selected > 0 ? 'teal' : 'gray'}
-                    variant="light"
-                  >
-                    {feeProgress.selected}/{feeProgress.total}
-                  </Badge>
-                </Group>
+                <Text fw={800}>{t('quotations.options')}</Text>
+                <Text size="xs" c="dimmed" className="rfq-section-summary">
+                  {t('quotations.optionsHint')}
+                </Text>
               </div>
-
-              {selectedIncoterm?.insurance_required ? (
-                <Alert color="blue" variant="light" mt="xs">
-                  {t('quotations.insuranceIncludedNote', { incoterm: incoterm ?? '' })}
+              {!hasMinimumOptions(draftOptions) ? (
+                <Alert color="yellow" icon={<IconAlertTriangle size={16} />} mt="md">
+                  {t('quotations.minimumOptionsWarning')}
                 </Alert>
               ) : null}
+              <SimpleGrid cols={{ base: 1, md: 4 }} mt="md" spacing="md">
+                <TextInput label={t('quotations.carrier')} value={optionCarrier} onChange={(event) => setOptionCarrier(event.currentTarget.value)} />
+                <TextInput label={t('quotations.vesselOrFlight')} value={optionVessel} onChange={(event) => setOptionVessel(event.currentTarget.value)} />
+                <TextInput type="date" label={t('quotations.etd')} value={optionEtd} onChange={(event) => setOptionEtd(event.currentTarget.value)} />
+                <TextInput type="date" label={t('quotations.eta')} value={optionEta} onChange={(event) => setOptionEta(event.currentTarget.value)} />
+                <NumberInput label={t('quotations.transitDays')} value={optionTransitDays} onChange={setOptionTransitDays} min={0} />
+                <NumberInput label={t('quotations.headlineAmount')} value={optionAmount} onChange={setOptionAmount} min={0} thousandSeparator="," />
+                <TextInput label={t('quotations.riskWarning')} value={optionRisk} onChange={(event) => setOptionRisk(event.currentTarget.value)} />
+                <Group align="flex-end">
+                  <Button
+                    variant="light"
+                    leftSection={<IconPlus size={14} />}
+                    onClick={addDraftOption}
+                    disabled={!optionCarrier.trim() && !optionEtd}
+                  >
+                    {t('quotations.addOption')}
+                  </Button>
+                </Group>
+              </SimpleGrid>
+              <QuotationOptionsTable mode="edit" options={draftOptions.map(toTableOption)} onRemove={removeDraftOption} />
+            </section>
 
-              <div className="rfq-charge-board">
-                {sections.map((section, index) => {
-                  const rows: FeeRow[] = section.charges.map((chargeCode) => {
-                    const line = getMandatoryLine(chargeCode.charge_code);
-                    return {
-                      key: chargeCode.charge_code,
-                      label: chargeName(chargeCode),
-                      subLabel: `${chargeCode.charge_code} / ${chargeCode.default_uom}`,
-                      state: line,
-                      enabled: line.enabled,
-                    };
-                  });
-                  const isExpanded = expandedSections[section.id] ?? index === 0;
-                  const selectedInSection = rows.filter((row) => row.enabled).length;
-                  const sectionToggleLabel = isExpanded
-                    ? t('quotations.collapseCharges')
-                    : t('quotations.expandCharges');
+            {QUOTATION_CHARGE_GROUPS.map((group) => {
+              const lines = groups[group.value];
+              const isExpanded = expanded[group.value];
+              const rows: FeeRow[] = lines.map((line) => ({ key: line.uid, label: null, state: line, enabled: true }));
 
-                  return (
-                    <div key={section.id} className="rfq-charge-group" data-selected={selectedInSection > 0 ? 'true' : undefined}>
-                      <div className="rfq-charge-group-head">
-                        <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
-                          <div>
-                            <Text fw={800} size="sm">
-                              {t(section.titleKey)}
-                            </Text>
-                            <Text size="xs" c="dimmed">
-                              {t('quotations.selectedCharges', { count: selectedInSection, total: rows.length })}
-                            </Text>
-                          </div>
-                          <Group gap="xs" wrap="nowrap">
-                            <Badge
-                              className="rfq-charge-count tabular-nums"
-                              color={selectedInSection > 0 ? 'teal' : 'gray'}
+              return (
+                <section className="rfq-form-section" key={group.value}>
+                  <div className="rfq-charge-group" data-selected={lines.length > 0 ? 'true' : undefined}>
+                    <div className="rfq-charge-group-head">
+                      <Group justify="space-between" align="center" gap="sm" wrap="nowrap">
+                        <Text fw={800} size="sm">
+                          {t(group.labelKey)}
+                        </Text>
+                        <Group gap="xs" wrap="nowrap">
+                          <Badge className="rfq-charge-count tabular-nums" color={lines.length > 0 ? 'teal' : 'gray'} variant="light">
+                            {lines.length}
+                          </Badge>
+                          <Tooltip label={isExpanded ? t('quotations.collapseCharges') : t('quotations.expandCharges')}>
+                            <ActionIcon
+                              aria-expanded={isExpanded}
+                              className="rfq-breakdown-toggle"
                               variant="light"
+                              onClick={() => setExpanded((current) => ({ ...current, [group.value]: !isExpanded }))}
                             >
-                              {selectedInSection}/{rows.length}
-                            </Badge>
-                            <Tooltip label={sectionToggleLabel}>
-                              <ActionIcon
-                                aria-expanded={isExpanded}
-                                aria-label={sectionToggleLabel}
-                                className="rfq-breakdown-toggle"
-                                variant="light"
-                                onClick={() =>
-                                  setExpandedSections((current) => ({
-                                    ...current,
-                                    [section.id]: !isExpanded,
-                                  }))
-                                }
-                              >
-                                <IconChevronDown
-                                  className={isExpanded ? 'rfq-breakdown-chevron is-open' : 'rfq-breakdown-chevron'}
-                                  size={18}
-                                />
-                              </ActionIcon>
-                            </Tooltip>
-                          </Group>
+                              <IconChevronDown className={isExpanded ? 'rfq-breakdown-chevron is-open' : 'rfq-breakdown-chevron'} size={18} />
+                            </ActionIcon>
+                          </Tooltip>
                         </Group>
-                      </div>
-                      <Collapse expanded={isExpanded}>
-                        <div className="rfq-charge-grid">
+                      </Group>
+                    </div>
+                    <Collapse expanded={isExpanded}>
+                      <div className="rfq-charge-grid">
+                        {rows.length > 0 ? (
                           <QuotationFeeTable
                             rows={rows}
                             chargeCodeOptions={chargeCodeOptions}
+                            currencyOptions={currencyOptions}
+                            rateToVnd={rateToVnd}
                             uoms={uoms}
-                            currency={currency}
-                            onToggle={toggleMandatory}
-                            onChange={updateMandatory}
+                            removable
+                            onChange={(uid, patch) => updateLine(group.value, uid, patch)}
+                            onRemove={(uid) => removeLine(group.value, uid)}
                           />
-                        </div>
-                      </Collapse>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-
-            <section className="rfq-form-section">
-              <div className="rfq-section-head">
-                <Group justify="space-between" align="center" gap="sm">
-                  <Text fw={800}>{t('quotations.otherFees')}</Text>
-                  <Badge className="rfq-section-progress tabular-nums" color={otherLines.length > 0 ? 'blue' : 'gray'} variant="light">
-                    {otherLines.length}
-                  </Badge>
-                </Group>
-              </div>
-
-              <Group gap="xs" mt="md" mb="md" wrap="wrap" className="rfq-chip-row">
-                {CHARGE_GROUPS.map((g) => (
-                  <Chip
-                    key={g.value}
-                    checked={otherGroup === g.value}
-                    onChange={() => setOtherGroup(g.value)}
-                    size="sm"
-                    variant="outline"
-                  >
-                    {t(g.labelKey)}
-                  </Chip>
-                ))}
-              </Group>
-
-              <Stack gap="sm">
-                {otherLines.length === 0 ? (
-                  <div className="rfq-empty-lines rfq-empty-lines--actionable">
-                    <div className="rfq-empty-lines-icon">
-                      <IconReceipt2 size={18} />
-                    </div>
-                    <div>
-                      <Text size="sm" fw={700}>
-                        {t('quotations.noOtherFees')}
-                      </Text>
-                    </div>
+                        ) : (
+                          <div className="rfq-empty-lines">
+                            <Text size="sm" c="dimmed">
+                              {t('quotations.noOtherFees')}
+                            </Text>
+                          </div>
+                        )}
+                        <Button
+                          variant="light"
+                          size="xs"
+                          leftSection={<IconPlus size={14} />}
+                          className="rfq-add-fee-button"
+                          onClick={() => addLine(group.value)}
+                        >
+                          {t('quotations.addFee')}
+                        </Button>
+                      </div>
+                    </Collapse>
                   </div>
-                ) : (
-                  <QuotationFeeTable
-                    rows={otherLines.map((line) => ({
-                      key: line.uid,
-                      label: null,
-                      state: line,
-                      enabled: true,
-                    }))}
-                    chargeCodeOptions={filteredChargeCodeOptions}
-                    uoms={uoms}
-                    currency={currency}
-                    editableFee
-                    removable
-                    onChange={updateOtherLine}
-                    onRemove={removeOtherLine}
-                  />
-                )}
-                <Button
-                  variant="light"
-                  size="xs"
-                  leftSection={<IconPlus size={14} />}
-                  onClick={addOtherLine}
-                  className="rfq-add-fee-button"
-                >
-                  {t('quotations.addFee')}
-                </Button>
-              </Stack>
-            </section>
+                </section>
+              );
+            })}
           </div>
 
           <aside className="rfq-form-rail">
@@ -666,10 +566,10 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
               <Group justify="space-between" align="flex-start" gap="sm">
                 <div>
                   <Text size="xs" tt="uppercase" fw={800} c="dimmed">
-                    {t('quotations.computedTotal')}
+                    {t('quotations.computedTotalVnd')}
                   </Text>
                   <Text fw={900} size="xl" className="tabular-nums">
-                    {formatCurrencyAmount(totals.grandTotal)}
+                    {formatMoney(totalVnd, 'VND')}
                   </Text>
                 </div>
                 <div className="rfq-total-icon">
@@ -677,71 +577,11 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
                 </div>
               </Group>
             </div>
-
-            <div className="rfq-summary-list">
-              <div className="rfq-summary-row">
-                <IconWallet size={15} />
-                <div>
-                  <Text size="xs" c="dimmed">
-                    {t('quotations.subtotal')}
-                  </Text>
-                  <Text size="sm" fw={700} className="tabular-nums">
-                    {formatCurrencyAmount(totals.subtotal)}
-                  </Text>
-                </div>
-              </div>
-              <div className="rfq-summary-row">
-                <IconReceipt2 size={15} />
-                <div>
-                  <Text size="xs" c="dimmed">
-                    {t('quotations.estimatedTax')}
-                  </Text>
-                  <Text size="sm" fw={700} className="tabular-nums">
-                    {formatCurrencyAmount(totals.estimatedTax)}
-                  </Text>
-                </div>
-              </div>
-              <div className="rfq-summary-row">
-                <IconRoute size={15} />
-                <div>
-                  <Text size="xs" c="dimmed">
-                    {t('quotations.incoterm')} / {t('quotations.mode')}
-                  </Text>
-                  <Text size="sm" fw={700}>
-                    {incoterm ?? '-'} / {mode ?? '-'}
-                  </Text>
-                </div>
-              </div>
-              <div className="rfq-summary-row">
-                <IconReceipt2 size={15} />
-                <div>
-                  <Text size="xs" c="dimmed">
-                    {t('quotations.mandatoryFees')}
-                  </Text>
-                  <Text size="sm" fw={700} className="tabular-nums">
-                    {t('quotations.selectedCharges', { count: feeProgress.selected, total: feeProgress.total })}
-                  </Text>
-                </div>
-              </div>
-              <div className="rfq-summary-row">
-                <IconPlus size={15} />
-                <div>
-                  <Text size="xs" c="dimmed">
-                    {t('quotations.otherFees')}
-                  </Text>
-                  <Text size="sm" fw={700} className="tabular-nums">
-                    {otherLines.length}
-                  </Text>
-                </div>
-              </div>
-            </div>
-
             {!canSubmit ? (
               <Text size="xs" c="dimmed" className="rfq-submit-hint">
                 {t('quotations.enterAtLeastOneFee')}
               </Text>
             ) : null}
-
             <Group justify="flex-end" className="rfq-rail-actions" grow>
               <Button variant="default" onClick={onCancel}>
                 {t('common.cancel')}
@@ -751,20 +591,6 @@ export function QuotationForm({ onCancel, onCreated, sourceQuotation }: Quotatio
               </Button>
             </Group>
           </aside>
-
-          <div className="rfq-mobile-submit-bar" aria-label={t('quotations.computedTotal')}>
-            <div>
-              <Text size="xs" c="dimmed" fw={800}>
-                {t('quotations.computedTotal')}
-              </Text>
-              <Text fw={900} size="sm" className="tabular-nums">
-                {formatCurrencyAmount(totals.grandTotal)}
-              </Text>
-            </div>
-            <Button disabled={!canSubmit} loading={createMutation.isPending} onClick={() => createMutation.mutate()}>
-              {submitLabel}
-            </Button>
-          </div>
         </div>
       </Paper>
     </Stack>

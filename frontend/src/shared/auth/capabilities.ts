@@ -1,5 +1,7 @@
 export const CAPABILITIES = [
   'dashboard.view',
+  'quotationRequests.view',
+  'quotationRequests.manage',
   'quotations.view',
   'quotations.manage',
   'purchaseOrders.view',

@@ -63,6 +63,12 @@ export type PurchaseOrderStatus =
 
 export type ShippingMode = 'AIR' | 'FCL' | 'LCL';
 
+export const quotationModeOptions: { value: string; label: string }[] = [
+  { value: 'SEA_FCL', label: 'SEA FCL' },
+  { value: 'SEA_LCL', label: 'SEA LCL' },
+  { value: 'AIR', label: 'AIR' },
+];
+
 export type QuotationStatus =
   | 'DRAFT'
   | 'PRELIMINARY_SENT'

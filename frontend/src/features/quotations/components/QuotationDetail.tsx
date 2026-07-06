@@ -1,14 +1,16 @@
-import { ActionIcon, Alert, Button, Collapse, Group, Paper, Stack, Table, Text, Textarea, Title, Tooltip } from '@mantine/core';
+import { ActionIcon, Alert, Anchor, Button, Collapse, Group, Paper, Stack, Table, Text, Textarea, Title, Tooltip } from '@mantine/core';
 import { IconCheck, IconChevronDown, IconEdit, IconFileInvoice, IconSend, IconShoppingCart, IconX } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import {
+  fetchQuotationOptions,
   fetchQuotationVersions,
   markQuotationFinal,
   receiveQuotation,
   rejectQuotation,
+  selectQuotationOption,
   submitQuotationToKbi,
   type QuotationStatusV1,
   type QuotationV1,
@@ -23,6 +25,7 @@ import { formatDate } from '@shared/utils/date';
 import { formatMoney, roundToMinorUnits } from '@shared/utils/money';
 
 import { quotationDisplayTotal } from '../model/quotationModel';
+import { QuotationOptionsTable } from './QuotationOptionsTable';
 
 function formatAmount(amount: number, currency: string | null | undefined): string {
   return new Intl.NumberFormat(undefined, {
@@ -66,12 +69,29 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
     queryFn: () => fetchQuotationVersions(quotation.id),
     enabled: quotation.status === 'REJECTED',
   });
+  const optionsQuery = useQuery({
+    queryKey: queryKeys.quotationOptions(quotation.id),
+    queryFn: () => fetchQuotationOptions(quotation.id),
+    initialData: quotation.options,
+  });
   const versions = (versionsQuery.data ?? []).sort((a, b) => b.version - a.version);
   const isLatestKnownVersion = versions.length === 0 || versions[0]?.id === quotation.id;
+  const options = optionsQuery.data ?? quotation.options ?? [];
+  const selectedOptionId = quotation.selected_option_id ?? options.find((option) => option.is_selected)?.id ?? null;
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: queryKeys.quotations });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.quotationDetail(quotation.id) });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.quotationOptions(quotation.id) });
   };
+
+  const selectOptionMutation = useMutation({
+    mutationFn: (optionId: string) => selectQuotationOption(quotation.id, optionId),
+    onSuccess: (updatedQuotation) => {
+      queryClient.setQueryData(queryKeys.quotationOptions(quotation.id), updatedQuotation.options ?? []);
+      invalidate();
+    },
+  });
 
   const transitionMutation = useMutation({
     mutationFn: (next: 'draft' | 'submit' | 'confirm') => {
@@ -142,6 +162,20 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
 
         <div className="rfq-detail-fact-strip">
           <FieldPair className="rfq-fact" label={t('quotations.customer')} value={quotation.customer_ref ?? '—'} />
+          <FieldPair
+            className="rfq-fact"
+            label={t('quotationRequests.field.route')}
+            value={quotation.origin_port || quotation.destination_port ? `${quotation.origin_port ?? '—'} → ${quotation.destination_port ?? '—'}` : '—'}
+          />
+          <FieldPair
+            className="rfq-fact"
+            label={t('quotations.rfqLink')}
+            value={quotation.rfq_id ? (
+              <Anchor component={Link} to={`/quotation-requests?view=${quotation.rfq_id}`}>
+                {quotation.rfq_id}
+              </Anchor>
+            ) : '—'}
+          />
           <FieldPair className="rfq-fact" label={t('quotations.incoterm')} value={quotation.incoterm_code ?? '—'} />
           <FieldPair className="rfq-fact" label={t('quotations.mode')} value={quotation.mode ?? '—'} />
           <FieldPair className="rfq-fact" label={t('quotations.currency')} value={quotation.currency_code ?? '—'} />
@@ -157,6 +191,15 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
       ) : null}
 
       <div className="rfq-detail-layout">
+        <Paper withBorder p="md" className="rfq-breakdown-panel">
+          <QuotationOptionsTable
+            mode="read"
+            options={options}
+            selectedOptionId={selectedOptionId}
+            onSelect={(optionId) => selectOptionMutation.mutate(optionId)}
+          />
+        </Paper>
+
         <Paper withBorder p={0} className="rfq-breakdown-panel">
           <div className="rfq-panel-head">
             <div>
@@ -197,7 +240,7 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
                       <Table.Th ta="right">{t('quotations.unitPrice')}</Table.Th>
                       <Table.Th ta="right">{t('forms.taxAmount')}</Table.Th>
                       <Table.Th ta="right">
-                        {t('quotations.moneyCurrencyHeader', { currency: quotation.currency_code ?? '—' })}
+                        {t('quotations.lineTotal')}
                       </Table.Th>
                     </Table.Tr>
                   </Table.Thead>
@@ -207,6 +250,7 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
                       const unitPrice = Number(line.unit_price ?? 0);
                       const taxAmount = Number(line.tax_amount ?? 0);
                       const lineTotal = Number(line.total_amount ?? line.amount ?? 0);
+                      const lineCurrency = line.currency_code ?? quotation.currency_code;
 
                       return (
                       <Table.Tr key={line.id}>
@@ -221,13 +265,13 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
                         </Table.Td>
                         <Table.Td>{line.unit ?? '—'}</Table.Td>
                         <Table.Td ta="right" className="tabular-nums">
-                          {Number.isFinite(unitPrice) ? formatAmount(unitPrice, quotation.currency_code) : '-'}
+                          {Number.isFinite(unitPrice) ? formatAmount(unitPrice, lineCurrency) : '-'}
                         </Table.Td>
                         <Table.Td ta="right" className="tabular-nums">
-                          {Number.isFinite(taxAmount) ? formatAmount(taxAmount, quotation.currency_code) : '-'}
+                          {Number.isFinite(taxAmount) ? formatAmount(taxAmount, lineCurrency) : '-'}
                         </Table.Td>
                         <Table.Td ta="right" className="tabular-nums">
-                          {Number.isFinite(lineTotal) ? formatAmount(lineTotal, quotation.currency_code) : '-'}
+                          {Number.isFinite(lineTotal) ? formatAmount(lineTotal, lineCurrency) : '-'}
                         </Table.Td>
                       </Table.Tr>
                       );
@@ -239,7 +283,10 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
 
             <div className="rfq-breakdown-total">
               <Text fw={800}>{t('quotations.total')}</Text>
-              <Text fw={900} className="tabular-nums">{formatMoney(total, quotation.currency_code)}</Text>
+              <div>
+                <Text fw={900} className="tabular-nums">{formatMoney(total, quotation.currency_code)}</Text>
+                <Text size="xs" c="dimmed">{t('quotations.totalsVndNote')}</Text>
+              </div>
             </div>
           </Collapse>
         </Paper>
@@ -308,24 +355,41 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
                     </Button>
                   ) : null}
                   {status === 'DRAFT' ? (
-                    <Button
-                      fullWidth
-                      leftSection={<IconSend size={16} />}
-                      loading={transitionMutation.isPending}
-                      onClick={() => transitionMutation.mutate('submit')}
-                    >
-                      {t('quotations.actionSubmitApproval')}
-                    </Button>
+                    <>
+                      {onRevise ? (
+                        <Button
+                          fullWidth
+                          variant="light"
+                          leftSection={<IconEdit size={16} />}
+                          onClick={() => onRevise(quotation)}
+                        >
+                          {t('quotations.actionEditValueAdd')}
+                        </Button>
+                      ) : null}
+                      <Button
+                        fullWidth
+                        leftSection={<IconSend size={16} />}
+                        loading={transitionMutation.isPending}
+                        onClick={() => transitionMutation.mutate('submit')}
+                      >
+                        {t('quotations.actionSubmitApproval')}
+                      </Button>
+                    </>
                   ) : null}
                   {status === 'PENDING_APPROVAL' ? (
-                    <Button
-                      fullWidth
-                      leftSection={<IconCheck size={16} />}
-                      loading={transitionMutation.isPending}
-                      onClick={() => transitionMutation.mutate('confirm')}
-                    >
-                      {t('quotations.actionConfirm')}
-                    </Button>
+                    <Tooltip label={!selectedOptionId ? t('quotations.confirmNeedsOption') : t('quotations.actionConfirm')}>
+                      <div>
+                        <Button
+                          fullWidth
+                          leftSection={<IconCheck size={16} />}
+                          loading={transitionMutation.isPending}
+                          disabled={!selectedOptionId}
+                          onClick={() => transitionMutation.mutate('confirm')}
+                        >
+                          {t('quotations.actionConfirm')}
+                        </Button>
+                      </div>
+                    </Tooltip>
                   ) : null}
                   {canReject ? (
                     <div className="rfq-reject-box">
