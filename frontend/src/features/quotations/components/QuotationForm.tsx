@@ -343,16 +343,16 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
       const chargeLines = buildChargeLines();
       const quotation = isRevise
         ? await createQuotationVersion(sourceQuotation!.id, {
-            status: 'DRAFT',
-            currency_code: currency ?? 'USD',
-            valid_until: validUntil || null,
-            charge_lines: chargeLines,
-          })
+          status: 'DRAFT',
+          currency_code: currency ?? 'USD',
+          valid_until: validUntil || null,
+          charge_lines: chargeLines,
+        })
         : await createQuotationFromRequest(rfq!.id, {
-            currency_code: currency ?? 'USD',
-            valid_until: validUntil || null,
-            charge_lines: chargeLines,
-          });
+          currency_code: currency ?? 'USD',
+          valid_until: validUntil || null,
+          charge_lines: chargeLines,
+        });
 
       for (const option of draftOptions) {
         await createQuotationOption(quotation.id, {

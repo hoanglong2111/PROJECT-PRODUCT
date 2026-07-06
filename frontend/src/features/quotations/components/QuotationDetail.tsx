@@ -255,27 +255,27 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
                       const lineCurrency = line.currency_code ?? quotation.currency_code;
 
                       return (
-                      <Table.Tr key={line.id}>
-                        <Table.Td>
-                          <Text fw={600} size="sm">{formatChargeDescription(line.description ?? line.charge_type)}</Text>
-                          {line.note ? (
-                            <Text size="xs" c="dimmed">{line.note}</Text>
-                          ) : null}
-                        </Table.Td>
-                        <Table.Td ta="right" className="tabular-nums">
-                          {Number.isFinite(quantity) ? new Intl.NumberFormat().format(quantity) : '-'}
-                        </Table.Td>
-                        <Table.Td>{line.unit ?? '—'}</Table.Td>
-                        <Table.Td ta="right" className="tabular-nums">
-                          {Number.isFinite(unitPrice) ? formatAmount(unitPrice, lineCurrency) : '-'}
-                        </Table.Td>
-                        <Table.Td ta="right" className="tabular-nums">
-                          {Number.isFinite(taxAmount) ? formatAmount(taxAmount, lineCurrency) : '-'}
-                        </Table.Td>
-                        <Table.Td ta="right" className="tabular-nums">
-                          {Number.isFinite(lineTotal) ? formatAmount(lineTotal, lineCurrency) : '-'}
-                        </Table.Td>
-                      </Table.Tr>
+                        <Table.Tr key={line.id}>
+                          <Table.Td>
+                            <Text fw={600} size="sm">{formatChargeDescription(line.description ?? line.charge_type)}</Text>
+                            {line.note ? (
+                              <Text size="xs" c="dimmed">{line.note}</Text>
+                            ) : null}
+                          </Table.Td>
+                          <Table.Td ta="right" className="tabular-nums">
+                            {Number.isFinite(quantity) ? new Intl.NumberFormat().format(quantity) : '-'}
+                          </Table.Td>
+                          <Table.Td>{line.unit ?? '—'}</Table.Td>
+                          <Table.Td ta="right" className="tabular-nums">
+                            {Number.isFinite(unitPrice) ? formatAmount(unitPrice, lineCurrency) : '-'}
+                          </Table.Td>
+                          <Table.Td ta="right" className="tabular-nums">
+                            {Number.isFinite(taxAmount) ? formatAmount(taxAmount, lineCurrency) : '-'}
+                          </Table.Td>
+                          <Table.Td ta="right" className="tabular-nums">
+                            {Number.isFinite(lineTotal) ? formatAmount(lineTotal, lineCurrency) : '-'}
+                          </Table.Td>
+                        </Table.Tr>
                       );
                     })}
                   </Table.Tbody>
