@@ -10,6 +10,7 @@ import {
 } from '@shared/api/quotationRequests';
 import { queryKeys } from '@shared/api/queryKeys';
 import { DateField } from '@shared/components/DateField';
+import { HeaderLabel } from '@shared/components/HeaderLabel';
 import {
   FormSection,
   OrderLineItemsEditor,
@@ -21,7 +22,15 @@ import {
 import { useI18n } from '@shared/i18n';
 
 import { useRfqMasterData } from '../hooks/useRfqMasterData';
-import { rfqModeOptions } from '../model/quotationRequestModel';
+import {
+  isAirMode,
+  rfqChargeableWeightKg,
+  rfqDimWeightKg,
+  rfqLineCbm,
+  rfqModeOptions,
+  rfqTotalCbm,
+  rfqTotalWeight,
+} from '../model/quotationRequestModel';
 
 type Props = {
   onCancel: () => void;
@@ -49,17 +58,17 @@ export function QuotationRequestForm({ onCancel, onCreated }: Props) {
   const [originPort, setOriginPort] = useState('');
   const [destinationPort, setDestinationPort] = useState('Hai Phong (VNHPH)');
   const [readyDate, setReadyDate] = useState<string | null>(null);
-  const [volume, setVolume] = useState<number | string>('');
   const [containerType, setContainerType] = useState('');
   const [note, setNote] = useState('');
   const [lines, setLines] = useState<OrderLineDraft[]>([newOrderLine(0)]);
   const [activeLineId, setActiveLineId] = useState<string | null>(null);
 
   const selectedSupplier = masterData.suppliers.find((supplier) => supplier.id === supplierId);
-  const totalWeight = useMemo(
-    () => lines.reduce((sum, line) => sum + (Number(line.gross_weight_kg) || 0), 0),
-    [lines],
-  );
+  const totalWeight = useMemo(() => rfqTotalWeight(lines), [lines]);
+  const totalCbm = useMemo(() => rfqTotalCbm(lines), [lines]);
+  const dimWeight = useMemo(() => rfqDimWeightKg(totalCbm), [totalCbm]);
+  const chargeableWeight = useMemo(() => rfqChargeableWeightKg(totalWeight, dimWeight), [dimWeight, totalWeight]);
+  const airMode = isAirMode(mode);
   const requestTotal = orderLinesTotal(lines);
   const validLineCount = lines.filter((line) => line.item_id && line.qty > 0).length;
   const canSubmit = Boolean(customerRef.trim() && supplierId && incoterm && mode && currency && validLineCount > 0);
@@ -99,7 +108,9 @@ export function QuotationRequestForm({ onCancel, onCreated }: Props) {
         destination_port: destinationPort.trim() || null,
         desired_cargo_ready_date: readyDate,
         gross_weight_kg: totalWeight,
-        volume_cbm: num(volume),
+        volume_cbm: totalCbm || null,
+        dim_weight_kg: airMode ? dimWeight || null : null,
+        chargeable_weight_kg: airMode ? chargeableWeight || null : null,
         container_type: containerType.trim() || null,
         note: note.trim() || null,
         lines: lines
@@ -112,6 +123,10 @@ export function QuotationRequestForm({ onCancel, onCreated }: Props) {
             unit: line.unit || null,
             unit_price: num(line.unit_price),
             gross_weight_kg: num(line.gross_weight_kg),
+            length_cm: num(line.length_cm),
+            width_cm: num(line.width_cm),
+            height_cm: num(line.height_cm),
+            cbm: rfqLineCbm(line) || null,
             note: line.note || null,
           })),
       }),
@@ -169,6 +184,7 @@ export function QuotationRequestForm({ onCancel, onCreated }: Props) {
             value={totalWeight.toLocaleString()}
             tone="accent"
           />
+          <SummaryTile label={t('quotationRequests.totalCbm')} value={totalCbm.toLocaleString()} />
         </SimpleGrid>
 
         <div className="purchase-order-form-core-grid">
@@ -240,30 +256,59 @@ export function QuotationRequestForm({ onCancel, onCreated }: Props) {
           >
             <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
               <TextInput
-                label={t('quotations.originPort')}
+                label={<HeaderLabel label={t('quotations.originPort')} hint={t('quotations.originPortHint')} />}
                 description={`${t('purchaseOrders.originCountry')}: ${selectedSupplier?.country ?? '-'}`}
                 value={originPort}
                 onChange={(event) => setOriginPort(event.currentTarget.value)}
               />
               <TextInput
-                label={t('quotations.destinationPort')}
+                label={<HeaderLabel label={t('quotations.destinationPort')} hint={t('quotations.destinationPortHint')} />}
                 description={`${t('purchaseOrders.destinationCountry')}: VN`}
                 value={destinationPort}
                 onChange={(event) => setDestinationPort(event.currentTarget.value)}
               />
-              <DateField label={t('quotationRequests.field.readyDate')} value={readyDate} onChange={setReadyDate} />
+              <DateField
+                label={t('quotationRequests.field.readyDate')}
+                description={t('quotationRequests.field.readyDateHint')}
+                value={readyDate}
+                onChange={setReadyDate}
+              />
               <NumberInput
-                label={t('quotationRequests.field.volume')}
-                value={volume}
-                onChange={setVolume}
+                label={t('quotationRequests.field.volumeDerived')}
+                description={t('quotationRequests.field.volumeDerivedHint')}
+                value={Number(totalCbm.toFixed(4))}
                 min={0}
-                decimalScale={2}
+                decimalScale={4}
+                readOnly
               />
               <TextInput
                 label={t('quotationRequests.field.container')}
+                description={t('quotationRequests.field.containerHint')}
                 value={containerType}
                 onChange={(event) => setContainerType(event.currentTarget.value)}
               />
+              {airMode ? (
+                <>
+                  <NumberInput
+                    label={<HeaderLabel label={t('quotationRequests.field.dimWeight')} hint={t('quotationRequests.field.dimWeightHint')} />}
+                    description={t('quotationRequests.field.dimWeightHint')}
+                    value={Number(dimWeight.toFixed(3))}
+                    min={0}
+                    thousandSeparator=","
+                    decimalScale={3}
+                    readOnly
+                  />
+                  <NumberInput
+                    label={<HeaderLabel label={t('quotationRequests.field.chargeableWeight')} hint={t('quotationRequests.field.chargeableWeightHint')} />}
+                    description={t('quotationRequests.field.chargeableWeightHint')}
+                    value={Number(chargeableWeight.toFixed(3))}
+                    min={0}
+                    thousandSeparator=","
+                    decimalScale={3}
+                    readOnly
+                  />
+                </>
+              ) : null}
             </SimpleGrid>
             <Textarea
               label={t('quotationRequests.field.note')}
@@ -300,7 +345,7 @@ export function QuotationRequestForm({ onCancel, onCreated }: Props) {
             items={masterData.items}
             itemOptions={masterData.itemOptions}
             currencyCode={currency}
-            fields={{}}
+            fields={{ dimensions: true }}
             onItemSelected={(clientId, item) => {
               if (item?.unit_price_usd != null) {
                 updateLine(clientId, { unit_price: Number(item.unit_price_usd) || 0 });

@@ -36,6 +36,15 @@ export type OrderLineItemsEditorProps = {
 
 const num = (value: unknown, fallback = 0) => (Number.isFinite(Number(value)) ? Number(value) : fallback);
 
+const lineCbm = (line: Pick<OrderLineDraft, 'height_cm' | 'length_cm' | 'qty' | 'width_cm'>) => {
+  const qty = num(line.qty);
+  const length = num(line.length_cm);
+  const width = num(line.width_cm);
+  const height = num(line.height_cm);
+  if ([qty, length, width, height].some((value) => value <= 0)) return 0;
+  return (qty * length * width * height) / 1_000_000;
+};
+
 export function OrderLineItemsEditor({
   activeId,
   currencyCode,
@@ -100,6 +109,11 @@ export function OrderLineItemsEditor({
                   <Text fw={800} size="sm" className="tabular-nums">
                     <NumberFormatter value={amount} thousandSeparator decimalScale={2} />
                   </Text>
+                  {fields.dimensions ? (
+                    <Text size="xs" c="dimmed" className="tabular-nums">
+                      <NumberFormatter value={lineCbm(line)} thousandSeparator decimalScale={4} /> CBM
+                    </Text>
+                  ) : null}
                 </div>
                 <ActionIcon
                   className="purchase-order-line-rail-delete"
@@ -204,6 +218,41 @@ export function OrderLineItemsEditor({
                 />
               ) : null}
             </SimpleGrid>
+            {fields.dimensions ? (
+              <SimpleGrid cols={{ base: 1, xs: 2, lg: 4 }} spacing="sm">
+                <NumberInput
+                  label={t('quotationRequests.field.length')}
+                  min={0}
+                  value={active.length_cm ?? ''}
+                  thousandSeparator=","
+                  decimalScale={2}
+                  onChange={(value) => onChange(active.clientId, { length_cm: num(value) })}
+                />
+                <NumberInput
+                  label={t('quotationRequests.field.width')}
+                  min={0}
+                  value={active.width_cm ?? ''}
+                  thousandSeparator=","
+                  decimalScale={2}
+                  onChange={(value) => onChange(active.clientId, { width_cm: num(value) })}
+                />
+                <NumberInput
+                  label={t('quotationRequests.field.height')}
+                  min={0}
+                  value={active.height_cm ?? ''}
+                  thousandSeparator=","
+                  decimalScale={2}
+                  onChange={(value) => onChange(active.clientId, { height_cm: num(value) })}
+                />
+                <NumberInput
+                  label={t('quotationRequests.field.lineCbm')}
+                  value={Number(lineCbm(active).toFixed(4))}
+                  thousandSeparator=","
+                  decimalScale={4}
+                  readOnly
+                />
+              </SimpleGrid>
+            ) : null}
             <SimpleGrid cols={{ base: 1, xs: 2, lg: 3 }} spacing="sm">
               <NumberInput
                 label={t('quotations.unitPrice')}

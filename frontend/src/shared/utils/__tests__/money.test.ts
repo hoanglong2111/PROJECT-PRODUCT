@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  convertMoney,
   convertToBase,
   currencyFractionDigits,
   formatMoney,
@@ -37,5 +38,17 @@ describe('money utilities', () => {
   it('rounds converted base currency once to VND minor units', () => {
     expect(convertToBase(12.345, 25000, 'VND', 'en-US')).toBe(308625);
     expect(convertToBase(12.3456, 25000.12, 'VND', 'en-US')).toBe(308641);
+  });
+
+  it('converts between currencies through VND rates and rounds to target minor units', () => {
+    const rates = (code: string | null | undefined) => {
+      const map: Record<string, number> = { VND: 1, USD: 25_000, EUR: 27_000 };
+      return map[(code ?? '').toUpperCase()] ?? 1;
+    };
+
+    expect(convertMoney(10, 'USD', 'VND', rates, 'en-US')).toBe(250000);
+    expect(convertMoney(250000, 'VND', 'USD', rates, 'en-US')).toBe(10);
+    expect(convertMoney(10, 'USD', 'EUR', rates, 'en-US')).toBe(9.26);
+    expect(convertMoney(10.005, 'USD', 'USD', rates, 'en-US')).toBe(10.01);
   });
 });

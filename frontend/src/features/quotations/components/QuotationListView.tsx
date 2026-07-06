@@ -13,13 +13,14 @@ import { EmptyState } from '@shared/components/EmptyState';
 import { FilterSegment } from '@shared/components/FilterSegment';
 import { ListPagination, useListPagination } from '@shared/components/ListPagination';
 import { StatusBadge } from '@shared/components/StatusBadge';
+import { useExchangeRates } from '@shared/hooks/useExchangeRates';
 import { useI18n } from '@shared/i18n';
 import { formatDate } from '@shared/utils/date';
 import { formatMoney } from '@shared/utils/money';
 
 import {
   quotationTabItems,
-  quotationDisplayTotal,
+  quotationDisplayTotalInCurrency,
   quotationTypeFullLabelKeys,
   quotationTypeShortLabels,
   type QuotationTab,
@@ -44,6 +45,7 @@ const quotationTabColors: Record<QuotationTab, string> = {
 
 export function QuotationListView({ filteredQuotations, onInspect, supplierOptions, tabCounts }: QuotationListViewProps) {
   const { t } = useI18n();
+  const { rateToVnd } = useExchangeRates();
   const navigate = useNavigate();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickedRfq, setPickedRfq] = useState<string | null>(null);
@@ -318,7 +320,7 @@ export function QuotationListView({ filteredQuotations, onInspect, supplierOptio
                         {t('quotations.total')}
                       </Text>
                       <Text size="sm" fw={800} className="tabular-nums">
-                        {formatMoney(quotationDisplayTotal(quotation), quotation.currency_code)}
+                        {formatMoney(quotationDisplayTotalInCurrency(quotation, rateToVnd), quotation.currency_code)}
                       </Text>
                     </div>
 

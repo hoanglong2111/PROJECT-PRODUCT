@@ -17,6 +17,10 @@ export type QuotationRequestLineV1 = {
   unit: string | null;
   unit_price: ApiDecimal | null;
   gross_weight_kg: ApiDecimal | null;
+  length_cm?: ApiDecimal | null;
+  width_cm?: ApiDecimal | null;
+  height_cm?: ApiDecimal | null;
+  cbm?: ApiDecimal | null;
   note: string | null;
   item?: Item | null;
   create_at?: string;
@@ -41,6 +45,8 @@ export type QuotationRequestV1 = {
   desired_cargo_ready_date: string | null;
   gross_weight_kg: ApiDecimal | null;
   volume_cbm: ApiDecimal | null;
+  dim_weight_kg?: ApiDecimal | null;
+  chargeable_weight_kg?: ApiDecimal | null;
   container_type: string | null;
   note: string | null;
   supplier?: Supplier | null;
@@ -69,6 +75,10 @@ export type CreateQuotationRequestLinePayload = {
   unit?: string | null;
   unit_price?: number | null;
   gross_weight_kg?: number | null;
+  length_cm?: number | null;
+  width_cm?: number | null;
+  height_cm?: number | null;
+  cbm?: number | null;
   note?: string | null;
 };
 
@@ -85,6 +95,8 @@ export type CreateQuotationRequestPayload = {
   desired_cargo_ready_date?: string | null;
   gross_weight_kg?: number | null;
   volume_cbm?: number | null;
+  dim_weight_kg?: number | null;
+  chargeable_weight_kg?: number | null;
   container_type?: string | null;
   note?: string | null;
   lines?: CreateQuotationRequestLinePayload[];

@@ -25,8 +25,7 @@ import { useI18n } from '@shared/i18n';
 import { formatDate } from '@shared/utils/date';
 import { formatMoney, roundToMinorUnits } from '@shared/utils/money';
 
-import { summarizeByCurrency } from '../model/quotationCurrency';
-import { quotationDisplayTotal } from '../model/quotationModel';
+import { quotationDisplayTotalInCurrency } from '../model/quotationModel';
 import { QuotationOptionsTable } from './QuotationOptionsTable';
 
 function formatAmount(amount: number, currency: string | null | undefined): string {
@@ -115,24 +114,8 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
 
   const status = quotation.status;
   const canReject = status === 'REQUEST_FOR_QUOTATION' || status === 'DRAFT' || status === 'PENDING_APPROVAL';
+  const total = quotationDisplayTotalInCurrency(quotation, rateToVnd);
   const chargeLines = quotation.charge_lines ?? [];
-  const currencySummary = summarizeByCurrency(
-    chargeLines.map((line) => ({
-      currency: line.currency_code ?? null,
-      amount: Number(line.amount ?? Number(line.quantity) * Number(line.unit_price)),
-      taxable: Number(line.tax_rate) > 0,
-    })),
-    rateToVnd,
-  );
-  const fallbackTotal = quotationDisplayTotal(quotation);
-  const heroTotal =
-    currencySummary.byCurrency.length === 1
-      ? formatMoney(currencySummary.byCurrency[0].total, currencySummary.byCurrency[0].currency)
-      : currencySummary.byCurrency.length > 1
-        ? formatMoney(currencySummary.internalVndTotal, 'VND')
-        : formatMoney(fallbackTotal, quotation.currency_code);
-  const referenceCurrency = currencySummary.byCurrency.find((row) => row.currency !== 'VND')?.currency ?? 'USD';
-  const referenceRate = rateToVnd(referenceCurrency);
   const events = quotation.events ?? [];
   const chargesToggleLabel = chargesExpanded ? t('quotations.collapseCharges') : t('quotations.expandCharges');
   const finalLifecycleStatus: QuotationStatusV1 = status === 'REJECTED' ? 'REJECTED' : 'CONFIRMED';
@@ -173,13 +156,8 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
                 {t('quotations.total')}
               </Text>
               <Text fw={900} size="xl" className="tabular-nums">
-                {heroTotal}
+                {formatMoney(total, quotation.currency_code)}
               </Text>
-              {currencySummary.byCurrency.length > 1 ? (
-                <Text size="xs" c="dimmed">
-                  {t('quotations.internalVndTotal')}
-                </Text>
-              ) : null}
             </div>
           </Group>
         </div>
@@ -306,27 +284,11 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
             )}
 
             <div className="rfq-breakdown-total">
-              <Stack gap={2} style={{ width: '100%' }}>
-                {currencySummary.byCurrency.map((row) => (
-                  <Group key={row.currency} justify="space-between">
-                    <Text fw={800}>
-                      {t('quotations.subtotalPrefix')} {row.currency}
-                    </Text>
-                    <Text fw={900} className="tabular-nums">
-                      {formatMoney(row.total, row.currency)}
-                    </Text>
-                  </Group>
-                ))}
-                <Text size="xs" c="dimmed" ta="right">
-                  {t('quotations.referenceRate')}: 1 {referenceCurrency} ={' '}
-                  {new Intl.NumberFormat('vi-VN').format(referenceRate)} VND
-                </Text>
-                {currencySummary.byCurrency.length > 1 ? (
-                  <Text size="xs" c="dimmed" ta="right">
-                    {t('quotations.internalVndTotal')}: &asymp; {formatMoney(currencySummary.internalVndTotal, 'VND')}
-                  </Text>
-                ) : null}
-              </Stack>
+              <Text fw={800}>{t('quotations.total')}</Text>
+              <div>
+                <Text fw={900} className="tabular-nums">{formatMoney(total, quotation.currency_code)}</Text>
+                <Text size="xs" c="dimmed">{t('quotations.computedTotal', { currency: quotation.currency_code ?? 'USD' })}</Text>
+              </div>
             </div>
           </Collapse>
         </Paper>
@@ -509,7 +471,7 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
                           ) : null}
                         </Group>
                         <Text size="xs" c="dimmed" className="tabular-nums">
-                          {formatMoney(quotationDisplayTotal(v), v.currency_code)}
+                          {formatMoney(quotationDisplayTotalInCurrency(v, rateToVnd), v.currency_code)}
                         </Text>
                         <DateTimeText value={v.create_at} size="xs" c="dimmed" />
                       </div>

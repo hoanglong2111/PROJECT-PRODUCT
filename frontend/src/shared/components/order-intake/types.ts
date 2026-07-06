@@ -1,5 +1,6 @@
 export type OrderLineFields = {
   customsProfile?: boolean;
+  dimensions?: boolean;
   taxRate?: boolean;
   discountPct?: boolean;
   lineEta?: boolean;
@@ -14,6 +15,9 @@ export type OrderLineDraft = {
   unit: string;
   unit_price: number;
   gross_weight_kg: number;
+  length_cm?: number;
+  width_cm?: number;
+  height_cm?: number;
   note: string;
   item_customs_profile_id?: string;
   tax_rate?: number;

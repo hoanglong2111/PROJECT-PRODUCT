@@ -94,3 +94,25 @@ export function convertToBase(
   const converted = Number(amount ?? 0) * Number(rate ?? 1);
   return roundToMinorUnits(Number.isFinite(converted) ? converted : 0, baseCurrencyCode, locale);
 }
+
+export function convertMoney(
+  amount: number | string | null | undefined,
+  fromCurrency: string | null | undefined,
+  toCurrency: string | null | undefined,
+  rateToVnd: (code: string | null | undefined) => number,
+  locale = defaultLocale(),
+) {
+  const from = normalizeCurrencyCode(fromCurrency);
+  const to = normalizeCurrencyCode(toCurrency);
+  const value = Number(amount ?? 0);
+  if (!Number.isFinite(value)) return 0;
+  if (from === to) return roundToMinorUnits(value, to, locale);
+
+  const fromRate = Number(rateToVnd(from));
+  const toRate = Number(rateToVnd(to));
+  if (!Number.isFinite(fromRate) || fromRate <= 0 || !Number.isFinite(toRate) || toRate <= 0) {
+    return 0;
+  }
+
+  return roundToMinorUnits((value * fromRate) / toRate, to, locale);
+}

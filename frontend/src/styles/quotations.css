@@ -309,14 +309,14 @@
 }
 
 .rfq-fee-grid {
-  --rfq-fee-columns: minmax(0, 1.3fr) minmax(4.25rem, 0.48fr) minmax(6.5rem, 0.68fr) minmax(7.25rem, 0.8fr) minmax(6.5rem, 0.62fr) minmax(7rem, 0.76fr);
+  --rfq-fee-columns: minmax(0, 1.25fr) minmax(4.25rem, 0.46fr) minmax(6.25rem, 0.62fr) minmax(7rem, 0.72fr) minmax(6.25rem, 0.58fr) minmax(7rem, 0.7fr) minmax(8.5rem, 0.82fr);
 
   display: grid;
   gap: 0.5rem;
 }
 
 .rfq-fee-grid.has-remove {
-  --rfq-fee-columns: minmax(0, 1.3fr) minmax(4.25rem, 0.48fr) minmax(6.5rem, 0.68fr) minmax(7.25rem, 0.8fr) minmax(6.5rem, 0.62fr) minmax(7rem, 0.76fr) 2.25rem;
+  --rfq-fee-columns: minmax(0, 1.25fr) minmax(4.25rem, 0.46fr) minmax(6.25rem, 0.62fr) minmax(7rem, 0.72fr) minmax(6.25rem, 0.58fr) minmax(7rem, 0.7fr) minmax(8.5rem, 0.82fr) 2.25rem;
 }
 
 .rfq-fee-header,
@@ -388,6 +388,7 @@
 }
 
 .rfq-fee-name-stack,
+.rfq-fee-default-total .mantine-Input-input,
 .rfq-fee-total .mantine-Text-root {
   min-width: 0;
 }
@@ -432,6 +433,13 @@
 
 .rfq-fee-total {
   text-align: right;
+}
+
+.rfq-fee-default-total .mantine-Input-input:disabled {
+  opacity: 1;
+  color: var(--kbfe-text-primary);
+  background: color-mix(in srgb, var(--kbfe-surface-subtle) 74%, var(--kbfe-surface-elevated) 26%);
+  -webkit-text-fill-color: var(--kbfe-text-primary);
 }
 
 .rfq-fee-row[data-has-total='true'] .rfq-fee-total .mantine-Text-root {
@@ -1133,7 +1141,7 @@
     grid-template-areas:
       "name name name"
       "qty uom currency"
-      "price price total";
+      "price total default";
     align-items: start;
   }
 
@@ -1142,7 +1150,7 @@
     grid-template-areas:
       "name name name remove"
       "qty uom currency remove"
-      "price price total remove";
+      "price total default remove";
   }
 
   .rfq-fee-name {
@@ -1168,6 +1176,10 @@
   .rfq-fee-total {
     grid-area: total;
     text-align: left;
+  }
+
+  .rfq-fee-default-total {
+    grid-area: default;
   }
 
   .rfq-fee-remove {
@@ -1221,6 +1233,7 @@
       "price"
       "currency"
       "total"
+      "default"
       "remove";
   }
 

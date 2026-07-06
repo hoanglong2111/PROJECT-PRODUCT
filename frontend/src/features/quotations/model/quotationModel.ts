@@ -1,6 +1,7 @@
 import type { QuotationChargeLineV1, QuotationStatusV1, QuotationTypeV1, QuotationV1 } from '@shared/api/quotations';
 import type { MessageKey } from '@shared/i18n';
 import type { ShippingMode } from '@shared/model/logistics';
+import { convertMoney, sumMoney } from '@shared/utils/money';
 
 export type QuotationTab = 'all' | 'draft' | 'pending' | 'confirmed' | 'rejected';
 
@@ -47,6 +48,31 @@ export function quotationDisplayTotal(
   if (lineTotal > 0) return lineTotal;
   const apiTotal = Number(quotation.grand_total_amount ?? quotation.total_amount ?? 0);
   return Number.isFinite(apiTotal) ? apiTotal : 0;
+}
+
+export function quotationTotalInCurrency(
+  quotation: Pick<QuotationV1, 'charge_lines' | 'currency_code'>,
+  rateToVnd: (code: string | null | undefined) => number,
+  targetCurrency = quotation.currency_code,
+): number {
+  const currency = targetCurrency ?? quotation.currency_code ?? 'USD';
+  const convertedTotals = (quotation.charge_lines ?? []).map((line: QuotationChargeLineV1) => {
+    const value = Number(line.total_amount ?? line.amount ?? 0);
+    return convertMoney(Number.isFinite(value) ? value : 0, line.currency_code ?? quotation.currency_code, currency, rateToVnd);
+  });
+  return sumMoney(convertedTotals, currency);
+}
+
+export function quotationDisplayTotalInCurrency(
+  quotation: Pick<QuotationV1, 'charge_lines' | 'currency_code' | 'grand_total_amount' | 'total_amount'>,
+  rateToVnd: (code: string | null | undefined) => number,
+  targetCurrency = quotation.currency_code,
+): number {
+  const lineTotal = quotationTotalInCurrency(quotation, rateToVnd, targetCurrency);
+  if (lineTotal > 0) return lineTotal;
+  const currency = targetCurrency ?? quotation.currency_code ?? 'USD';
+  const apiTotal = Number(quotation.grand_total_amount ?? quotation.total_amount ?? 0);
+  return convertMoney(Number.isFinite(apiTotal) ? apiTotal : 0, quotation.currency_code, currency, rateToVnd);
 }
 
 /** Whether a quotation is confirmed and can therefore seed a PO. */
