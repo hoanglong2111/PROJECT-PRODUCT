@@ -1,22 +1,8 @@
 import type { ChargeCode } from '@shared/api/chargeCodes';
 import type { QuotationChargeTypeV1 } from '@shared/api/quotations';
-import { defaultScopeForIncoterm } from '@shared/lib/incotermChargeScope';
 import type { ShippingMode } from '@shared/model/logistics';
 
-/**
- * Doc-grounded quotation charge helpers.
- *
- * Incoterm scope now comes from the Incoterms 2020 seed in incotermChargeScope.ts
- * (or a backend-provided override on the Incoterm record). Actual suggested rows
- * come from Charge Code master data filtered by group, transport-mode flags, and
- * is_active. Prices are never defaulted here.
- */
-
 export type QuotationChargeModeFlag = 'sea_fcl' | 'sea_lcl' | 'air';
-
-export function incotermChargeGroups(incotermCode?: string | null): string[] {
-  return defaultScopeForIncoterm(incotermCode).groups;
-}
 
 export function modeToChargeFlag(mode?: ShippingMode | string | null): QuotationChargeModeFlag {
   const normalized = (mode ?? '').trim().toUpperCase();

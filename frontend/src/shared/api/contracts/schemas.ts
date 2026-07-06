@@ -88,3 +88,22 @@ export const purchaseOrderListItemSchema = z
   .passthrough();
 
 export const purchaseOrderListSchema = z.array(purchaseOrderListItemSchema);
+
+export const currencyRateSchema = z
+  .object({
+    code: z.string(),
+    vnd_rate: z.number(),
+  })
+  .passthrough();
+
+export const currencyRateListSchema = z.array(currencyRateSchema);
+
+export const quotationRequestListItemSchema = z
+  .object({
+    id: z.string(),
+    rfq_no: z.string(),
+    status: z.string(),
+  })
+  .passthrough();
+
+export const quotationRequestListSchema = z.array(quotationRequestListItemSchema);

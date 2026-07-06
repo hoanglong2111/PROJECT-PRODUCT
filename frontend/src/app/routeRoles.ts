@@ -3,6 +3,7 @@ import { getWorkspaceModuleByPath } from '@shared/navigation/workspaceModules';
 
 export const routeCapabilities = {
   dashboard: getWorkspaceModuleByPath('/').capability,
+  quotationRequests: getWorkspaceModuleByPath('/quotation-requests').capability,
   quotations: getWorkspaceModuleByPath('/quotations').capability,
   purchaseOrders: getWorkspaceModuleByPath('/purchase-orders').capability,
   deliveryOrders: getWorkspaceModuleByPath('/delivery-orders').capability,

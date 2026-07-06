@@ -110,8 +110,16 @@ describe('queryKeys', () => {
       { ref_type: 'DELIVERY_ORDER', ref_id: 'do-1' },
     ]);
     expect(queryKeys.quotationChargeLines('qt-1')).toEqual(['quotations', 'qt-1', 'charge-lines']);
+    expect(queryKeys.quotationOptions('qt-1')).toEqual(['quotations', 'qt-1', 'options']);
     expect(queryKeys.quotationVersions('qt-1')).toEqual(['quotations', 'qt-1', 'versions']);
     expect(queryKeys.quotationEvents('qt-1')).toEqual(['quotations', 'qt-1', 'events']);
+    expect(queryKeys.quotationRequests).toEqual(['quotation-requests']);
+    expect(queryKeys.quotationRequestsList({ status: 'SUBMITTED' })).toEqual([
+      'quotation-requests',
+      'list',
+      { status: 'SUBMITTED' },
+    ]);
+    expect(queryKeys.quotationRequestDetail('qr-1')).toEqual(['quotation-requests', 'detail', 'qr-1']);
   });
 
   it('builds shipment V1 keys with query params and identifiers', () => {

@@ -2,11 +2,10 @@ import type { QuotationChargeLineV1, QuotationStatusV1, QuotationTypeV1, Quotati
 import type { MessageKey } from '@shared/i18n';
 import type { ShippingMode } from '@shared/model/logistics';
 
-export type QuotationTab = 'all' | 'rfq' | 'draft' | 'pending' | 'confirmed' | 'rejected';
+export type QuotationTab = 'all' | 'draft' | 'pending' | 'confirmed' | 'rejected';
 
 /** Map each non-"all" tab to the quotation statuses it contains. */
 export const quotationStatusTabs: Record<Exclude<QuotationTab, 'all'>, QuotationStatusV1[]> = {
-  rfq: ['REQUEST_FOR_QUOTATION'],
   draft: ['DRAFT'],
   pending: ['PENDING_APPROVAL'],
   confirmed: ['CONFIRMED'],
@@ -15,18 +14,10 @@ export const quotationStatusTabs: Record<Exclude<QuotationTab, 'all'>, Quotation
 
 export const quotationTabItems: { value: QuotationTab; labelKey: MessageKey }[] = [
   { value: 'all', labelKey: 'quotations.tabAll' },
-  { value: 'rfq', labelKey: 'quotations.tabRfq' },
   { value: 'draft', labelKey: 'quotations.tabDraft' },
   { value: 'pending', labelKey: 'quotations.tabPending' },
   { value: 'confirmed', labelKey: 'quotations.tabConfirmed' },
   { value: 'rejected', labelKey: 'quotations.tabRejected' },
-];
-
-/** Shipping-mode options offered by the quotation form (stored on the quotation). */
-export const quotationModeOptions: { value: string; label: string }[] = [
-  { value: 'SEA_FCL', label: 'SEA FCL' },
-  { value: 'SEA_LCL', label: 'SEA LCL' },
-  { value: 'AIR', label: 'AIR' },
 ];
 
 /**

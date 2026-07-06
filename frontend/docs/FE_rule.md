@@ -417,38 +417,49 @@ PO route display rule:
 
 # 9. Quotation UI Rules (reversed flow)
 
+RFQ is now a **top-level feature** at `/quotation-requests`. It represents the inbound
+KBI-entered request phase before FDS drafts a quotation. RFQ records are PO-shaped:
+customer ref, optional free-text KBI SAP `customer_po_ref`, real supplier, incoterm,
+mode, currency, POL/POD, desired cargo-ready date, cargo hints, item lines, note,
+and responding quotations. Do not use a picker into FDS UI PO entities here.
+RFQ status flow: `SUBMITTED -> RECEIVED -> QUOTED -> CONFIRMED`, with `CANCELLED`
+available before confirmation.
+
+Quotation records link back to RFQ through `rfq_id`, inherit customer/supplier/
+route/mode/incoterm/currency, and expose quote options. The quotation UI must show
+that inherited header once as read-only RFQ context, then edit only quote options,
+charge lines, currency, and validity. There is no standalone "New quotation" entry
+point; create through RFQ detail only. Each option compares carrier, ETD/ETA,
+transit days, risk warning, and headline amount. The UI warns when fewer than two
+carrier/ETD options are present; this is an SOP warning, not a draft hard-block.
+KBI must select one option before confirm; the Confirm action is disabled until
+`selected_option_id` exists and the backend enforces the same rule. The old
+quotation RFQ tab is retired because RFQ now has its own screen.
+
+The Purchase Order UI represents FDS internal PO management, not KBI SAP PO.
+Creating a PO from a confirmed quotation with `rfq_id` preloads goods lines from
+the originating RFQ lines while preserving the existing confirmed-quotation gate.
+
 Quotation is a **top-level feature** (own sidebar tab at `/quotations`), no longer a tab
-inside the DO. It is a standalone **pre-PO freight quotation** (FDS → customer) that
-carries its own `customer_ref` + `incoterm_code` + `mode` + freight `charge_lines`
-(doc-grounded charge suggestions from Charge Code master data). It is **freight-only** - no
-goods line items.
+inside the DO. In the UI it is **RFQ-derived** and freight-only: goods line items stay
+on the RFQ, while the quotation owns freight options and freight `charge_lines`.
 
-Quotation charge suggestions are derived only from `05_Charge_Code` master data:
-`charge_code.group` must be inside the Incoterm scope, the quotation mode must match the
-row's mode flag (`sea_fcl`, `sea_lcl`, or `air`), and the row must be active. Incoterm
-drives scope only; it never supplies a price. Every suggested `unit_price` starts blank,
-sales enters the commercial price manually, and every suggested fee stays removable by
-unchecking the row.
+Quotation charges are edited manually in exactly three collapsible groups:
+`FREIGHT`, `ORIGIN`, and `DESTINATION`. The "Add fee" dropdown in every group lists
+all active charge codes; Incoterm no longer filters or auto-suggests fee rows, and
+there is no per-code checkbox include/exclude mode. The group is determined by the
+section where the fee is added and is persisted as `charge_group` on the line.
 
-Incoterm-to-suggested-charge scope is seeded from the Incoterms 2020 cost-allocation
-matrix in `@shared/lib/incotermChargeScope.ts`, then exposed through
-`@shared/lib/quotationCharges.incotermChargeGroups`. A backend-provided
-`Incoterm.charge_group_scope` can override the FE seed. `insurance_required` renders an
-info note only and never creates a charge line. Only the six real Incoterms
-(`EXW`, `FCA`, `FOB`, `CFR`, `CIF`, `DDP`) and seven real charge groups are used.
+Every charge line has its own `currency_code`. The form shows the line total in the
+line currency and a live VND helper using seeded `GET /v1/currency-rates`
+(`vnd_rate`, VND base = 1, no live bank/API source). Quote comparison totals are
+VND-normalized with those rates. `chargeCodeToChargeType(code, mode)` stays in use
+to populate `charge_type` for shipment-margin roll-ups.
 
-The buyer-scope groups are:
-
-```txt
-EXW      -> ORIGIN_EXPORT, MAIN_FREIGHT, FREIGHT_SURCHARGE, DOCUMENTATION_FILING, DESTINATION_IMPORT
-FCA/FOB  -> MAIN_FREIGHT, FREIGHT_SURCHARGE, DOCUMENTATION_FILING, DESTINATION_IMPORT
-CFR/CIF  -> DOCUMENTATION_FILING, DESTINATION_IMPORT
-DDP      -> none
-unknown  -> all five primary groups
-```
-
-`ANCILLARY_ACCESSORIAL` and `SERVICE_OTHER` are not auto-suggested; they remain manual
-"Other / arising fees".
+"Tạo báo giá" opens the manual form first; it creates a quotation only when the user
+confirms/submits the form via `POST /v1/quotation-requests/:id/quotations` with
+manual `charge_lines`. Opening the form from RFQ detail or the Quotations RFQ picker
+must not create a quotation record.
 
 Canonical flow: `Quotation(CONFIRMED) → PO → DO → Shipment → DTO`.
 
@@ -465,16 +476,20 @@ REQUEST_FOR_QUOTATION  (KBI raises the RFQ)
 Important rules:
 
 ```txt
+- RFQ has its own sidebar tab; the old quotation RFQ status tab is retired.
+- Quotation options compare carrier, ETD/ETA, transit days, risk warning, and headline amount.
+- Show a warning when fewer than two carrier/ETD options exist; do not hard-block drafting on that warning.
+- KBI must select one quotation option before confirm; frontend disables Confirm and backend rejects missing selection.
 - Do not edit old quotation price directly; create a new version when price changes.
 - Only one CONFIRMED quotation per quotation_group_id.
 - A PO can only be created from a CONFIRMED quotation (see §8 Purchase Orders).
 ```
 
-Frontend actions: create standalone quotation, advance status
-(start drafting / submit for approval / confirm / reject), view charge lines/events,
-and **Create PO from quotation** (on a CONFIRMED quotation → opens the PO create form
-prefilled with the commercial header (incoterm/currency) + `quotation_id`; goods lines
-are entered normally so the PO line → LOT logic is untouched).
+Frontend actions: open manual quotation creation from an RFQ, submit the manual
+quotation form, advance status (submit for approval / confirm / reject), view
+charge lines/events, and **Create PO from quotation** (on a CONFIRMED quotation,
+opens the PO create form prefilled with the commercial header + `quotation_id`;
+goods lines prefill from the originating RFQ when `rfq_id` exists).
 
 ---
 
@@ -833,3 +848,4 @@ and the TaskDetail "Edit" button):
 Out of scope (do not implement unless requested): generating runtime tasks
 from templates per PO/Shipment, and replacing the legacy `TaskRole`/free-text
 assignee.department vocabulary on runtime tasks.
+

@@ -6,6 +6,8 @@ const knownCapabilities = new Set<Capability>(CAPABILITIES);
 
 const managerCapabilities = [
   'dashboard.view',
+  'quotationRequests.view',
+  'quotationRequests.manage',
   'quotations.view',
   'quotations.manage',
   'purchaseOrders.view',
@@ -26,6 +28,8 @@ const managerCapabilities = [
 
 const salesCapabilities = [
   'dashboard.view',
+  'quotationRequests.view',
+  'quotationRequests.manage',
   'quotations.view',
   'quotations.manage',
   'purchaseOrders.view',
@@ -60,6 +64,7 @@ const customsCapabilities = [
 
 const financeCapabilities = [
   'dashboard.view',
+  'quotationRequests.view',
   'quotations.view',
   'purchaseOrders.view',
   'shipments.view',

@@ -7,6 +7,7 @@ import {
   buildPoPayload,
   createInitialPoDraft,
   deriveContractNo,
+  applyRfqLinesPrefill,
   resolveCreateDoFromLotsDefaults,
   getPoFulfillment,
   getPoLineReceiptState,
@@ -119,6 +120,31 @@ describe('deriveContractNo', () => {
   it('returns an empty string for blank input', () => {
     expect(deriveContractNo('')).toBe('');
     expect(deriveContractNo('   ')).toBe('');
+  });
+});
+
+describe('applyRfqLinesPrefill', () => {
+  it('replaces PO draft lines with the RFQ line items', () => {
+    const draft = createInitialPoDraft(undefined);
+    const next = applyRfqLinesPrefill(draft, [
+      {
+        id: 'qrl-1',
+        quotation_request_id: 'qr-1',
+        line_no: 1,
+        item_id: 'it-1',
+        item_description: 'X',
+        qty: 10,
+        unit: 'PCS',
+        unit_price: 5,
+        gross_weight_kg: 100,
+        note: null,
+      },
+    ] as never);
+
+    expect(next.lines).toHaveLength(1);
+    expect(next.lines[0].item_id).toBe('it-1');
+    expect(next.lines[0].qty_ordered).toBe(10);
+    expect(next.lines[0].unit_price).toBe(5);
   });
 });
 

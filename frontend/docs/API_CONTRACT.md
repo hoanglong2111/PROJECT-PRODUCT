@@ -123,6 +123,26 @@ exact request/response types.)
 - `GET|POST /v1/delivery-orders/:id/documents`
 - `PATCH|DELETE /v1/delivery-order-documents/:documentId`
 
+### Quotation Requests (RFQ)
+> RFQ is the inbound KBI-entered request before FDS drafts quote options. It is a
+> PO-shaped top-level entity at `/quotation-requests`, separate from quotations and
+> not derived from FDS internal PO records.
+- `GET /v1/quotation-requests` - supports `page`, `limit`, `search`, and `status`; returns RFQs with responding `quotations[]` when available.
+- `GET /v1/quotation-requests/:id` - returns RFQ detail, `customer_po_ref`, `supplier`, child `lines[]` with item display data, and responding `quotations[]`.
+- `POST /v1/quotation-requests` - creates a `SUBMITTED` RFQ with customer, free-text KBI SAP PO ref, supplier, incoterm, mode, currency, POL/POD, desired cargo-ready date, cargo hints, `lines[]`, and note.
+- `POST /v1/quotation-requests/:id/receive` - `SUBMITTED -> RECEIVED`.
+- `POST /v1/quotation-requests/:id/cancel` - terminal cancel unless already `CONFIRMED`.
+- `POST /v1/quotation-requests/:id/quotations` - body `{ currency_code?, valid_until?, charge_lines? }`; drafts a quotation with `rfq_id`, copies customer/supplier/route/mode/incoterm from the RFQ, persists caller-supplied manual charge lines, and flips the RFQ to `QUOTED`.
+
+RFQ status machine: `SUBMITTED -> RECEIVED -> QUOTED -> CONFIRMED`, with `CANCELLED`
+allowed before confirmation.
+
+### Currency Rates
+- `GET /v1/currency-rates` - returns seeded exchange rates in the v1 envelope:
+  `{ data: [{ code, vnd_rate }], meta: { total }, errors: [] }`.
+- VND is the base rate (`vnd_rate = 1`). The frontend uses this table for
+  quotation fee helpers and comparison totals; no bank/live API is called.
+
 ### Quotations
 > **Reversed flow (top-level feature):** A quotation is a standalone **pre-PO freight
 > quotation** (FDS → customer). It is created independently (no DO required), carries its
@@ -131,7 +151,7 @@ exact request/response types.)
 > `REJECTED` branch (`reject_reason`). `ref_type`/`ref_id` are nullable for standalone
 > quotations. Confirming a quotation is what unlocks PO creation (see Purchase Orders).
 - `GET /v1/quotations` · `GET /v1/quotations/:id`
-- `POST /v1/quotations` - create a standalone quotation (`{ customer_ref, incoterm_code, mode, currency_code, charge_lines[] }`), initial status `DRAFT`. `charge_lines[]` includes legacy `charge_type` plus optional `charge_code` from Charge Code master data.
+- `POST /v1/quotations` - legacy/mock-compatible standalone create; the frontend does not expose this as a user entry point. The UI creates quotations through `POST /v1/quotation-requests/:id/quotations`.
 - `GET|POST /v1/delivery-orders/:id/quotations` — **legacy** DO-scoped create (kept for back-compat; the UI no longer uses it)
 - `POST /v1/quotations/:id/request` — → `REQUEST_FOR_QUOTATION`
 - `POST /v1/quotations/:id/receive` — → `DRAFT` (FDS starts drafting)
@@ -140,9 +160,20 @@ exact request/response types.)
 - `POST /v1/quotations/:id/reject` — → `REJECTED`, body `{ reason }` stored as `reject_reason`
 - `POST /v1/quotations/:id/cancel` — folds into `REJECTED` (reason "Cancelled")
 - `POST /v1/quotations/:id/create-version`
-- `GET|POST /v1/quotations/:id/charge-lines`
+- Quotation DTOs include optional `rfq_id`, `origin_port`, `destination_port`, `selected_option_id`, and `options[]`.
+- `GET|POST /v1/quotations/:id/options` - list/create quote options with carrier, vessel/flight, ETD/ETA, transit days, risk warning, headline amount, and recommendation flag.
+- `PATCH|DELETE /v1/quotation-options/:id`
+- `POST /v1/quotations/:id/select-option` - body `{ option_id }`; marks one option selected and clears other options for that quotation.
+- Confirm/finalize requires `selected_option_id`; otherwise the API returns `BUSINESS_RULE_VIOLATION`. Confirmation also moves a linked RFQ to `CONFIRMED`.
+- `GET|POST /v1/quotations/:id/charge-lines` - charge-line DTOs carry per-line `currency_code` and `charge_group` (`FREIGHT|ORIGIN|DESTINATION`). The quotation form stores charges in three manual groups; each line renders in its own currency while comparison totals normalize to VND on the client using `/v1/currency-rates`.
 - `PATCH|DELETE /v1/quotation-charge-lines/:id`
 - `GET /v1/quotations/:id/events`
+
+### Purchase Orders (FDS internal)
+FDS internal purchase orders are created after a quotation is confirmed. When the
+quotation has `rfq_id`, the create-PO form fetches that RFQ and preloads PO goods
+lines from `quotation_request_lines`; KBI SAP PO remains the free-text
+`customer_po_ref` on the RFQ.
 
 ### Auth
 - `GET /v1/auth/me` returns the current authenticated user in the standard v1

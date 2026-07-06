@@ -1,120 +1,96 @@
-import { ActionIcon, Checkbox, NumberInput, Select, Text } from '@mantine/core';
+import { ActionIcon, NumberInput, Select, Text } from '@mantine/core';
 import { IconTrash } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 
 import type { ChargeCode } from '@shared/api/chargeCodes';
 import type { Uom } from '@shared/api/uoms';
 import { useI18n } from '@shared/i18n';
-import { formatMoney } from '@shared/utils/money';
+import { convertToBase, formatMoney } from '@shared/utils/money';
 
 export type ChargeLineState = {
   chargeCode: string | null;
   quantity: number | string;
   unit: string | null;
   unitPrice: number | string;
+  currency: string | null;
 };
 
 export type FeeRow = {
   key: string;
-  label: ReactNode;
+  label?: ReactNode;
   subLabel?: ReactNode;
   state: ChargeLineState;
-  enabled: boolean;
+  enabled?: boolean;
 };
 
 type Props = {
   rows: FeeRow[];
   uoms: Uom[];
   chargeCodeOptions: { label: string; value: string }[];
-  currency: string | null;
-  editableFee?: boolean;
+  currencyOptions: { label: string; value: string }[];
+  rateToVnd: (code: string | null | undefined) => number;
   removable?: boolean;
-  onToggle?: (key: string, enabled: boolean) => void;
   onChange: (key: string, patch: Partial<ChargeLineState>) => void;
   onRemove?: (key: string) => void;
 };
 
 export function QuotationFeeTable({
   chargeCodeOptions,
-  currency,
-  editableFee = false,
+  currencyOptions,
   onChange,
   onRemove,
-  onToggle,
+  rateToVnd,
   removable = false,
   rows,
   uoms,
 }: Props) {
   const { t } = useI18n();
-  const uomOptions = uoms.map((u) => ({
-    label: `${u.uom_code} - ${u.uom_name_en}`,
-    value: u.uom_code,
+  const uomOptions = uoms.map((uom) => ({
+    label: `${uom.uom_code} - ${uom.uom_name_en}`,
+    value: uom.uom_code,
   }));
-  const showToggle = Boolean(onToggle) && !editableFee;
-  const gridClassName = [
-    'rfq-fee-grid',
-    showToggle ? 'has-toggle' : '',
-    removable ? 'has-remove' : '',
-    editableFee ? 'is-editable-fee' : '',
-  ]
-    .filter(Boolean)
-    .join(' ');
+  const gridClassName = ['rfq-fee-grid', removable ? 'has-remove' : ''].filter(Boolean).join(' ');
 
   return (
     <div className={gridClassName}>
       <div className="rfq-fee-header" aria-hidden="true">
-        {showToggle ? <span /> : null}
         <span>{t('quotations.feeColumn')}</span>
         <span>{t('quotations.quantity')}</span>
         <span>{t('quotations.uom')}</span>
         <span>{t('quotations.unitPrice')}</span>
+        <span>{t('quotations.lineCurrency')}</span>
         <span>{t('quotations.lineTotal')}</span>
         {removable ? <span /> : null}
       </div>
 
       {rows.map((row) => {
+        const lineCurrency = row.state.currency;
         const total = Number(row.state.quantity) * Number(row.state.unitPrice);
-        const showTotal = row.enabled && Number.isFinite(total) && Number(row.state.unitPrice) > 0;
-        const formattedTotal = showTotal ? formatMoney(total, currency) : '-';
+        const showTotal = Number.isFinite(total) && Number(row.state.unitPrice) > 0;
+        const formattedTotal = showTotal ? formatMoney(total, lineCurrency) : '-';
+        const vndEquivalent =
+          showTotal && (lineCurrency ?? '').toUpperCase() !== 'VND'
+            ? formatMoney(convertToBase(total, rateToVnd(lineCurrency), 'VND'), 'VND')
+            : null;
 
         return (
           <div
             className="rfq-fee-row"
-            data-disabled={showToggle && !row.enabled ? 'true' : undefined}
-            data-enabled={row.enabled ? 'true' : 'false'}
+            data-enabled="true"
             data-has-total={showTotal ? 'true' : undefined}
             key={row.key}
           >
-            {showToggle ? (
-              <div className="rfq-fee-cell rfq-fee-toggle">
-                <Checkbox
-                  aria-label={`${t('quotations.includeFee')}: ${textLabel(row.label)}`}
-                  checked={row.enabled}
-                  onChange={(event) => onToggle?.(row.key, event.currentTarget.checked)}
-                />
-              </div>
-            ) : null}
-
             <div className="rfq-fee-cell rfq-fee-name">
               <span className="rfq-fee-cell-label">{t('quotations.feeColumn')}</span>
-              {editableFee ? (
-                <Select
-                  aria-label={t('quotations.feeColumn')}
-                  placeholder={t('quotations.selectChargeToAdd')}
-                  data={chargeCodeOptions}
-                  value={row.state.chargeCode}
-                  onChange={(value) => onChange(row.key, { chargeCode: value })}
-                  searchable
-                  size="xs"
-                />
-              ) : (
-                <div className="rfq-fee-name-stack">
-                  <Text size="sm" fw={700} className="rfq-fee-name-text" title={textLabel(row.label)}>
-                    {row.label}
-                  </Text>
-                  {row.subLabel ? <span className="rfq-fee-code">{row.subLabel}</span> : null}
-                </div>
-              )}
+              <Select
+                aria-label={t('quotations.feeColumn')}
+                placeholder={t('quotations.selectChargeToAdd')}
+                data={chargeCodeOptions}
+                value={row.state.chargeCode}
+                onChange={(value) => onChange(row.key, { chargeCode: value })}
+                searchable
+                size="xs"
+              />
             </div>
 
             <div className="rfq-fee-cell rfq-fee-quantity tabular-nums">
@@ -124,7 +100,6 @@ export function QuotationFeeTable({
                 value={row.state.quantity}
                 onChange={(value) => onChange(row.key, { quantity: value })}
                 min={0}
-                disabled={!row.enabled}
                 size="xs"
                 styles={{ input: { textAlign: 'right' } }}
               />
@@ -138,7 +113,6 @@ export function QuotationFeeTable({
                 value={row.state.unit}
                 onChange={(value) => onChange(row.key, { unit: value })}
                 searchable
-                disabled={!row.enabled}
                 size="xs"
               />
             </div>
@@ -151,9 +125,25 @@ export function QuotationFeeTable({
                 onChange={(value) => onChange(row.key, { unitPrice: value })}
                 min={0}
                 thousandSeparator=","
-                disabled={!row.enabled}
                 size="xs"
                 styles={{ input: { textAlign: 'right' } }}
+              />
+              {vndEquivalent ? (
+                <Text size="xs" c="dimmed" mt={2}>
+                  ≈ {vndEquivalent}
+                </Text>
+              ) : null}
+            </div>
+
+            <div className="rfq-fee-cell rfq-fee-currency">
+              <span className="rfq-fee-cell-label">{t('quotations.lineCurrency')}</span>
+              <Select
+                aria-label={t('quotations.lineCurrency')}
+                data={currencyOptions}
+                value={row.state.currency}
+                onChange={(value) => onChange(row.key, { currency: value })}
+                searchable
+                size="xs"
               />
             </div>
 
@@ -184,16 +174,15 @@ export function QuotationFeeTable({
   );
 }
 
-/** Seed the initial state when a charge code is selected. */
-export function seedLineState(chargeCode: ChargeCode | null | undefined): ChargeLineState {
+export function seedLineState(
+  chargeCode: ChargeCode | null | undefined,
+  defaultCurrency: string | null = 'USD',
+): ChargeLineState {
   return {
     chargeCode: chargeCode?.charge_code ?? null,
     quantity: 1,
     unit: chargeCode?.default_uom ?? null,
     unitPrice: '',
+    currency: defaultCurrency,
   };
-}
-
-function textLabel(label: ReactNode) {
-  return typeof label === 'string' || typeof label === 'number' ? String(label) : '';
 }

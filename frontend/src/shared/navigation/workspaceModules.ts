@@ -2,6 +2,7 @@ import {
   IconChecklist,
   IconFileInvoice,
   IconFileText,
+  IconInbox,
   IconLayoutDashboard,
   IconShip,
   IconShoppingCart,
@@ -26,6 +27,7 @@ type CanCapability = (capability: Capability) => boolean;
 
 export const workspaceModules = [
   { labelKey: 'shell.dashboard', path: '/', capability: 'dashboard.view', icon: IconLayoutDashboard },
+  { labelKey: 'shell.quotationRequests', path: '/quotation-requests', capability: 'quotationRequests.view', icon: IconInbox },
   { labelKey: 'shell.quotations', path: '/quotations', capability: 'quotations.view', icon: IconFileInvoice },
   { labelKey: 'shell.purchaseOrders', path: '/purchase-orders', capability: 'purchaseOrders.view', icon: IconShoppingCart },
   { labelKey: 'shell.deliveryOrders', path: '/delivery-orders', capability: 'deliveryOrders.view', icon: IconTruckLoading },

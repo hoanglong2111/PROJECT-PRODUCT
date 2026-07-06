@@ -1,0 +1,93 @@
+import { Stack } from '@mantine/core';
+import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+
+import { fetchQuotationRequests, type QuotationRequestV1 } from '@shared/api/quotationRequests';
+import { queryKeys } from '@shared/api/queryKeys';
+import { PageHeader } from '@shared/components/PageHeader';
+import { PageError, PageLoading } from '@shared/components/PageFeedback';
+import { WorkbenchHeader } from '@shared/components/WorkbenchHeader';
+import { useI18n } from '@shared/i18n';
+
+import { QuotationRequestDetail } from './components/QuotationRequestDetail';
+import { QuotationRequestForm } from './components/QuotationRequestForm';
+import { QuotationRequestListView } from './components/QuotationRequestListView';
+import type { QuotationRequestTab } from './model/quotationRequestModel';
+
+const EMPTY_REQUESTS: QuotationRequestV1[] = [];
+const CREATE_PARAM = 'create';
+const VIEW_PARAM = 'view';
+
+export function QuotationRequests() {
+  const { t } = useI18n();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState<QuotationRequestTab>('all');
+  const createRequested = searchParams.get(CREATE_PARAM) === '1';
+  const focusedRequest = searchParams.get(VIEW_PARAM);
+
+  const requestsQuery = useQuery({
+    queryKey: queryKeys.quotationRequestsList({ page: 1, limit: 100 }),
+    queryFn: () => fetchQuotationRequests({ page: 1, limit: 100 }),
+  });
+  const requests = requestsQuery.data?.data ?? EMPTY_REQUESTS;
+
+  const closeWorkbench = () => {
+    setSearchParams({}, { replace: true });
+  };
+
+  const openCreateForm = () => {
+    setSearchParams({ [CREATE_PARAM]: '1' });
+  };
+
+  const openRequest = (id: string, options: { replace?: boolean } = {}) => {
+    setSearchParams({ [VIEW_PARAM]: id }, { replace: options.replace ?? false });
+  };
+
+  if (requestsQuery.isError) {
+    return (
+      <PageError
+        title={t('quotationRequests.errorTitle')}
+        description={t('quotationRequests.errorDescription')}
+        error={requestsQuery.error}
+        onRetry={() => {
+          void requestsQuery.refetch();
+        }}
+      />
+    );
+  }
+
+  if (requestsQuery.isLoading) {
+    return <PageLoading title={t('quotationRequests.title')} description={t('quotationRequests.loadingDescription')} />;
+  }
+
+  return (
+    <Stack gap="lg" className="quotations-workbench">
+      {!createRequested && !focusedRequest ? (
+        <PageHeader title={t('quotationRequests.title')} subtitle={t('quotationRequests.subtitle')} />
+      ) : (
+        <WorkbenchHeader className="quotations-subheader" onBack={closeWorkbench} />
+      )}
+
+      {createRequested ? (
+        <QuotationRequestForm
+          onCancel={closeWorkbench}
+          onCreated={(request) => {
+            openRequest(request.id, { replace: true });
+          }}
+        />
+      ) : focusedRequest ? (
+        <QuotationRequestDetail requestId={focusedRequest} onBack={closeWorkbench} />
+      ) : (
+        <QuotationRequestListView
+          requests={requests}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          isLoading={requestsQuery.isFetching}
+          onInspect={openRequest}
+          onNew={openCreateForm}
+        />
+      )}
+    </Stack>
+  );
+}

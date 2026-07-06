@@ -309,18 +309,14 @@
 }
 
 .rfq-fee-grid {
-  --rfq-fee-columns: minmax(0, 1.35fr) minmax(4.25rem, 0.5fr) minmax(7rem, 0.78fr) minmax(7.25rem, 0.85fr) minmax(7rem, 0.78fr);
+  --rfq-fee-columns: minmax(0, 1.3fr) minmax(4.25rem, 0.48fr) minmax(6.5rem, 0.68fr) minmax(7.25rem, 0.8fr) minmax(6.5rem, 0.62fr) minmax(7rem, 0.76fr);
 
   display: grid;
   gap: 0.5rem;
 }
 
-.rfq-fee-grid.has-toggle {
-  --rfq-fee-columns: 2.25rem minmax(0, 1.35fr) minmax(4.25rem, 0.5fr) minmax(7rem, 0.78fr) minmax(7.25rem, 0.85fr) minmax(7rem, 0.78fr);
-}
-
 .rfq-fee-grid.has-remove {
-  --rfq-fee-columns: minmax(0, 1.35fr) minmax(4.25rem, 0.5fr) minmax(7rem, 0.78fr) minmax(7.25rem, 0.85fr) minmax(7rem, 0.78fr) 2.25rem;
+  --rfq-fee-columns: minmax(0, 1.3fr) minmax(4.25rem, 0.48fr) minmax(6.5rem, 0.68fr) minmax(7.25rem, 0.8fr) minmax(6.5rem, 0.62fr) minmax(7rem, 0.76fr) 2.25rem;
 }
 
 .rfq-fee-header,
@@ -374,11 +370,6 @@
 
 .rfq-fee-row[data-has-total='true'] {
   background: color-mix(in srgb, var(--kbfe-surface-elevated) 96%, var(--kbfe-primary-color) 4%);
-}
-
-.rfq-fee-row[data-disabled='true'] {
-  opacity: 0.56;
-  background: color-mix(in srgb, var(--kbfe-surface-subtle) 72%, var(--kbfe-surface-elevated) 28%);
 }
 
 .rfq-fee-row:focus-within {
@@ -448,7 +439,6 @@
   font-weight: 850;
 }
 
-.rfq-fee-toggle,
 .rfq-fee-remove {
   display: flex;
   justify-content: center;
@@ -1139,32 +1129,20 @@
 
   .rfq-fee-row,
   .rfq-fee-grid.has-remove .rfq-fee-row {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     grid-template-areas:
-      "name name"
-      "qty uom"
-      "price total";
+      "name name name"
+      "qty uom currency"
+      "price price total";
     align-items: start;
   }
 
-  .rfq-fee-grid.has-toggle .rfq-fee-row {
-    grid-template-columns: 2.25rem minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-areas:
-      "toggle name name"
-      ". qty uom"
-      ". price total";
-  }
-
   .rfq-fee-grid.has-remove .rfq-fee-row {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 2.25rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) 2.25rem;
     grid-template-areas:
-      "name name remove"
-      "qty uom remove"
-      "price total remove";
-  }
-
-  .rfq-fee-toggle {
-    grid-area: toggle;
+      "name name name remove"
+      "qty uom currency remove"
+      "price price total remove";
   }
 
   .rfq-fee-name {
@@ -1181,6 +1159,10 @@
 
   .rfq-fee-price {
     grid-area: price;
+  }
+
+  .rfq-fee-currency {
+    grid-area: currency;
   }
 
   .rfq-fee-total {
@@ -1230,20 +1212,18 @@
   }
 
   .rfq-fee-row,
-  .rfq-fee-grid.has-toggle .rfq-fee-row,
   .rfq-fee-grid.has-remove .rfq-fee-row {
     grid-template-columns: 1fr;
     grid-template-areas:
-      "toggle"
       "name"
       "qty"
       "uom"
       "price"
+      "currency"
       "total"
       "remove";
   }
 
-  .rfq-fee-toggle,
   .rfq-fee-remove {
     justify-content: flex-start;
   }
