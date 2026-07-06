@@ -8,7 +8,7 @@ import './styles.css';
 
 import { MantineProvider } from '@mantine/core';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { StrictMode } from 'react';
+import { StrictMode, useMemo } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 
@@ -23,8 +23,8 @@ import { useI18n } from '@shared/i18n';
 function ThemedApp() {
   const { colorPreset, resolvedColorScheme } = useWorkspacePreferences();
   const { t } = useI18n();
-  const theme = buildTheme(colorPreset, t('common.selectPlaceholder'));
-  const cssVariablesResolver = buildCssVariablesResolver(colorPreset);
+  const theme = useMemo(() => buildTheme(colorPreset, t('common.selectPlaceholder')), [colorPreset, t]);
+  const cssVariablesResolver = useMemo(() => buildCssVariablesResolver(colorPreset), [colorPreset]);
 
   return (
     <MantineProvider

@@ -71,11 +71,11 @@
 }
 
 .dto-metric-card-blue {
-  --dto-accent: var(--mantine-color-blue-6);
+  --dto-accent: var(--kbfe-status-blue);
 }
 
 .dto-metric-card-cyan {
-  --dto-accent: var(--mantine-color-cyan-6);
+  --dto-accent: var(--kbfe-status-cyan);
 }
 
 .dto-metric-card-teal {
@@ -83,7 +83,7 @@
 }
 
 .dto-metric-card-gray {
-  --dto-accent: var(--mantine-color-gray-6);
+  --dto-accent: var(--kbfe-text-secondary);
 }
 
 .dto-metric-content {
@@ -389,16 +389,16 @@
 }
 
 .dto-overview-summary {
-  --dto-summary-accent: var(--mantine-color-cyan-6);
+  --dto-summary-accent: var(--kbfe-status-cyan);
   border-left: 0.25rem solid color-mix(in srgb, var(--dto-summary-accent) 60%, var(--kbfe-border-primary)) !important;
 }
 
 .dto-overview-summary-blue {
-  --dto-summary-accent: var(--mantine-color-blue-6);
+  --dto-summary-accent: var(--kbfe-status-blue);
 }
 
 .dto-overview-summary-gray {
-  --dto-summary-accent: var(--mantine-color-gray-6);
+  --dto-summary-accent: var(--kbfe-text-secondary);
 }
 
 .dto-overview-summary-teal {
@@ -564,7 +564,7 @@
 
 .dto-form-subsection-title {
   margin-bottom: 0.45rem !important;
-  color: var(--kbfe-text-secondary, var(--mantine-color-gray-6));
+  color: var(--kbfe-text-secondary);
   letter-spacing: 0;
   text-transform: uppercase;
 }
@@ -595,7 +595,7 @@
 
 .dto-time-matrix-heading,
 .dto-time-matrix-axis {
-  color: var(--kbfe-text-secondary, var(--mantine-color-gray-6));
+  color: var(--kbfe-text-secondary);
   text-transform: uppercase;
 }
 
@@ -749,7 +749,7 @@
   font-size: 0.7rem;
   letter-spacing: 0.01em;
   text-transform: none;
-  color: var(--kbfe-text-secondary, var(--mantine-color-gray-7));
+  color: var(--kbfe-text-secondary);
 }
 
 .dto-line-card-metrics {
@@ -781,7 +781,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--kbfe-text-secondary, var(--mantine-color-gray-6));
+  color: var(--kbfe-text-secondary);
 }
 
 .dto-line-metric-icon {
@@ -813,7 +813,7 @@
 .dto-line-metric-unit {
   font-size: 0.7rem;
   font-weight: 500;
-  color: var(--kbfe-text-secondary, var(--mantine-color-gray-6));
+  color: var(--kbfe-text-secondary);
 }
 
 .dto-error-alert {

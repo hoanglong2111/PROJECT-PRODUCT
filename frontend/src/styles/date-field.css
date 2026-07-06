@@ -125,6 +125,12 @@
   width: 100%;
 }
 
+.kbfe-datetime-field .mantine-Input-input {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .kbfe-datetime-field-date {
   flex: 1 1 8.5rem;
   min-width: 0;

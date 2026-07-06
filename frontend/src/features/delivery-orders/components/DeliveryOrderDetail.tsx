@@ -613,9 +613,9 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
                 key={item.label}
                 icon={
                   item.ok ? (
-                    <IconCircleCheck size={18} color="var(--mantine-color-teal-6)" />
+                    <IconCircleCheck size={18} color="var(--kbfe-status-teal)" />
                   ) : (
-                    <IconCircleX size={18} color="var(--mantine-color-gray-5)" />
+                    <IconCircleX size={18} color="var(--kbfe-text-secondary)" />
                   )
                 }
               >

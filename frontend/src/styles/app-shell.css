@@ -335,7 +335,7 @@ html[data-kbfe-visual-theme='high-contrast'] .mantine-AppShell-navbar {
 }
 
 .profile-menu-item-danger:hover .mantine-Menu-itemSection {
-  color: var(--mantine-color-red-6);
+  color: var(--kbfe-status-red);
 }
 
 .notification-bell-static,
@@ -411,7 +411,7 @@ html[data-kbfe-visual-theme='high-contrast'] .mantine-AppShell-navbar {
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 50%;
-  background-color: var(--mantine-color-red-6);
+  background-color: var(--kbfe-status-red);
   flex-shrink: 0;
   margin-top: 0.35rem;
 }

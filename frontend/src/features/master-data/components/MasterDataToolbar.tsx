@@ -88,7 +88,7 @@ export function MasterDataToolbar({
             <Group gap="xs" wrap="nowrap">
               {hasActiveFilters ? (
                 <Tooltip label={t('masterData.clearFilters')}>
-                  <ActionIcon variant="subtle" color="gray" size="lg" onClick={onClear} aria-label={t('masterData.clearFilters')}>
+                  <ActionIcon variant="subtle" c="var(--kbfe-text-secondary)" size="lg" onClick={onClear} aria-label={t('masterData.clearFilters')}>
                     <IconRefresh size={16} />
                   </ActionIcon>
                 </Tooltip>
@@ -125,4 +125,3 @@ export function MasterDataToolbar({
     </Paper>
   );
 }
-

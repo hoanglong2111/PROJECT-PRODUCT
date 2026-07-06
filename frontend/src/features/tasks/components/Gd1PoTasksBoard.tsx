@@ -113,7 +113,7 @@ export function Gd1PoTasksBoard() {
                 return (
                   <Table.Tr
                     key={task.id}
-                    className={isCompleted ? 'task-row-completed' : undefined}
+                    className={`task-list-row${isCompleted ? ' task-row-completed' : ''}`}
                   >
                     <Table.Td>
                       <Checkbox

@@ -360,6 +360,13 @@ export function QuotationListView({ filteredQuotations, onInspect, supplierOptio
   );
 }
 
+const metricStatusColorTokens = {
+  blue: 'var(--kbfe-status-blue)',
+  green: 'var(--kbfe-status-teal)',
+  red: 'var(--kbfe-status-red)',
+  yellow: 'var(--kbfe-status-yellow)',
+} as const;
+
 function Metric({
   color,
   icon,
@@ -380,7 +387,7 @@ function Metric({
         <Title
           order={1}
           fw={800}
-          style={{ lineHeight: 1.1, color: `var(--kbfe-status-${color}, var(--mantine-color-${color}-7))` }}
+          style={{ lineHeight: 1.1, color: metricStatusColorTokens[color] }}
         >
           {value}
         </Title>

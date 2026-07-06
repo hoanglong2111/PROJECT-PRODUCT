@@ -133,7 +133,7 @@ html {
 
 /* Themed scrollbars: thumb tracks the active color preset via --kbfe-primary-color
    (see theme.css derivation), so it re-colors automatically on preset/theme change. */
-* {
+html {
   scrollbar-width: thin;
   scrollbar-color: var(--kbfe-scrollbar-thumb) var(--kbfe-scrollbar-track);
 }

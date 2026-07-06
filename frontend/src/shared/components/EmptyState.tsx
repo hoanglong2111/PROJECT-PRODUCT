@@ -12,7 +12,7 @@ export function EmptyState({
 }) {
   return (
     <Stack component="section" aria-label={title} align="center" gap="xs" py="xl" className="empty-state">
-      <ThemeIcon size={48} radius="md" variant="light" color="gray">
+      <ThemeIcon size={48} radius="md" variant="light" className="kbfe-empty-icon">
         <IconInbox size={28} />
       </ThemeIcon>
       <Text fw={700}>{title}</Text>

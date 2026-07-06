@@ -8,7 +8,7 @@
 
 .lot-planning-board {
   background:
-    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--mantine-color-teal-6) 7%, transparent), transparent 30%),
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--kbfe-status-teal) 7%, transparent), transparent 30%),
     color-mix(in srgb, var(--kbfe-surface-elevated) 96%, var(--kbfe-surface-subtle) 4%);
 }
 

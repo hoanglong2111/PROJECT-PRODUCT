@@ -217,19 +217,19 @@
 }
 
 .shipment-filter-channel-dot-all {
-  background: var(--mantine-color-gray-5);
+  background: var(--kbfe-status-gray);
 }
 
 .shipment-filter-channel-dot-green {
-  background: var(--mantine-color-teal-5);
+  background: var(--kbfe-status-teal);
 }
 
 .shipment-filter-channel-dot-yellow {
-  background: var(--mantine-color-yellow-5);
+  background: var(--kbfe-status-yellow);
 }
 
 .shipment-filter-channel-dot-red {
-  background: var(--mantine-color-red-5);
+  background: var(--kbfe-status-red);
 }
 
 .shipment-filter-dates {
@@ -467,22 +467,22 @@
 }
 
 .shipment-milestone-rail-step.is-completed::before {
-  background: var(--mantine-color-teal-5);
+  background: var(--kbfe-status-teal);
 }
 
 .shipment-milestone-rail-step.is-completed span {
-  border-color: var(--mantine-color-teal-5);
-  background: var(--mantine-color-teal-5);
+  border-color: var(--kbfe-status-teal);
+  background: var(--kbfe-status-teal);
   color: white;
 }
 
 .shipment-milestone-rail-step.is-current::before {
-  background: linear-gradient(90deg, var(--mantine-color-blue-5), var(--kbfe-border-primary));
+  background: linear-gradient(90deg, var(--kbfe-status-blue), var(--kbfe-border-primary));
 }
 
 .shipment-milestone-rail-step.is-current span {
-  border-color: var(--mantine-color-blue-5);
-  background: var(--mantine-color-blue-5);
+  border-color: var(--kbfe-status-blue);
+  background: var(--kbfe-status-blue);
   color: white;
 }
 
@@ -534,7 +534,7 @@
 }
 
 .shipment-milestone-row.is-completed .shipment-milestone-marker::after {
-  background: var(--mantine-color-teal-4);
+  background: var(--kbfe-status-teal);
 }
 
 .shipment-milestone-content {
@@ -545,17 +545,17 @@
 }
 
 .shipment-milestone-row.is-current .shipment-milestone-content {
-  border-color: color-mix(in srgb, var(--mantine-color-blue-5) 42%, var(--kbfe-border-primary));
-  background: color-mix(in srgb, var(--mantine-color-blue-0) 48%, var(--kbfe-surface-elevated));
+  border-color: color-mix(in srgb, var(--kbfe-status-blue) 42%, var(--kbfe-border-primary));
+  background: var(--kbfe-status-blue-bg);
 }
 
 .shipment-milestone-row.is-completed .shipment-milestone-content {
-  background: color-mix(in srgb, var(--mantine-color-teal-0) 44%, var(--kbfe-surface-elevated));
+  background: var(--kbfe-status-teal-bg);
 }
 
 .shipment-milestone-row.is-editing .shipment-milestone-content {
-  border-color: var(--mantine-color-blue-5);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--mantine-color-blue-5) 12%, transparent);
+  border-color: var(--kbfe-status-blue);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--kbfe-status-blue) 12%, transparent);
 }
 
 .shipment-milestone-row.is-editing {
@@ -627,8 +627,8 @@
 }
 
 .shipment-phase-row.is-active {
-  border-color: color-mix(in srgb, var(--mantine-color-blue-5) 40%, var(--kbfe-border-primary));
-  background: color-mix(in srgb, var(--mantine-color-blue-0) 46%, var(--kbfe-surface-elevated));
+  border-color: color-mix(in srgb, var(--kbfe-status-blue) 40%, var(--kbfe-border-primary));
+  background: var(--kbfe-status-blue-bg);
 }
 @media (max-width: 62em) {
 

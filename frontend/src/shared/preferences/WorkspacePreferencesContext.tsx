@@ -47,7 +47,7 @@ const FINE_TUNE_DEFAULTS = {
   dimLevel: 0,
 } as const;
 
-const THEME_TRANSITION_MS = 320;
+const THEME_TRANSITION_MS = 100;
 
 const WorkspacePreferencesContext = createContext<WorkspacePreferencesContextValue | undefined>(undefined);
 
@@ -176,10 +176,6 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
       return;
     }
 
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      return;
-    }
-
     if (themeTransitionTimeoutRef.current !== null) {
       window.clearTimeout(themeTransitionTimeoutRef.current);
     }
@@ -256,6 +252,7 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
   const setAppearanceMode = (nextAppearanceMode: AppearanceMode) => {
     startThemeTransition();
     setAppearanceModeState(nextAppearanceMode);
+    setResolvedColorScheme(nextAppearanceMode === 'auto' ? getSystemColorScheme() : nextAppearanceMode);
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(APPEARANCE_MODE_STORAGE_KEY, nextAppearanceMode);
     }

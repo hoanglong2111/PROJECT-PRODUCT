@@ -99,7 +99,7 @@ export function LotCard({
               onChange={(event) => onSelect(event.currentTarget.checked)}
               onClick={(event) => event.stopPropagation()}
             />
-            <IconGripVertical size={16} color="var(--mantine-color-gray-5)" />
+            <IconGripVertical size={16} color="var(--kbfe-text-secondary)" />
             <div className="lot-list-title-text">
               <Group gap="xs" wrap="nowrap" className="lot-list-title-row">
                 <Text fw={800} size="sm" truncate title={lot.lot_no}>
@@ -215,7 +215,7 @@ export function LotCard({
                       style={{ cursor: canManage && !isLocked ? 'grab' : 'default' }}
                     >
                       <Group gap="sm" wrap="nowrap" className="lot-line-main">
-                        <IconGripVertical size={14} color="var(--mantine-color-gray-4)" />
+                        <IconGripVertical size={14} color="var(--kbfe-text-secondary)" />
                         <div className="lot-line-item-text">
                           <Text size="sm" truncate title={`${itemCode} - ${itemName}`}>
                             <Text span fw={800} className="lot-line-item-code">

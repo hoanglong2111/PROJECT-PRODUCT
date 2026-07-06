@@ -1,8 +1,8 @@
-import { Alert, Badge, Button, Group, NumberInput, Paper, Select, SimpleGrid, Stack, Text, Textarea, TextInput } from '@mantine/core';
+import { Alert, Badge, Button, Group, NumberInput, Paper, Select, SimpleGrid, Stack, Text, Textarea, TextInput, Tooltip } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   createLogisticsTask,
@@ -12,6 +12,7 @@ import {
   type TaskRole,
   type TaskStatus,
 } from '@shared/api/logistics';
+import { ConfirmModal } from '@shared/components/ConfirmModal';
 import { DateTimeField } from '@shared/components/DateField';
 import { FieldPair } from '@shared/components/FieldPair';
 import { fetchTaskTemplates } from '@shared/api/taskTemplates';
@@ -61,11 +62,13 @@ const emptyValues: TaskFormValues = {
 };
 
 export function TaskFormPanel({
+  closeRequestToken,
   editing,
   onClose,
   onSaved,
   opened,
 }: {
+  closeRequestToken?: number;
   editing: LogisticsTask | null;
   onClose: () => void;
   onSaved?: (task: LogisticsTask) => void;
@@ -74,6 +77,8 @@ export function TaskFormPanel({
   const { priorityLabel, statusLabel, t, taskRoleLabel } = useI18n();
   const queryClient = useQueryClient();
   const form = useForm<TaskFormValues>({ initialValues: emptyValues });
+  const [confirmDiscardOpened, setConfirmDiscardOpened] = useState(false);
+  const closeRequestTokenRef = useRef(closeRequestToken);
 
   const templatesQuery = useQuery({
     queryKey: queryKeys.taskTemplates,
@@ -99,9 +104,10 @@ export function TaskFormPanel({
     if (!opened) return;
     if (!editing) {
       form.setValues(emptyValues);
+      form.resetDirty(emptyValues);
       return;
     }
-    form.setValues({
+    const values: TaskFormValues = {
       taskTemplateId: editing.task_template_id,
       taskName: editing.task_name,
       role: editing.role,
@@ -113,9 +119,26 @@ export function TaskFormPanel({
       dueDate: editing.due_date,
       progress: editing.progress,
       notes: editing.notes,
-    });
+    };
+    form.setValues(values);
+    form.resetDirty(values);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opened, editing]);
+
+  const requestClose = () => {
+    if (form.isDirty()) {
+      setConfirmDiscardOpened(true);
+      return;
+    }
+    onClose();
+  };
+
+  useEffect(() => {
+    if (closeRequestTokenRef.current === closeRequestToken) return;
+    closeRequestTokenRef.current = closeRequestToken;
+    requestClose();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [closeRequestToken]);
 
   const mutation = useMutation({
     mutationFn: () => {
@@ -141,6 +164,7 @@ export function TaskFormPanel({
         queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats }),
         queryClient.invalidateQueries({ queryKey: queryKeys.globalSearch }),
       ]);
+      setConfirmDiscardOpened(false);
       onSaved?.(saved);
       onClose();
     },
@@ -149,6 +173,11 @@ export function TaskFormPanel({
   const handleSave = () => {
     if (!form.values.taskName.trim()) return;
     mutation.mutate();
+  };
+
+  const handleDiscardChanges = () => {
+    setConfirmDiscardOpened(false);
+    onClose();
   };
 
   const onTemplateChange = (value: string | null) => {
@@ -162,8 +191,8 @@ export function TaskFormPanel({
   if (!opened) return null;
 
   return (
-    <Paper withBorder p="md" className="task-form-panel task-form-panel-body">
-      <Stack gap="md" className="task-form-shell">
+    <Paper p={0} className="task-form-panel task-form-panel-body">
+      <Stack gap="xl" className="task-form-shell">
         {mutation.isError ? (
           <Alert color="red" icon={<IconAlertCircle size={18} />}>
             {getApiErrorMessage(mutation.error)}
@@ -185,7 +214,9 @@ export function TaskFormPanel({
         <div className="task-form-layout">
           <section className="task-form-section task-form-section-main">
             <Group justify="space-between" gap="sm" className="task-form-section-title">
-              <Text fw={700}>{t('common.task')}</Text>
+              <Text className="task-form-section-heading-text" size="xs" tt="uppercase" fw={700} c="dimmed">
+                {t('common.task')}
+              </Text>
               {selectedTemplate?.group_code ? (
                 <Badge size="sm" variant="light" color="grape">
                   {selectedTemplate.group_code}
@@ -193,26 +224,39 @@ export function TaskFormPanel({
               ) : null}
             </Group>
             <Stack gap="sm">
-              <Select
-                label={t('tasks.sopTemplate')}
-                placeholder={t('tasks.templatePickerPlaceholder')}
-                data={templateOptions}
-                searchable
-                clearable
-                value={form.values.taskTemplateId}
-                onChange={onTemplateChange}
-              />
+              <Tooltip
+                label={selectedTemplate ? templateOptions.find((option) => option.value === selectedTemplate.id)?.label : ''}
+                disabled={!selectedTemplate}
+                multiline
+                maw={360}
+                withinPortal
+              >
+                <Select
+                  label={t('tasks.sopTemplate')}
+                  placeholder={t('tasks.templatePickerPlaceholder')}
+                  data={templateOptions}
+                  searchable
+                  clearable
+                  value={form.values.taskTemplateId}
+                  onChange={onTemplateChange}
+                  renderOption={({ option }) => (
+                    <Text size="sm" className="task-form-template-option">
+                      {option.label}
+                    </Text>
+                  )}
+                />
+              </Tooltip>
               <TextInput label={t('common.task')} required {...form.getInputProps('taskName')} />
               <TextInput label="PO / DO" placeholder="PO-KBI-2026-001" {...form.getInputProps('refNo')} />
             </Stack>
           </section>
 
           <aside className="task-form-template-panel">
-            <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
+            <Text className="task-form-section-heading metric-label" size="xs" tt="uppercase" fw={700} c="dimmed">
               {t('tasks.sopTemplate')}
             </Text>
             {selectedTemplate ? (
-              <SimpleGrid cols={{ base: 1, xs: 3 }} spacing="xs" mt="xs" className="task-form-template-facts">
+              <SimpleGrid cols={1} spacing="sm" className="task-form-template-facts">
                 <FieldPair className="task-form-template-fact" label={t('tasks.milestone')} value={milestoneLabel(selectedTemplate.milestone_code)} />
                 <FieldPair className="task-form-template-fact" label={t('tasks.department')} value={departmentLabel(selectedTemplate.department)} />
                 <FieldPair className="task-form-template-fact" label={t('tasks.sla')} value={templateSlaLabel(selectedTemplate)} />
@@ -225,38 +269,40 @@ export function TaskFormPanel({
           </aside>
         </div>
 
-        <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="md" className="task-form-section-grid">
-          <section className="task-form-section">
-            <Text fw={700} mb="sm">{t('common.assignee')}</Text>
-            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
-              <Select
-                label={t('common.role')}
-                data={ROLE_VALUES.map((role) => ({ label: taskRoleLabel(role), value: role }))}
-                {...form.getInputProps('role')}
-              />
-              <TextInput label={t('common.assignee')} {...form.getInputProps('assigneeName')} />
-              <TextInput label={t('tasks.department')} {...form.getInputProps('assigneeDepartment')} />
-              <Select
-                label={t('forms.priority')}
-                data={PRIORITY_VALUES.map((priority) => ({ label: priorityLabel(priority), value: priority }))}
-                {...form.getInputProps('priority')}
-              />
-            </SimpleGrid>
-          </section>
+        <section className="task-form-section">
+          <Text className="task-form-section-heading" size="xs" tt="uppercase" fw={700} c="dimmed">
+            {t('common.assignee')}
+          </Text>
+          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
+            <Select
+              label={t('common.role')}
+              data={ROLE_VALUES.map((role) => ({ label: taskRoleLabel(role), value: role }))}
+              {...form.getInputProps('role')}
+            />
+            <TextInput label={t('common.assignee')} {...form.getInputProps('assigneeName')} />
+            <TextInput label={t('tasks.department')} {...form.getInputProps('assigneeDepartment')} />
+            <Select
+              label={t('forms.priority')}
+              data={PRIORITY_VALUES.map((priority) => ({ label: priorityLabel(priority), value: priority }))}
+              {...form.getInputProps('priority')}
+            />
+          </SimpleGrid>
+        </section>
 
-          <section className="task-form-section">
-            <Text fw={700} mb="sm">{t('tasks.progress')}</Text>
-            <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm">
-              <Select
-                label={t('common.status')}
-                data={STATUS_VALUES.map((status) => ({ label: statusLabel(status), value: status }))}
-                {...form.getInputProps('status')}
-              />
-              <DateTimeField label={t('tasks.dueDate')} {...form.getInputProps('dueDate')} />
-              <NumberInput label={t('tasks.progress')} min={0} max={100} suffix="%" {...form.getInputProps('progress')} />
-            </SimpleGrid>
-          </section>
-        </SimpleGrid>
+        <section className="task-form-section">
+          <Text className="task-form-section-heading" size="xs" tt="uppercase" fw={700} c="dimmed">
+            {t('tasks.progress')}
+          </Text>
+          <div className="task-form-progress-grid">
+            <Select
+              label={t('common.status')}
+              data={STATUS_VALUES.map((status) => ({ label: statusLabel(status), value: status }))}
+              {...form.getInputProps('status')}
+            />
+            <DateTimeField label={t('tasks.dueDate')} {...form.getInputProps('dueDate')} />
+            <NumberInput label={t('tasks.progress')} min={0} max={100} suffix="%" {...form.getInputProps('progress')} />
+          </div>
+        </section>
 
         <section className="task-form-section">
           <Textarea label={t('common.notes')} autosize minRows={3} {...form.getInputProps('notes')} />
@@ -267,7 +313,7 @@ export function TaskFormPanel({
             {t('forms.updateTaskHint')}
           </Text>
           <Group gap="xs">
-            <Button variant="subtle" color="gray" onClick={onClose}>
+            <Button variant="subtle" color="gray" onClick={requestClose}>
               {t('common.cancel')}
             </Button>
             <Button onClick={handleSave} loading={mutation.isPending} disabled={!form.values.taskName.trim()}>
@@ -276,6 +322,18 @@ export function TaskFormPanel({
           </Group>
         </Group>
       </Stack>
+
+      <ConfirmModal
+        opened={confirmDiscardOpened}
+        title={t('tasks.unsavedChangesTitle')}
+        message={t('tasks.unsavedChangesMessage')}
+        confirmLabel={t('common.save')}
+        cancelLabel={t('common.no')}
+        confirmColor="teal"
+        loading={mutation.isPending}
+        onConfirm={handleSave}
+        onCancel={handleDiscardChanges}
+      />
     </Paper>
   );
 }

@@ -229,7 +229,7 @@ export function ShipmentCostsPanel({
                 {costs.map((cost) => {
                   const hint = COST_TYPE_HINT[cost.cost_type];
                   return (
-                    <Table.Tr key={cost.id} bg={editingId === cost.id ? 'var(--mantine-color-blue-light)' : undefined}>
+                    <Table.Tr key={cost.id} bg={editingId === cost.id ? 'var(--kbfe-status-blue-bg)' : undefined}>
                       <Table.Td>
                         <HeaderLabel label={t(`shipments.costTypes.${cost.cost_type}`)} hint={hint ? t(hint) : undefined} />
                       </Table.Td>

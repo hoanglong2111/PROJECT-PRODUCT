@@ -5,8 +5,19 @@ export type FilterSegmentOption = {
   value: string;
   label: ReactNode;
   count?: number;
-  /** Mantine color name (e.g. 'red', 'teal') used to tint the active pill + badge. */
+  /** Status color name used to tint the active pill + badge. */
   color?: string;
+};
+
+const statusColorTokens: Record<string, string> = {
+  blue: 'var(--kbfe-status-blue)',
+  cyan: 'var(--kbfe-status-cyan)',
+  gray: 'var(--kbfe-status-gray)',
+  green: 'var(--kbfe-status-teal)',
+  orange: 'var(--kbfe-status-orange)',
+  red: 'var(--kbfe-status-red)',
+  teal: 'var(--kbfe-status-teal)',
+  yellow: 'var(--kbfe-status-yellow)',
 };
 
 /**
@@ -40,7 +51,7 @@ export function FilterSegment({
       {options.map((option) => {
         const active = option.value === value;
         const style = option.color
-          ? ({ '--chip-color': `var(--mantine-color-${option.color}-6)` } as CSSProperties)
+          ? ({ '--chip-color': statusColorTokens[option.color] ?? 'var(--kbfe-primary-color)' } as CSSProperties)
           : undefined;
         return (
           <UnstyledButton

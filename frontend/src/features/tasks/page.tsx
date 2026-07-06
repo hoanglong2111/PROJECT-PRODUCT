@@ -19,7 +19,7 @@ import {
 } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 import { useDisclosure } from '@mantine/hooks';
-import { IconAlertTriangle, IconChecklist, IconClock, IconEye, IconGitBranch, IconPlus, IconSearch, IconUserCheck, IconX } from '@tabler/icons-react';
+import { IconAlertTriangle, IconArrowLeft, IconChecklist, IconClock, IconEye, IconGitBranch, IconPlus, IconSearch, IconUserCheck, IconX } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -64,6 +64,8 @@ export function Tasks() {
   const [taskFormOpened, taskFormHandlers] = useDisclosure(false);
   const [editingTask, setEditingTask] = useState<LogisticsTask | null>(null);
   const [returnToTask, setReturnToTask] = useState<LogisticsTask | null>(null);
+  const [closeRequestToken, setCloseRequestToken] = useState(0);
+  const requestTaskFormClose = () => setCloseRequestToken((n) => n + 1);
   const openCreateTask = () => {
     setEditingTask(null);
     setReturnToTask(null);
@@ -427,7 +429,12 @@ export function Tasks() {
                   </Table.Thead>
                   <Table.Tbody>
                     {visibleTasks.map((task) => (
-                      <Table.Tr key={task.task_id}>
+                      <Table.Tr
+                        key={task.task_id}
+                        className="task-list-row"
+                        data-selected={(selectedTask?.task_id === task.task_id || focusedTask === task.task_id) || undefined}
+                        data-overdue={isOverdue(task) || undefined}
+                      >
                         <Table.Td className="table-cell-truncate" style={{ maxWidth: '20rem' }}>
                           <Text fw={700} lineClamp={1} title={task.task_name}>{task.task_name}</Text>
                           <Group gap={6} mt={2}>
@@ -469,19 +476,19 @@ export function Tasks() {
                           <StatusBadge status={task.status} />
                         </Table.Td>
                         <Table.Td>
-                          <Progress value={task.progress} color={task.progress === 100 ? 'teal' : 'blue'} size="sm" mb={4} />
-                          <Text size="xs" c="dimmed">
+                          <Progress value={task.progress} color={task.progress === 100 ? 'teal' : 'blue'} size="xs" mb={4} />
+                          <Text size="xs" c="dimmed" className="tabular-nums">
                             {task.progress}%
                           </Text>
                         </Table.Td>
                         <Table.Td>
-                          <Text c={isOverdue(task) ? 'red' : undefined}>
+                          <Text className="task-due-date" c={isOverdue(task) ? 'red' : undefined}>
                             {task.due_date}
                           </Text>
                         </Table.Td>
                         <Table.Td className="table-cell-truncate" style={{ maxWidth: '18rem' }}>
                           {task.blocked_reason ? (
-                            <Badge color="red" title={task.blocked_reason}>{task.blocked_reason}</Badge>
+                            <Badge color="red" variant="light" size="sm" title={task.blocked_reason}>{task.blocked_reason}</Badge>
                           ) : (
                             <Text size="sm" c="dimmed">
                               -
@@ -522,20 +529,27 @@ export function Tasks() {
 
       <Drawer
         opened={taskFormOpened}
-        onClose={closeTaskForm}
+        onClose={requestTaskFormClose}
         position="right"
         size="60rem"
+        withCloseButton={false}
         title={
-          <ModalTitle
-            feature="tasks"
-            title={editingTask ? t('tasks.editTask') : t('tasks.createTask')}
-            subtitle={editingTask?.task_id}
-          />
+          <Group gap="xs" wrap="nowrap">
+            <ActionIcon variant="subtle" c="var(--kbfe-text-secondary)" aria-label={t('common.back')} onClick={requestTaskFormClose}>
+              <IconArrowLeft size={18} />
+            </ActionIcon>
+            <ModalTitle
+              feature="tasks"
+              title={editingTask ? t('tasks.editTask') : t('tasks.createTask')}
+              subtitle={editingTask?.task_id}
+            />
+          </Group>
         }
       >
         <TaskFormPanel
           editing={editingTask}
           opened={taskFormOpened}
+          closeRequestToken={closeRequestToken}
           onClose={closeTaskForm}
           onSaved={(saved) => {
             taskFormHandlers.close();

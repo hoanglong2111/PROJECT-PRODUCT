@@ -44,10 +44,15 @@ export function NotFound() {
           <SimpleGrid cols={{ base: 1, md: 2 }} spacing={40} style={{ position: 'relative', zIndex: 1 }}>
             <Stack justify="center" gap="lg">
               <Group gap="xs">
-                <ThemeIcon size={44} radius="md" color="teal" variant="light">
+                <ThemeIcon
+                  size={44}
+                  radius="md"
+                  variant="light"
+                  style={{ color: 'var(--kbfe-primary-color)', background: 'var(--kbfe-icon-background)' }}
+                >
                   <IconMapPinOff size={24} />
                 </ThemeIcon>
-                <Text size="sm" fw={700} lts="0.05em" tt="uppercase" c="teal">
+                <Text size="sm" fw={700} lts="0.05em" tt="uppercase" c="var(--kbfe-primary-color)">
                   {t('notFound.errorCodeLabel')}
                 </Text>
               </Group>
@@ -100,7 +105,12 @@ export function NotFound() {
                     transition: 'all 200ms ease',
                   }}
                 >
-                  <ThemeIcon size={40} radius="md" variant="light" color="blue">
+                  <ThemeIcon
+                    size={40}
+                    radius="md"
+                    variant="light"
+                    style={{ color: 'var(--kbfe-primary-color)', background: 'var(--kbfe-icon-background)' }}
+                  >
                     <IconLayoutDashboard size={20} />
                   </ThemeIcon>
                   <div>
@@ -129,7 +139,12 @@ export function NotFound() {
                     transition: 'all 200ms ease',
                   }}
                 >
-                  <ThemeIcon size={40} radius="md" variant="light" color="teal">
+                  <ThemeIcon
+                    size={40}
+                    radius="md"
+                    variant="light"
+                    style={{ color: 'var(--kbfe-primary-color)', background: 'var(--kbfe-icon-background)' }}
+                  >
                     <IconChecklist size={20} />
                   </ThemeIcon>
                   <div>
@@ -158,7 +173,12 @@ export function NotFound() {
                     transition: 'all 200ms ease',
                   }}
                 >
-                  <ThemeIcon size={40} radius="md" variant="light" color="gray">
+                  <ThemeIcon
+                    size={40}
+                    radius="md"
+                    variant="light"
+                    style={{ color: 'var(--kbfe-text-secondary)', background: 'var(--kbfe-surface-subtle)' }}
+                  >
                     <IconSettings size={20} />
                   </ThemeIcon>
                   <div>

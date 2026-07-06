@@ -15,8 +15,19 @@ type PoStageFilterProps = {
   totalCount: number;
 };
 
+const statusColorTokens: Record<string, string> = {
+  blue: 'var(--kbfe-status-blue)',
+  cyan: 'var(--kbfe-status-cyan)',
+  gray: 'var(--kbfe-status-gray)',
+  green: 'var(--kbfe-status-teal)',
+  orange: 'var(--kbfe-status-orange)',
+  red: 'var(--kbfe-status-red)',
+  teal: 'var(--kbfe-status-teal)',
+  yellow: 'var(--kbfe-status-yellow)',
+};
+
 function colorVar(color: string): CSSProperties {
-  return { '--chip-color': `var(--mantine-color-${color}-6)` } as CSSProperties;
+  return { '--chip-color': statusColorTokens[color] ?? 'var(--kbfe-primary-color)' } as CSSProperties;
 }
 
 function activeStageOf(value: string): PoStageKey | null {

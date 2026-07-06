@@ -525,9 +525,9 @@
 
 .rfq-submit-hint {
   padding: 0.625rem 0.75rem;
-  border: 1px solid color-mix(in srgb, var(--mantine-color-yellow-5) 26%, var(--kbfe-border-primary));
+  border: 1px solid color-mix(in srgb, var(--kbfe-status-yellow) 26%, var(--kbfe-border-primary));
   border-radius: var(--kbfe-radius-md);
-  background: color-mix(in srgb, var(--mantine-color-yellow-5) 12%, var(--kbfe-surface-elevated));
+  background: var(--kbfe-status-yellow-bg);
 }
 
 .rfq-rail-actions {

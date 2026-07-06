@@ -167,7 +167,7 @@ export function CustomsLinesTable({
               </Table.Tbody>
 
               <Table.Tfoot>
-                <Table.Tr style={{ fontWeight: 700, borderTop: '2px solid var(--mantine-color-gray-4)' }}>
+                <Table.Tr style={{ fontWeight: 700, borderTop: '2px solid var(--kbfe-border-primary)' }}>
                   <Table.Td colSpan={4} style={R}>{t('shipments.totalCustomsValue')}</Table.Td>
                   <Table.Td style={R}>{fmt(summary.totalValue)}</Table.Td>
                   <Table.Td style={R}>

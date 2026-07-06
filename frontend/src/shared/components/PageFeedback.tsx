@@ -138,7 +138,7 @@ export function PageError({ actionLabel, description, error, onRetry, title }: P
     <Paper withBorder p="lg" className="page-state-panel page-state-panel-error">
       <Stack gap="md">
         <Group align="flex-start" gap="sm" wrap="nowrap">
-          <ThemeIcon color="red" variant="light" size={42} radius="md">
+          <ThemeIcon variant="light" size={42} radius="md" className="kbfe-error-icon">
             <IconAlertTriangle size={24} />
           </ThemeIcon>
           <div>
@@ -252,7 +252,7 @@ export function FullPageError({
       <Paper withBorder p="xl" maw={520} w="100%">
         <Stack gap="md">
           <Group align="flex-start" gap="sm" wrap="nowrap">
-            <ThemeIcon color="red" variant="light" size={42} radius="md">
+            <ThemeIcon variant="light" size={42} radius="md" className="kbfe-error-icon">
               <IconAlertTriangle size={24} />
             </ThemeIcon>
             <div>

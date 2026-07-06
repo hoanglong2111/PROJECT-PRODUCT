@@ -331,7 +331,7 @@
   width: 0.4rem;
   height: 0.4rem;
   border-radius: var(--kbfe-radius-pill);
-  background: var(--mantine-color-orange-5);
+  background: var(--kbfe-status-orange);
 }
 
 .purchase-order-line-notice {
@@ -342,13 +342,13 @@
 }
 
 .purchase-order-line-notice.is-error {
-  color: var(--mantine-color-red-8);
-  background: color-mix(in srgb, var(--mantine-color-red-5) 12%, var(--kbfe-surface-elevated));
+  color: var(--kbfe-status-red);
+  background: var(--kbfe-status-red-bg);
 }
 
 .purchase-order-line-notice.is-warning {
-  color: var(--mantine-color-orange-8);
-  background: color-mix(in srgb, var(--mantine-color-orange-5) 14%, var(--kbfe-surface-elevated));
+  color: var(--kbfe-status-orange);
+  background: var(--kbfe-status-orange-bg);
 }
 
 .purchase-order-line-rail-copy {
@@ -633,7 +633,7 @@
 }
 
 .po-stage-step.is-cancelled {
-  background: color-mix(in srgb, var(--mantine-color-gray-5) 55%, transparent);
+  background: color-mix(in srgb, var(--kbfe-status-gray) 55%, transparent);
 }
 
 .po-stage-position {
@@ -778,7 +778,7 @@
 .purchase-order-create-do-route {
   overflow: hidden;
   background:
-    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--mantine-color-teal-6) 10%, transparent), transparent 34%),
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--kbfe-status-teal) 10%, transparent), transparent 34%),
     color-mix(in srgb, var(--kbfe-surface-elevated) 94%, var(--kbfe-surface-subtle) 6%);
   border-color: color-mix(in srgb, var(--kbfe-primary-color) 28%, var(--kbfe-border-primary));
 }
@@ -1035,19 +1035,19 @@
   top: 0;
   bottom: 0;
   width: 0.2rem;
-  background: var(--mantine-color-gray-4);
+  background: var(--kbfe-status-gray);
 }
 
 .po-line-row.is-full>td.col-toggle::before {
-  background: var(--mantine-color-teal-5);
+  background: var(--kbfe-status-teal);
 }
 
 .po-line-row.is-partial>td.col-toggle::before {
-  background: var(--mantine-color-orange-5);
+  background: var(--kbfe-status-orange);
 }
 
 .po-line-row.is-needs-lot>td.col-toggle::before {
-  background: var(--mantine-color-red-5);
+  background: var(--kbfe-status-red);
 }
 
 .po-line-row-toggle {
@@ -1057,7 +1057,7 @@
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--mantine-color-gray-6);
+  color: var(--kbfe-text-secondary);
   cursor: pointer;
   transition: transform 160ms ease;
 }
@@ -1104,7 +1104,7 @@
 
 .po-line-item-name {
   font-size: 0.75rem;
-  color: var(--kbfe-text-secondary, var(--mantine-color-gray-6));
+  color: var(--kbfe-text-secondary);
 }
 
 .po-qty-value {
@@ -1120,7 +1120,7 @@
 .po-qty-unit {
   font-size: 0.6875rem;
   font-weight: 400;
-  color: var(--kbfe-text-secondary, var(--mantine-color-gray-6));
+  color: var(--kbfe-text-secondary);
 }
 
 .po-qty-delta {
@@ -1128,7 +1128,7 @@
   font-size: 0.6875rem;
   font-weight: 700;
   white-space: nowrap;
-  color: var(--mantine-color-orange-7);
+  color: var(--kbfe-status-orange);
 }
 
 /* Confirmed and Lotted are the two checkpoints that matter most, so their value
@@ -1151,22 +1151,22 @@
 /* Lotted — neutral pill by default; its colour encodes the lot state so the
    confirmed → lotted gap is obvious without reading the numbers. */
 .po-qty-cell.is-lot .po-qty-value {
-  background: color-mix(in srgb, var(--kbfe-text-secondary, var(--mantine-color-gray-6)) 12%, transparent);
+  background: color-mix(in srgb, var(--kbfe-text-secondary) 12%, transparent);
 }
 
 .po-qty-cell.tone-full .po-qty-value {
-  color: var(--mantine-color-teal-8);
-  background: color-mix(in srgb, var(--mantine-color-teal-5) 18%, transparent);
+  color: var(--kbfe-status-teal);
+  background: var(--kbfe-status-teal-bg);
 }
 
 .po-qty-cell.tone-partial .po-qty-value {
-  color: var(--mantine-color-orange-8);
-  background: color-mix(in srgb, var(--mantine-color-orange-5) 18%, transparent);
+  color: var(--kbfe-status-orange);
+  background: var(--kbfe-status-orange-bg);
 }
 
 .po-qty-cell.tone-needs-lot .po-qty-value {
-  color: var(--mantine-color-red-8);
-  background: color-mix(in srgb, var(--mantine-color-red-5) 18%, transparent);
+  color: var(--kbfe-status-red);
+  background: var(--kbfe-status-red-bg);
 }
 
 .po-line-amount {
@@ -1202,19 +1202,19 @@
   top: 0;
   bottom: 0;
   width: 0.2rem;
-  background: var(--mantine-color-gray-4);
+  background: var(--kbfe-status-gray);
 }
 
 .po-line-detail-row.is-open.is-full>td::before {
-  background: var(--mantine-color-teal-5);
+  background: var(--kbfe-status-teal);
 }
 
 .po-line-detail-row.is-open.is-partial>td::before {
-  background: var(--mantine-color-orange-5);
+  background: var(--kbfe-status-orange);
 }
 
 .po-line-detail-row.is-open.is-needs-lot>td::before {
-  background: var(--mantine-color-red-5);
+  background: var(--kbfe-status-red);
 }
 
 .po-line-detail {
