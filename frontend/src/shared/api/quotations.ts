@@ -217,7 +217,7 @@ export type CreateQuotationVersionPayload = {
   mode?: string | null;
   origin_port?: string | null;
   destination_port?: string | null;
-  currency_code?: string;
+  currency_code?: string | null;
   valid_until?: string | null;
   charge_lines?: QuotationChargeLinePayload[];
 };
