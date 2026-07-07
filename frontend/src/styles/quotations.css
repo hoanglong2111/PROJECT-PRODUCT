@@ -307,17 +307,20 @@
 
 .rfq-charge-grid {
   min-width: 0;
+  overflow-x: auto;
+  padding-bottom: 0.125rem;
 }
 
 .rfq-fee-grid {
-  --rfq-fee-columns: minmax(0, 1.25fr) minmax(4.25rem, 0.46fr) minmax(6.25rem, 0.62fr) minmax(7rem, 0.72fr) minmax(6.25rem, 0.58fr) minmax(8.5rem, 0.82fr);
+  --rfq-fee-columns: minmax(11rem, 1.35fr) minmax(4.25rem, 0.44fr) minmax(5.75rem, 0.55fr) minmax(7rem, 0.68fr) minmax(6rem, 0.55fr) minmax(8.25rem, 0.72fr) minmax(6.5rem, 0.58fr) minmax(8.5rem, 0.78fr) minmax(8.25rem, 0.72fr) minmax(8rem, 0.72fr) minmax(8.5rem, 0.82fr);
 
   display: grid;
   gap: 0.5rem;
+  min-width: 84rem;
 }
 
 .rfq-fee-grid.has-remove {
-  --rfq-fee-columns: minmax(0, 1.25fr) minmax(4.25rem, 0.46fr) minmax(6.25rem, 0.62fr) minmax(7rem, 0.72fr) minmax(6.25rem, 0.58fr) minmax(8.5rem, 0.82fr) 2.25rem;
+  --rfq-fee-columns: minmax(11rem, 1.35fr) minmax(4.25rem, 0.44fr) minmax(5.75rem, 0.55fr) minmax(7rem, 0.68fr) minmax(6rem, 0.55fr) minmax(8.25rem, 0.72fr) minmax(6.5rem, 0.58fr) minmax(8.5rem, 0.78fr) minmax(8.25rem, 0.72fr) minmax(8rem, 0.72fr) minmax(8.5rem, 0.82fr) 2.25rem;
 }
 
 .rfq-fee-header,
@@ -389,7 +392,11 @@
 }
 
 .rfq-fee-name-stack,
-.rfq-fee-total .mantine-Text-root {
+.rfq-fee-total .mantine-Text-root,
+.rfq-fee-exchange .mantine-Text-root,
+.rfq-fee-amount-vnd .mantine-Text-root,
+.rfq-fee-vat-vnd .mantine-Text-root,
+.rfq-fee-total-endpoint .mantine-Text-root {
   min-width: 0;
 }
 
@@ -426,18 +433,33 @@
   background: color-mix(in srgb, var(--kbfe-primary-color) 8%, var(--kbfe-surface-elevated));
 }
 
-.rfq-fee-total .mantine-Text-root {
+.rfq-fee-total .mantine-Text-root,
+.rfq-fee-exchange .mantine-Text-root,
+.rfq-fee-amount-vnd .mantine-Text-root,
+.rfq-fee-vat-vnd .mantine-Text-root,
+.rfq-fee-total-endpoint .mantine-Text-root {
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.rfq-fee-total {
+.rfq-fee-total,
+.rfq-fee-exchange,
+.rfq-fee-amount-vnd,
+.rfq-fee-vat-vnd,
+.rfq-fee-total-endpoint {
   text-align: right;
 }
 
-.rfq-fee-row[data-has-total='true'] .rfq-fee-total .mantine-Text-root {
+.rfq-fee-row[data-has-total='true'] .rfq-fee-total .mantine-Text-root,
+.rfq-fee-row[data-has-total='true'] .rfq-fee-total-endpoint .mantine-Text-root {
   color: color-mix(in srgb, var(--kbfe-primary-color) 74%, var(--kbfe-text-primary));
   font-weight: 850;
+}
+
+.rfq-missing-rate {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1875rem;
 }
 
 .rfq-fee-remove {
@@ -484,6 +506,27 @@
 .rfq-total-card .mantine-Text-root,
 .rfq-detail-total .mantine-Text-root {
   overflow-wrap: anywhere;
+}
+
+.rfq-original-item-name {
+  overflow: hidden;
+  max-width: 60%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rfq-customer-pays {
+  margin-top: 0.375rem;
+  padding-top: 0.375rem;
+  border-top: 1px dashed color-mix(in srgb, var(--kbfe-primary-color) 30%, var(--kbfe-border-primary));
+}
+
+.rfq-total-separator {
+  border-top: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 78%, transparent);
+}
+
+.rfq-missing-rate-total {
+  color: var(--mantine-color-yellow-7);
 }
 
 .rfq-total-icon {
@@ -1141,13 +1184,19 @@
     display: none;
   }
 
+  .rfq-fee-grid {
+    min-width: 0;
+  }
+
   .rfq-fee-row,
   .rfq-fee-grid.has-remove .rfq-fee-row {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     grid-template-areas:
       "name name name"
       "qty uom currency"
-      "price total total";
+      "price total exchange"
+      "amountvnd vatvnd endpointcurrency"
+      "endpointtotal endpointtotal endpointtotal";
     align-items: start;
   }
 
@@ -1156,7 +1205,9 @@
     grid-template-areas:
       "name name name remove"
       "qty uom currency remove"
-      "price total total remove";
+      "price total exchange remove"
+      "amountvnd vatvnd endpointcurrency remove"
+      "endpointtotal endpointtotal endpointtotal remove";
   }
 
   .rfq-fee-name {
@@ -1181,6 +1232,30 @@
 
   .rfq-fee-total {
     grid-area: total;
+    text-align: left;
+  }
+
+  .rfq-fee-exchange {
+    grid-area: exchange;
+    text-align: left;
+  }
+
+  .rfq-fee-amount-vnd {
+    grid-area: amountvnd;
+    text-align: left;
+  }
+
+  .rfq-fee-vat-vnd {
+    grid-area: vatvnd;
+    text-align: left;
+  }
+
+  .rfq-fee-endpoint-currency {
+    grid-area: endpointcurrency;
+  }
+
+  .rfq-fee-total-endpoint {
+    grid-area: endpointtotal;
     text-align: left;
   }
 
@@ -1235,6 +1310,11 @@
       "price"
       "currency"
       "total"
+      "exchange"
+      "amountvnd"
+      "vatvnd"
+      "endpointcurrency"
+      "endpointtotal"
       "remove";
   }
 

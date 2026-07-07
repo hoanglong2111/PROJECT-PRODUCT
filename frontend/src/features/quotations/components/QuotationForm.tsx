@@ -8,6 +8,7 @@ import {
   Group,
   NumberInput,
   Paper,
+  Select,
   SimpleGrid,
   Stack,
   Text,
@@ -45,12 +46,24 @@ import { useExchangeRates } from '@shared/hooks/useExchangeRates';
 import { useTradeMasterDataOptions } from '@shared/hooks/useTradeMasterDataOptions';
 import { useI18n } from '@shared/i18n';
 import { QUOTATION_CHARGE_GROUPS } from '@shared/lib/quotationChargeGroups';
-import { chargeCodeToChargeType } from '@shared/lib/quotationCharges';
+import {
+  chargeCodeToChargeType,
+  computeQuotationLineVnd,
+  QUOTATION_VAT_RATE,
+  summarizeQuotationVndLines,
+} from '@shared/lib/quotationCharges';
 import { formatMoney } from '@shared/utils/money';
 
-import { summarizeByCurrency } from '../model/quotationCurrency';
+import {
+  addDraftChargeLine,
+  removeDraftChargeLineAt,
+  seedDraftGroupsFromQuotation,
+  updateDraftChargeLineAt,
+  type QuotationDraftChargeLineState,
+  type QuotationDraftGroupLines,
+} from '../model/quotationDraftLines';
 import { toShippingMode } from '../model/quotationModel';
-import { type ChargeLineState, type FeeRow, QuotationFeeTable, seedLineState } from './QuotationFeeTable';
+import { type FeeRow, QuotationFeeTable } from './QuotationFeeTable';
 import { hasMinimumOptions, QuotationOptionsTable } from './QuotationOptionsTable';
 
 type QuotationFormProps = {
@@ -60,8 +73,7 @@ type QuotationFormProps = {
   rfq?: QuotationRequestV1;
 };
 
-type GroupLine = ChargeLineState & { uid: string };
-type GroupLines = Record<QuotationChargeGroup, GroupLine[]>;
+type GroupLines = QuotationDraftGroupLines;
 type DraftQuotationOption = CreateQuotationOptionPayload & {
   id: string;
   option_no: number;
@@ -69,39 +81,11 @@ type DraftQuotationOption = CreateQuotationOptionPayload & {
 };
 
 const EMPTY_CHARGE_CODES: ChargeCode[] = [];
-let uidCounter = 0;
-
-function nextUid() {
-  uidCounter += 1;
-  return `fee-${uidCounter}`;
-}
-
-function emptyGroups(): GroupLines {
-  return { FREIGHT: [], ORIGIN: [], DESTINATION: [] };
-}
 
 function numberOrNull(value: number | string | null | undefined): number | null {
   if (value === '' || value == null) return null;
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric : null;
-}
-
-function seedGroupsFromQuotation(quotation: QuotationV1 | undefined): GroupLines {
-  const groups = emptyGroups();
-
-  for (const line of quotation?.charge_lines ?? []) {
-    const group = line.charge_group ?? 'FREIGHT';
-    groups[group].push({
-      uid: nextUid(),
-      chargeCode: line.charge_code ?? null,
-      quantity: String(line.quantity ?? 1),
-      unit: line.unit ?? null,
-      unitPrice: line.unit_price == null ? '' : String(line.unit_price),
-      currency: line.currency_code ?? null,
-    });
-  }
-
-  return groups;
 }
 
 function ReadOnlyContext({ label, value }: { label: string; value: ReactNode }) {
@@ -121,7 +105,7 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
   const { language, t } = useI18n();
   const queryClient = useQueryClient();
   const { currencyOptions } = useTradeMasterDataOptions();
-  const { rateToVnd } = useExchangeRates();
+  const { rateToVndOrNull } = useExchangeRates();
   const isRevise = Boolean(sourceQuotation);
 
   const header = {
@@ -141,7 +125,7 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
   const shippingMode = toShippingMode(header.mode);
 
   const [validUntil, setValidUntil] = useState(sourceQuotation?.valid_until?.slice(0, 10) ?? '');
-  const [groups, setGroups] = useState<GroupLines>(() => seedGroupsFromQuotation(sourceQuotation));
+  const [groups, setGroups] = useState<GroupLines>(() => seedDraftGroupsFromQuotation(sourceQuotation));
   const [expanded, setExpanded] = useState<Record<QuotationChargeGroup, boolean>>({
     FREIGHT: true,
     ORIGIN: false,
@@ -172,6 +156,7 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
   const [optionTransitDays, setOptionTransitDays] = useState<number | string>('');
   const [optionRisk, setOptionRisk] = useState('');
   const [optionAmount, setOptionAmount] = useState<number | string>('');
+  const [paymentCurrency, setPaymentCurrency] = useState<string>('VND');
 
   const chargeCodesQuery = useQuery({
     queryKey: queryKeys.chargeCodes({ page: 1, limit: 200, is_active: true }),
@@ -198,28 +183,23 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
   }
 
   function addLine(group: QuotationChargeGroup) {
-    setGroups((current) => ({
-      ...current,
-      [group]: [...current[group], { uid: nextUid(), ...seedLineState(null) }],
-    }));
+    setGroups((current) => addDraftChargeLine(current, group));
   }
 
-  function updateLine(group: QuotationChargeGroup, uid: string, patch: Partial<ChargeLineState>) {
-    setGroups((current) => ({
-      ...current,
-      [group]: current[group].map((line) => {
-        if (line.uid !== uid) return line;
-        const updated = { ...line, ...patch };
-        if (patch.chargeCode !== undefined && patch.chargeCode !== line.chargeCode) {
-          updated.unit = findChargeCode(patch.chargeCode)?.default_uom ?? updated.unit;
-        }
-        return updated;
-      }),
-    }));
+  function updateLine(group: QuotationChargeGroup, rowIndex: number, patch: Partial<QuotationDraftChargeLineState>) {
+    setGroups((current) =>
+      updateDraftChargeLineAt(
+        current,
+        group,
+        rowIndex,
+        patch,
+        (chargeCode) => findChargeCode(chargeCode)?.default_uom,
+      ),
+    );
   }
 
-  function removeLine(group: QuotationChargeGroup, uid: string) {
-    setGroups((current) => ({ ...current, [group]: current[group].filter((line) => line.uid !== uid) }));
+  function removeLine(group: QuotationChargeGroup, rowIndex: number) {
+    setGroups((current) => removeDraftChargeLineAt(current, group, rowIndex));
   }
 
   const allLines = useMemo(
@@ -227,23 +207,41 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
     [groups],
   );
 
-  const currencySummary = useMemo(() => {
-    const summaryLines = allLines.map(({ line }) => {
-      const amount = Number(line.quantity) * Number(line.unitPrice);
+  const quotationVndLines = useMemo(() => {
+    return allLines.map(({ line }) => {
       const chargeCode = findChargeCode(line.chargeCode);
-      return {
-        currency: line.currency,
-        amount: Number.isFinite(amount) ? amount : 0,
-        taxable: Boolean(chargeCode?.taxable),
-      };
+      return computeQuotationLineVnd(
+        {
+          quantity: line.quantity,
+          unitPrice: line.unitPrice,
+          currency: line.currency,
+          endpointCurrency: line.endpointCurrency,
+          taxable: Boolean(chargeCode?.taxable),
+        },
+        rateToVndOrNull,
+      );
     });
-    return summarizeByCurrency(summaryLines, rateToVnd);
     // chargeCodes affects findChargeCode and is intentionally tracked.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allLines, chargeCodes, rateToVnd]);
-  const primarySubtotal = currencySummary.byCurrency[0] ?? null;
-  const referenceCurrency = currencySummary.byCurrency.find((row) => row.currency !== 'VND')?.currency ?? 'USD';
-  const referenceRate = rateToVnd(referenceCurrency);
+  }, [allLines, chargeCodes, rateToVndOrNull]);
+  const quotationVndTotals = useMemo(() => summarizeQuotationVndLines(quotationVndLines), [quotationVndLines]);
+  const referenceCurrency = allLines.find(({ line }) => line.currency && line.currency !== 'VND')?.line.currency ?? null;
+  const referenceRate = referenceCurrency ? rateToVndOrNull(referenceCurrency) : null;
+  const paymentRate = paymentCurrency === 'VND' ? 1 : rateToVndOrNull(paymentCurrency);
+  const customerPaysTotal = paymentRate ? quotationVndTotals.totalVnd / paymentRate : null;
+
+  const originalCurrencyItems = allLines
+    .filter(({ line }) => line.chargeCode && Number(line.unitPrice) > 0 && line.currency)
+    .map(({ line }) => {
+      const chargeCode = findChargeCode(line.chargeCode);
+      const name = chargeCode
+        ? language === 'vi' && chargeCode.charge_name_vn
+          ? chargeCode.charge_name_vn
+          : chargeCode.charge_name_en
+        : line.chargeCode ?? '';
+      const amount = Number(line.quantity) * Number(line.unitPrice);
+      return { key: line.uid, name, amount, currency: line.currency as string };
+    });
 
   const pricedLineCount = allLines.filter(({ line }) => line.chargeCode && Number(line.unitPrice) > 0).length;
   const filledLineCount = allLines.filter(({ line }) => line.chargeCode && Number(line.unitPrice) > 0 && line.currency).length;
@@ -269,7 +267,7 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
           quantity: Number(line.quantity) || 1,
           unit: line.unit ?? chargeCode?.default_uom ?? 'SET',
           unit_price: Number(line.unitPrice),
-          tax_rate: chargeCode?.taxable ? 10 : 0,
+          tax_rate: chargeCode?.taxable ? QUOTATION_VAT_RATE : 0,
           note: chargeCode ? `Rev/Cost: ${chargeCode.rev_cost}` : null,
         };
       });
@@ -334,12 +332,12 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
       const quotation = isRevise
         ? await createQuotationVersion(sourceQuotation!.id, {
           status: 'DRAFT',
-          currency_code: null,
+          currency_code: paymentCurrency,
           valid_until: validUntil || null,
           charge_lines: chargeLines,
         })
         : await createQuotationFromRequest(rfq!.id, {
-          currency_code: null,
+          currency_code: paymentCurrency,
           valid_until: validUntil || null,
           charge_lines: chargeLines,
         });
@@ -408,7 +406,7 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
                     {t('quotations.chargeLinesCount', { count: filledLineCount })}
                   </Text>
                   <Text size="sm" fw={800}>
-                    {primarySubtotal ? formatMoney(primarySubtotal.total, primarySubtotal.currency) : '-'}
+                    {quotationVndTotals.totalVnd > 0 ? formatMoney(quotationVndTotals.totalVnd, 'VND') : '-'}
                   </Text>
                 </div>
               </div>
@@ -493,7 +491,13 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
             {QUOTATION_CHARGE_GROUPS.map((group) => {
               const lines = groups[group.value];
               const isExpanded = expanded[group.value];
-              const rows: FeeRow[] = lines.map((line) => ({ key: line.uid, label: null, state: line, enabled: true }));
+              const rows: FeeRow[] = lines.map((line, index) => ({
+                key: `${line.uid}-${index}`,
+                rowIndex: index,
+                label: null,
+                state: line,
+                enabled: true,
+              }));
 
               return (
                 <section className="rfq-form-section" key={group.value}>
@@ -529,8 +533,10 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
                             currencyOptions={currencyOptions}
                             uoms={uoms}
                             removable
-                            onChange={(uid, patch) => updateLine(group.value, uid, patch)}
-                            onRemove={(uid) => removeLine(group.value, uid)}
+                            rateToVndOrNull={rateToVndOrNull}
+                            isTaxable={(chargeCode) => Boolean(findChargeCode(chargeCode)?.taxable)}
+                            onChange={(rowIndex, patch) => updateLine(group.value, rowIndex, patch)}
+                            onRemove={(rowIndex) => removeLine(group.value, rowIndex)}
                           />
                         ) : (
                           <div className="rfq-empty-lines">
@@ -561,32 +567,68 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
               <Group justify="space-between" align="flex-start" gap="sm">
                 <div>
                   <Text size="xs" tt="uppercase" fw={800} c="dimmed">
-                    {t('quotations.subtotalsByCurrency')}
+                    {t('quotations.totalInCurrency', { currency: paymentCurrency })}
                   </Text>
-                  {currencySummary.byCurrency.length > 0 ? (
-                    <Stack gap={4} mt={6}>
-                      {currencySummary.byCurrency.map((row) => (
-                        <Group justify="space-between" gap="md" wrap="nowrap" key={row.currency}>
+                  {filledLineCount > 0 ? (
+                    <Stack gap={6} mt={6}>
+                      <Stack gap={4} className="rfq-original-items">
+                        {originalCurrencyItems.map((item) => (
+                          <Group key={item.key} justify="space-between" gap="md" wrap="nowrap">
+                            <Text size="sm" c="dimmed" className="rfq-original-item-name">
+                              {item.name}
+                            </Text>
+                            <Text fw={700} className="tabular-nums">
+                              {formatMoney(item.amount, item.currency)}
+                            </Text>
+                          </Group>
+                        ))}
+                      </Stack>
+                      <div className="rfq-total-separator" />
+                      <Group justify="space-between" gap="md" wrap="nowrap">
+                        <Text size="sm" c="dimmed">
+                          {t('quotations.vatLabel', { rate: QUOTATION_VAT_RATE })}
+                        </Text>
+                        <Text fw={800} className="tabular-nums">
+                          {customerPaysTotal != null ? formatMoney(quotationVndTotals.taxVnd / (paymentRate || 1), paymentCurrency) : '-'}
+                        </Text>
+                      </Group>
+                      <div className="rfq-customer-pays">
+                        <Group justify="space-between" gap="md" wrap="nowrap" align="center">
                           <Text size="sm" c="dimmed">
-                            {t('quotations.subtotalPrefix')} {row.currency}
+                            {t('quotations.customerPays')}
                           </Text>
-                          <Text fw={900} className="tabular-nums">
-                            {formatMoney(row.total, row.currency)}
+                          <Select
+                            aria-label={t('quotations.customerPaysCurrency')}
+                            data={currencyOptions}
+                            value={paymentCurrency}
+                            onChange={(value) => setPaymentCurrency(value ?? 'VND')}
+                            searchable
+                            size="xs"
+                            w={110}
+                            allowDeselect={false}
+                          />
+                        </Group>
+                        <Text fw={900} size="xl" className="tabular-nums" ta="right" mt={4}>
+                          {customerPaysTotal != null ? formatMoney(customerPaysTotal, paymentCurrency) : '-'}
+                        </Text>
+                      </div>
+                      {quotationVndTotals.missingRateCount > 0 ? (
+                        <Group gap={6} wrap="nowrap" className="rfq-missing-rate-total">
+                          <IconAlertTriangle size={14} />
+                          <Text size="xs" fw={700}>
+                            {t('quotations.missingRateTotal', { count: quotationVndTotals.missingRateCount })}
                           </Text>
                         </Group>
-                      ))}
+                      ) : null}
                     </Stack>
                   ) : (
                     <Text fw={900} size="xl" className="tabular-nums">
                       -
                     </Text>
                   )}
-                  <Text size="xs" c="dimmed" mt="xs">
-                    {t('quotations.referenceRate')}: 1 {referenceCurrency} = {new Intl.NumberFormat('vi-VN').format(referenceRate)} VND
-                  </Text>
-                  {currencySummary.byCurrency.length > 1 ? (
-                    <Text size="xs" c="dimmed">
-                      {t('quotations.internalVndTotal')}: ≈ {formatMoney(currencySummary.internalVndTotal, 'VND')}
+                  {referenceCurrency && referenceRate ? (
+                    <Text size="xs" c="dimmed" mt="xs">
+                      {t('quotations.referenceRate')}: 1 {referenceCurrency} = {new Intl.NumberFormat('vi-VN').format(referenceRate)} VND
                     </Text>
                   ) : null}
                 </div>
