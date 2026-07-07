@@ -29,6 +29,56 @@ export type QuotationRequestLineV1 = {
   is_delete?: boolean;
 };
 
+export type QuotationRequestPackageV1 = {
+  id: string;
+  quotation_request_id: string;
+  package_no: number;
+  package_type: string | null;
+  length_cm: ApiDecimal | null;
+  width_cm: ApiDecimal | null;
+  height_cm: ApiDecimal | null;
+  qty: ApiDecimal;
+  gross_weight_per_package_kg: ApiDecimal | null;
+  cbm?: ApiDecimal | null;
+  item_id?: string | null;
+  item_description?: string | null;
+  unit?: string | null;
+  unit_price?: ApiDecimal | null;
+  note?: string | null;
+  item?: Item | null;
+  create_at?: string;
+  update_at?: string;
+  delete_at?: string | null;
+  is_delete?: boolean;
+};
+
+export type QuotationRequestContainerLineV1 = {
+  id: string;
+  container_id: string;
+  line_no: number;
+  item_id: string | null;
+  item_description: string | null;
+  qty: ApiDecimal;
+  unit: string | null;
+  unit_price: ApiDecimal | null;
+  gross_weight_kg: ApiDecimal | null;
+  note: string | null;
+  item?: Item | null;
+};
+
+export type QuotationRequestContainerV1 = {
+  id: string;
+  quotation_request_id: string;
+  container_no: number;
+  container_type: string | null;
+  qty: ApiDecimal;
+  lines?: QuotationRequestContainerLineV1[];
+  create_at?: string;
+  update_at?: string;
+  delete_at?: string | null;
+  is_delete?: boolean;
+};
+
 export type QuotationRequestV1 = {
   id: string;
   rfq_no: string;
@@ -47,10 +97,13 @@ export type QuotationRequestV1 = {
   volume_cbm: ApiDecimal | null;
   dim_weight_kg?: ApiDecimal | null;
   chargeable_weight_kg?: ApiDecimal | null;
+  chargeable_revenue_ton?: ApiDecimal | null;
   container_type: string | null;
   note: string | null;
   supplier?: Supplier | null;
   lines?: QuotationRequestLineV1[];
+  packages?: QuotationRequestPackageV1[];
+  containers?: QuotationRequestContainerV1[];
   quotations?: QuotationV1[];
   create_at?: string;
   update_at?: string;
@@ -82,6 +135,40 @@ export type CreateQuotationRequestLinePayload = {
   note?: string | null;
 };
 
+export type CreateQuotationRequestPackagePayload = {
+  package_no: number;
+  package_type?: string | null;
+  length_cm?: number | null;
+  width_cm?: number | null;
+  height_cm?: number | null;
+  qty?: number;
+  gross_weight_per_package_kg?: number | null;
+  cbm?: number | null;
+  item_id?: string | null;
+  item_description?: string | null;
+  unit?: string | null;
+  unit_price?: number | null;
+  note?: string | null;
+};
+
+export type CreateQuotationRequestContainerLinePayload = {
+  line_no: number;
+  item_id?: string | null;
+  item_description?: string | null;
+  qty?: number;
+  unit?: string | null;
+  unit_price?: number | null;
+  gross_weight_kg?: number | null;
+  note?: string | null;
+};
+
+export type CreateQuotationRequestContainerPayload = {
+  container_no: number;
+  container_type?: string | null;
+  qty?: number;
+  lines?: CreateQuotationRequestContainerLinePayload[];
+};
+
 export type CreateQuotationRequestPayload = {
   customer_ref?: string | null;
   customer_po_ref?: string | null;
@@ -97,9 +184,12 @@ export type CreateQuotationRequestPayload = {
   volume_cbm?: number | null;
   dim_weight_kg?: number | null;
   chargeable_weight_kg?: number | null;
+  chargeable_revenue_ton?: number | null;
   container_type?: string | null;
   note?: string | null;
   lines?: CreateQuotationRequestLinePayload[];
+  packages?: CreateQuotationRequestPackagePayload[];
+  containers?: CreateQuotationRequestContainerPayload[];
 };
 
 export type CreateQuotationFromRequestPayload = {

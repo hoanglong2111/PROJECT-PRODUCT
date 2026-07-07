@@ -161,6 +161,11 @@ export function QuotationRequestDetail({ onBack, requestId }: QuotationRequestDe
             <FieldPair label={t('quotationRequests.field.weight')} value={`${totalWeight || '-'} kg`} />
             <FieldPair label={t('quotationRequests.field.volume')} value={`${request.volume_cbm ?? '-'} cbm`} />
             <FieldPair label={t('quotationRequests.field.container')} value={request.container_type ?? '-'} />
+            <FieldPair label={t('quotationRequests.field.dimWeight')} value={request.dim_weight_kg != null ? `${request.dim_weight_kg} kg` : '-'} />
+            <FieldPair
+              label={t('quotationRequests.field.chargeableWeight')}
+              value={request.chargeable_weight_kg != null ? `${request.chargeable_weight_kg} kg` : '-'}
+            />
           </SimpleGrid>
           <Text mt="md" size="sm" c="dimmed">{request.note ?? '-'}</Text>
         </Paper>
@@ -203,6 +208,98 @@ export function QuotationRequestDetail({ onBack, requestId }: QuotationRequestDe
           </Table.ScrollContainer>
         </Paper>
       </SimpleGrid>
+
+      {request.packages?.length ? (
+        <Paper withBorder p={0} className="dl-data-panel">
+          <div className="rfq-panel-head">
+            <Title order={4}>{t('quotationRequests.section.packages')}</Title>
+          </div>
+          <Table.ScrollContainer minWidth={640}>
+            <Table highlightOnHover>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>#</Table.Th>
+                  <Table.Th>{t('quotationRequests.field.packageType')}</Table.Th>
+                  <Table.Th>{t('quotationRequests.field.packageItem')}</Table.Th>
+                  <Table.Th>D x R x C (cm)</Table.Th>
+                  <Table.Th ta="right">{t('quotationRequests.field.packageQty')}</Table.Th>
+                  <Table.Th>{t('forms.unit')}</Table.Th>
+                  <Table.Th ta="right">{t('quotations.unitPrice')}</Table.Th>
+                  <Table.Th ta="right">{t('quotationRequests.field.grossPerPackage')}</Table.Th>
+                  <Table.Th ta="right">{t('quotationRequests.field.packageCbm')}</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {request.packages.map((pkg) => (
+                  <Table.Tr key={pkg.id}>
+                    <Table.Td>{pkg.package_no}</Table.Td>
+                    <Table.Td>{pkg.package_type ? t(`quotationRequests.packageType.${pkg.package_type}` as never) : '-'}</Table.Td>
+                    <Table.Td>{pkg.item?.item_code ?? pkg.item_id ?? t('quotationRequests.itemNotLinked')}</Table.Td>
+                    <Table.Td>{`${pkg.length_cm ?? '-'} x ${pkg.width_cm ?? '-'} x ${pkg.height_cm ?? '-'}`}</Table.Td>
+                    <Table.Td ta="right" className="tabular-nums">{pkg.qty ?? '-'}</Table.Td>
+                    <Table.Td>{pkg.unit ?? '-'}</Table.Td>
+                    <Table.Td ta="right" className="tabular-nums">{pkg.unit_price ?? '-'}</Table.Td>
+                    <Table.Td ta="right" className="tabular-nums">{pkg.gross_weight_per_package_kg ?? '-'}</Table.Td>
+                    <Table.Td ta="right" className="tabular-nums">{pkg.cbm ?? '-'}</Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </Table.ScrollContainer>
+        </Paper>
+      ) : null}
+
+      {request.containers?.length ? (
+        <Paper withBorder p={0} className="dl-data-panel">
+          <div className="rfq-panel-head">
+            <Title order={4}>{t('quotationRequests.section.containers')}</Title>
+          </div>
+          <Table.ScrollContainer minWidth={640}>
+            <Table highlightOnHover>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>{t('quotationRequests.field.containerType')}</Table.Th>
+                  <Table.Th ta="right">{t('quotationRequests.field.containerQty')}</Table.Th>
+                  <Table.Th>{t('quotationRequests.field.containerItems')}</Table.Th>
+                  <Table.Th ta="right">{t('quotations.quantity')}</Table.Th>
+                  <Table.Th>{t('forms.unit')}</Table.Th>
+                  <Table.Th ta="right">{t('quotations.unitPrice')}</Table.Th>
+                  <Table.Th ta="right">{t('quotationRequests.field.lineWeight')}</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {request.containers.map((container) => {
+                  const lines = container.lines ?? [];
+                  if (lines.length === 0) {
+                    return (
+                      <Table.Tr key={container.id}>
+                        <Table.Td>{container.container_type ?? '-'}</Table.Td>
+                        <Table.Td ta="right" className="tabular-nums">{container.qty ?? '-'}</Table.Td>
+                        <Table.Td colSpan={5}><Text c="dimmed" size="sm">{t('quotationRequests.itemNotLinked')}</Text></Table.Td>
+                      </Table.Tr>
+                    );
+                  }
+                  return lines.map((line, lineIndex) => (
+                    <Table.Tr key={line.id}>
+                      {lineIndex === 0 ? (
+                        <Table.Td rowSpan={lines.length}>{container.container_type ?? '-'}</Table.Td>
+                      ) : null}
+                      {lineIndex === 0 ? (
+                        <Table.Td rowSpan={lines.length} ta="right" className="tabular-nums">{container.qty ?? '-'}</Table.Td>
+                      ) : null}
+                      <Table.Td>{line.item?.item_code ?? line.item_id ?? t('quotationRequests.itemNotLinked')}</Table.Td>
+                      <Table.Td ta="right" className="tabular-nums">{line.qty ?? '-'}</Table.Td>
+                      <Table.Td>{line.unit ?? '-'}</Table.Td>
+                      <Table.Td ta="right" className="tabular-nums">{line.unit_price ?? '-'}</Table.Td>
+                      <Table.Td ta="right" className="tabular-nums">{line.gross_weight_kg ?? '-'}</Table.Td>
+                    </Table.Tr>
+                  ));
+                })}
+              </Table.Tbody>
+            </Table>
+          </Table.ScrollContainer>
+        </Paper>
+      ) : null}
 
       <Paper withBorder p={0} className="dl-data-panel">
         <div className="rfq-panel-head">

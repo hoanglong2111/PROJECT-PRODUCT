@@ -5,33 +5,37 @@ import { useMemo, useState } from 'react';
 
 import {
   createQuotationRequest,
+  type CreateQuotationRequestContainerPayload,
   type CreateQuotationRequestLinePayload,
-  type QuotationRequestLineV1,
+  type CreateQuotationRequestPackagePayload,
   type QuotationRequestV1,
 } from '@shared/api/quotationRequests';
 import { queryKeys } from '@shared/api/queryKeys';
 import { DateField } from '@shared/components/DateField';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
-import {
-  FormSection,
-  OrderLineItemsEditor,
-  SummaryTile,
-  newOrderLine,
-  orderLinesTotal,
-  type OrderLineDraft,
-} from '@shared/components/order-intake';
+import { FormSection, SummaryTile } from '@shared/components/order-intake';
 import { useI18n } from '@shared/i18n';
 
+import { ContainerListEditor } from './ContainerListEditor';
+import { PackageListEditor } from './PackageListEditor';
 import { useRfqMasterData } from '../hooks/useRfqMasterData';
 import {
   isAirMode,
+  newRfqContainer,
+  newRfqContainerLine,
+  newRfqPackage,
   rfqChargeableWeightKg,
+  rfqContainersTotalWeight,
   rfqDimWeightKg,
-  rfqLineCbm,
+  rfqLclChargeableRevenueTon,
+  rfqPackageCbm,
+  rfqPackagesTotals,
   rfqModeOptions,
-  rfqTotalCbm,
-  rfqTotalWeight,
+  type RfqContainerDraft,
+  type RfqPackageDraft,
 } from '../model/quotationRequestModel';
+
+const isFclMode = (mode?: string | null) => (mode ?? '').toUpperCase() === 'SEA_FCL';
 
 type Props = {
   onCancel: () => void;
@@ -49,23 +53,117 @@ const textOrEmpty = (value: string | null | undefined) => value ?? '';
 
 const numOrDefault = (value: unknown, fallback = 0) => num(value) ?? fallback;
 
-function sourceLinesToDrafts(lines: QuotationRequestLineV1[] | undefined): OrderLineDraft[] {
-  if (!lines?.length) {
-    return [newOrderLine(0)];
-  }
+type EffectiveLine = {
+  item_id: string;
+  item_description: string;
+  qty: number;
+  unit: string;
+  unit_price: number;
+  note: string;
+};
 
-  return lines.map((line, index) => newOrderLine(index, {
-    item_id: line.item_id ?? '',
-    item_description: line.item_description ?? line.item?.item_name_en ?? line.item?.item_name ?? '',
-    qty: numOrDefault(line.qty, 1),
-    unit: line.unit ?? line.item?.base_uom ?? 'PCS',
-    unit_price: numOrDefault(line.unit_price),
-    gross_weight_kg: numOrDefault(line.gross_weight_kg),
-    length_cm: num(line.length_cm) ?? undefined,
-    width_cm: num(line.width_cm) ?? undefined,
-    height_cm: num(line.height_cm) ?? undefined,
-    note: line.note ?? '',
-  }));
+function packagesToLines(packages: RfqPackageDraft[]): EffectiveLine[] {
+  return packages
+    .filter((pkg) => pkg.item_id && Number(pkg.qty) > 0)
+    .map((pkg) => ({
+      item_id: pkg.item_id,
+      item_description: pkg.item_description,
+      qty: numOrDefault(pkg.qty, 1),
+      unit: pkg.unit,
+      unit_price: numOrDefault(pkg.unit_price),
+      note: pkg.note,
+    }));
+}
+
+function containersToLines(containers: RfqContainerDraft[]): EffectiveLine[] {
+  return containers.flatMap((container) => container.lines
+    .filter((line) => line.item_id && Number(line.qty) > 0)
+    .map((line) => ({
+      item_id: line.item_id,
+      item_description: line.item_description,
+      qty: numOrDefault(line.qty, 1),
+      unit: line.unit,
+      unit_price: numOrDefault(line.unit_price),
+      note: line.note,
+    })));
+}
+
+function sourcePackagesToDrafts(source?: QuotationRequestV1): RfqPackageDraft[] {
+  if (source?.packages?.length) {
+    return source.packages.map((pkg, index) => newRfqPackage(index, {
+      package_type: (pkg.package_type as RfqPackageDraft['package_type']) ?? 'CARTON',
+      length_cm: num(pkg.length_cm) ?? '',
+      width_cm: num(pkg.width_cm) ?? '',
+      height_cm: num(pkg.height_cm) ?? '',
+      qty: numOrDefault(pkg.qty, 1),
+      gross_weight_per_package_kg: num(pkg.gross_weight_per_package_kg) ?? '',
+      item_id: pkg.item_id ?? '',
+      item_description: pkg.item_description ?? pkg.item?.item_name_en ?? pkg.item?.item_name ?? '',
+      unit: pkg.unit ?? pkg.item?.base_uom ?? '',
+      unit_price: num(pkg.unit_price) ?? '',
+      note: pkg.note ?? '',
+    }));
+  }
+  const legacyLines = source?.lines?.filter((line) => num(line.length_cm) && num(line.width_cm) && num(line.height_cm));
+  if (legacyLines?.length) {
+    return legacyLines.map((line, index) => {
+      const qty = numOrDefault(line.qty, 1);
+      const grossTotal = num(line.gross_weight_kg) ?? 0;
+      return newRfqPackage(index, {
+        package_type: 'CARTON',
+        length_cm: num(line.length_cm) ?? '',
+        width_cm: num(line.width_cm) ?? '',
+        height_cm: num(line.height_cm) ?? '',
+        qty,
+        gross_weight_per_package_kg: qty > 0 ? Number((grossTotal / qty).toFixed(3)) : '',
+        item_id: line.item_id ?? '',
+        item_description: line.item_description ?? line.item?.item_name_en ?? line.item?.item_name ?? '',
+        unit: line.unit ?? line.item?.base_uom ?? '',
+        unit_price: num(line.unit_price) ?? '',
+        note: line.note ?? '',
+      });
+    });
+  }
+  return [newRfqPackage(0)];
+}
+
+function sourceContainersToDrafts(source?: QuotationRequestV1): RfqContainerDraft[] {
+  if (source?.containers?.length) {
+    return source.containers.map((container) => newRfqContainer({
+      container_type: container.container_type ?? '',
+      qty: numOrDefault(container.qty, 1),
+      lines: container.lines?.length
+        ? container.lines.map((line) => newRfqContainerLine({
+          item_id: line.item_id ?? '',
+          item_description: line.item_description ?? line.item?.item_name_en ?? line.item?.item_name ?? '',
+          qty: numOrDefault(line.qty, 1),
+          unit: line.unit ?? line.item?.base_uom ?? '',
+          unit_price: num(line.unit_price) ?? '',
+          gross_weight_kg: num(line.gross_weight_kg) ?? '',
+          note: line.note ?? '',
+        }))
+        : [newRfqContainerLine()],
+    }));
+  }
+  if (source?.lines?.length) {
+    return [newRfqContainer({
+      container_type: source.container_type ?? '',
+      qty: 1,
+      lines: source.lines.map((line) => newRfqContainerLine({
+        item_id: line.item_id ?? '',
+        item_description: line.item_description ?? line.item?.item_name_en ?? line.item?.item_name ?? '',
+        qty: numOrDefault(line.qty, 1),
+        unit: line.unit ?? line.item?.base_uom ?? '',
+        unit_price: num(line.unit_price) ?? '',
+        gross_weight_kg: num(line.gross_weight_kg) ?? '',
+        note: line.note ?? '',
+      })),
+    })];
+  }
+  if (source?.container_type) {
+    return [newRfqContainer({ container_type: source.container_type, qty: 1 })];
+  }
+  return [newRfqContainer()];
 }
 
 export function QuotationRequestForm({ onCancel, onCreated, source }: Props) {
@@ -83,39 +181,63 @@ export function QuotationRequestForm({ onCancel, onCreated, source }: Props) {
   const [originPort, setOriginPort] = useState(() => textOrEmpty(source?.origin_port));
   const [destinationPort, setDestinationPort] = useState(() => textOrEmpty(source?.destination_port) || 'Hai Phong (VNHPH)');
   const [readyDate, setReadyDate] = useState<string | null>(null);
-  const [containerType, setContainerType] = useState(() => textOrEmpty(source?.container_type));
   const [note, setNote] = useState(() => textOrEmpty(source?.note));
-  const [lines, setLines] = useState<OrderLineDraft[]>(() => sourceLinesToDrafts(source?.lines));
-  const [activeLineId, setActiveLineId] = useState<string | null>(null);
+  const [packages, setPackages] = useState<RfqPackageDraft[]>(() => sourcePackagesToDrafts(source));
+  const [containers, setContainers] = useState<RfqContainerDraft[]>(() => sourceContainersToDrafts(source));
 
   const selectedSupplier = masterData.suppliers.find((supplier) => supplier.id === supplierId);
-  const totalWeight = useMemo(() => rfqTotalWeight(lines), [lines]);
-  const totalCbm = useMemo(() => rfqTotalCbm(lines), [lines]);
-  const dimWeight = useMemo(() => rfqDimWeightKg(totalCbm), [totalCbm]);
-  const chargeableWeight = useMemo(() => rfqChargeableWeightKg(totalWeight, dimWeight), [dimWeight, totalWeight]);
+  const fclMode = isFclMode(mode);
   const airMode = isAirMode(mode);
-  const requestTotal = orderLinesTotal(lines);
-  const validLineCount = lines.filter((line) => line.item_id && line.qty > 0).length;
-  const canSubmit = Boolean(customerRef.trim() && supplierId && incoterm && mode && currency && validLineCount > 0);
+  const lclMode = !fclMode && !airMode;
+  const packagesTotals = useMemo(() => rfqPackagesTotals(packages), [packages]);
+  const { totalCbm, grossKg: packagesWeight } = packagesTotals;
+  const containersWeight = useMemo(() => rfqContainersTotalWeight(containers), [containers]);
+  const totalWeight = fclMode ? containersWeight : packagesWeight;
+  const dimWeight = airMode ? rfqDimWeightKg(totalCbm) : 0;
+  const chargeableWeight = airMode ? rfqChargeableWeightKg(totalWeight, dimWeight) : 0;
+  const chargeableRevenueTon = lclMode ? rfqLclChargeableRevenueTon(totalCbm, totalWeight) : 0;
+  const effectiveLines = useMemo(
+    () => (fclMode ? containersToLines(containers) : packagesToLines(packages)),
+    [fclMode, containers, packages],
+  );
+  const requestTotal = effectiveLines.reduce((total, line) => total + line.qty * line.unit_price, 0);
+  const validLineCount = effectiveLines.length;
+  const validPackageCount = packages.filter((pkg) => rfqPackageCbm(pkg) > 0).length;
+  const validContainerCount = containers.filter((container) => container.container_type && Number(container.qty) > 0).length;
+  const cargoValid = fclMode ? validContainerCount > 0 : validPackageCount > 0;
+  const canSubmit = Boolean(
+    customerRef.trim() && supplierId && incoterm && mode && currency && validLineCount > 0 && cargoValid,
+  );
 
-  const updateLine = (clientId: string, patch: Partial<OrderLineDraft>) => {
-    setLines((current) => current.map((line) => (line.clientId === clientId ? { ...line, ...patch } : line)));
+  const updatePackage = (clientId: string, patch: Partial<RfqPackageDraft>) => {
+    setPackages((current) => current.map((pkg) => (pkg.clientId === clientId ? { ...pkg, ...patch } : pkg)));
   };
 
-  const addLine = () => {
-    const next = newOrderLine(lines.length);
-    setLines((current) => [...current, next]);
-    setActiveLineId(next.clientId);
+  const addPackage = () => {
+    setPackages((current) => [...current, newRfqPackage(current.length)]);
   };
 
-  const removeLine = (clientId: string) => {
-    setLines((current) => {
+  const removePackage = (clientId: string) => {
+    setPackages((current) => {
       if (current.length === 1) return current;
-      const next = current
-        .filter((line) => line.clientId !== clientId)
-        .map((line, index) => ({ ...line, line_no: index + 1 }));
-      setActiveLineId((activeId) => (activeId === clientId ? next[0]?.clientId ?? null : activeId));
-      return next;
+      return current
+        .filter((pkg) => pkg.clientId !== clientId)
+        .map((pkg, index) => ({ ...pkg, package_no: index + 1 }));
+    });
+  };
+
+  const updateContainer = (clientId: string, patch: Partial<RfqContainerDraft>) => {
+    setContainers((current) => current.map((container) => (container.clientId === clientId ? { ...container, ...patch } : container)));
+  };
+
+  const addContainer = () => {
+    setContainers((current) => [...current, newRfqContainer()]);
+  };
+
+  const removeContainer = (clientId: string) => {
+    setContainers((current) => {
+      if (current.length === 1) return current;
+      return current.filter((container) => container.clientId !== clientId);
     });
   };
 
@@ -132,28 +254,62 @@ export function QuotationRequestForm({ onCancel, onCreated, source }: Props) {
         origin_port: originPort.trim() || null,
         destination_port: destinationPort.trim() || null,
         desired_cargo_ready_date: readyDate,
-        gross_weight_kg: totalWeight,
-        volume_cbm: totalCbm || null,
+        gross_weight_kg: totalWeight || null,
+        volume_cbm: fclMode ? null : totalCbm || null,
         dim_weight_kg: airMode ? dimWeight || null : null,
         chargeable_weight_kg: airMode ? chargeableWeight || null : null,
-        container_type: containerType.trim() || null,
+        chargeable_revenue_ton: lclMode ? chargeableRevenueTon || null : null,
+        container_type: fclMode ? containers[0]?.container_type.trim() || null : null,
         note: note.trim() || null,
-        lines: lines
-          .filter((line) => line.item_id && line.qty > 0)
-          .map<CreateQuotationRequestLinePayload>((line, index) => ({
-            line_no: index + 1,
-            item_id: line.item_id,
-            item_description: line.item_description || null,
-            qty: line.qty,
-            unit: line.unit || null,
-            unit_price: num(line.unit_price),
-            gross_weight_kg: num(line.gross_weight_kg),
-            length_cm: num(line.length_cm),
-            width_cm: num(line.width_cm),
-            height_cm: num(line.height_cm),
-            cbm: rfqLineCbm(line) || null,
-            note: line.note || null,
-          })),
+        lines: effectiveLines.map<CreateQuotationRequestLinePayload>((line, index) => ({
+          line_no: index + 1,
+          item_id: line.item_id,
+          item_description: line.item_description || null,
+          qty: line.qty,
+          unit: line.unit || null,
+          unit_price: line.unit_price || null,
+          note: line.note || null,
+        })),
+        packages: fclMode
+          ? []
+          : packages
+              .filter((pkg) => rfqPackageCbm(pkg) > 0)
+              .map<CreateQuotationRequestPackagePayload>((pkg, index) => ({
+                package_no: index + 1,
+                package_type: pkg.package_type,
+                length_cm: num(pkg.length_cm),
+                width_cm: num(pkg.width_cm),
+                height_cm: num(pkg.height_cm),
+                qty: numOrDefault(pkg.qty, 1),
+                gross_weight_per_package_kg: num(pkg.gross_weight_per_package_kg),
+                cbm: rfqPackageCbm(pkg) || null,
+                item_id: pkg.item_id || null,
+                item_description: pkg.item_description || null,
+                unit: pkg.unit || null,
+                unit_price: num(pkg.unit_price),
+                note: pkg.note || null,
+              })),
+        containers: fclMode
+          ? containers
+              .filter((container) => container.container_type && Number(container.qty) > 0)
+              .map<CreateQuotationRequestContainerPayload>((container, index) => ({
+                container_no: index + 1,
+                container_type: container.container_type,
+                qty: numOrDefault(container.qty, 1),
+                lines: container.lines
+                  .filter((line) => line.item_id && Number(line.qty) > 0)
+                  .map((line, lineIndex) => ({
+                    line_no: lineIndex + 1,
+                    item_id: line.item_id,
+                    item_description: line.item_description || null,
+                    qty: numOrDefault(line.qty, 1),
+                    unit: line.unit || null,
+                    unit_price: num(line.unit_price),
+                    gross_weight_kg: num(line.gross_weight_kg),
+                    note: line.note || null,
+                  })),
+              }))
+          : [],
       }),
     onSuccess: (request) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.quotationRequests });
@@ -215,6 +371,11 @@ export function QuotationRequestForm({ onCancel, onCreated, source }: Props) {
             tone="accent"
           />
           <SummaryTile label={t('quotationRequests.totalCbm')} value={totalCbm.toLocaleString()} />
+          <SummaryTile
+            label={t('quotationRequests.field.requestTotal')}
+            value={requestTotal.toLocaleString()}
+            tone="accent"
+          />
         </SimpleGrid>
 
         <div className="purchase-order-form-core-grid">
@@ -304,43 +465,74 @@ export function QuotationRequestForm({ onCancel, onCreated, source }: Props) {
                 onChange={setReadyDate}
               />
               <NumberInput
-                label={t('quotationRequests.field.volumeDerived')}
-                description={t('quotationRequests.field.volumeDerivedHint')}
-                value={Number(totalCbm.toFixed(4))}
+                label={t('quotationRequests.field.weightDerived')}
+                description={t('quotationRequests.field.weightDerivedHint')}
+                value={Number(totalWeight.toFixed(3))}
                 min={0}
-                decimalScale={4}
+                thousandSeparator=","
+                decimalScale={3}
                 readOnly
               />
-              <Select
-                label={t('quotationRequests.field.container')}
-                description={t('quotationRequests.field.containerHint')}
-                data={masterData.containerTypeOptions}
-                value={containerType || null}
-                searchable
-                clearable
-                onChange={(value) => setContainerType(value ?? '')}
-              />
+              {!fclMode ? (
+                <NumberInput
+                  label={t('quotationRequests.field.volumeDerived')}
+                  description={t('quotationRequests.field.volumeDerivedHint')}
+                  value={Number(totalCbm.toFixed(4))}
+                  min={0}
+                  decimalScale={4}
+                  readOnly
+                />
+              ) : null}
               {airMode ? (
                 <>
                   <NumberInput
-                    label={<HeaderLabel label={t('quotationRequests.field.dimWeight')} hint={t('quotationRequests.field.dimWeightHint')} />}
+                    label={
+                      <HeaderLabel
+                        label={t('quotationRequests.field.dimWeight')}
+                        hint={t('quotationRequests.field.dimWeightHint')}
+                      />
+                    }
                     description={t('quotationRequests.field.dimWeightHint')}
                     value={Number(dimWeight.toFixed(3))}
                     min={0}
                     thousandSeparator=","
                     decimalScale={3}
                     readOnly
+                    styles={{ input: { fontWeight: 700 } }}
                   />
                   <NumberInput
-                    label={<HeaderLabel label={t('quotationRequests.field.chargeableWeight')} hint={t('quotationRequests.field.chargeableWeightHint')} />}
+                    label={
+                      <HeaderLabel
+                        label={t('quotationRequests.field.chargeableWeight')}
+                        hint={t('quotationRequests.field.chargeableWeightHint')}
+                      />
+                    }
                     description={t('quotationRequests.field.chargeableWeightHint')}
                     value={Number(chargeableWeight.toFixed(3))}
                     min={0}
                     thousandSeparator=","
                     decimalScale={3}
                     readOnly
+                    styles={{ input: { fontWeight: 700 } }}
                   />
                 </>
+              ) : null}
+              {lclMode ? (
+                <NumberInput
+                  label={
+                    <HeaderLabel
+                      label={t('quotationRequests.field.chargeableRevenueTon')}
+                      hint={t('quotationRequests.field.chargeableRevenueTonHint')}
+                    />
+                  }
+                  description={t('quotationRequests.field.chargeableRevenueTonHint')}
+                  value={Number(chargeableRevenueTon.toFixed(3))}
+                  min={0}
+                  thousandSeparator=","
+                  decimalScale={3}
+                  readOnly
+                  styles={{ input: { fontWeight: 700 } }}
+                />
               ) : null}
             </SimpleGrid>
             <Textarea
@@ -357,35 +549,36 @@ export function QuotationRequestForm({ onCancel, onCreated, source }: Props) {
         <Paper withBorder p="sm" className="purchase-order-form-section purchase-order-lines-panel">
           <Group justify="space-between" align="flex-start" mb="sm">
             <div>
-              <Text fw={700}>{t('quotationRequests.field.lines')}</Text>
+              <Text fw={700}>
+                {fclMode ? t('quotationRequests.section.containers') : t('quotationRequests.section.packages')}
+              </Text>
               <Text size="sm" c="dimmed">
-                {t('quotationRequests.linesHint')}
+                {fclMode ? t('quotationRequests.section.containersHint') : t('quotationRequests.section.packagesHint')}
               </Text>
             </div>
-            <SummaryTile
-              label={t('quotationRequests.field.requestTotal')}
-              tone="accent"
-              value={requestTotal.toLocaleString()}
-            />
           </Group>
-          <OrderLineItemsEditor
-            lines={lines}
-            activeId={activeLineId}
-            onActiveChange={setActiveLineId}
-            onChange={updateLine}
-            onAdd={addLine}
-            onRemove={removeLine}
-            items={masterData.items}
-            itemOptions={masterData.itemOptions}
-            unitOptions={masterData.uomOptions}
-            currencyCode={currency}
-            fields={{ dimensions: true }}
-            onItemSelected={(clientId, item) => {
-              if (item?.unit_price_usd != null) {
-                updateLine(clientId, { unit_price: Number(item.unit_price_usd) || 0 });
-              }
-            }}
-          />
+          {fclMode ? (
+            <ContainerListEditor
+              containers={containers}
+              containerTypeOptions={masterData.containerTypeOptions}
+              items={masterData.items}
+              itemOptions={masterData.itemOptions}
+              unitOptions={masterData.uomOptions}
+              onChange={updateContainer}
+              onAdd={addContainer}
+              onRemove={removeContainer}
+            />
+          ) : (
+            <PackageListEditor
+              packages={packages}
+              items={masterData.items}
+              itemOptions={masterData.itemOptions}
+              unitOptions={masterData.uomOptions}
+              onChange={updatePackage}
+              onAdd={addPackage}
+              onRemove={removePackage}
+            />
+          )}
         </Paper>
       </Stack>
     </form>

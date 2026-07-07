@@ -230,18 +230,16 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
   const paymentRate = paymentCurrency === 'VND' ? 1 : rateToVndOrNull(paymentCurrency);
   const customerPaysTotal = paymentRate ? quotationVndTotals.totalVnd / paymentRate : null;
 
-  const originalCurrencyItems = allLines
-    .filter(({ line }) => line.chargeCode && Number(line.unitPrice) > 0 && line.currency)
-    .map(({ line }) => {
-      const chargeCode = findChargeCode(line.chargeCode);
-      const name = chargeCode
-        ? language === 'vi' && chargeCode.charge_name_vn
-          ? chargeCode.charge_name_vn
-          : chargeCode.charge_name_en
-        : line.chargeCode ?? '';
+  const totalsByOriginalCurrency = (() => {
+    const buckets = new Map<string, number>();
+    for (const { line } of allLines) {
+      if (!line.chargeCode || !line.currency || !(Number(line.unitPrice) > 0)) continue;
+      const currency = line.currency.trim().toUpperCase();
       const amount = Number(line.quantity) * Number(line.unitPrice);
-      return { key: line.uid, name, amount, currency: line.currency as string };
-    });
+      buckets.set(currency, (buckets.get(currency) ?? 0) + amount);
+    }
+    return Array.from(buckets, ([currency, amount]) => ({ currency, amount }));
+  })();
 
   const pricedLineCount = allLines.filter(({ line }) => line.chargeCode && Number(line.unitPrice) > 0).length;
   const filledLineCount = allLines.filter(({ line }) => line.chargeCode && Number(line.unitPrice) > 0 && line.currency).length;
@@ -572,13 +570,13 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
                   {filledLineCount > 0 ? (
                     <Stack gap={6} mt={6}>
                       <Stack gap={4} className="rfq-original-items">
-                        {originalCurrencyItems.map((item) => (
-                          <Group key={item.key} justify="space-between" gap="md" wrap="nowrap">
+                        {totalsByOriginalCurrency.map((bucket) => (
+                          <Group key={bucket.currency} justify="space-between" gap="md" wrap="nowrap">
                             <Text size="sm" c="dimmed" className="rfq-original-item-name">
-                              {item.name}
+                              {bucket.currency}
                             </Text>
                             <Text fw={700} className="tabular-nums">
-                              {formatMoney(item.amount, item.currency)}
+                              {formatMoney(bucket.amount, bucket.currency)}
                             </Text>
                           </Group>
                         ))}
