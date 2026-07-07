@@ -220,29 +220,51 @@ export function QuotationRequestDetail({ onBack, requestId }: QuotationRequestDe
                 <Table.Tr>
                   <Table.Th>#</Table.Th>
                   <Table.Th>{t('quotationRequests.field.packageType')}</Table.Th>
-                  <Table.Th>{t('quotationRequests.field.packageItem')}</Table.Th>
                   <Table.Th>D x R x C (cm)</Table.Th>
                   <Table.Th ta="right">{t('quotationRequests.field.packageQty')}</Table.Th>
-                  <Table.Th>{t('forms.unit')}</Table.Th>
-                  <Table.Th ta="right">{t('quotations.unitPrice')}</Table.Th>
                   <Table.Th ta="right">{t('quotationRequests.field.grossPerPackage')}</Table.Th>
                   <Table.Th ta="right">{t('quotationRequests.field.packageCbm')}</Table.Th>
+                  <Table.Th>{t('quotationRequests.field.packageItem')}</Table.Th>
+                  <Table.Th ta="right">{t('quotations.quantity')}</Table.Th>
+                  <Table.Th>{t('forms.unit')}</Table.Th>
+                  <Table.Th ta="right">{t('quotations.unitPrice')}</Table.Th>
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {request.packages.map((pkg) => (
-                  <Table.Tr key={pkg.id}>
-                    <Table.Td>{pkg.package_no}</Table.Td>
-                    <Table.Td>{pkg.package_type ? t(`quotationRequests.packageType.${pkg.package_type}` as never) : '-'}</Table.Td>
-                    <Table.Td>{pkg.item?.item_code ?? pkg.item_id ?? t('quotationRequests.itemNotLinked')}</Table.Td>
-                    <Table.Td>{`${pkg.length_cm ?? '-'} x ${pkg.width_cm ?? '-'} x ${pkg.height_cm ?? '-'}`}</Table.Td>
-                    <Table.Td ta="right" className="tabular-nums">{pkg.qty ?? '-'}</Table.Td>
-                    <Table.Td>{pkg.unit ?? '-'}</Table.Td>
-                    <Table.Td ta="right" className="tabular-nums">{pkg.unit_price ?? '-'}</Table.Td>
-                    <Table.Td ta="right" className="tabular-nums">{pkg.gross_weight_per_package_kg ?? '-'}</Table.Td>
-                    <Table.Td ta="right" className="tabular-nums">{pkg.cbm ?? '-'}</Table.Td>
-                  </Table.Tr>
-                ))}
+                {request.packages.map((pkg) => {
+                  const lines = pkg.lines ?? [];
+                  if (lines.length === 0) {
+                    return (
+                      <Table.Tr key={pkg.id}>
+                        <Table.Td>{pkg.package_no}</Table.Td>
+                        <Table.Td>{pkg.package_type ?? '-'}</Table.Td>
+                        <Table.Td>{`${pkg.length_cm ?? '-'} x ${pkg.width_cm ?? '-'} x ${pkg.height_cm ?? '-'}`}</Table.Td>
+                        <Table.Td ta="right" className="tabular-nums">{pkg.qty ?? '-'}</Table.Td>
+                        <Table.Td ta="right" className="tabular-nums">{pkg.gross_weight_per_package_kg ?? '-'}</Table.Td>
+                        <Table.Td ta="right" className="tabular-nums">{pkg.cbm ?? '-'}</Table.Td>
+                        <Table.Td colSpan={4}><Text c="dimmed" size="sm">{t('quotationRequests.itemNotLinked')}</Text></Table.Td>
+                      </Table.Tr>
+                    );
+                  }
+                  return lines.map((line, lineIndex) => (
+                    <Table.Tr key={line.id}>
+                      {lineIndex === 0 ? (
+                        <>
+                          <Table.Td rowSpan={lines.length}>{pkg.package_no}</Table.Td>
+                          <Table.Td rowSpan={lines.length}>{pkg.package_type ?? '-'}</Table.Td>
+                          <Table.Td rowSpan={lines.length}>{`${pkg.length_cm ?? '-'} x ${pkg.width_cm ?? '-'} x ${pkg.height_cm ?? '-'}`}</Table.Td>
+                          <Table.Td rowSpan={lines.length} ta="right" className="tabular-nums">{pkg.qty ?? '-'}</Table.Td>
+                          <Table.Td rowSpan={lines.length} ta="right" className="tabular-nums">{pkg.gross_weight_per_package_kg ?? '-'}</Table.Td>
+                          <Table.Td rowSpan={lines.length} ta="right" className="tabular-nums">{pkg.cbm ?? '-'}</Table.Td>
+                        </>
+                      ) : null}
+                      <Table.Td>{line.item?.item_code ?? line.item_id ?? t('quotationRequests.itemNotLinked')}</Table.Td>
+                      <Table.Td ta="right" className="tabular-nums">{line.qty ?? '-'}</Table.Td>
+                      <Table.Td>{line.unit ?? '-'}</Table.Td>
+                      <Table.Td ta="right" className="tabular-nums">{line.unit_price ?? '-'}</Table.Td>
+                    </Table.Tr>
+                  ));
+                })}
               </Table.Tbody>
             </Table>
           </Table.ScrollContainer>

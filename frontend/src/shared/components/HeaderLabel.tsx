@@ -12,7 +12,7 @@ export function HeaderLabel({
   justify?: GroupProps['justify'];
 }) {
   return hint ? (
-    <Group gap={4} wrap="nowrap" component="span" justify={justify}>
+    <Group gap={4} wrap="nowrap" component="span" justify={justify} className="kbfe-field-hint-label">
       <span>{label}</span>
       <FieldHint label={hint} />
     </Group>

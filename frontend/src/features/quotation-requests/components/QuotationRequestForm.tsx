@@ -24,19 +24,22 @@ import {
   newRfqContainer,
   newRfqContainerLine,
   newRfqPackage,
+  newRfqPackageLine,
   rfqChargeableWeightKg,
   rfqContainersTotalWeight,
-  rfqDimWeightKg,
   rfqLclChargeableRevenueTon,
   rfqPackageCbm,
+  rfqPackagesDimWeightKg,
   rfqPackagesTotals,
-  rfqTopLevelPackages,
   rfqModeOptions,
   type RfqContainerDraft,
   type RfqPackageDraft,
 } from '../model/quotationRequestModel';
 
 const isFclMode = (mode?: string | null) => (mode ?? '').toUpperCase() === 'SEA_FCL';
+type PackageModeKey = 'AIR' | 'SEA_LCL';
+type PackagesByMode = Record<PackageModeKey, RfqPackageDraft[]>;
+type ActivePackageIdByMode = Record<PackageModeKey, string | null>;
 
 type Props = {
   onCancel: () => void;
@@ -64,16 +67,16 @@ type EffectiveLine = {
 };
 
 function packagesToLines(packages: RfqPackageDraft[]): EffectiveLine[] {
-  return packages
-    .filter((pkg) => pkg.item_id && Number(pkg.qty) > 0)
-    .map((pkg) => ({
-      item_id: pkg.item_id,
-      item_description: pkg.item_description,
-      qty: numOrDefault(pkg.qty, 1),
-      unit: pkg.unit,
-      unit_price: numOrDefault(pkg.unit_price),
-      note: pkg.note,
-    }));
+  return packages.flatMap((pkg) => pkg.lines
+    .filter((line) => line.item_id && Number(line.qty) > 0)
+    .map((line) => ({
+      item_id: line.item_id,
+      item_description: line.item_description,
+      qty: numOrDefault(line.qty, 1),
+      unit: line.unit,
+      unit_price: numOrDefault(line.unit_price),
+      note: line.note,
+    })));
 }
 
 function containersToLines(containers: RfqContainerDraft[]): EffectiveLine[] {
@@ -92,16 +95,22 @@ function containersToLines(containers: RfqContainerDraft[]): EffectiveLine[] {
 function sourcePackagesToDrafts(source?: QuotationRequestV1): RfqPackageDraft[] {
   if (source?.packages?.length) {
     const drafts = source.packages.map((pkg, index) => newRfqPackage(index, {
-      package_type: (pkg.package_type as RfqPackageDraft['package_type']) ?? 'CARTON',
+      package_type: pkg.package_type ?? '',
       length_cm: num(pkg.length_cm) ?? '',
       width_cm: num(pkg.width_cm) ?? '',
       height_cm: num(pkg.height_cm) ?? '',
       qty: numOrDefault(pkg.qty, 1),
       gross_weight_per_package_kg: num(pkg.gross_weight_per_package_kg) ?? '',
-      item_id: pkg.item_id ?? '',
-      item_description: pkg.item_description ?? pkg.item?.item_name_en ?? pkg.item?.item_name ?? '',
-      unit: pkg.unit ?? pkg.item?.base_uom ?? '',
-      unit_price: num(pkg.unit_price) ?? '',
+      lines: pkg.lines?.length
+        ? pkg.lines.map((line) => newRfqPackageLine({
+          item_id: line.item_id ?? '',
+          item_description: line.item_description ?? line.item?.item_name_en ?? line.item?.item_name ?? '',
+          qty: numOrDefault(line.qty, 1),
+          unit: line.unit ?? line.item?.base_uom ?? '',
+          unit_price: num(line.unit_price) ?? '',
+          note: line.note ?? '',
+        }))
+        : [newRfqPackageLine()],
       note: pkg.note ?? '',
     }));
     const clientIdByPackageNo = new Map(source.packages.map((pkg, index) => [pkg.package_no, drafts[index].clientId]));
@@ -118,21 +127,37 @@ function sourcePackagesToDrafts(source?: QuotationRequestV1): RfqPackageDraft[] 
       const qty = numOrDefault(line.qty, 1);
       const grossTotal = num(line.gross_weight_kg) ?? 0;
       return newRfqPackage(index, {
-        package_type: 'CARTON',
+        package_type: '',
         length_cm: num(line.length_cm) ?? '',
         width_cm: num(line.width_cm) ?? '',
         height_cm: num(line.height_cm) ?? '',
         qty,
         gross_weight_per_package_kg: qty > 0 ? Number((grossTotal / qty).toFixed(3)) : '',
-        item_id: line.item_id ?? '',
-        item_description: line.item_description ?? line.item?.item_name_en ?? line.item?.item_name ?? '',
-        unit: line.unit ?? line.item?.base_uom ?? '',
-        unit_price: num(line.unit_price) ?? '',
-        note: line.note ?? '',
+        lines: [newRfqPackageLine({
+          item_id: line.item_id ?? '',
+          item_description: line.item_description ?? line.item?.item_name_en ?? line.item?.item_name ?? '',
+          qty,
+          unit: line.unit ?? line.item?.base_uom ?? '',
+          unit_price: num(line.unit_price) ?? '',
+          note: line.note ?? '',
+        })],
       });
     });
   }
   return [newRfqPackage(0)];
+}
+
+function packageModeKey(mode?: string | null): PackageModeKey {
+  return isAirMode(mode) ? 'AIR' : 'SEA_LCL';
+}
+
+function sourcePackagesByModeToDrafts(source?: QuotationRequestV1): PackagesByMode {
+  const sourceModeKey = packageModeKey(source?.mode);
+  const sourceDrafts = sourcePackagesToDrafts(source);
+  return {
+    AIR: sourceModeKey === 'AIR' ? sourceDrafts : [newRfqPackage(0)],
+    SEA_LCL: sourceModeKey === 'SEA_LCL' ? sourceDrafts : [newRfqPackage(0)],
+  };
 }
 
 function sourceContainersToDrafts(source?: QuotationRequestV1): RfqContainerDraft[] {
@@ -190,20 +215,23 @@ export function QuotationRequestForm({ onCancel, onCreated, source }: Props) {
   const [destinationPort, setDestinationPort] = useState(() => textOrEmpty(source?.destination_port) || 'Hai Phong (VNHPH)');
   const [readyDate, setReadyDate] = useState<string | null>(null);
   const [note, setNote] = useState(() => textOrEmpty(source?.note));
-  const [packages, setPackages] = useState<RfqPackageDraft[]>(() => sourcePackagesToDrafts(source));
+  const [packagesByMode, setPackagesByMode] = useState<PackagesByMode>(() => sourcePackagesByModeToDrafts(source));
   const [containers, setContainers] = useState<RfqContainerDraft[]>(() => sourceContainersToDrafts(source));
-  const [activePackageId, setActivePackageId] = useState<string | null>(null);
+  const [activePackageIdByMode, setActivePackageIdByMode] = useState<ActivePackageIdByMode>({ AIR: null, SEA_LCL: null });
   const [activeContainerId, setActiveContainerId] = useState<string | null>(null);
 
   const selectedSupplier = masterData.suppliers.find((supplier) => supplier.id === supplierId);
   const fclMode = isFclMode(mode);
   const airMode = isAirMode(mode);
   const lclMode = !fclMode && !airMode;
-  const packagesTotals = useMemo(() => rfqPackagesTotals(rfqTopLevelPackages(packages)), [packages]);
+  const activePackageMode = airMode ? 'AIR' : 'SEA_LCL';
+  const packages = packagesByMode[activePackageMode];
+  const activePackageId = activePackageIdByMode[activePackageMode];
+  const packagesTotals = useMemo(() => rfqPackagesTotals(packages), [packages]);
   const { totalCbm, grossKg: packagesWeight } = packagesTotals;
   const containersWeight = useMemo(() => rfqContainersTotalWeight(containers), [containers]);
   const totalWeight = fclMode ? containersWeight : packagesWeight;
-  const dimWeight = airMode ? rfqDimWeightKg(totalCbm) : 0;
+  const dimWeight = airMode ? rfqPackagesDimWeightKg(packages) : 0;
   const chargeableWeight = airMode ? rfqChargeableWeightKg(totalWeight, dimWeight) : 0;
   const chargeableRevenueTon = lclMode ? rfqLclChargeableRevenueTon(totalCbm, totalWeight) : 0;
   const effectiveLines = useMemo(
@@ -211,6 +239,19 @@ export function QuotationRequestForm({ onCancel, onCreated, source }: Props) {
     [fclMode, containers, packages],
   );
   const requestTotal = effectiveLines.reduce((total, line) => total + line.qty * line.unit_price, 0);
+  const cargoMetric = fclMode
+    ? null
+    : airMode
+      ? {
+        label: t('quotationRequests.field.chargeableWeight'),
+        hint: t('quotationRequests.field.chargeableWeightHint'),
+        value: `${Number(chargeableWeight.toFixed(3)).toLocaleString()} kg`,
+      }
+      : {
+        label: t('quotationRequests.field.chargeableRevenueTon'),
+        hint: t('quotationRequests.field.chargeableRevenueTonHint'),
+        value: `${Number(chargeableRevenueTon.toFixed(3)).toLocaleString()} RT`,
+      };
   const validLineCount = effectiveLines.length;
   const validPackageCount = packages.filter((pkg) => rfqPackageCbm(pkg) > 0).length;
   const validContainerCount = containers.filter((container) => container.container_type && Number(container.qty) > 0).length;
@@ -219,24 +260,40 @@ export function QuotationRequestForm({ onCancel, onCreated, source }: Props) {
     customerRef.trim() && supplierId && incoterm && mode && currency && validLineCount > 0 && cargoValid,
   );
 
+  const setActivePackageId = (clientId: string | null) => {
+    setActivePackageIdByMode((current) => ({ ...current, [activePackageMode]: clientId }));
+  };
+
   const updatePackage = (clientId: string, patch: Partial<RfqPackageDraft>) => {
-    setPackages((current) => current.map((pkg) => (pkg.clientId === clientId ? { ...pkg, ...patch } : pkg)));
+    setPackagesByMode((current) => ({
+      ...current,
+      [activePackageMode]: current[activePackageMode].map((pkg) => (
+        pkg.clientId === clientId ? { ...pkg, ...patch } : pkg
+      )),
+    }));
   };
 
   const addPackage = () => {
     const next = newRfqPackage(packages.length);
-    setPackages((current) => [...current, next]);
+    setPackagesByMode((current) => ({
+      ...current,
+      [activePackageMode]: [...current[activePackageMode], next],
+    }));
     setActivePackageId(next.clientId);
   };
 
   const removePackage = (clientId: string) => {
-    setPackages((current) => {
-      if (current.length === 1) return current;
-      const next = current
+    setPackagesByMode((current) => {
+      const currentPackages = current[activePackageMode];
+      if (currentPackages.length === 1) return current;
+      const next = currentPackages
         .filter((pkg) => pkg.clientId !== clientId)
         .map((pkg, index) => ({ ...pkg, package_no: index + 1 }));
-      setActivePackageId((activeId) => (activeId === clientId ? next[0]?.clientId ?? null : activeId));
-      return next;
+      setActivePackageIdByMode((activeIds) => ({
+        ...activeIds,
+        [activePackageMode]: activeIds[activePackageMode] === clientId ? next[0]?.clientId ?? null : activeIds[activePackageMode],
+      }));
+      return { ...current, [activePackageMode]: next };
     });
   };
 
@@ -302,10 +359,17 @@ export function QuotationRequestForm({ onCancel, onCreated, source }: Props) {
             qty: numOrDefault(pkg.qty, 1),
             gross_weight_per_package_kg: num(pkg.gross_weight_per_package_kg),
             cbm: rfqPackageCbm(pkg) || null,
-            item_id: pkg.item_id || null,
-            item_description: pkg.item_description || null,
-            unit: pkg.unit || null,
-            unit_price: num(pkg.unit_price),
+            lines: pkg.lines
+              .filter((line) => line.item_id && Number(line.qty) > 0)
+              .map((line, lineIndex) => ({
+                line_no: lineIndex + 1,
+                item_id: line.item_id,
+                item_description: line.item_description || null,
+                qty: numOrDefault(line.qty, 1),
+                unit: line.unit || null,
+                unit_price: num(line.unit_price),
+                note: line.note || null,
+              })),
             note: pkg.note || null,
             parent_package_no: pkg.parent_client_id ? packageNoByClientId.get(pkg.parent_client_id) ?? null : null,
           })),
@@ -385,14 +449,21 @@ export function QuotationRequestForm({ onCancel, onCreated, source }: Props) {
           <SummaryTile label={t('quotationRequests.field.customerRef')} value={customerRef || 'KBI'} />
           <SummaryTile label={t('quotationRequests.field.supplier')} value={selectedSupplier?.supplier_name ?? '-'} />
           <SummaryTile label={t('quotationRequests.field.incoterm')} value={incoterm ?? '-'} />
+          {cargoMetric ? (
+            <SummaryTile
+              label={cargoMetric.label}
+              hint={cargoMetric.hint}
+              value={cargoMetric.value}
+              tone="accent"
+            />
+          ) : null}
           <SummaryTile
-            label={t('quotationRequests.field.weightDerived')}
-            value={totalWeight.toLocaleString()}
-            tone="accent"
+            label={t('quotationRequests.totalCbm')}
+            hint={t('quotationRequests.field.volumeDerivedHint')}
+            value={Number(totalCbm.toFixed(4)).toLocaleString()}
           />
-          <SummaryTile label={t('quotationRequests.totalCbm')} value={totalCbm.toLocaleString()} />
           <SummaryTile
-            label={t('quotationRequests.field.requestTotal')}
+            label={t('quotationRequests.field.requestTotalUsd')}
             value={requestTotal.toLocaleString()}
             tone="accent"
           />
@@ -479,14 +550,22 @@ export function QuotationRequestForm({ onCancel, onCreated, source }: Props) {
                 onChange={(event) => setDestinationPort(event.currentTarget.value)}
               />
               <DateField
-                label={t('quotationRequests.field.readyDate')}
-                description={t('quotationRequests.field.readyDateHint')}
+                label={
+                  <HeaderLabel
+                    label={t('quotationRequests.field.readyDate')}
+                    hint={t('quotationRequests.field.readyDateHint')}
+                  />
+                }
                 value={readyDate}
                 onChange={setReadyDate}
               />
               <NumberInput
-                label={t('quotationRequests.field.weightDerived')}
-                description={t('quotationRequests.field.weightDerivedHint')}
+                label={
+                  <HeaderLabel
+                    label={t('quotationRequests.field.weightDerived')}
+                    hint={t('quotationRequests.field.weightDerivedHint')}
+                  />
+                }
                 value={Number(totalWeight.toFixed(3))}
                 min={0}
                 thousandSeparator=","
@@ -495,8 +574,12 @@ export function QuotationRequestForm({ onCancel, onCreated, source }: Props) {
               />
               {!fclMode ? (
                 <NumberInput
-                  label={t('quotationRequests.field.volumeDerived')}
-                  description={t('quotationRequests.field.volumeDerivedHint')}
+                  label={
+                    <HeaderLabel
+                      label={t('quotationRequests.field.volumeDerived')}
+                      hint={t('quotationRequests.field.volumeDerivedHint')}
+                    />
+                  }
                   value={Number(totalCbm.toFixed(4))}
                   min={0}
                   decimalScale={4}
@@ -512,7 +595,6 @@ export function QuotationRequestForm({ onCancel, onCreated, source }: Props) {
                         hint={t('quotationRequests.field.dimWeightHint')}
                       />
                     }
-                    description={t('quotationRequests.field.dimWeightHint')}
                     value={Number(dimWeight.toFixed(3))}
                     min={0}
                     thousandSeparator=","
@@ -527,7 +609,6 @@ export function QuotationRequestForm({ onCancel, onCreated, source }: Props) {
                         hint={t('quotationRequests.field.chargeableWeightHint')}
                       />
                     }
-                    description={t('quotationRequests.field.chargeableWeightHint')}
                     value={Number(chargeableWeight.toFixed(3))}
                     min={0}
                     thousandSeparator=","
@@ -545,7 +626,6 @@ export function QuotationRequestForm({ onCancel, onCreated, source }: Props) {
                       hint={t('quotationRequests.field.chargeableRevenueTonHint')}
                     />
                   }
-                  description={t('quotationRequests.field.chargeableRevenueTonHint')}
                   value={Number(chargeableRevenueTon.toFixed(3))}
                   min={0}
                   thousandSeparator=","
@@ -577,7 +657,7 @@ export function QuotationRequestForm({ onCancel, onCreated, source }: Props) {
               </Text>
             </div>
             <SummaryTile
-              label={t('quotationRequests.field.requestTotal')}
+              label={t('quotationRequests.field.requestTotalUsd')}
               tone="accent"
               value={requestTotal.toLocaleString()}
             />

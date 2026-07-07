@@ -6,13 +6,16 @@ import {
   quotationRequestStatusTabs,
   rfqChargeableWeightKg,
   rfqContainersTotalWeight,
-  rfqDimWeightKg,
+  rfqLineDimWeightKg,
   rfqLclChargeableRevenueTon,
   rfqLineCbm,
+  rfqPackageAmount,
   rfqPackageCbm,
-  rfqPackageSizePreset,
+  rfqPackagesDimWeightKg,
   rfqPackagesTotals,
   rfqPackageDescendantIds,
+  rfqPackageEffectiveGrossKg,
+  rfqPackageOwnGrossKg,
   rfqTopLevelPackages,
   rfqTotalCbm,
 } from '../quotationRequestModel';
@@ -36,10 +39,14 @@ describe('RFQ cargo calculations', () => {
     expect(rfqLineCbm({ qty: 2, length_cm: 120, width_cm: null, height_cm: 60 })).toBe(0);
   });
 
-  it('calculates AIR dimensional and chargeable weight with IATA divisor 6000', () => {
-    const dim = rfqDimWeightKg(1.2);
-    expect(dim).toBe(200);
-    expect(rfqChargeableWeightKg(180, dim)).toBe(200);
+  it('calculates AIR dimensional and chargeable weight from centimeter dimensions with divisor 6000', () => {
+    const dim = rfqLineDimWeightKg({ qty: 2, length_cm: 120, width_cm: 80, height_cm: 60 });
+    expect(dim).toBe(192);
+    expect(rfqPackagesDimWeightKg([
+      { parent_client_id: '', qty: 2, length_cm: 120, width_cm: 80, height_cm: 60 },
+      { parent_client_id: 'pallet-1', qty: 1, length_cm: 60, width_cm: 40, height_cm: 40 },
+    ])).toBe(192);
+    expect(rfqChargeableWeightKg(180, dim)).toBe(192);
     expect(rfqChargeableWeightKg(240, dim)).toBe(240);
     expect(isAirMode('AIR')).toBe(true);
     expect(isAirMode('SEA_FCL')).toBe(false);
@@ -59,13 +66,19 @@ describe('RFQ package calculations', () => {
   it('creates a new package draft with sane defaults', () => {
     const pkg = newRfqPackage(0);
     expect(pkg.package_no).toBe(1);
-    expect(pkg.package_type).toBe('CARTON');
+    expect(pkg.package_type).toBe('');
     expect(pkg.qty).toBe(1);
+    expect(pkg.lines).toHaveLength(1);
   });
 
-  it('resolves size presets to their L/W/H dimensions', () => {
-    const preset = rfqPackageSizePreset('PALLET_STD');
-    expect(preset).toMatchObject({ length_cm: 120, width_cm: 100, height_cm: 150 });
+  it('sums amount across every item line packed inside a package', () => {
+    const pkg = newRfqPackage(0, {
+      lines: [
+        { clientId: 'l1', item_id: 'i1', item_description: '', qty: 10, unit: 'PCS', unit_price: 2, note: '' },
+        { clientId: 'l2', item_id: 'i2', item_description: '', qty: 5, unit: 'PCS', unit_price: 3, note: '' },
+      ],
+    });
+    expect(rfqPackageAmount(pkg)).toBe(35);
   });
 
   it('sums CBM and gross weight across packages', () => {
@@ -75,6 +88,11 @@ describe('RFQ package calculations', () => {
     ]);
     expect(totals.totalCbm).toBeCloseTo(3.696, 5);
     expect(totals.grossKg).toBe(620);
+  });
+
+  it('calculates own gross from package quantity and gross per package', () => {
+    expect(rfqPackageOwnGrossKg({ qty: 3, gross_weight_per_package_kg: 12.5 })).toBe(37.5);
+    expect(rfqPackageOwnGrossKg({ qty: 3, gross_weight_per_package_kg: '' })).toBe(0);
   });
 });
 
@@ -119,6 +137,45 @@ describe('RFQ nested packages (packed-inside)', () => {
       { clientId: 'carton-1', parent_client_id: 'pallet-1' },
     ];
     expect(rfqPackageDescendantIds(packages, 'carton-1').size).toBe(0);
+  });
+
+  it('rolls child gross into the parent effective gross without double-counting nested CBM', () => {
+    const packages = [
+      {
+        clientId: 'pallet-1',
+        parent_client_id: '',
+        qty: 1,
+        length_cm: 120,
+        width_cm: 100,
+        height_cm: 150,
+        gross_weight_per_package_kg: 50,
+      },
+      {
+        clientId: 'carton-1',
+        parent_client_id: 'pallet-1',
+        qty: 2,
+        length_cm: 60,
+        width_cm: 40,
+        height_cm: 40,
+        gross_weight_per_package_kg: 20,
+      },
+      {
+        clientId: 'inner-1',
+        parent_client_id: 'carton-1',
+        qty: 3,
+        length_cm: 20,
+        width_cm: 10,
+        height_cm: 10,
+        gross_weight_per_package_kg: 5,
+      },
+    ];
+
+    expect(rfqPackageEffectiveGrossKg(packages, 'pallet-1')).toBe(105);
+    expect(rfqPackageEffectiveGrossKg(packages, 'carton-1')).toBe(55);
+    expect(rfqPackagesTotals(packages)).toEqual({
+      totalCbm: 1.8,
+      grossKg: 105,
+    });
   });
 });
 

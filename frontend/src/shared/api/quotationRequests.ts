@@ -29,6 +29,19 @@ export type QuotationRequestLineV1 = {
   is_delete?: boolean;
 };
 
+export type QuotationRequestPackageLineV1 = {
+  id: string;
+  package_id: string;
+  line_no: number;
+  item_id: string | null;
+  item_description: string | null;
+  qty: ApiDecimal;
+  unit: string | null;
+  unit_price: ApiDecimal | null;
+  note: string | null;
+  item?: Item | null;
+};
+
 export type QuotationRequestPackageV1 = {
   id: string;
   quotation_request_id: string;
@@ -40,13 +53,9 @@ export type QuotationRequestPackageV1 = {
   qty: ApiDecimal;
   gross_weight_per_package_kg: ApiDecimal | null;
   cbm?: ApiDecimal | null;
-  item_id?: string | null;
-  item_description?: string | null;
-  unit?: string | null;
-  unit_price?: ApiDecimal | null;
+  lines?: QuotationRequestPackageLineV1[];
   note?: string | null;
   parent_package_no?: number | null;
-  item?: Item | null;
   create_at?: string;
   update_at?: string;
   delete_at?: string | null;
@@ -136,6 +145,16 @@ export type CreateQuotationRequestLinePayload = {
   note?: string | null;
 };
 
+export type CreateQuotationRequestPackageLinePayload = {
+  line_no: number;
+  item_id?: string | null;
+  item_description?: string | null;
+  qty?: number;
+  unit?: string | null;
+  unit_price?: number | null;
+  note?: string | null;
+};
+
 export type CreateQuotationRequestPackagePayload = {
   package_no: number;
   package_type?: string | null;
@@ -145,10 +164,7 @@ export type CreateQuotationRequestPackagePayload = {
   qty?: number;
   gross_weight_per_package_kg?: number | null;
   cbm?: number | null;
-  item_id?: string | null;
-  item_description?: string | null;
-  unit?: string | null;
-  unit_price?: number | null;
+  lines?: CreateQuotationRequestPackageLinePayload[];
   note?: string | null;
   parent_package_no?: number | null;
 };
