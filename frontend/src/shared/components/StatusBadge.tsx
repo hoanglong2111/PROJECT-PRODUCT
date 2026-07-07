@@ -57,6 +57,7 @@ export const STATUS_MAP: Record<string, StatusBadgeConfig> = {
   POD_RECEIVED: { color: 'teal' },
   PENDING_CONFIG: { color: 'yellow' },
   PENDING_APPROVAL: { color: 'yellow' },
+  PENDING_ADJUSTMENT: { color: 'orange' },
   PRELIMINARY_SENT: { color: 'blue' },
   PROCUREMENT: { color: 'blue' },
   PRODUCTION: { color: 'indigo' },

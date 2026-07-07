@@ -761,6 +761,7 @@ function quotationStatusToUi(status: QuotationStatusV1): QuotationStatus {
     REQUEST_FOR_QUOTATION: 'PRELIMINARY_SENT',
     DRAFT: 'DRAFT',
     PENDING_APPROVAL: 'OFFICIAL_SENT',
+    PENDING_ADJUSTMENT: 'OFFICIAL_SENT',
     CONFIRMED: 'APPROVED',
     REJECTED: 'REJECTED',
   };

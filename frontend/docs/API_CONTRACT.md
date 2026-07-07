@@ -160,6 +160,8 @@ allowed before confirmation.
 > lifecycle**: `REQUEST_FOR_QUOTATION → DRAFT → PENDING_APPROVAL → CONFIRMED`, with a
 > `REJECTED` branch (`reject_reason`). `ref_type`/`ref_id` are nullable for standalone
 > quotations. Confirming a quotation is what unlocks PO creation (see Purchase Orders).
+> Price negotiation adds `PENDING_ADJUSTMENT` as a loop state: KBI proposes line prices
+> from `PENDING_APPROVAL`, then FDS accepts/counters line by line back to `PENDING_APPROVAL`.
 - `GET /v1/quotations` · `GET /v1/quotations/:id`
 - `POST /v1/quotations` - legacy/mock-compatible standalone create; the frontend does not expose this as a user entry point. The UI creates quotations through `POST /v1/quotation-requests/:id/quotations`.
 - `GET|POST /v1/delivery-orders/:id/quotations` — **legacy** DO-scoped create (kept for back-compat; the UI no longer uses it)
@@ -167,15 +169,16 @@ allowed before confirmation.
 - `POST /v1/quotations/:id/receive` — → `DRAFT` (FDS starts drafting)
 - `POST /v1/quotations/:id/submit-to-kbi` — → `PENDING_APPROVAL` (sent for KBI approval)
 - `POST /v1/quotations/:id/confirm-by-kbi` · `POST /v1/quotations/:id/mark-final` — → `CONFIRMED`
+- `POST /v1/quotations/:id/negotiate` - body `{ actor_role, note?, lines: [{ charge_line_id, proposed_unit_price, note? }] }`; KBI calls from `PENDING_APPROVAL` to move the quote to `PENDING_ADJUSTMENT`, FDS calls from `PENDING_ADJUSTMENT` to move it back to `PENDING_APPROVAL`; each changed line is persisted in `adjustments[]`.
 - `POST /v1/quotations/:id/reject` — → `REJECTED`, body `{ reason }` stored as `reject_reason`
 - `POST /v1/quotations/:id/cancel` — folds into `REJECTED` (reason "Cancelled")
 - `POST /v1/quotations/:id/create-version`
-- Quotation DTOs include optional `rfq_id`, `origin_port`, `destination_port`, `selected_option_id`, and `options[]`.
+- Quotation DTOs include optional `rfq_id`, `origin_port`, `destination_port`, `selected_option_id`, `options[]`, and line-level `adjustments[]` history grouped by `round_no`.
 - `GET|POST /v1/quotations/:id/options` - list/create quote options with carrier, vessel/flight, ETD/ETA, transit days, risk warning, headline amount, and recommendation flag.
 - `PATCH|DELETE /v1/quotation-options/:id`
 - `POST /v1/quotations/:id/select-option` - body `{ option_id }`; marks one option selected and clears other options for that quotation.
 - Confirm/finalize requires `selected_option_id`; otherwise the API returns `BUSINESS_RULE_VIOLATION`. Confirmation also moves a linked RFQ to `CONFIRMED`.
-- `GET|POST /v1/quotations/:id/charge-lines` - charge-line DTOs carry per-line `currency_code` and `charge_group` (`FREIGHT|ORIGIN|DESTINATION`). The quotation form stores charges in three manual groups; each line renders in its own currency, and the frontend shows subtotals by currency instead of merging different currencies into one customer-facing total. `/v1/currency-rates` is used only for the quote-level reference rate and optional internal VND-equivalent calculation.
+- `GET|POST /v1/quotations/:id/charge-lines` - charge-line DTOs carry per-line `currency_code` and `charge_group` (`FREIGHT|ORIGIN|DESTINATION`). The quotation form stores charges in three manual groups; each line renders in its own currency, and the frontend shows subtotals by currency instead of merging different currencies into one customer-facing total. `/v1/currency-rates` is used only for the quote-level reference rate and optional internal VND-equivalent calculation. Each charge-line DTO also carries `option_no` (`number | null`): `null` = shared across all options (ORIGIN/DESTINATION/local); a value `N` links the line to quotation option `option_no = N` (per-option FREIGHT). The quotation detail shows shared lines plus the selected option's freight.
 - `PATCH|DELETE /v1/quotation-charge-lines/:id`
 - `GET /v1/quotations/:id/events`
 

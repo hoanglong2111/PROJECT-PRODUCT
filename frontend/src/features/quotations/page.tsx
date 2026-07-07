@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
-import { fetchQuotationsV1, type QuotationV1 } from '@shared/api/quotations';
+import { fetchQuotationV1, fetchQuotationsV1, type QuotationV1 } from '@shared/api/quotations';
 import { fetchQuotationRequest, fetchQuotationRequests } from '@shared/api/quotationRequests';
 import { PageHeader } from '@shared/components/PageHeader';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
@@ -124,6 +124,13 @@ export function Quotations() {
     return quotations.find((quotation) => quotation.id === value || quotation.quotation_no === value) ?? null;
   };
   const selectedQuotation = findQuotation(focusedQuote);
+  const selectedQuotationId = selectedQuotation?.id ?? null;
+  const quotationDetailQuery = useQuery({
+    queryKey: queryKeys.quotationDetail(selectedQuotationId ?? 'none'),
+    queryFn: () => fetchQuotationV1(selectedQuotationId as string),
+    enabled: Boolean(selectedQuotationId),
+    initialData: selectedQuotation ?? undefined,
+  });
   const formSource = findQuotation(reviseQuote);
   const isCreateFromRfq = Boolean(createRfqId);
   const showForm = Boolean(formSource) || isCreateFromRfq;
@@ -274,7 +281,7 @@ export function Quotations() {
         />
       ) : selectedQuotation ? (
         <QuotationDetail
-          quotation={selectedQuotation}
+          quotation={quotationDetailQuery.data ?? selectedQuotation}
           onRevise={openReviseForm}
           onInspectVersion={openQuotation}
         />

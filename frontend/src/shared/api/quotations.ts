@@ -8,6 +8,7 @@ export type QuotationStatusV1 =
   | 'REQUEST_FOR_QUOTATION'
   | 'DRAFT'
   | 'PENDING_APPROVAL'
+  | 'PENDING_ADJUSTMENT'
   | 'CONFIRMED'
   | 'REJECTED';
 
@@ -45,6 +46,7 @@ export type QuotationChargeLineV1 = {
   charge_type: QuotationChargeTypeV1;
   charge_code?: string | null;
   charge_group?: QuotationChargeGroup | null;
+  option_no?: number | null;
   currency_code?: string | null;
   description: string;
   quantity: ApiDecimal;
@@ -64,6 +66,7 @@ export type QuotationChargeLineV1 = {
 export type QuotationEventV1 = {
   id: string;
   quotation_id: string;
+  event_code?: string | null;
   event_type?: string | null;
   old_status: QuotationStatusV1 | string | null;
   new_status: QuotationStatusV1 | string | null;
@@ -77,12 +80,34 @@ export type QuotationEventV1 = {
   is_delete?: boolean;
 };
 
+export type QuotationLineAdjustmentStatusV1 = 'PROPOSED' | 'ACCEPTED' | 'COUNTERED';
+export type QuotationNegotiationActorRoleV1 = 'KBI' | 'FDS';
+
+export type QuotationLineAdjustmentV1 = {
+  id: string;
+  quotation_id: string;
+  charge_line_id: string;
+  round_no: number;
+  actor_role: QuotationNegotiationActorRoleV1;
+  base_unit_price: ApiDecimal;
+  proposed_unit_price: ApiDecimal;
+  currency_code: string | null;
+  note: string | null;
+  status: QuotationLineAdjustmentStatusV1;
+  created_at?: string;
+  create_at?: string;
+  update_at?: string;
+  delete_at?: string | null;
+  is_delete?: boolean;
+};
+
 export type QuotationOptionV1 = {
   id: string;
   quotation_id: string;
   option_no: number;
   carrier_code: string | null;
   carrier_name: string | null;
+  mode?: string | null;
   vessel_or_flight: string | null;
   voyage_flight_no: string | null;
   etd: string | null;
@@ -101,6 +126,7 @@ export type QuotationOptionV1 = {
 export type CreateQuotationOptionPayload = {
   carrier_code?: string | null;
   carrier_name?: string | null;
+  mode?: string | null;
   vessel_or_flight?: string | null;
   voyage_flight_no?: string | null;
   etd?: string | null;
@@ -154,6 +180,7 @@ export type QuotationV1 = {
   options?: QuotationOptionV1[];
   charge_lines?: QuotationChargeLineV1[];
   events?: QuotationEventV1[];
+  adjustments?: QuotationLineAdjustmentV1[];
 };
 
 export type QuotationListMeta = {
@@ -178,12 +205,16 @@ export type QuotationChargeLinePayload = {
   charge_type: QuotationChargeTypeV1;
   charge_code?: string | null;
   charge_group?: QuotationChargeGroup | null;
+  option_no?: number | null;
   currency_code?: string | null;
   description: string;
   quantity?: number;
   unit?: string | null;
   unit_price?: number;
+  amount?: number;
   tax_rate?: number;
+  tax_amount?: number;
+  total_amount?: number;
   note?: string | null;
 };
 
@@ -226,6 +257,16 @@ export type QuotationActionPayload = {
   actor_name?: string | null;
   note?: string | null;
   reason?: string | null;
+};
+
+export type NegotiateQuotationPayload = {
+  actor_role: QuotationNegotiationActorRoleV1;
+  note?: string | null;
+  lines: {
+    charge_line_id: string;
+    proposed_unit_price: number;
+    note?: string | null;
+  }[];
 };
 
 function unwrapV1Data<T, TMeta>(response: { data: V1Response<T, TMeta> }) {
@@ -335,6 +376,11 @@ export async function markQuotationFinal(id: string, payload: QuotationActionPay
 
 export async function rejectQuotation(id: string, payload: QuotationActionPayload = {}) {
   const response = await apiClient.post<V1Response<QuotationV1>>(`/v1/quotations/${id}/reject`, payload);
+  return unwrapV1Data(response);
+}
+
+export async function negotiateQuotation(id: string, payload: NegotiateQuotationPayload) {
+  const response = await apiClient.post<V1Response<QuotationV1>>(`/v1/quotations/${id}/negotiate`, payload);
   return unwrapV1Data(response);
 }
 

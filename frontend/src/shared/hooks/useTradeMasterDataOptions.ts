@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
+import { fetchCarriers, type Carrier } from '@shared/api/forwarders';
 import {
   fetchCurrencies,
   fetchIncoterms,
@@ -53,11 +54,19 @@ export function useTradeMasterDataOptions({ supplierRole }: UseTradeMasterDataOp
     queryFn: () => fetchTransportModes({ page: 1, limit: 100, is_active: true }),
   });
 
-  const suppliers = suppliersQuery.data?.data ?? [];
-  const transportModes = transportModesQuery.data?.data ?? [];
-  const incoterms = incotermsQuery.data?.data ?? [];
+  const carriersQuery = useQuery({
+    queryKey: queryKeys.carriers({ page: 1, limit: 100, is_active: true }),
+    queryFn: () => fetchCarriers({ page: 1, limit: 100, is_active: true }),
+  });
+
+  const suppliers = useMemo(() => suppliersQuery.data?.data ?? [], [suppliersQuery.data]);
+  const transportModes = useMemo(() => transportModesQuery.data?.data ?? [], [transportModesQuery.data]);
+  const carriers = useMemo(() => carriersQuery.data?.data ?? [], [carriersQuery.data]);
+  const incoterms = useMemo(() => incotermsQuery.data?.data ?? [], [incotermsQuery.data]);
 
   return {
+    carrierOptions: useMemo<Option[]>(() => mapCarrierOptions(carriers), [carriers]),
+    carriers,
     currencyOptions: useMemo<Option[]>(
       () =>
         (currenciesQuery.data?.data ?? []).map((currency) => ({
@@ -78,7 +87,8 @@ export function useTradeMasterDataOptions({ supplierRole }: UseTradeMasterDataOp
       currenciesQuery.isLoading ||
       incotermsQuery.isLoading ||
       suppliersQuery.isLoading ||
-      transportModesQuery.isLoading,
+      transportModesQuery.isLoading ||
+      carriersQuery.isLoading,
     supplierOptions: useMemo<Option[]>(
       () =>
         suppliers.map((supplier) => ({
@@ -116,6 +126,13 @@ function buildShippingMethodOptions(transportModes: TransportMode[]) {
   return Array.from(grouped.entries()).map(([modeType, modes]) => ({
     label: `${modeType} - ${modes.map((mode) => mode.mode_name).join(', ')}`,
     value: modeType,
+  }));
+}
+
+export function mapCarrierOptions(carriers: Carrier[]) {
+  return carriers.map((carrier) => ({
+    label: `${carrier.carrier_code} - ${carrier.carrier_name}`,
+    value: carrier.carrier_code,
   }));
 }
 
