@@ -273,7 +273,7 @@ export function PurchaseOrderForm({
           <FormSection title="Order identification" description="Short, searchable operational references.">
             <SimpleGrid cols={{ base: 1, sm: 2, lg: 1, xl: 2 }} spacing="sm">
               <TextInput
-                label="PO no"
+                label="PO no reference"
                 value={draft.po_no}
                 onChange={(event) => {
                   const { value } = event.currentTarget;
