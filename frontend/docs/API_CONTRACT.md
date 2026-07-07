@@ -312,3 +312,4 @@ When a screen needs a new shape or endpoint:
 3. Have the current backend implement it (today: the mock API; later: the real
    service). Keep this contract and the backend implementation in sync in the same
    change.
+  
