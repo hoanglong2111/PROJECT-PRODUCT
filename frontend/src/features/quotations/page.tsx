@@ -69,6 +69,13 @@ export function Quotations() {
     enabled: pickerOpen,
   });
   const quotations = quotationsQuery.data?.data ?? EMPTY_QUOTATIONS;
+  const standaloneQuotations = useMemo(
+    () =>
+      quotations
+        .filter((quotation) => quotation.ref_type == null)
+        .sort((left, right) => String(right.create_at || '').localeCompare(String(left.create_at || ''))),
+    [quotations],
+  );
   const rfqOptions = useMemo(
     () =>
       (rfqPickerQuery.data?.data ?? [])
@@ -82,7 +89,7 @@ export function Quotations() {
 
   const filteredQuotations = useMemo(() => {
     const normalizedSearch = search.toLowerCase().trim();
-    return quotations.filter((quotation) => {
+    return standaloneQuotations.filter((quotation) => {
       const matchesTab =
         activeTab === 'all' || quotationStatusTabs[activeTab].includes(quotation.status);
       const matchesSearch = [
@@ -100,28 +107,28 @@ export function Quotations() {
       const matchesCreated = inDateRange(quotation.create_at, createdFrom, createdTo);
       return matchesTab && matchesSearch && matchesType && matchesSupplier && matchesCreated;
     });
-  }, [quotations, activeTab, search, typeFilter, supplierFilter, createdFrom, createdTo]);
+  }, [standaloneQuotations, activeTab, search, typeFilter, supplierFilter, createdFrom, createdTo]);
 
   const tabCounts = useMemo(
     () =>
       quotationTabItems.reduce<Record<QuotationTab, number>>(
         (counts, tab) => {
           if (tab.value === 'all') {
-            counts[tab.value] = quotations.length;
+            counts[tab.value] = standaloneQuotations.length;
             return counts;
           }
           const statuses = quotationStatusTabs[tab.value];
-          counts[tab.value] = quotations.filter((quotation) => statuses.includes(quotation.status)).length;
+          counts[tab.value] = standaloneQuotations.filter((quotation) => statuses.includes(quotation.status)).length;
           return counts;
         },
         { all: 0, draft: 0, pending: 0, confirmed: 0, rejected: 0 },
       ),
-    [quotations],
+    [standaloneQuotations],
   );
 
   const findQuotation = (value: string | null): QuotationV1 | null => {
     if (!value) return null;
-    return quotations.find((quotation) => quotation.id === value || quotation.quotation_no === value) ?? null;
+    return standaloneQuotations.find((quotation) => quotation.id === value || quotation.quotation_no === value) ?? null;
   };
   const selectedQuotation = findQuotation(focusedQuote);
   const selectedQuotationId = selectedQuotation?.id ?? null;
@@ -138,11 +145,11 @@ export function Quotations() {
 
   const supplierOptions = useMemo(() => {
     const map = new Map<string, string>();
-    for (const q of quotations) {
+    for (const q of standaloneQuotations) {
       if (q.supplier_id) map.set(q.supplier_id, q.supplier?.supplier_name ?? q.supplier_id);
     }
     return [...map].map(([value, label]) => ({ value, label }));
-  }, [quotations]);
+  }, [standaloneQuotations]);
 
   const updateWorkbenchParams = (
     updater: (nextParams: URLSearchParams) => void,

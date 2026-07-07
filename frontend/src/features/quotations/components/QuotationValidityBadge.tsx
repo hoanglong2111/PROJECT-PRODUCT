@@ -18,7 +18,7 @@ export function QuotationValidityBadge({ validUntil }: { validUntil: string | nu
       );
     case 'today':
       return (
-        <Badge color="yellow" variant="filled" size="xs">
+        <Badge color="yellow" variant="light" size="xs">
           {t('quotations.validity.expiresToday')}
         </Badge>
       );

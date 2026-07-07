@@ -8,7 +8,6 @@ import type {
 import {
   chargeCodeToChargeType,
   computeQuotationLineVnd,
-  QUOTATION_VAT_RATE,
   summarizeQuotationVndLines,
 } from '@shared/lib/quotationCharges';
 
@@ -60,7 +59,8 @@ function toPayload(
     quantity: Number(line.quantity) || 1,
     unit: line.unit ?? code?.default_uom ?? 'SET',
     unit_price: Number(line.unitPrice),
-    tax_rate: code?.taxable ? QUOTATION_VAT_RATE : 0,
+    tax_rate: 0,
+    tax_amount: 0,
     note: code ? `Rev/Cost: ${code.rev_cost}` : null,
   };
 }
@@ -93,7 +93,6 @@ function vndTotal(lines: QuotationDraftGroupLine[], ctx: DraftBuildContext): num
         unitPrice: line.unitPrice,
         currency: line.currency,
         endpointCurrency: line.endpointCurrency,
-        taxable: Boolean(ctx.findChargeCode(line.chargeCode)?.taxable),
       },
       ctx.rateToVndOrNull,
     ),
@@ -121,4 +120,31 @@ export function selectOptionChargeLines(
   optionNo: number | null,
 ): QuotationChargeLineV1[] {
   return lines.filter((line) => line.option_no == null || line.option_no === optionNo);
+}
+
+// Customer-pays total for a single option, computed from its charge lines in the
+// payment currency — mirrors the "Khách trả" total in QuotationChargeBreakdown so the
+// option card estimate always matches the charge detail (instead of a stale headline_amount).
+export function computeOptionCustomerPays(
+  lines: QuotationChargeLineV1[],
+  optionNo: number | null,
+  paymentCurrency: string,
+  rateToVnd: (code: string | null | undefined) => number | null,
+): number | null {
+  const breakdowns = selectOptionChargeLines(lines, optionNo).map((line) =>
+    computeQuotationLineVnd(
+      {
+        quantity: line.quantity,
+        unitPrice: line.unit_price,
+        currency: line.currency_code,
+        endpointCurrency: paymentCurrency,
+      },
+      rateToVnd,
+    ),
+  );
+  const totalVnd = summarizeQuotationVndLines(breakdowns).totalVnd;
+  const normalized = (paymentCurrency ?? 'VND').trim().toUpperCase();
+  const paymentRate = normalized === 'VND' ? 1 : rateToVnd(normalized);
+  if (!paymentRate) return null;
+  return totalVnd / paymentRate;
 }

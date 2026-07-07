@@ -1,5 +1,5 @@
 import { Button, Collapse, Paper, Stack, Text, Textarea, Tooltip } from '@mantine/core';
-import { IconCheck, IconEdit, IconFileInvoice, IconSend, IconShoppingCart, IconX } from '@tabler/icons-react';
+import { IconCheck, IconEdit, IconSend, IconShoppingCart, IconX } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -15,7 +15,7 @@ type QuotationResponsePanelProps = {
   transitionLoading?: boolean;
   rejectLoading?: boolean;
   onRevise?: (q: QuotationV1) => void;
-  onTransition: (next: 'draft' | 'submit' | 'confirm') => void;
+  onTransition: (next: 'submit' | 'confirm') => void;
   onReject: (reason?: string) => void;
   onEnterAdjust: () => void;
 };
@@ -41,15 +41,10 @@ export function QuotationResponsePanel({
   const [rejectReason, setRejectReason] = useState('');
   const [rejectExpanded, setRejectExpanded] = useState(false);
   const status = quotation.status;
-  const canReject = status === 'REQUEST_FOR_QUOTATION' || status === 'DRAFT' || status === 'PENDING_APPROVAL';
-  const canAdjust =
-    status === 'REQUEST_FOR_QUOTATION' ||
-    status === 'DRAFT' ||
-    status === 'PENDING_APPROVAL' ||
-    status === 'PENDING_ADJUSTMENT';
+  const canReject = status === 'PENDING_APPROVAL';
+  const canAdjust = status === 'PENDING_APPROVAL' || status === 'PENDING_ADJUSTMENT';
   const finalLifecycleStatus: QuotationStatusV1 = status === 'REJECTED' ? 'REJECTED' : 'CONFIRMED';
   const lifecycleSteps: QuotationStatusV1[] = [
-    'REQUEST_FOR_QUOTATION',
     'DRAFT',
     'PENDING_APPROVAL',
     finalLifecycleStatus,
@@ -64,12 +59,13 @@ export function QuotationResponsePanel({
   );
   const roundNo = negotiationRound(quotation);
   const turnLabel = status === 'PENDING_ADJUSTMENT' ? t('quotations.negotiationTurnFds') : t('quotations.negotiationTurnKbi');
+  const showTurnLabel = status === 'PENDING_APPROVAL' || status === 'PENDING_ADJUSTMENT';
 
   return (
     <Paper withBorder p={0} className="rfq-action-panel">
       <div className="rfq-panel-head">
         <div>
-          <Text fw={800}>{t('quotations.responseTitle')}</Text>
+          <Text fw={700}>{t('quotations.responseTitle')}</Text>
           <Text size="xs" c="dimmed">
             {statusLabel(status)}
           </Text>
@@ -101,6 +97,14 @@ export function QuotationResponsePanel({
         })}
       </div>
 
+      {showTurnLabel ? (
+        <div className="rfq-turn-banner">
+          <Text size="sm" fw={700}>
+            {turnLabel}
+          </Text>
+        </div>
+      ) : null}
+
       <div className="rfq-action-body">
         {status === 'CONFIRMED' ? (
           <Button
@@ -127,16 +131,6 @@ export function QuotationResponsePanel({
           </Stack>
         ) : (
           <Stack gap="sm">
-            {status === 'REQUEST_FOR_QUOTATION' ? (
-              <Button
-                fullWidth
-                leftSection={<IconFileInvoice size={16} />}
-                loading={transitionLoading}
-                onClick={() => onTransition('draft')}
-              >
-                {t('quotations.actionStartDraft')}
-              </Button>
-            ) : null}
             {status === 'DRAFT' ? (
               <>
                 {onRevise ? (
@@ -185,18 +179,18 @@ export function QuotationResponsePanel({
                   {t('quotations.actionAdjustLines')}
                 </Button>
               ) : null}
-              {canReject ? (
-                <Button
-                  fullWidth
-                  color="red"
-                  variant={rejectExpanded ? 'filled' : 'light'}
-                  leftSection={<IconX size={16} />}
-                  onClick={() => setRejectExpanded((current) => !current)}
-                >
-                  {t('quotations.actionReject')}
-                </Button>
-              ) : null}
             </div>
+            {canReject ? (
+              <Button
+                fullWidth
+                color="red"
+                variant={rejectExpanded ? 'filled' : 'light'}
+                leftSection={<IconX size={16} />}
+                onClick={() => setRejectExpanded((current) => !current)}
+              >
+                {t('quotations.actionReject')}
+              </Button>
+            ) : null}
             {canReject ? (
               <Collapse expanded={rejectExpanded}>
                 <div className="rfq-reject-fields">

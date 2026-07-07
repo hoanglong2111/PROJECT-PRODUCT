@@ -4,14 +4,12 @@ import type { ShippingMode } from '@shared/model/logistics';
 import { convertMoney, roundToMinorUnits, sumMoney } from '@shared/utils/money';
 
 export type QuotationChargeModeFlag = 'sea_fcl' | 'sea_lcl' | 'air';
-export const QUOTATION_VAT_RATE = 10;
 
 export type QuotationLineVndInput = {
   quantity: number | string | null | undefined;
   unitPrice: number | string | null | undefined;
   currency: string | null | undefined;
   endpointCurrency?: string | null | undefined;
-  taxable?: boolean;
 };
 
 export type QuotationLineVndBreakdown = {
@@ -68,8 +66,8 @@ export function computeQuotationLineVnd(
     return rateToVnd(normalized) ?? 0;
   };
   const amountVnd = hasAmount && !missingRate ? convertMoney(localAmount, sourceCurrency, 'VND', rateLookup) : 0;
-  const vatVnd = line.taxable ? sumMoney([amountVnd * (QUOTATION_VAT_RATE / 100)], 'VND') : 0;
-  const totalVnd = sumMoney([amountVnd, vatVnd], 'VND');
+  const vatVnd = 0;
+  const totalVnd = amountVnd;
   const conversionRate = hasAmount && !missingRate && exchangeRate != null && endpointRate != null
     ? sourceCurrency === endpointCurrency
       ? 1
@@ -95,7 +93,6 @@ export function computeQuotationLineVnd(
 export function summarizeQuotationVndLines(lines: QuotationLineVndBreakdown[]): QuotationVndTotals {
   const computableLines = lines.filter((line) => line.hasAmount && !line.missingRate);
   const subtotalVnd = sumMoney(computableLines.map((line) => line.amountVnd), 'VND');
-  const taxVnd = sumMoney(computableLines.map((line) => line.vatVnd), 'VND');
   const endpointBuckets = new Map<string, number[]>();
 
   for (const line of computableLines) {
@@ -106,8 +103,8 @@ export function summarizeQuotationVndLines(lines: QuotationLineVndBreakdown[]): 
 
   return {
     subtotalVnd,
-    taxVnd,
-    totalVnd: sumMoney([subtotalVnd, taxVnd], 'VND'),
+    taxVnd: 0,
+    totalVnd: subtotalVnd,
     missingRateCount: lines.filter((line) => line.hasAmount && line.missingRate).length,
     totalsByEndpoint: Array.from(endpointBuckets, ([currency, totals]) => ({
       currency,

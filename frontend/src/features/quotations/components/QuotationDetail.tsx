@@ -9,7 +9,6 @@ import {
   fetchQuotationVersions,
   markQuotationFinal,
   negotiateQuotation,
-  receiveQuotation,
   rejectQuotation,
   selectQuotationOption,
   submitQuotationToKbi,
@@ -28,7 +27,7 @@ import { formatMoney, roundToMinorUnits } from '@shared/utils/money';
 
 import { summarizeByCurrency } from '../model/quotationCurrency';
 import { quotationDisplayTotalInCurrency } from '../model/quotationModel';
-import { selectOptionChargeLines } from '../model/quotationOptionDraft';
+import { computeOptionCustomerPays, selectOptionChargeLines } from '../model/quotationOptionDraft';
 import { QuotationChargeBreakdown, type QuotationChargeAdjustmentDraft } from './QuotationChargeBreakdown';
 import { QuotationOptionsTable } from './QuotationOptionsTable';
 import { QuotationResponsePanel } from './QuotationResponsePanel';
@@ -74,6 +73,12 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
   const activeOptionId = previewOptionId ?? selectedOptionId ?? options.find((option) => option.is_recommended)?.id ?? options[0]?.id ?? null;
   const activeOptionNo = options.find((option) => option.id === activeOptionId)?.option_no ?? null;
   const visibleChargeLines = selectOptionChargeLines(quotation.charge_lines ?? [], activeOptionNo);
+  const paymentCurrency = quotation.currency_code ?? 'VND';
+  const optionCustomerPays = options.reduce<Record<string, number>>((totals, option) => {
+    const value = computeOptionCustomerPays(quotation.charge_lines ?? [], option.option_no, paymentCurrency, rateToVnd);
+    if (value != null) totals[option.id] = value;
+    return totals;
+  }, {});
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: queryKeys.quotations });
@@ -90,8 +95,7 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
   });
 
   const transitionMutation = useMutation({
-    mutationFn: (next: 'draft' | 'submit' | 'confirm') => {
-      if (next === 'draft') return receiveQuotation(quotation.id);
+    mutationFn: (next: 'submit' | 'confirm') => {
       if (next === 'submit') return submitQuotationToKbi(quotation.id);
       return markQuotationFinal(quotation.id);
     },
@@ -120,14 +124,13 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
         if (!line) return Promise.resolve(null);
         const quantity = Number(line.quantity ?? 1);
         const amount = roundToMinorUnits(quantity * draft.proposed_unit_price, line.currency_code);
-        const taxRate = Number(line.tax_rate || 0);
-        const taxAmount = roundToMinorUnits(amount * taxRate / 100, line.currency_code);
 
         return updateQuotationChargeLine(draft.charge_line_id, {
           unit_price: draft.proposed_unit_price,
           amount,
-          tax_amount: taxAmount,
-          total_amount: roundToMinorUnits(amount + taxAmount, line.currency_code),
+          tax_rate: 0,
+          tax_amount: 0,
+          total_amount: amount,
           note: draft.note ?? line.note ?? null,
         });
       }));
@@ -145,7 +148,6 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
     visibleChargeLines.map((line) => ({
       currency: line.currency_code ?? null,
       amount: Number(line.amount ?? Number(line.quantity) * Number(line.unit_price)),
-      taxable: Number(line.tax_rate) > 0,
     })),
     rateToVnd,
   );
@@ -179,10 +181,10 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
               </div>
             </Group>
             <div className="rfq-detail-total">
-              <Text size="xs" tt="uppercase" fw={800} c="dimmed">
+              <Text size="xs" tt="uppercase" fw={600} c="dimmed">
                 {t('quotations.total')}
               </Text>
-              <Text fw={900} size="xl" className="tabular-nums">
+              <Text fw={800} size="xl" className="tabular-nums">
                 {heroTotal}
               </Text>
               {currencySummary.byCurrency.length > 1 ? (
@@ -206,7 +208,7 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
             label={t('quotations.rfqLink')}
             value={quotation.rfq_id ? (
               <Anchor component={Link} to={`/quotation-requests?view=${quotation.rfq_id}`}>
-                {quotation.rfq_id}
+                {quotation.rfq_no ?? quotation.rfq_id}
               </Anchor>
             ) : '-'}
           />
@@ -231,6 +233,8 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
               mode="read"
               options={options}
               selectedOptionId={activeOptionId}
+              optionTotals={optionCustomerPays}
+              optionTotalsCurrency={paymentCurrency}
               onSelect={(optionId) => {
                 setPreviewOptionId(optionId);
                 selectOptionMutation.mutate(optionId);
@@ -269,7 +273,7 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
             <Paper withBorder p={0} className="rfq-timeline-panel">
               <div className="rfq-panel-head">
                 <div>
-                  <Text fw={800}>{t('quotations.versionHistory')}</Text>
+                  <Text fw={700}>{t('quotations.versionHistory')}</Text>
                   <Text size="xs" c="dimmed">
                     {versions.length} {t('quotations.version')}
                   </Text>
@@ -313,7 +317,7 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
           <Paper withBorder p={0} className="rfq-timeline-panel">
             <div className="rfq-panel-head">
               <div>
-                <Text fw={800}>{t('quotations.lifecycle')}</Text>
+                <Text fw={700}>{t('quotations.lifecycle')}</Text>
                 <DateTimeText value={quotation.update_at} size="xs" c="dimmed" showZone />
               </div>
             </div>

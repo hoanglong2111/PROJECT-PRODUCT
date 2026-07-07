@@ -36,7 +36,6 @@ type QuotationOptionEditorProps = {
   uoms: Uom[];
   buildCtx: DraftBuildContext;
   rateToVndOrNull: (code: string | null | undefined) => number | null;
-  isTaxable: (chargeCode: string | null | undefined) => boolean;
   onUpdateOption: (id: string, patch: Partial<DraftQuotationOption>) => void;
   onAddLine: (optionId: string, group: QuotationChargeGroup) => void;
   onUpdateLine: (
@@ -55,7 +54,6 @@ export function QuotationOptionEditor({
   carriers,
   chargeCodeOptions,
   currencyOptions,
-  isTaxable,
   onAddLine,
   onRemoveLine,
   onRemoveOption,
@@ -81,7 +79,7 @@ export function QuotationOptionEditor({
         <Group justify="space-between" align="flex-start" gap="sm">
           <div>
             <Group gap="xs">
-              <Text fw={800} size="sm">
+              <Text fw={700} size="sm">
                 {t('quotations.options')} #{option.option_no}
               </Text>
               {option.is_recommended ? (
@@ -174,7 +172,7 @@ export function QuotationOptionEditor({
                 <div className="rfq-charge-group-head">
                   <Group justify="space-between" align="center" gap="sm" wrap="nowrap">
                     <Group gap="xs" wrap="nowrap">
-                      <Text fw={800} size="sm">
+                      <Text fw={700} size="sm">
                         {t(group.labelKey)}
                       </Text>
                       <Badge className="rfq-charge-count tabular-nums" color={lines.length > 0 ? 'teal' : 'gray'} variant="light">
@@ -214,7 +212,6 @@ export function QuotationOptionEditor({
                         uoms={uoms}
                         removable
                         rateToVndOrNull={rateToVndOrNull}
-                        isTaxable={isTaxable}
                         onChange={(rowIndex, patch) => onUpdateLine(option.id, group.value, rowIndex, patch)}
                         onRemove={(rowIndex) => onRemoveLine(option.id, group.value, rowIndex)}
                       />

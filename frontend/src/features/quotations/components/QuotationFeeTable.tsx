@@ -25,7 +25,6 @@ type Props = {
   currencyOptions: { label: string; value: string }[];
   removable?: boolean;
   rateToVndOrNull: (code: string | null | undefined) => number | null;
-  isTaxable: (chargeCode: string | null | undefined) => boolean;
   onChange: (rowIndex: number, patch: Partial<ChargeLineState>) => void;
   onRemove?: (rowIndex: number) => void;
 };
@@ -33,7 +32,6 @@ type Props = {
 export function QuotationFeeTable({
   chargeCodeOptions,
   currencyOptions,
-  isTaxable,
   onChange,
   onRemove,
   rateToVndOrNull,
@@ -46,11 +44,12 @@ export function QuotationFeeTable({
     label: `${uom.uom_code} - ${uom.uom_name_en}`,
     value: uom.uom_code,
   }));
-  const gridClassName = ['rfq-fee-grid', removable ? 'has-remove' : ''].filter(Boolean).join(' ');
+  const gridClassName = 'rfq-fee-grid';
+  const inputClassName = ['rfq-fee-inputs', removable ? 'has-remove' : ''].filter(Boolean).join(' ');
   const numberFormatter = new Intl.NumberFormat(language === 'vi' ? 'vi-VN' : 'en-US');
   const missingRateValue = (code: string | null) => (
     <Tooltip label={code ? t('quotations.missingRate', { code }) : t('quotations.missingRate', { code: '-' })}>
-      <Text component="span" size="sm" c="yellow.7" fw={800} className="rfq-missing-rate">
+      <Text component="span" size="sm" c="yellow.7" fw={700} className="rfq-missing-rate">
         <IconAlertTriangle size={13} />
         —
       </Text>
@@ -59,18 +58,12 @@ export function QuotationFeeTable({
 
   return (
     <div className={gridClassName}>
-      <div className="rfq-fee-header" aria-hidden="true">
+      <div className={['rfq-fee-header', removable ? 'has-remove' : ''].filter(Boolean).join(' ')} aria-hidden="true">
         <span>{t('quotations.feeColumn')}</span>
         <span>{t('quotations.quantity')}</span>
         <span>{t('quotations.uom')}</span>
         <span>{t('quotations.unitPrice')}</span>
         <span>{t('quotations.localCurrency')}</span>
-        <span>{t('quotations.localAmount')}</span>
-        <span>{t('quotations.exchangeRate')}</span>
-        <span>{t('quotations.amountVnd')}</span>
-        <span>{t('quotations.vatVnd')}</span>
-        <span>{t('quotations.endpointCurrency')}</span>
-        <span>{t('quotations.lineTotalEndpoint')}</span>
         {removable ? <span /> : null}
       </div>
 
@@ -85,7 +78,6 @@ export function QuotationFeeTable({
             unitPrice: row.state.unitPrice,
             currency: row.state.currency,
             endpointCurrency: row.state.endpointCurrency,
-            taxable: isTaxable(row.state.chargeCode),
           },
           rateToVndOrNull,
         );
@@ -101,128 +93,125 @@ export function QuotationFeeTable({
             data-has-total={showTotal ? 'true' : undefined}
             key={row.key}
           >
-            <div className="rfq-fee-cell rfq-fee-name">
-              <span className="rfq-fee-cell-label">{t('quotations.feeColumn')}</span>
-              <Select
-                aria-label={t('quotations.feeColumn')}
-                placeholder={t('quotations.selectChargeToAdd')}
-                data={chargeCodeOptions}
-                value={row.state.chargeCode}
-                onChange={(value) => onChange(row.rowIndex, { chargeCode: value })}
-                searchable
-                size="xs"
-              />
-            </div>
-
-            <div className="rfq-fee-cell rfq-fee-quantity tabular-nums">
-              <span className="rfq-fee-cell-label">{t('quotations.quantity')}</span>
-              <NumberInput
-                aria-label={t('quotations.quantity')}
-                value={row.state.quantity}
-                onChange={(value) => onChange(row.rowIndex, { quantity: value })}
-                min={0}
-                size="xs"
-                styles={{ input: { textAlign: 'right' } }}
-              />
-            </div>
-
-            <div className="rfq-fee-cell rfq-fee-uom">
-              <span className="rfq-fee-cell-label">{t('quotations.uom')}</span>
-              <Select
-                aria-label={t('quotations.uom')}
-                data={uomOptions}
-                value={row.state.unit}
-                onChange={(value) => onChange(row.rowIndex, { unit: value })}
-                searchable
-                size="xs"
-              />
-            </div>
-
-            <div className="rfq-fee-cell rfq-fee-price tabular-nums">
-              <span className="rfq-fee-cell-label">{t('quotations.unitPrice')}</span>
-              <NumberInput
-                aria-label={t('quotations.unitPrice')}
-                value={row.state.unitPrice}
-                onChange={(value) => onChange(row.rowIndex, { unitPrice: value })}
-                min={0}
-                thousandSeparator=","
-                size="xs"
-                styles={{ input: { textAlign: 'right' } }}
-              />
-            </div>
-
-            <div className="rfq-fee-cell rfq-fee-currency">
-              <span className="rfq-fee-cell-label">{t('quotations.localCurrency')}</span>
-              <Select
-                aria-label={t('quotations.localCurrency')}
-                data={currencyOptions}
-                value={row.state.currency}
-                onChange={(value) => onChange(row.rowIndex, { currency: value })}
-                searchable
-                size="xs"
-              />
-            </div>
-
-            <div className="rfq-fee-cell rfq-fee-total tabular-nums">
-              <span className="rfq-fee-cell-label">{t('quotations.localAmount')}</span>
-              <Text size="sm" fw={700} c={showTotal ? undefined : 'dimmed'}>
-                {formattedTotal}
-              </Text>
-            </div>
-
-            <div className="rfq-fee-cell rfq-fee-exchange tabular-nums">
-              <span className="rfq-fee-cell-label">{t('quotations.exchangeRate')}</span>
-              <Text size="sm" c={showVndBreakdown ? undefined : 'dimmed'}>
-                {showVndBreakdown && vndBreakdown.exchangeRate ? numberFormatter.format(vndBreakdown.exchangeRate) : missingRate}
-              </Text>
-            </div>
-
-            <div className="rfq-fee-cell rfq-fee-amount-vnd tabular-nums">
-              <span className="rfq-fee-cell-label">{t('quotations.amountVnd')}</span>
-              <Text size="sm" fw={700} c={showVndBreakdown ? undefined : 'dimmed'}>
-                {showVndBreakdown ? formatMoney(vndBreakdown.amountVnd, 'VND') : missingRate}
-              </Text>
-            </div>
-
-            <div className="rfq-fee-cell rfq-fee-vat-vnd tabular-nums">
-              <span className="rfq-fee-cell-label">{t('quotations.vatVnd')}</span>
-              <Text size="sm" c={showVndBreakdown ? undefined : 'dimmed'}>
-                {showVndBreakdown ? formatMoney(vndBreakdown.vatVnd, 'VND') : missingRate}
-              </Text>
-            </div>
-
-            <div className="rfq-fee-cell rfq-fee-endpoint-currency">
-              <span className="rfq-fee-cell-label">{t('quotations.endpointCurrency')}</span>
-              <Select
-                aria-label={t('quotations.endpointCurrency')}
-                data={currencyOptions}
-                value={row.state.endpointCurrency ?? 'VND'}
-                onChange={(value) => onChange(row.rowIndex, { endpointCurrency: value ?? 'VND' })}
-                searchable
-                size="xs"
-              />
-            </div>
-
-            <div className="rfq-fee-cell rfq-fee-total-endpoint tabular-nums">
-              <span className="rfq-fee-cell-label">{t('quotations.lineTotalEndpoint')}</span>
-              <Text size="sm" fw={800} c={showVndBreakdown ? undefined : 'dimmed'}>
-                {showVndBreakdown ? formatMoney(vndBreakdown.totalEndpoint, vndBreakdown.endpointCurrency) : missingRate}
-              </Text>
-            </div>
-
-            {removable ? (
-              <div className="rfq-fee-cell rfq-fee-remove">
-                <ActionIcon
-                  color="red"
-                  variant="subtle"
-                  onClick={() => onRemove?.(row.rowIndex)}
-                  title={t('quotations.removeFee')}
-                  aria-label={t('quotations.removeFee')}
-                >
-                  <IconTrash size={16} />
-                </ActionIcon>
+            <div className={inputClassName}>
+              <div className="rfq-fee-cell rfq-fee-name">
+                <span className="rfq-fee-cell-label">{t('quotations.feeColumn')}</span>
+                <Select
+                  aria-label={t('quotations.feeColumn')}
+                  placeholder={t('quotations.selectChargeToAdd')}
+                  data={chargeCodeOptions}
+                  value={row.state.chargeCode}
+                  onChange={(value) => onChange(row.rowIndex, { chargeCode: value })}
+                  searchable
+                  size="xs"
+                />
               </div>
-            ) : null}
+
+              <div className="rfq-fee-cell rfq-fee-quantity tabular-nums">
+                <span className="rfq-fee-cell-label">{t('quotations.quantity')}</span>
+                <NumberInput
+                  aria-label={t('quotations.quantity')}
+                  value={row.state.quantity}
+                  onChange={(value) => onChange(row.rowIndex, { quantity: value })}
+                  min={0}
+                  size="xs"
+                  styles={{ input: { textAlign: 'right' } }}
+                />
+              </div>
+
+              <div className="rfq-fee-cell rfq-fee-uom">
+                <span className="rfq-fee-cell-label">{t('quotations.uom')}</span>
+                <Select
+                  aria-label={t('quotations.uom')}
+                  data={uomOptions}
+                  value={row.state.unit}
+                  onChange={(value) => onChange(row.rowIndex, { unit: value })}
+                  searchable
+                  size="xs"
+                />
+              </div>
+
+              <div className="rfq-fee-cell rfq-fee-price tabular-nums">
+                <span className="rfq-fee-cell-label">{t('quotations.unitPrice')}</span>
+                <NumberInput
+                  aria-label={t('quotations.unitPrice')}
+                  value={row.state.unitPrice}
+                  onChange={(value) => onChange(row.rowIndex, { unitPrice: value })}
+                  min={0}
+                  thousandSeparator=","
+                  size="xs"
+                  styles={{ input: { textAlign: 'right' } }}
+                />
+              </div>
+
+              <div className="rfq-fee-cell rfq-fee-currency">
+                <span className="rfq-fee-cell-label">{t('quotations.localCurrency')}</span>
+                <Select
+                  aria-label={t('quotations.localCurrency')}
+                  data={currencyOptions}
+                  value={row.state.currency}
+                  onChange={(value) => onChange(row.rowIndex, { currency: value })}
+                  searchable
+                  size="xs"
+                />
+              </div>
+
+              {removable ? (
+                <div className="rfq-fee-cell rfq-fee-remove">
+                  <ActionIcon
+                    color="red"
+                    variant="subtle"
+                    onClick={() => onRemove?.(row.rowIndex)}
+                    title={t('quotations.removeFee')}
+                    aria-label={t('quotations.removeFee')}
+                  >
+                    <IconTrash size={16} />
+                  </ActionIcon>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="rfq-fee-derived">
+              <div className="rfq-fee-derived-item rfq-fee-total tabular-nums">
+                <span className="rfq-fee-cell-label">{t('quotations.localAmount')}</span>
+                <Text size="sm" fw={700} c={showTotal ? undefined : 'dimmed'}>
+                  {formattedTotal}
+                </Text>
+              </div>
+
+              <div className="rfq-fee-derived-item rfq-fee-exchange tabular-nums">
+                <span className="rfq-fee-cell-label">{t('quotations.exchangeRate')}</span>
+                <Text size="sm" c={showVndBreakdown ? undefined : 'dimmed'}>
+                  {showVndBreakdown && vndBreakdown.exchangeRate ? numberFormatter.format(vndBreakdown.exchangeRate) : missingRate}
+                </Text>
+              </div>
+
+              <div className="rfq-fee-derived-item rfq-fee-amount-vnd tabular-nums">
+                <span className="rfq-fee-cell-label">{t('quotations.amountVnd')}</span>
+                <Text size="sm" fw={700} c={showVndBreakdown ? undefined : 'dimmed'}>
+                  {showVndBreakdown ? formatMoney(vndBreakdown.amountVnd, 'VND') : missingRate}
+                </Text>
+              </div>
+
+              <div className="rfq-fee-derived-item rfq-fee-endpoint-currency">
+                <span className="rfq-fee-cell-label">{t('quotations.endpointCurrency')}</span>
+                <Select
+                  aria-label={t('quotations.endpointCurrency')}
+                  data={currencyOptions}
+                  value={row.state.endpointCurrency ?? 'VND'}
+                  onChange={(value) => onChange(row.rowIndex, { endpointCurrency: value ?? 'VND' })}
+                  searchable
+                  size="xs"
+                />
+              </div>
+
+              <div className="rfq-fee-derived-item rfq-fee-total-endpoint tabular-nums">
+                <span className="rfq-fee-cell-label">{t('quotations.lineTotalEndpoint')}</span>
+                <Text size="sm" fw={700} c={showVndBreakdown ? undefined : 'dimmed'}>
+                  {showVndBreakdown ? formatMoney(vndBreakdown.totalEndpoint, vndBreakdown.endpointCurrency) : missingRate}
+                </Text>
+              </div>
+            </div>
           </div>
         );
       })}
