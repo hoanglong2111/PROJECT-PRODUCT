@@ -252,7 +252,7 @@ export function PurchaseOrderForm({
           </Group>
 
           <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} mt="md">
-            <SummaryTile label="PO no" value={draft.po_no || 'Draft'} />
+            <SummaryTile label="PO no reference" value={draft.po_no || 'Draft'} />
             <SummaryTile label="Supplier" value={selectedSupplier?.supplier_name ?? 'Supplier required'} />
             <SummaryTile label="Terms" value={selectedIncoterm?.incoterm_code ?? 'Incoterm required'} />
             <SummaryTile
