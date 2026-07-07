@@ -79,7 +79,7 @@ export function QuotationOptionEditor({
         <Group justify="space-between" align="flex-start" gap="sm">
           <div>
             <Group gap="xs">
-              <Text fw={800} size="sm">
+              <Text fw={700} size="sm">
                 {t('quotations.options')} #{option.option_no}
               </Text>
               {option.is_recommended ? (
@@ -172,7 +172,7 @@ export function QuotationOptionEditor({
                 <div className="rfq-charge-group-head">
                   <Group justify="space-between" align="center" gap="sm" wrap="nowrap">
                     <Group gap="xs" wrap="nowrap">
-                      <Text fw={800} size="sm">
+                      <Text fw={700} size="sm">
                         {t(group.labelKey)}
                       </Text>
                       <Badge className="rfq-charge-count tabular-nums" color={lines.length > 0 ? 'teal' : 'gray'} variant="light">

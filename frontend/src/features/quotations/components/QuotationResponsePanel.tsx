@@ -65,7 +65,7 @@ export function QuotationResponsePanel({
     <Paper withBorder p={0} className="rfq-action-panel">
       <div className="rfq-panel-head">
         <div>
-          <Text fw={800}>{t('quotations.responseTitle')}</Text>
+          <Text fw={700}>{t('quotations.responseTitle')}</Text>
           <Text size="xs" c="dimmed">
             {statusLabel(status)}
           </Text>
@@ -99,7 +99,7 @@ export function QuotationResponsePanel({
 
       {showTurnLabel ? (
         <div className="rfq-turn-banner">
-          <Text size="sm" fw={800}>
+          <Text size="sm" fw={700}>
             {turnLabel}
           </Text>
         </div>

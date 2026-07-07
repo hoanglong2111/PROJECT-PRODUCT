@@ -73,10 +73,10 @@ const EMPTY_CHARGE_CODES: ChargeCode[] = [];
 function ReadOnlyContext({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="rfq-scope-field">
-      <Text size="xs" c="dimmed" fw={700} mb={4}>
+      <Text size="xs" c="dimmed" fw={600} mb={4}>
         {label}
       </Text>
-      <Text size="sm" fw={800}>
+      <Text size="sm" fw={700}>
         {value}
       </Text>
     </div>
@@ -358,7 +358,7 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
                   <Text size="xs" c="dimmed">
                     {t('quotations.rfqContext')}
                   </Text>
-                  <Text size="sm" fw={800}>
+                  <Text size="sm" fw={700}>
                     {header.incoterm} / {header.mode}
                   </Text>
                 </div>
@@ -369,7 +369,7 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
                   <Text size="xs" c="dimmed">
                     {t('quotations.chargeLinesCount', { count: filledLineCount })}
                   </Text>
-                  <Text size="sm" fw={800}>
+                  <Text size="sm" fw={700}>
                     {quotationVndTotals.totalVnd > 0 ? formatMoney(quotationVndTotals.totalVnd, 'VND') : '-'}
                   </Text>
                 </div>
@@ -388,7 +388,7 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
 
             <section className="rfq-form-section">
               <div className="rfq-section-head">
-                <Text fw={800}>{t('quotations.rfqContext')}</Text>
+                <Text fw={700}>{t('quotations.rfqContext')}</Text>
               </div>
               <SimpleGrid cols={{ base: 1, sm: 2 }} mt="md" spacing="md" className="rfq-setup-grid">
                 <ReadOnlyContext label={t('quotations.customer')} value={header.customer} />
@@ -419,7 +419,7 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
 
             <section className="rfq-form-section">
               <div className="rfq-section-head">
-                <Text fw={800}>{t('quotations.options')}</Text>
+                <Text fw={700}>{t('quotations.options')}</Text>
                 <Text size="xs" c="dimmed" className="rfq-section-summary">
                   {t('quotations.optionsHint')}
                 </Text>
@@ -467,70 +467,69 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
 
           <aside className="rfq-form-rail">
             <div className="rfq-total-card">
-              <Group justify="space-between" align="flex-start" gap="sm">
-                <div>
-                  <Text size="xs" tt="uppercase" fw={800} c="dimmed">
+              <div className="rfq-total-card-head">
+                <div className="rfq-total-title">
+                  <span className="rfq-total-icon" aria-hidden="true">
+                    <IconWallet size={15} />
+                  </span>
+                  <Text size="xs" tt="uppercase" fw={600} c="dimmed">
                     {t('quotations.totalInCurrency', { currency: paymentCurrency })}
                   </Text>
-                  {filledLineCount > 0 ? (
-                    <Stack gap={6} mt={6}>
-                      <Stack gap={4} className="rfq-original-items">
-                        {totalsByOriginalCurrency.map((bucket) => (
-                          <Group key={bucket.currency} justify="space-between" gap="md" wrap="nowrap">
-                            <Text size="sm" c="dimmed" className="rfq-original-item-name">
-                              {bucket.currency}
-                            </Text>
-                            <Text fw={700} className="tabular-nums">
-                              {formatMoney(bucket.amount, bucket.currency)}
-                            </Text>
-                          </Group>
-                        ))}
-                      </Stack>
-                      <div className="rfq-total-separator" />
-                      <div className="rfq-customer-pays">
-                        <Group justify="space-between" gap="md" wrap="nowrap" align="center">
-                          <Text size="sm" c="dimmed">
-                            {t('quotations.customerPays')}
-                          </Text>
-                          <Select
-                            aria-label={t('quotations.customerPaysCurrency')}
-                            data={currencyOptions}
-                            value={paymentCurrency}
-                            onChange={(value) => setPaymentCurrency(value ?? 'VND')}
-                            searchable
-                            size="xs"
-                            w={110}
-                            allowDeselect={false}
-                          />
-                        </Group>
-                        <Text fw={900} size="xl" className="tabular-nums" ta="right" mt={4}>
-                          {customerPaysTotal != null ? formatMoney(customerPaysTotal, paymentCurrency) : '-'}
+                </div>
+                <Select
+                  aria-label={t('quotations.customerPaysCurrency')}
+                  className="rfq-total-currency-select"
+                  data={currencyOptions}
+                  value={paymentCurrency}
+                  onChange={(value) => setPaymentCurrency(value ?? 'VND')}
+                  searchable
+                  size="xs"
+                  variant="unstyled"
+                  allowDeselect={false}
+                />
+              </div>
+              {filledLineCount > 0 ? (
+                <Stack gap={6} mt={8}>
+                  <Stack gap={4} className="rfq-original-items">
+                    {totalsByOriginalCurrency.map((bucket) => (
+                      <div key={bucket.currency} className="rfq-original-item">
+                        <Text size="sm" c="dimmed" className="rfq-original-item-name">
+                          {bucket.currency}
+                        </Text>
+                        <Text fw={700} className="tabular-nums rfq-total-value">
+                          {formatMoney(bucket.amount, bucket.currency)}
                         </Text>
                       </div>
-                      {quotationVndTotals.missingRateCount > 0 ? (
-                        <Group gap={6} wrap="nowrap" className="rfq-missing-rate-total">
-                          <IconAlertTriangle size={14} />
-                          <Text size="xs" fw={700}>
-                            {t('quotations.missingRateTotal', { count: quotationVndTotals.missingRateCount })}
-                          </Text>
-                        </Group>
-                      ) : null}
-                    </Stack>
-                  ) : (
-                    <Text fw={900} size="xl" className="tabular-nums">
-                      -
+                    ))}
+                  </Stack>
+                  <div className="rfq-total-separator" />
+                  <div className="rfq-customer-pays">
+                    <Text size="sm" c="dimmed" className="rfq-customer-pays-label">
+                      {t('quotations.customerPays')}
                     </Text>
-                  )}
-                  {referenceCurrency && referenceRate ? (
-                    <Text size="xs" c="dimmed" mt="xs">
-                      {t('quotations.referenceRate')}: 1 {referenceCurrency} = {new Intl.NumberFormat('vi-VN').format(referenceRate)} VND
+                    <Text fw={800} size="xl" className="tabular-nums rfq-customer-pays-value">
+                      {customerPaysTotal != null ? formatMoney(customerPaysTotal, paymentCurrency) : '-'}
                     </Text>
+                  </div>
+                  {quotationVndTotals.missingRateCount > 0 ? (
+                    <Group gap={6} wrap="nowrap" className="rfq-missing-rate-total">
+                      <IconAlertTriangle size={14} />
+                      <Text size="xs" fw={700}>
+                        {t('quotations.missingRateTotal', { count: quotationVndTotals.missingRateCount })}
+                      </Text>
+                    </Group>
                   ) : null}
-                </div>
-                <div className="rfq-total-icon">
-                  <IconWallet size={18} />
-                </div>
-              </Group>
+                </Stack>
+              ) : (
+                <Text fw={800} size="xl" className="tabular-nums rfq-customer-pays-value" mt={8}>
+                  -
+                </Text>
+              )}
+              {referenceCurrency && referenceRate ? (
+                <Text size="xs" c="dimmed" mt="xs" className="rfq-reference-rate">
+                  {t('quotations.referenceRate')}: 1 {referenceCurrency} = {new Intl.NumberFormat('vi-VN').format(referenceRate)} VND
+                </Text>
+              ) : null}
             </div>
             {!canSubmit ? (
               <Text size="xs" c="dimmed" className="rfq-submit-hint">

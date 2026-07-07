@@ -201,7 +201,7 @@ export function QuotationChargeBreakdown({
     <div>
       <div className="rfq-panel-head">
         <div>
-          <Text fw={800}>{t('quotations.chargeBreakdown')}</Text>
+          <Text fw={700}>{t('quotations.chargeBreakdown')}</Text>
           <Text size="xs" c="dimmed" className="rfq-breakdown-meta">
             {adjustMode ? t('quotations.adjustHint') : t('quotations.chargeLinesCount', { count: chargeLines.length })}
           </Text>
@@ -236,7 +236,7 @@ export function QuotationChargeBreakdown({
               return (
                 <section className="rfq-breakdown-group" key={group.value}>
                   <Group justify="space-between" align="center" className="rfq-breakdown-group-head">
-                    <Text fw={800} size="sm">{t(group.labelKey)}</Text>
+                    <Text fw={700} size="sm">{t(group.labelKey)}</Text>
                     <Text size="xs" c="dimmed" className="tabular-nums">
                       {t('quotations.groupSubtotal')}: {formatMoney(groupTotals.totalVnd, 'VND')}
                     </Text>
@@ -335,7 +335,7 @@ export function QuotationChargeBreakdown({
                                       />
                                     </Table.Td>
                                     <Table.Td ta="right" className="tabular-nums">
-                                      <Text c={deltaColor} fw={800} size="sm">
+                                      <Text c={deltaColor} fw={700} size="sm">
                                         {!enabled || unitDelta === 0 ? '-' : formatAmount(unitDelta, lineCurrency)}
                                       </Text>
                                     </Table.Td>
@@ -369,14 +369,14 @@ export function QuotationChargeBreakdown({
                                         <div className="rfq-price-history-step" key={entry.key}>
                                           <span className="rfq-price-history-dot" aria-hidden="true" />
                                           <div>
-                                            <Text size="xs" fw={800}>
+                                            <Text size="xs" fw={600}>
                                               {entry.labelKey === 'quotations.initialPrice'
                                                 ? t(entry.labelKey)
                                                 : t(entry.labelKey, { round: entry.roundNo })}
                                               {' · '}
                                               {entry.actor}
                                             </Text>
-                                            <Text size="sm" fw={800} className="tabular-nums">
+                                            <Text size="sm" fw={700} className="tabular-nums">
                                               {formatAmount(entry.price, lineCurrency)}
                                             </Text>
                                             {entry.note ? (
@@ -413,7 +413,7 @@ export function QuotationChargeBreakdown({
               <Text size="sm" c="dimmed">
                 {t('quotations.customerPays')} ({paymentCurrency})
               </Text>
-              <Text fw={900} className="tabular-nums">
+              <Text fw={800} className="tabular-nums">
                 {customerPaysTotal != null ? formatMoney(customerPaysTotal, paymentCurrency) : '-'}
               </Text>
             </Group>

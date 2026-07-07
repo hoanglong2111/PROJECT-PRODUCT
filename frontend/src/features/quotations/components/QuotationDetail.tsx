@@ -27,7 +27,7 @@ import { formatMoney, roundToMinorUnits } from '@shared/utils/money';
 
 import { summarizeByCurrency } from '../model/quotationCurrency';
 import { quotationDisplayTotalInCurrency } from '../model/quotationModel';
-import { selectOptionChargeLines } from '../model/quotationOptionDraft';
+import { computeOptionCustomerPays, selectOptionChargeLines } from '../model/quotationOptionDraft';
 import { QuotationChargeBreakdown, type QuotationChargeAdjustmentDraft } from './QuotationChargeBreakdown';
 import { QuotationOptionsTable } from './QuotationOptionsTable';
 import { QuotationResponsePanel } from './QuotationResponsePanel';
@@ -73,6 +73,12 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
   const activeOptionId = previewOptionId ?? selectedOptionId ?? options.find((option) => option.is_recommended)?.id ?? options[0]?.id ?? null;
   const activeOptionNo = options.find((option) => option.id === activeOptionId)?.option_no ?? null;
   const visibleChargeLines = selectOptionChargeLines(quotation.charge_lines ?? [], activeOptionNo);
+  const paymentCurrency = quotation.currency_code ?? 'VND';
+  const optionCustomerPays = options.reduce<Record<string, number>>((totals, option) => {
+    const value = computeOptionCustomerPays(quotation.charge_lines ?? [], option.option_no, paymentCurrency, rateToVnd);
+    if (value != null) totals[option.id] = value;
+    return totals;
+  }, {});
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: queryKeys.quotations });
@@ -175,10 +181,10 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
               </div>
             </Group>
             <div className="rfq-detail-total">
-              <Text size="xs" tt="uppercase" fw={800} c="dimmed">
+              <Text size="xs" tt="uppercase" fw={600} c="dimmed">
                 {t('quotations.total')}
               </Text>
-              <Text fw={900} size="xl" className="tabular-nums">
+              <Text fw={800} size="xl" className="tabular-nums">
                 {heroTotal}
               </Text>
               {currencySummary.byCurrency.length > 1 ? (
@@ -227,6 +233,8 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
               mode="read"
               options={options}
               selectedOptionId={activeOptionId}
+              optionTotals={optionCustomerPays}
+              optionTotalsCurrency={paymentCurrency}
               onSelect={(optionId) => {
                 setPreviewOptionId(optionId);
                 selectOptionMutation.mutate(optionId);
@@ -265,7 +273,7 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
             <Paper withBorder p={0} className="rfq-timeline-panel">
               <div className="rfq-panel-head">
                 <div>
-                  <Text fw={800}>{t('quotations.versionHistory')}</Text>
+                  <Text fw={700}>{t('quotations.versionHistory')}</Text>
                   <Text size="xs" c="dimmed">
                     {versions.length} {t('quotations.version')}
                   </Text>
@@ -309,7 +317,7 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
           <Paper withBorder p={0} className="rfq-timeline-panel">
             <div className="rfq-panel-head">
               <div>
-                <Text fw={800}>{t('quotations.lifecycle')}</Text>
+                <Text fw={700}>{t('quotations.lifecycle')}</Text>
                 <DateTimeText value={quotation.update_at} size="xs" c="dimmed" showZone />
               </div>
             </div>

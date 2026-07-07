@@ -121,3 +121,30 @@ export function selectOptionChargeLines(
 ): QuotationChargeLineV1[] {
   return lines.filter((line) => line.option_no == null || line.option_no === optionNo);
 }
+
+// Customer-pays total for a single option, computed from its charge lines in the
+// payment currency — mirrors the "Khách trả" total in QuotationChargeBreakdown so the
+// option card estimate always matches the charge detail (instead of a stale headline_amount).
+export function computeOptionCustomerPays(
+  lines: QuotationChargeLineV1[],
+  optionNo: number | null,
+  paymentCurrency: string,
+  rateToVnd: (code: string | null | undefined) => number | null,
+): number | null {
+  const breakdowns = selectOptionChargeLines(lines, optionNo).map((line) =>
+    computeQuotationLineVnd(
+      {
+        quantity: line.quantity,
+        unitPrice: line.unit_price,
+        currency: line.currency_code,
+        endpointCurrency: paymentCurrency,
+      },
+      rateToVnd,
+    ),
+  );
+  const totalVnd = summarizeQuotationVndLines(breakdowns).totalVnd;
+  const normalized = (paymentCurrency ?? 'VND').trim().toUpperCase();
+  const paymentRate = normalized === 'VND' ? 1 : rateToVnd(normalized);
+  if (!paymentRate) return null;
+  return totalVnd / paymentRate;
+}
