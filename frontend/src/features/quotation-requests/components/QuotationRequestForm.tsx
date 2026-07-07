@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react';
 import {
   createQuotationRequest,
   type CreateQuotationRequestLinePayload,
+  type QuotationRequestLineV1,
   type QuotationRequestV1,
 } from '@shared/api/quotationRequests';
 import { queryKeys } from '@shared/api/queryKeys';
@@ -35,6 +36,7 @@ import {
 type Props = {
   onCancel: () => void;
   onCreated: (request: QuotationRequestV1) => void;
+  source?: QuotationRequestV1;
 };
 
 const num = (value: unknown): number | null => {
@@ -43,24 +45,47 @@ const num = (value: unknown): number | null => {
   return Number.isFinite(next) ? next : null;
 };
 
-export function QuotationRequestForm({ onCancel, onCreated }: Props) {
+const textOrEmpty = (value: string | null | undefined) => value ?? '';
+
+const numOrDefault = (value: unknown, fallback = 0) => num(value) ?? fallback;
+
+function sourceLinesToDrafts(lines: QuotationRequestLineV1[] | undefined): OrderLineDraft[] {
+  if (!lines?.length) {
+    return [newOrderLine(0)];
+  }
+
+  return lines.map((line, index) => newOrderLine(index, {
+    item_id: line.item_id ?? '',
+    item_description: line.item_description ?? line.item?.item_name_en ?? line.item?.item_name ?? '',
+    qty: numOrDefault(line.qty, 1),
+    unit: line.unit ?? line.item?.base_uom ?? 'PCS',
+    unit_price: numOrDefault(line.unit_price),
+    gross_weight_kg: numOrDefault(line.gross_weight_kg),
+    length_cm: num(line.length_cm) ?? undefined,
+    width_cm: num(line.width_cm) ?? undefined,
+    height_cm: num(line.height_cm) ?? undefined,
+    note: line.note ?? '',
+  }));
+}
+
+export function QuotationRequestForm({ onCancel, onCreated, source }: Props) {
   const { t } = useI18n();
   const queryClient = useQueryClient();
   const masterData = useRfqMasterData();
 
-  const [customerRef, setCustomerRef] = useState('KBI');
-  const [customerPoRef, setCustomerPoRef] = useState('');
-  const [customerContractRef, setCustomerContractRef] = useState('');
-  const [supplierId, setSupplierId] = useState<string | null>(null);
-  const [incoterm, setIncoterm] = useState<string | null>('FOB');
-  const [mode, setMode] = useState<string | null>('SEA_FCL');
-  const [currency, setCurrency] = useState<string | null>('USD');
-  const [originPort, setOriginPort] = useState('');
-  const [destinationPort, setDestinationPort] = useState('Hai Phong (VNHPH)');
+  const [customerRef, setCustomerRef] = useState(() => textOrEmpty(source?.customer_ref) || 'KBI');
+  const [customerPoRef, setCustomerPoRef] = useState(() => textOrEmpty(source?.customer_po_ref));
+  const [customerContractRef, setCustomerContractRef] = useState(() => textOrEmpty(source?.customer_contract_ref));
+  const [supplierId, setSupplierId] = useState<string | null>(() => source?.supplier_id ?? null);
+  const [incoterm, setIncoterm] = useState<string | null>(() => source?.incoterm_code ?? 'FOB');
+  const [mode, setMode] = useState<string | null>(() => source?.mode ?? 'SEA_FCL');
+  const [currency, setCurrency] = useState<string | null>(() => source?.currency_code ?? 'USD');
+  const [originPort, setOriginPort] = useState(() => textOrEmpty(source?.origin_port));
+  const [destinationPort, setDestinationPort] = useState(() => textOrEmpty(source?.destination_port) || 'Hai Phong (VNHPH)');
   const [readyDate, setReadyDate] = useState<string | null>(null);
-  const [containerType, setContainerType] = useState('');
-  const [note, setNote] = useState('');
-  const [lines, setLines] = useState<OrderLineDraft[]>([newOrderLine(0)]);
+  const [containerType, setContainerType] = useState(() => textOrEmpty(source?.container_type));
+  const [note, setNote] = useState(() => textOrEmpty(source?.note));
+  const [lines, setLines] = useState<OrderLineDraft[]>(() => sourceLinesToDrafts(source?.lines));
   const [activeLineId, setActiveLineId] = useState<string | null>(null);
 
   const selectedSupplier = masterData.suppliers.find((supplier) => supplier.id === supplierId);
@@ -153,6 +178,11 @@ export function QuotationRequestForm({ onCancel, onCreated }: Props) {
             <Text c="dimmed" size="sm">
               {t('quotationRequests.formSubtitle')}
             </Text>
+            {source ? (
+              <Text c="dimmed" size="xs" mt={2}>
+                {t('quotationRequests.copiedFrom', { rfqNo: source.rfq_no })}
+              </Text>
+            ) : null}
           </div>
           <Group gap="xs">
             <Button type="button" variant="subtle" leftSection={<IconX size={16} />} onClick={onCancel}>

@@ -1,5 +1,5 @@
 import { Badge, Button, Group, Paper, SimpleGrid, Stack, Table, Text, Title } from '@mantine/core';
-import { IconBan, IconCheck, IconExternalLink, IconFileInvoice, IconSend } from '@tabler/icons-react';
+import { IconBan, IconCheck, IconCopy, IconExternalLink, IconFileInvoice, IconSend } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 
@@ -15,6 +15,7 @@ import { FieldPair } from '@shared/components/FieldPair';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
 import { useI18n } from '@shared/i18n';
 import { formatDate } from '@shared/utils/date';
+import { formatMoney } from '@shared/utils/money';
 
 import { rfqStatusColor, rfqTotalWeight } from '../model/quotationRequestModel';
 
@@ -24,7 +25,7 @@ type QuotationRequestDetailProps = {
 };
 
 export function QuotationRequestDetail({ onBack, requestId }: QuotationRequestDetailProps) {
-  const { t } = useI18n();
+  const { statusLabel, t } = useI18n();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -88,11 +89,21 @@ export function QuotationRequestDetail({ onBack, requestId }: QuotationRequestDe
                     {t(`quotationRequests.status.${request.status}` as never)}
                   </Badge>
                 </Group>
+                <Text c="dimmed" size="xs" mt={3}>
+                  {t(`quotationRequests.statusHint.${request.status}` as never)}
+                </Text>
                 <Text c="dimmed" size="sm">{request.customer_po_ref ?? request.customer_ref ?? '-'}</Text>
               </div>
             </Group>
             <Group gap="xs">
               <Button variant="light" onClick={onBack}>{t('common.backToList')}</Button>
+              <Button
+                variant="light"
+                leftSection={<IconCopy size={16} />}
+                onClick={() => navigate(`/quotation-requests?create=1&copyFrom=${request.id}`)}
+              >
+                {t('quotationRequests.copy')}
+              </Button>
               <Button
                 leftSection={<IconCheck size={16} />}
                 disabled={!canReceive}
@@ -200,12 +211,17 @@ export function QuotationRequestDetail({ onBack, requestId }: QuotationRequestDe
             <Text size="xs" c="dimmed">{t('quotationRequests.noLinkedQuotations')}</Text>
           </div>
         </div>
-        <Table.ScrollContainer minWidth={720}>
+        <Table.ScrollContainer minWidth={1180}>
           <Table highlightOnHover>
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>{t('quotations.quoteNumber')}</Table.Th>
+                <Table.Th>{t('quotationRequests.response.createdDate')}</Table.Th>
                 <Table.Th>{t('common.status')}</Table.Th>
+                <Table.Th>{t('quotationRequests.response.grandTotal')}</Table.Th>
+                <Table.Th>{t('quotationRequests.response.modeIncoterm')}</Table.Th>
+                <Table.Th>{t('quotationRequests.response.recommendedOption')}</Table.Th>
+                <Table.Th ta="right">{t('quotationRequests.response.optionCount')}</Table.Th>
                 <Table.Th>{t('quotations.validUntil')}</Table.Th>
                 <Table.Th />
               </Table.Tr>
@@ -213,28 +229,57 @@ export function QuotationRequestDetail({ onBack, requestId }: QuotationRequestDe
             <Table.Tbody>
               {(request.quotations ?? []).length === 0 ? (
                 <Table.Tr>
-                  <Table.Td colSpan={4}>
+                  <Table.Td colSpan={9}>
                     <Text c="dimmed" size="sm">{t('quotationRequests.noLinkedQuotations')}</Text>
                   </Table.Td>
                 </Table.Tr>
               ) : (
-                request.quotations?.map((quotation) => (
-                  <Table.Tr key={quotation.id}>
-                    <Table.Td>{quotation.quotation_no}</Table.Td>
-                    <Table.Td>{quotation.status}</Table.Td>
-                    <Table.Td>{formatDate(quotation.valid_until)}</Table.Td>
-                    <Table.Td ta="right">
-                      <Button
-                        size="xs"
-                        variant="light"
-                        rightSection={<IconExternalLink size={14} />}
-                        onClick={() => navigate(`/quotations?view=${quotation.id}`)}
-                      >
-                        {t('common.view')}
-                      </Button>
-                    </Table.Td>
-                  </Table.Tr>
-                ))
+                request.quotations?.map((quotation) => {
+                  const recommendedOption = quotation.options?.find((option) => option.is_recommended)
+                    ?? quotation.options?.find((option) => option.is_selected)
+                    ?? null;
+
+                  return (
+                    <Table.Tr key={quotation.id}>
+                      <Table.Td>
+                        <Text fw={700} size="sm">{quotation.quotation_no}</Text>
+                      </Table.Td>
+                      <Table.Td>{formatDate(quotation.create_at)}</Table.Td>
+                      <Table.Td>{statusLabel(quotation.status)}</Table.Td>
+                      <Table.Td className="tabular-nums">
+                        {formatMoney(quotation.grand_total_amount, quotation.currency_code)}
+                      </Table.Td>
+                      <Table.Td>
+                        <Text size="sm">{quotation.mode ?? '-'}</Text>
+                        <Text size="xs" c="dimmed">{quotation.incoterm_code ?? '-'}</Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text size="sm" fw={600}>
+                          {recommendedOption?.carrier_name ?? recommendedOption?.carrier_code ?? '-'}
+                        </Text>
+                        <Text size="xs" c="dimmed">
+                          {recommendedOption
+                            ? `${recommendedOption.transit_time_days ?? '-'}d / ETD ${formatDate(recommendedOption.etd)} / ETA ${formatDate(recommendedOption.eta)}`
+                            : '-'}
+                        </Text>
+                      </Table.Td>
+                      <Table.Td ta="right" className="tabular-nums">
+                        {quotation.options?.length ?? 0}
+                      </Table.Td>
+                      <Table.Td>{formatDate(quotation.valid_until)}</Table.Td>
+                      <Table.Td ta="right">
+                        <Button
+                          size="xs"
+                          variant="light"
+                          rightSection={<IconExternalLink size={14} />}
+                          onClick={() => navigate(`/quotations?view=${quotation.id}`)}
+                        >
+                          {t('common.view')}
+                        </Button>
+                      </Table.Td>
+                    </Table.Tr>
+                  );
+                })
               )}
             </Table.Tbody>
           </Table>

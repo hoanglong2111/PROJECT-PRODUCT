@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
-import { fetchQuotationRequests, type QuotationRequestV1 } from '@shared/api/quotationRequests';
+import { fetchQuotationRequest, fetchQuotationRequests, type QuotationRequestV1 } from '@shared/api/quotationRequests';
 import { queryKeys } from '@shared/api/queryKeys';
 import { PageHeader } from '@shared/components/PageHeader';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
@@ -19,6 +19,7 @@ import type { QuotationRequestTab } from './model/quotationRequestModel';
 const EMPTY_REQUESTS: QuotationRequestV1[] = [];
 const CREATE_PARAM = 'create';
 const VIEW_PARAM = 'view';
+const COPY_FROM_PARAM = 'copyFrom';
 
 export function QuotationRequests() {
   const { t } = useI18n();
@@ -26,12 +27,18 @@ export function QuotationRequests() {
   const [activeTab, setActiveTab] = useState<QuotationRequestTab>('all');
   const createRequested = searchParams.get(CREATE_PARAM) === '1';
   const focusedRequest = searchParams.get(VIEW_PARAM);
+  const copyFromRequestId = searchParams.get(COPY_FROM_PARAM);
 
   const requestsQuery = useQuery({
     queryKey: queryKeys.quotationRequestsList({ page: 1, limit: 100 }),
     queryFn: () => fetchQuotationRequests({ page: 1, limit: 100 }),
   });
   const requests = requestsQuery.data?.data ?? EMPTY_REQUESTS;
+  const copySourceQuery = useQuery({
+    queryKey: copyFromRequestId ? queryKeys.quotationRequestDetail(copyFromRequestId) : ['quotation-request-copy-source', 'empty'],
+    queryFn: () => fetchQuotationRequest(copyFromRequestId as string),
+    enabled: createRequested && Boolean(copyFromRequestId),
+  });
 
   const closeWorkbench = () => {
     setSearchParams({}, { replace: true });
@@ -82,12 +89,26 @@ export function QuotationRequests() {
       )}
 
       {createRequested ? (
-        <QuotationRequestForm
-          onCancel={closeWorkbench}
-          onCreated={(request) => {
-            openRequest(request.id, { replace: true });
-          }}
-        />
+        copyFromRequestId && copySourceQuery.isLoading ? (
+          <PageLoading title={t('quotationRequests.formTitle')} description={t('quotationRequests.loadingDescription')} />
+        ) : copyFromRequestId && copySourceQuery.isError ? (
+          <PageError
+            title={t('quotationRequests.errorTitle')}
+            description={t('quotationRequests.errorDescription')}
+            error={copySourceQuery.error}
+            onRetry={() => {
+              void copySourceQuery.refetch();
+            }}
+          />
+        ) : (
+          <QuotationRequestForm
+            source={copySourceQuery.data}
+            onCancel={closeWorkbench}
+            onCreated={(request) => {
+              openRequest(request.id, { replace: true });
+            }}
+          />
+        )
       ) : focusedRequest ? (
         <QuotationRequestDetail requestId={focusedRequest} onBack={closeWorkbench} />
       ) : (
