@@ -17,6 +17,7 @@ import { useState } from 'react';
 
 import type { QuotationChargeGroup } from '@shared/api/quotations';
 import type { Uom } from '@shared/api/uoms';
+import { DateField } from '@shared/components/DateField';
 import { useI18n } from '@shared/i18n';
 import { QUOTATION_CHARGE_GROUPS } from '@shared/lib/quotationChargeGroups';
 import { formatMoney } from '@shared/utils/money';
@@ -133,17 +134,15 @@ export function QuotationOptionEditor({
             value={option.voyage_flight_no ?? ''}
             onChange={(event) => onUpdateOption(option.id, { voyage_flight_no: event.currentTarget.value || null })}
           />
-          <TextInput
-            type="date"
+          <DateField
             label={t('quotations.etd')}
-            value={option.etd ?? ''}
-            onChange={(event) => onUpdateOption(option.id, { etd: event.currentTarget.value || null })}
+            value={option.etd}
+            onChange={(value) => onUpdateOption(option.id, { etd: value })}
           />
-          <TextInput
-            type="date"
+          <DateField
             label={t('quotations.eta')}
-            value={option.eta ?? ''}
-            onChange={(event) => onUpdateOption(option.id, { eta: event.currentTarget.value || null })}
+            value={option.eta}
+            onChange={(value) => onUpdateOption(option.id, { eta: value })}
           />
           <NumberInput
             label={t('quotations.transitDays')}
