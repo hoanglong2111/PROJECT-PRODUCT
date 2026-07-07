@@ -19,7 +19,7 @@ import {
   IconWallet,
 } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
 import { fetchChargeCodes, type ChargeCode } from '@shared/api/chargeCodes';
@@ -128,7 +128,9 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
       groupLines: seedDraftGroupsForOption(sourceQuotation, option.option_no),
     })),
   );
+  const [collapsedOptionIds, setCollapsedOptionIds] = useState<Set<string>>(new Set());
   const [paymentCurrency, setPaymentCurrency] = useState<string>('VND');
+  const optionRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const chargeCodesQuery = useQuery({
     queryKey: queryKeys.chargeCodes({ page: 1, limit: 200, is_active: true }),
@@ -212,6 +214,35 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
     );
   }
 
+  function toggleOptionCollapsed(id: string) {
+    setCollapsedOptionIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function scrollOptionIntoView(id: string) {
+    window.setTimeout(() => {
+      window.requestAnimationFrame(() => {
+        const target = optionRefs.current[id];
+        if (!target) return;
+
+        const rect = target.getBoundingClientRect();
+        const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+        const viewportPadding = 24;
+        const isOutOfView = rect.top < viewportPadding || rect.bottom > viewportHeight - viewportPadding;
+        if (isOutOfView) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      });
+    }, 180);
+  }
+
   const previewOption = draftOptions.find((option) => option.is_recommended) ?? draftOptions[0] ?? null;
   const allLines = useMemo(() => {
     if (!previewOption) return [];
@@ -261,10 +292,12 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
   const canSubmit = draftOptions.length > 0 && filledLineCount > 0 && !hasPricedLineMissingCurrency;
 
   function addDraftOption() {
+    const nextId = `draft-option-${Date.now()}`;
+    setCollapsedOptionIds(new Set(draftOptions.map((option) => option.id)));
     setDraftOptions((current) => [
       ...current,
       {
-        id: `draft-option-${Date.now()}`,
+        id: nextId,
         option_no: current.length + 1,
         carrier_code: null,
         carrier_name: null,
@@ -281,9 +314,15 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
         groupLines: emptyDraftGroups(),
       },
     ]);
+    scrollOptionIntoView(nextId);
   }
 
   function removeDraftOption(optionId: string) {
+    setCollapsedOptionIds((current) => {
+      const next = new Set(current);
+      next.delete(optionId);
+      return next;
+    });
     setDraftOptions((current) =>
       current.filter((item) => item.id !== optionId).map((item, index) => ({ ...item, option_no: index + 1 })),
     );
@@ -443,23 +482,31 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
                   </div>
                 ) : null}
                 {draftOptions.map((option) => (
-                  <QuotationOptionEditor
+                  <div
                     key={option.id}
-                    option={option}
-                    carriers={carriers}
-                    carrierOptions={carrierOptions}
-                    transportModeOptions={transportModeOptions}
-                    chargeCodeOptions={chargeCodeOptions}
-                    currencyOptions={currencyOptions}
-                    uoms={uoms}
-                    buildCtx={buildCtx}
-                    rateToVndOrNull={rateToVndOrNull}
-                    onUpdateOption={updateOption}
-                    onAddLine={addOptionLine}
-                    onUpdateLine={updateOptionLine}
-                    onRemoveLine={removeOptionLine}
-                    onRemoveOption={removeDraftOption}
-                  />
+                    ref={(node) => {
+                      optionRefs.current[option.id] = node;
+                    }}
+                  >
+                    <QuotationOptionEditor
+                      option={option}
+                      carriers={carriers}
+                      carrierOptions={carrierOptions}
+                      transportModeOptions={transportModeOptions}
+                      chargeCodeOptions={chargeCodeOptions}
+                      currencyOptions={currencyOptions}
+                      uoms={uoms}
+                      buildCtx={buildCtx}
+                      rateToVndOrNull={rateToVndOrNull}
+                      collapsed={collapsedOptionIds.has(option.id)}
+                      onToggleCollapsed={toggleOptionCollapsed}
+                      onUpdateOption={updateOption}
+                      onAddLine={addOptionLine}
+                      onUpdateLine={updateOptionLine}
+                      onRemoveLine={removeOptionLine}
+                      onRemoveOption={removeDraftOption}
+                    />
+                  </div>
                 ))}
               </Stack>
             </section>
@@ -489,7 +536,7 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
                 />
               </div>
               {filledLineCount > 0 ? (
-                <Stack gap={6} mt={8}>
+                <Stack gap={4} mt={8}>
                   <Stack gap={4} className="rfq-original-items">
                     {totalsByOriginalCurrency.map((bucket) => (
                       <div key={bucket.currency} className="rfq-original-item">
@@ -507,7 +554,7 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
                     <Text size="sm" c="dimmed" className="rfq-customer-pays-label">
                       {t('quotations.customerPays')}
                     </Text>
-                    <Text fw={800} size="xl" className="tabular-nums rfq-customer-pays-value">
+                    <Text fw={800} size="lg" className="tabular-nums rfq-customer-pays-value">
                       {customerPaysTotal != null ? formatMoney(customerPaysTotal, paymentCurrency) : '-'}
                     </Text>
                   </div>
@@ -521,7 +568,7 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
                   ) : null}
                 </Stack>
               ) : (
-                <Text fw={800} size="xl" className="tabular-nums rfq-customer-pays-value" mt={8}>
+                <Text fw={800} size="lg" className="tabular-nums rfq-customer-pays-value" mt={8}>
                   -
                 </Text>
               )}

@@ -227,18 +227,30 @@ export function Quotations() {
 
   return (
     <Stack gap="lg" className="quotations-workbench">
-      <Modal opened={pickerOpen} onClose={() => setPickerOpen(false)} title={t('quotations.pickRfqTitle')}>
-        <Select
-          data={rfqOptions}
-          value={pickedRfq}
-          onChange={setPickedRfq}
-          searchable
-          placeholder={t('quotations.pickRfqPlaceholder')}
-          nothingFoundMessage={t('quotationRequests.emptyTitle')}
-        />
-        <Button mt="md" fullWidth disabled={!pickedRfq} onClick={openCreateFromPickedRfq}>
-          {t('quotations.createFromRfq')}
-        </Button>
+      <Modal
+        opened={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        title={t('quotations.pickRfqTitle')}
+        classNames={{
+          body: 'rfq-picker-modal-body',
+          content: 'rfq-picker-modal-content',
+          header: 'rfq-picker-modal-header',
+        }}
+      >
+        <Stack gap="sm" className="rfq-picker-form">
+          <Select
+            className="rfq-picker-select"
+            data={rfqOptions}
+            value={pickedRfq}
+            onChange={setPickedRfq}
+            searchable
+            placeholder={t('quotations.pickRfqPlaceholder')}
+            nothingFoundMessage={t('quotationRequests.emptyTitle')}
+          />
+          <Button fullWidth disabled={!pickedRfq} onClick={openCreateFromPickedRfq}>
+            {t('quotations.createFromRfq')}
+          </Button>
+        </Stack>
       </Modal>
 
       {showList ? (
