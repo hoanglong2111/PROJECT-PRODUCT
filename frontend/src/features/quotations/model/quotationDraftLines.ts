@@ -58,6 +58,34 @@ export function seedDraftGroupsFromQuotation(quotation: QuotationV1 | undefined)
   return groups;
 }
 
+function toDraftGroupLine(line: NonNullable<QuotationV1['charge_lines']>[number]): QuotationDraftGroupLine {
+  return {
+    uid: createDraftLineUid(),
+    chargeCode: line.charge_code ?? null,
+    quantity: String(line.quantity ?? 1),
+    unit: line.unit ?? null,
+    unitPrice: line.unit_price == null ? '' : String(line.unit_price),
+    currency: line.currency_code ?? null,
+    endpointCurrency: 'VND',
+  };
+}
+
+export function seedDraftGroupsForOption(
+  quotation: QuotationV1 | undefined,
+  optionNo: number,
+): QuotationDraftGroupLines {
+  const groups = emptyDraftGroups();
+
+  for (const line of quotation?.charge_lines ?? []) {
+    const lineOptionNo = line.option_no ?? null;
+    if (lineOptionNo !== optionNo && lineOptionNo !== null) continue;
+    const group = line.charge_group ?? 'FREIGHT';
+    groups[group].push(toDraftGroupLine(line));
+  }
+
+  return groups;
+}
+
 export function addDraftChargeLine(
   groups: QuotationDraftGroupLines,
   group: QuotationChargeGroup,

@@ -8,7 +8,7 @@ export type QuotationTab = 'all' | 'draft' | 'pending' | 'confirmed' | 'rejected
 /** Map each non-"all" tab to the quotation statuses it contains. */
 export const quotationStatusTabs: Record<Exclude<QuotationTab, 'all'>, QuotationStatusV1[]> = {
   draft: ['DRAFT'],
-  pending: ['PENDING_APPROVAL'],
+  pending: ['PENDING_APPROVAL', 'PENDING_ADJUSTMENT'],
   confirmed: ['CONFIRMED'],
   rejected: ['REJECTED'],
 };

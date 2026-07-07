@@ -49,6 +49,7 @@ export function QuotationOptionsTable({
         <Table.Thead>
           <Table.Tr>
             <Table.Th>{t('quotations.carrier')}</Table.Th>
+            <Table.Th>{t('quotations.mode')}</Table.Th>
             <Table.Th>{t('quotations.vesselOrFlight')}</Table.Th>
             <Table.Th>{t('quotations.etd')}</Table.Th>
             <Table.Th>{t('quotations.eta')}</Table.Th>
@@ -61,7 +62,7 @@ export function QuotationOptionsTable({
         <Table.Tbody>
           {options.length === 0 ? (
             <Table.Tr>
-              <Table.Td colSpan={8}>
+              <Table.Td colSpan={9}>
                 <Text c="dimmed" size="sm">{t('quotations.minimumOptionsWarning')}</Text>
               </Table.Td>
             </Table.Tr>
@@ -78,6 +79,10 @@ export function QuotationOptionsTable({
                       ) : null}
                     </Group>
                     {option.carrier_code ? <Text size="xs" c="dimmed">{option.carrier_code}</Text> : null}
+                  </Table.Td>
+                  <Table.Td>
+                    <Text size="sm">{option.mode ?? '-'}</Text>
+                    <Text size="xs" c="dimmed">#{option.option_no}</Text>
                   </Table.Td>
                   <Table.Td>
                     <Text size="sm">{option.vessel_or_flight ?? '-'}</Text>

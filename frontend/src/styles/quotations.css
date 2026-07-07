@@ -305,6 +305,51 @@
   margin-bottom: 0.75rem;
 }
 
+.rfq-option-editor {
+  position: relative;
+  min-width: 0;
+  padding: 0.875rem;
+  border: 1px solid var(--kbfe-border-primary);
+  border-radius: var(--kbfe-radius-md);
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 94%, var(--kbfe-surface-subtle) 6%);
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.rfq-option-editor::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  border-radius: var(--kbfe-radius-md) 0 0 var(--kbfe-radius-md);
+  background: transparent;
+  content: "";
+}
+
+.rfq-option-editor:hover {
+  border-color: color-mix(in srgb, var(--kbfe-primary-color) 20%, var(--kbfe-border-primary));
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 97%, var(--kbfe-primary-color) 3%);
+}
+
+.rfq-option-editor[data-selected='true'] {
+  border-color: color-mix(in srgb, var(--kbfe-primary-color) 28%, var(--kbfe-border-primary));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--kbfe-primary-color) 7%, transparent);
+}
+
+.rfq-option-editor[data-selected='true']::before {
+  background: color-mix(in srgb, var(--kbfe-primary-color) 78%, var(--kbfe-text-primary));
+}
+
+.rfq-option-editor-head {
+  min-width: 0;
+  margin-bottom: 0.875rem;
+}
+
+.rfq-option-charge-group {
+  background: color-mix(in srgb, var(--kbfe-surface-subtle) 54%, var(--kbfe-surface-elevated) 46%);
+}
+
 .rfq-charge-grid {
   min-width: 0;
   overflow-x: auto;
@@ -923,6 +968,93 @@
   min-height: 2.5rem;
 }
 
+.rfq-response-choices {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.rfq-adjust-actions {
+  border-top: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 80%, transparent);
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 96%, var(--kbfe-surface-subtle) 4%);
+}
+
+.rfq-charge-table--adjustable {
+  min-width: 74rem;
+}
+
+.rfq-breakdown-group {
+  min-width: 0;
+}
+
+.rfq-breakdown-group-head {
+  padding: 0.625rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 76%, transparent);
+  border-bottom: 0;
+  border-radius: var(--kbfe-radius-md) var(--kbfe-radius-md) 0 0;
+  background: color-mix(in srgb, var(--kbfe-surface-subtle) 68%, var(--kbfe-surface-elevated) 32%);
+}
+
+.rfq-adjust-check-column {
+  width: 2.5rem;
+  min-width: 2.5rem;
+  text-align: center;
+}
+
+.rfq-charge-table tr[data-adjusted='true'] td {
+  background: color-mix(in srgb, var(--kbfe-primary-color) 5%, var(--kbfe-surface-elevated));
+}
+
+.rfq-adjust-price-input {
+  min-width: 8.5rem;
+}
+
+.rfq-adjust-note-input {
+  min-width: 12rem;
+}
+
+.rfq-price-history-row td {
+  background: color-mix(in srgb, var(--kbfe-surface-subtle) 72%, var(--kbfe-surface-elevated) 28%);
+}
+
+.rfq-price-history-ladder {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  align-items: stretch;
+  padding: 0.625rem 0.25rem;
+}
+
+.rfq-price-history-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(8rem, 1fr);
+  gap: 0.5rem;
+  align-items: start;
+  min-width: 10rem;
+}
+
+.rfq-price-history-dot {
+  width: 0.625rem;
+  height: 0.625rem;
+  margin-top: 0.25rem;
+  border: 2px solid color-mix(in srgb, var(--kbfe-primary-color) 72%, var(--kbfe-text-primary));
+  border-radius: 999px;
+  background: var(--kbfe-surface-elevated);
+}
+
+.rfq-price-history-connector {
+  position: absolute;
+  top: 0.55rem;
+  left: calc(100% + 0.15rem);
+  width: 0.7rem;
+  border-top: 1px dashed color-mix(in srgb, var(--kbfe-border-primary) 88%, var(--kbfe-text-secondary));
+}
+
+.rfq-customer-pays-summary {
+  padding-top: 0.25rem;
+  border-top: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 76%, transparent);
+}
+
 .rfq-lifecycle-steps {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -946,7 +1078,11 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+}
+
+.rfq-lifecycle-copy {
+  min-width: 0;
 }
 
 .rfq-lifecycle-dot {

@@ -1,12 +1,8 @@
 import {
-  ActionIcon,
   Alert,
   Anchor,
-  Badge,
   Button,
-  Collapse,
   Group,
-  NumberInput,
   Paper,
   Select,
   SimpleGrid,
@@ -14,11 +10,9 @@ import {
   Text,
   TextInput,
   Title,
-  Tooltip,
 } from '@mantine/core';
 import {
   IconAlertTriangle,
-  IconChevronDown,
   IconFileInvoice,
   IconPlus,
   IconReceipt2,
@@ -26,17 +20,14 @@ import {
   IconWallet,
 } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
 import { fetchChargeCodes, type ChargeCode } from '@shared/api/chargeCodes';
 import {
   createQuotationOption,
   createQuotationVersion,
-  type CreateQuotationOptionPayload,
   type QuotationChargeGroup,
-  type QuotationChargeLinePayload,
-  type QuotationOptionV1,
   type QuotationV1,
 } from '@shared/api/quotations';
 import { createQuotationFromRequest, type QuotationRequestV1 } from '@shared/api/quotationRequests';
@@ -47,7 +38,6 @@ import { useTradeMasterDataOptions } from '@shared/hooks/useTradeMasterDataOptio
 import { useI18n } from '@shared/i18n';
 import { QUOTATION_CHARGE_GROUPS } from '@shared/lib/quotationChargeGroups';
 import {
-  chargeCodeToChargeType,
   computeQuotationLineVnd,
   QUOTATION_VAT_RATE,
   summarizeQuotationVndLines,
@@ -57,14 +47,20 @@ import { formatMoney } from '@shared/utils/money';
 import {
   addDraftChargeLine,
   removeDraftChargeLineAt,
-  seedDraftGroupsFromQuotation,
+  emptyDraftGroups,
+  seedDraftGroupsForOption,
   updateDraftChargeLineAt,
   type QuotationDraftChargeLineState,
-  type QuotationDraftGroupLines,
 } from '../model/quotationDraftLines';
+import {
+  buildQuotationChargeLinePayloads,
+  computeOptionHeadlineVnd,
+  type DraftBuildContext,
+  type DraftQuotationOption,
+} from '../model/quotationOptionDraft';
 import { toShippingMode } from '../model/quotationModel';
-import { type FeeRow, QuotationFeeTable } from './QuotationFeeTable';
-import { hasMinimumOptions, QuotationOptionsTable } from './QuotationOptionsTable';
+import { QuotationOptionEditor } from './QuotationOptionEditor';
+import { hasMinimumOptions } from './QuotationOptionsTable';
 
 type QuotationFormProps = {
   onCancel: () => void;
@@ -73,20 +69,7 @@ type QuotationFormProps = {
   rfq?: QuotationRequestV1;
 };
 
-type GroupLines = QuotationDraftGroupLines;
-type DraftQuotationOption = CreateQuotationOptionPayload & {
-  id: string;
-  option_no: number;
-  is_selected: boolean;
-};
-
 const EMPTY_CHARGE_CODES: ChargeCode[] = [];
-
-function numberOrNull(value: number | string | null | undefined): number | null {
-  if (value === '' || value == null) return null;
-  const numeric = Number(value);
-  return Number.isFinite(numeric) ? numeric : null;
-}
 
 function ReadOnlyContext({ label, value }: { label: string; value: ReactNode }) {
   return (
@@ -104,7 +87,7 @@ function ReadOnlyContext({ label, value }: { label: string; value: ReactNode }) 
 export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: QuotationFormProps) {
   const { language, t } = useI18n();
   const queryClient = useQueryClient();
-  const { currencyOptions } = useTradeMasterDataOptions();
+  const { carrierOptions, carriers, currencyOptions, transportModeOptions } = useTradeMasterDataOptions();
   const { rateToVndOrNull } = useExchangeRates();
   const isRevise = Boolean(sourceQuotation);
 
@@ -125,12 +108,6 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
   const shippingMode = toShippingMode(header.mode);
 
   const [validUntil, setValidUntil] = useState(sourceQuotation?.valid_until?.slice(0, 10) ?? '');
-  const [groups, setGroups] = useState<GroupLines>(() => seedDraftGroupsFromQuotation(sourceQuotation));
-  const [expanded, setExpanded] = useState<Record<QuotationChargeGroup, boolean>>({
-    FREIGHT: true,
-    ORIGIN: false,
-    DESTINATION: false,
-  });
 
   const [draftOptions, setDraftOptions] = useState<DraftQuotationOption[]>(
     (sourceQuotation?.options ?? []).map((option) => ({
@@ -138,6 +115,7 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
       option_no: option.option_no,
       carrier_code: option.carrier_code,
       carrier_name: option.carrier_name,
+      mode: option.mode ?? sourceQuotation?.mode ?? null,
       vessel_or_flight: option.vessel_or_flight,
       voyage_flight_no: option.voyage_flight_no,
       etd: option.etd,
@@ -147,15 +125,9 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
       headline_amount: Number(option.headline_amount ?? 0),
       is_recommended: option.is_recommended,
       is_selected: option.is_selected,
+      groupLines: seedDraftGroupsForOption(sourceQuotation, option.option_no),
     })),
   );
-  const [optionCarrier, setOptionCarrier] = useState('');
-  const [optionVessel, setOptionVessel] = useState('');
-  const [optionEtd, setOptionEtd] = useState('');
-  const [optionEta, setOptionEta] = useState('');
-  const [optionTransitDays, setOptionTransitDays] = useState<number | string>('');
-  const [optionRisk, setOptionRisk] = useState('');
-  const [optionAmount, setOptionAmount] = useState<number | string>('');
   const [paymentCurrency, setPaymentCurrency] = useState<string>('VND');
 
   const chargeCodesQuery = useQuery({
@@ -178,33 +150,79 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
     }));
   }, [chargeCodes]);
 
-  function findChargeCode(code: string | null | undefined) {
+  const findChargeCode = useCallback((code: string | null | undefined) => {
     return chargeCodes.find((chargeCode) => chargeCode.charge_code === code) ?? null;
+  }, [chargeCodes]);
+
+  const buildCtx = useMemo<DraftBuildContext>(
+    () => ({
+      shippingMode,
+      language,
+      findChargeCode,
+      rateToVndOrNull,
+    }),
+    [shippingMode, language, findChargeCode, rateToVndOrNull],
+  );
+
+  function updateOption(id: string, patch: Partial<DraftQuotationOption>) {
+    setDraftOptions((current) => current.map((option) => (option.id === id ? { ...option, ...patch } : option)));
   }
 
-  function addLine(group: QuotationChargeGroup) {
-    setGroups((current) => addDraftChargeLine(current, group));
-  }
-
-  function updateLine(group: QuotationChargeGroup, rowIndex: number, patch: Partial<QuotationDraftChargeLineState>) {
-    setGroups((current) =>
-      updateDraftChargeLineAt(
-        current,
-        group,
-        rowIndex,
-        patch,
-        (chargeCode) => findChargeCode(chargeCode)?.default_uom,
-      ),
+  function addOptionLine(id: string, group: QuotationChargeGroup) {
+    setDraftOptions((current) =>
+      current.map((option) => (
+        option.id === id
+          ? { ...option, groupLines: addDraftChargeLine(option.groupLines, group) }
+          : option
+      )),
     );
   }
 
-  function removeLine(group: QuotationChargeGroup, rowIndex: number) {
-    setGroups((current) => removeDraftChargeLineAt(current, group, rowIndex));
+  function updateOptionLine(
+    id: string,
+    group: QuotationChargeGroup,
+    rowIndex: number,
+    patch: Partial<QuotationDraftChargeLineState>,
+  ) {
+    setDraftOptions((current) =>
+      current.map((option) => (
+        option.id === id
+          ? {
+            ...option,
+            groupLines: updateDraftChargeLineAt(
+              option.groupLines,
+              group,
+              rowIndex,
+              patch,
+              (chargeCode) => findChargeCode(chargeCode)?.default_uom,
+            ),
+          }
+          : option
+      )),
+    );
   }
 
-  const allLines = useMemo(
-    () => QUOTATION_CHARGE_GROUPS.flatMap((group) => groups[group.value].map((line) => ({ group: group.value, line }))),
-    [groups],
+  function removeOptionLine(id: string, group: QuotationChargeGroup, rowIndex: number) {
+    setDraftOptions((current) =>
+      current.map((option) => (
+        option.id === id
+          ? { ...option, groupLines: removeDraftChargeLineAt(option.groupLines, group, rowIndex) }
+          : option
+      )),
+    );
+  }
+
+  const previewOption = draftOptions.find((option) => option.is_recommended) ?? draftOptions[0] ?? null;
+  const allLines = useMemo(() => {
+    if (!previewOption) return [];
+    return QUOTATION_CHARGE_GROUPS.flatMap((group) => (
+      previewOption.groupLines[group.value].map((line) => ({ group: group.value, line }))
+    ));
+  }, [previewOption]);
+
+  const validationLines = useMemo(
+    () => draftOptions.flatMap((option) => QUOTATION_CHARGE_GROUPS.flatMap((group) => option.groupLines[group.value])),
+    [draftOptions],
   );
 
   const quotationVndLines = useMemo(() => {
@@ -221,9 +239,7 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
         rateToVndOrNull,
       );
     });
-    // chargeCodes affects findChargeCode and is intentionally tracked.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allLines, chargeCodes, rateToVndOrNull]);
+  }, [allLines, findChargeCode, rateToVndOrNull]);
   const quotationVndTotals = useMemo(() => summarizeQuotationVndLines(quotationVndLines), [quotationVndLines]);
   const referenceCurrency = allLines.find(({ line }) => line.currency && line.currency !== 'VND')?.line.currency ?? null;
   const referenceRate = referenceCurrency ? rateToVndOrNull(referenceCurrency) : null;
@@ -243,35 +259,10 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
       return { key: line.uid, name, amount, currency: line.currency as string };
     });
 
-  const pricedLineCount = allLines.filter(({ line }) => line.chargeCode && Number(line.unitPrice) > 0).length;
-  const filledLineCount = allLines.filter(({ line }) => line.chargeCode && Number(line.unitPrice) > 0 && line.currency).length;
+  const pricedLineCount = validationLines.filter((line) => line.chargeCode && Number(line.unitPrice) > 0).length;
+  const filledLineCount = validationLines.filter((line) => line.chargeCode && Number(line.unitPrice) > 0 && line.currency).length;
   const hasPricedLineMissingCurrency = pricedLineCount > filledLineCount;
-  const canSubmit = filledLineCount > 0 && !hasPricedLineMissingCurrency;
-
-  function buildChargeLines(): QuotationChargeLinePayload[] {
-    return allLines
-      .filter(({ line }) => line.chargeCode && Number(line.unitPrice) > 0 && line.currency)
-      .map(({ group, line }, index) => {
-        const chargeCode = findChargeCode(line.chargeCode);
-        return {
-          line_no: index + 1,
-          charge_type: chargeCode ? chargeCodeToChargeType(chargeCode, shippingMode) : 'OTHER',
-          charge_code: line.chargeCode,
-          charge_group: group,
-          currency_code: line.currency,
-          description: chargeCode
-            ? language === 'vi' && chargeCode.charge_name_vn
-              ? chargeCode.charge_name_vn
-              : chargeCode.charge_name_en
-            : line.chargeCode ?? '',
-          quantity: Number(line.quantity) || 1,
-          unit: line.unit ?? chargeCode?.default_uom ?? 'SET',
-          unit_price: Number(line.unitPrice),
-          tax_rate: chargeCode?.taxable ? QUOTATION_VAT_RATE : 0,
-          note: chargeCode ? `Rev/Cost: ${chargeCode.rev_cost}` : null,
-        };
-      });
-  }
+  const canSubmit = draftOptions.length > 0 && filledLineCount > 0 && !hasPricedLineMissingCurrency;
 
   function addDraftOption() {
     setDraftOptions((current) => [
@@ -279,56 +270,32 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
       {
         id: `draft-option-${Date.now()}`,
         option_no: current.length + 1,
-        carrier_code: optionCarrier.trim() || null,
-        carrier_name: optionCarrier.trim() || null,
-        vessel_or_flight: optionVessel.trim() || null,
+        carrier_code: null,
+        carrier_name: null,
+        mode: header.mode,
+        vessel_or_flight: null,
         voyage_flight_no: null,
-        etd: optionEtd || null,
-        eta: optionEta || null,
-        transit_time_days: numberOrNull(optionTransitDays),
-        risk_warning: optionRisk.trim() || null,
-        headline_amount: numberOrNull(optionAmount),
+        etd: null,
+        eta: null,
+        transit_time_days: null,
+        risk_warning: null,
+        headline_amount: null,
         is_recommended: current.length === 0,
         is_selected: false,
+        groupLines: emptyDraftGroups(),
       },
     ]);
-    setOptionCarrier('');
-    setOptionVessel('');
-    setOptionEtd('');
-    setOptionEta('');
-    setOptionTransitDays('');
-    setOptionRisk('');
-    setOptionAmount('');
   }
 
-  function removeDraftOption(option: QuotationOptionV1) {
+  function removeDraftOption(optionId: string) {
     setDraftOptions((current) =>
-      current.filter((item) => item.id !== option.id).map((item, index) => ({ ...item, option_no: index + 1 })),
+      current.filter((item) => item.id !== optionId).map((item, index) => ({ ...item, option_no: index + 1 })),
     );
-  }
-
-  function toTableOption(option: DraftQuotationOption): QuotationOptionV1 {
-    return {
-      id: option.id,
-      quotation_id: sourceQuotation?.id ?? 'draft',
-      option_no: option.option_no,
-      carrier_code: option.carrier_code ?? null,
-      carrier_name: option.carrier_name ?? null,
-      vessel_or_flight: option.vessel_or_flight ?? null,
-      voyage_flight_no: option.voyage_flight_no ?? null,
-      etd: option.etd ?? null,
-      eta: option.eta ?? null,
-      transit_time_days: option.transit_time_days ?? null,
-      risk_warning: option.risk_warning ?? null,
-      headline_amount: option.headline_amount ?? null,
-      is_recommended: Boolean(option.is_recommended),
-      is_selected: Boolean(option.is_selected),
-    };
   }
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      const chargeLines = buildChargeLines();
+      const chargeLines = buildQuotationChargeLinePayloads(draftOptions, buildCtx);
       const quotation = isRevise
         ? await createQuotationVersion(sourceQuotation!.id, {
           status: 'DRAFT',
@@ -346,13 +313,14 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
         await createQuotationOption(quotation.id, {
           carrier_code: option.carrier_code,
           carrier_name: option.carrier_name,
+          mode: option.mode,
           vessel_or_flight: option.vessel_or_flight,
           voyage_flight_no: option.voyage_flight_no,
           etd: option.etd,
           eta: option.eta,
           transit_time_days: option.transit_time_days,
           risk_warning: option.risk_warning,
-          headline_amount: option.headline_amount,
+          headline_amount: computeOptionHeadlineVnd(option, buildCtx),
           is_recommended: option.is_recommended,
         });
       }
@@ -466,100 +434,41 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
                   {t('quotations.minimumOptionsWarning')}
                 </Alert>
               ) : null}
-              <SimpleGrid cols={{ base: 1, md: 4 }} mt="md" spacing="md">
-                <TextInput label={t('quotations.carrier')} value={optionCarrier} onChange={(event) => setOptionCarrier(event.currentTarget.value)} />
-                <TextInput label={t('quotations.vesselOrFlight')} value={optionVessel} onChange={(event) => setOptionVessel(event.currentTarget.value)} />
-                <TextInput type="date" label={t('quotations.etd')} value={optionEtd} onChange={(event) => setOptionEtd(event.currentTarget.value)} />
-                <TextInput type="date" label={t('quotations.eta')} value={optionEta} onChange={(event) => setOptionEta(event.currentTarget.value)} />
-                <NumberInput label={t('quotations.transitDays')} value={optionTransitDays} onChange={setOptionTransitDays} min={0} />
-                <NumberInput label={t('quotations.headlineAmount')} value={optionAmount} onChange={setOptionAmount} min={0} thousandSeparator="," />
-                <TextInput label={t('quotations.riskWarning')} value={optionRisk} onChange={(event) => setOptionRisk(event.currentTarget.value)} />
-                <Group align="flex-end">
-                  <Button
-                    variant="light"
-                    leftSection={<IconPlus size={14} />}
-                    onClick={addDraftOption}
-                    disabled={!optionCarrier.trim() && !optionEtd}
-                  >
-                    {t('quotations.addOption')}
-                  </Button>
-                </Group>
-              </SimpleGrid>
-              <QuotationOptionsTable mode="edit" options={draftOptions.map(toTableOption)} onRemove={removeDraftOption} />
-            </section>
-
-            {QUOTATION_CHARGE_GROUPS.map((group) => {
-              const lines = groups[group.value];
-              const isExpanded = expanded[group.value];
-              const rows: FeeRow[] = lines.map((line, index) => ({
-                key: `${line.uid}-${index}`,
-                rowIndex: index,
-                label: null,
-                state: line,
-                enabled: true,
-              }));
-
-              return (
-                <section className="rfq-form-section" key={group.value}>
-                  <div className="rfq-charge-group" data-selected={lines.length > 0 ? 'true' : undefined}>
-                    <div className="rfq-charge-group-head">
-                      <Group justify="space-between" align="center" gap="sm" wrap="nowrap">
-                        <Text fw={800} size="sm">
-                          {t(group.labelKey)}
-                        </Text>
-                        <Group gap="xs" wrap="nowrap">
-                          <Badge className="rfq-charge-count tabular-nums" color={lines.length > 0 ? 'teal' : 'gray'} variant="light">
-                            {lines.length}
-                          </Badge>
-                          <Tooltip label={isExpanded ? t('quotations.collapseCharges') : t('quotations.expandCharges')}>
-                            <ActionIcon
-                              aria-expanded={isExpanded}
-                              className="rfq-breakdown-toggle"
-                              variant="light"
-                              onClick={() => setExpanded((current) => ({ ...current, [group.value]: !isExpanded }))}
-                            >
-                              <IconChevronDown className={isExpanded ? 'rfq-breakdown-chevron is-open' : 'rfq-breakdown-chevron'} size={18} />
-                            </ActionIcon>
-                          </Tooltip>
-                        </Group>
-                      </Group>
-                    </div>
-                    <Collapse expanded={isExpanded}>
-                      <div className="rfq-charge-grid">
-                        {rows.length > 0 ? (
-                          <QuotationFeeTable
-                            rows={rows}
-                            chargeCodeOptions={chargeCodeOptions}
-                            currencyOptions={currencyOptions}
-                            uoms={uoms}
-                            removable
-                            rateToVndOrNull={rateToVndOrNull}
-                            isTaxable={(chargeCode) => Boolean(findChargeCode(chargeCode)?.taxable)}
-                            onChange={(rowIndex, patch) => updateLine(group.value, rowIndex, patch)}
-                            onRemove={(rowIndex) => removeLine(group.value, rowIndex)}
-                          />
-                        ) : (
-                          <div className="rfq-empty-lines">
-                            <Text size="sm" c="dimmed">
-                              {t('quotations.noOtherFees')}
-                            </Text>
-                          </div>
-                        )}
-                        <Button
-                          variant="light"
-                          size="xs"
-                          leftSection={<IconPlus size={14} />}
-                          className="rfq-add-fee-button"
-                          onClick={() => addLine(group.value)}
-                        >
-                          {t('quotations.addFee')}
-                        </Button>
-                      </div>
-                    </Collapse>
+              <Group justify="flex-end" mt="md">
+                <Button variant="light" leftSection={<IconPlus size={14} />} onClick={addDraftOption}>
+                  {t('quotations.addOption')}
+                </Button>
+              </Group>
+              <Stack gap="md" mt="md">
+                {draftOptions.length === 0 ? (
+                  <div className="rfq-empty-lines">
+                    <Text size="sm" c="dimmed">
+                      {t('quotations.minimumOptionsWarning')}
+                    </Text>
                   </div>
-                </section>
-              );
-            })}
+                ) : null}
+                {draftOptions.map((option) => (
+                  <QuotationOptionEditor
+                    key={option.id}
+                    option={option}
+                    carriers={carriers}
+                    carrierOptions={carrierOptions}
+                    transportModeOptions={transportModeOptions}
+                    chargeCodeOptions={chargeCodeOptions}
+                    currencyOptions={currencyOptions}
+                    uoms={uoms}
+                    buildCtx={buildCtx}
+                    rateToVndOrNull={rateToVndOrNull}
+                    isTaxable={(chargeCode) => Boolean(findChargeCode(chargeCode)?.taxable)}
+                    onUpdateOption={updateOption}
+                    onAddLine={addOptionLine}
+                    onUpdateLine={updateOptionLine}
+                    onRemoveLine={removeOptionLine}
+                    onRemoveOption={removeDraftOption}
+                  />
+                ))}
+              </Stack>
+            </section>
           </div>
 
           <aside className="rfq-form-rail">
