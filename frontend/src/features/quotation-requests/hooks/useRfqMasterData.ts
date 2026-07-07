@@ -1,14 +1,15 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
+import { containerTypeSelectOptions, fetchContainerTypes } from '@shared/api/containerTypes';
 import { fetchItems } from '@shared/api/items';
 import { queryKeys } from '@shared/api/queryKeys';
 import {
   fetchCurrencies,
   fetchIncoterms,
   fetchSuppliers,
-  fetchTransportModes,
 } from '@shared/api/tradeMasterData';
+import { fetchUoms, uomSelectOptions } from '@shared/api/uoms';
 
 type Option = {
   label: string;
@@ -28,9 +29,13 @@ export function useRfqMasterData() {
     queryKey: queryKeys.incoterms({ page: 1, limit: 100, is_active: true }),
     queryFn: () => fetchIncoterms({ page: 1, limit: 100, is_active: true }),
   });
-  const transportModesQuery = useQuery({
-    queryKey: queryKeys.transportModes({ page: 1, limit: 100, is_active: true }),
-    queryFn: () => fetchTransportModes({ page: 1, limit: 100, is_active: true }),
+  const uomsQuery = useQuery({
+    queryKey: queryKeys.uoms({ page: 1, limit: 100, is_active: true }),
+    queryFn: () => fetchUoms({ page: 1, limit: 100, is_active: true }),
+  });
+  const containerTypesQuery = useQuery({
+    queryKey: queryKeys.containerTypes({ page: 1, limit: 100, is_active: true }),
+    queryFn: () => fetchContainerTypes({ page: 1, limit: 100, is_active: true }),
   });
   const currenciesQuery = useQuery({
     queryKey: queryKeys.currencies({ page: 1, limit: 100, is_active: true }),
@@ -40,15 +45,19 @@ export function useRfqMasterData() {
   const suppliers = suppliersQuery.data?.data ?? [];
   const items = itemsQuery.data?.data ?? [];
   const incoterms = incotermsQuery.data?.data ?? [];
-  const transportModes = transportModesQuery.data?.data ?? [];
+  const uoms = uomsQuery.data?.data ?? [];
+  const containerTypes = containerTypesQuery.data?.data ?? [];
   const currencies = currenciesQuery.data?.data ?? [];
 
   return {
     suppliers,
     items,
     incoterms,
-    transportModes,
+    uoms,
+    containerTypes,
     currencies,
+    uomOptions: useMemo<Option[]>(() => uomSelectOptions(uoms), [uoms]),
+    containerTypeOptions: useMemo<Option[]>(() => containerTypeSelectOptions(containerTypes), [containerTypes]),
     supplierOptions: useMemo<Option[]>(
       () => suppliers.map((supplier) => ({
         value: supplier.id,
@@ -81,7 +90,8 @@ export function useRfqMasterData() {
       suppliersQuery.isLoading ||
       itemsQuery.isLoading ||
       incotermsQuery.isLoading ||
-      transportModesQuery.isLoading ||
+      uomsQuery.isLoading ||
+      containerTypesQuery.isLoading ||
       currenciesQuery.isLoading,
   };
 }

@@ -281,11 +281,14 @@ export function QuotationRequestForm({ onCancel, onCreated }: Props) {
                 decimalScale={4}
                 readOnly
               />
-              <TextInput
+              <Select
                 label={t('quotationRequests.field.container')}
                 description={t('quotationRequests.field.containerHint')}
-                value={containerType}
-                onChange={(event) => setContainerType(event.currentTarget.value)}
+                data={masterData.containerTypeOptions}
+                value={containerType || null}
+                searchable
+                clearable
+                onChange={(value) => setContainerType(value ?? '')}
               />
               {airMode ? (
                 <>
@@ -344,6 +347,7 @@ export function QuotationRequestForm({ onCancel, onCreated }: Props) {
             onRemove={removeLine}
             items={masterData.items}
             itemOptions={masterData.itemOptions}
+            unitOptions={masterData.uomOptions}
             currencyCode={currency}
             fields={{ dimensions: true }}
             onItemSelected={(clientId, item) => {

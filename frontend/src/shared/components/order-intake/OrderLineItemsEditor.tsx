@@ -32,6 +32,7 @@ export type OrderLineItemsEditorProps = {
   currencyCode?: string | null;
   onItemSelected?: (clientId: string, item: Item | undefined) => void;
   customsOptionsFor?: (item: Item | undefined) => { value: string; label: string }[];
+  unitOptions?: { value: string; label: string }[];
 };
 
 const num = (value: unknown, fallback = 0) => (Number.isFinite(Number(value)) ? Number(value) : fallback);
@@ -58,6 +59,7 @@ export function OrderLineItemsEditor({
   onChange,
   onItemSelected,
   onRemove,
+  unitOptions,
 }: OrderLineItemsEditorProps) {
   const { t } = useI18n();
   const active = lines.find((line) => line.clientId === activeId) ?? lines[0] ?? null;
@@ -197,11 +199,21 @@ export function OrderLineItemsEditor({
                 decimalScale={4}
                 onChange={(value) => onChange(active.clientId, { qty: num(value, 1) })}
               />
-              <TextInput
-                label={t('forms.unit')}
-                value={active.unit}
-                onChange={(event) => onChange(active.clientId, { unit: event.currentTarget.value })}
-              />
+              {unitOptions ? (
+                <Select
+                  label={t('forms.unit')}
+                  data={unitOptions}
+                  value={active.unit || null}
+                  searchable
+                  onChange={(value) => onChange(active.clientId, { unit: value ?? '' })}
+                />
+              ) : (
+                <TextInput
+                  label={t('forms.unit')}
+                  value={active.unit}
+                  onChange={(event) => onChange(active.clientId, { unit: event.currentTarget.value })}
+                />
+              )}
               <NumberInput
                 label={t('orderIntake.grossKg')}
                 min={0}

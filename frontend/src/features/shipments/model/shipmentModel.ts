@@ -44,11 +44,6 @@ export const shipmentModeOptions: Array<{ labelKey: MessageKey; value: ShipmentM
   { labelKey: 'shipments.modeOther', value: 'OTHER' },
 ];
 
-/** Standard container type codes selectable when declaring a shipment container. */
-export const CONTAINER_TYPE_OPTIONS = ['20GP', '40GP', '40HC', '45HC', '20RF', '40RF'].map(
-  (value) => ({ label: value, value }),
-);
-
 export const LOAD_TYPE_OPTIONS: Array<{ labelKey: MessageKey; value: ShipmentLoadType }> = [
   { labelKey: 'shipments.loadTypeFcl', value: 'FCL' },
   { labelKey: 'shipments.loadTypeLcl', value: 'LCL' },

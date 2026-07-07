@@ -1,10 +1,11 @@
-import { Stack } from '@mantine/core';
+import { Button, Modal, Select, Stack } from '@mantine/core';
+import { IconPlus } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { fetchQuotationsV1, type QuotationV1 } from '@shared/api/quotations';
-import { fetchQuotationRequest } from '@shared/api/quotationRequests';
+import { fetchQuotationRequest, fetchQuotationRequests } from '@shared/api/quotationRequests';
 import { PageHeader } from '@shared/components/PageHeader';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
 import { WorkbenchHeader } from '@shared/components/WorkbenchHeader';
@@ -43,6 +44,8 @@ export function Quotations() {
   const focusedQuote = searchParams.get(QUOTE_PARAM) ?? searchParams.get(VIEW_PARAM);
   const reviseQuote = searchParams.get(REVISE_PARAM);
   const createRfqId = searchParams.get(CREATE_PARAM) ? searchParams.get(RFQ_PARAM) : null;
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickedRfq, setPickedRfq] = useState<string | null>(null);
 
   const activeTab = useQuotationsUiStore((s) => s.activeTab);
   const search = useQuotationsUiStore((s) => s.search);
@@ -60,7 +63,22 @@ export function Quotations() {
     queryFn: () => fetchQuotationRequest(createRfqId as string),
     enabled: Boolean(createRfqId),
   });
+  const rfqPickerQuery = useQuery({
+    queryKey: queryKeys.quotationRequestsList({ status: '', page: 1, limit: 100 }),
+    queryFn: () => fetchQuotationRequests({ page: 1, limit: 100 }),
+    enabled: pickerOpen,
+  });
   const quotations = quotationsQuery.data?.data ?? EMPTY_QUOTATIONS;
+  const rfqOptions = useMemo(
+    () =>
+      (rfqPickerQuery.data?.data ?? [])
+        .filter((request) => request.status === 'SUBMITTED' || request.status === 'RECEIVED')
+        .map((request) => ({
+          value: request.id,
+          label: `${request.rfq_no} - ${request.customer_ref ?? ''}`,
+        })),
+    [rfqPickerQuery.data],
+  );
 
   const filteredQuotations = useMemo(() => {
     const normalizedSearch = search.toLowerCase().trim();
@@ -164,6 +182,18 @@ export function Quotations() {
     });
   };
 
+  const openCreateFromPickedRfq = () => {
+    if (!pickedRfq) return;
+    updateWorkbenchParams((nextParams) => {
+      nextParams.set(CREATE_PARAM, '1');
+      nextParams.set(RFQ_PARAM, pickedRfq);
+      nextParams.delete(QUOTE_PARAM);
+      nextParams.delete(VIEW_PARAM);
+      nextParams.delete(REVISE_PARAM);
+    });
+    setPickerOpen(false);
+  };
+
   if (quotationsQuery.isError) {
     return (
       <PageError
@@ -183,6 +213,20 @@ export function Quotations() {
 
   return (
     <Stack gap="lg" className="quotations-workbench">
+      <Modal opened={pickerOpen} onClose={() => setPickerOpen(false)} title={t('quotations.pickRfqTitle')}>
+        <Select
+          data={rfqOptions}
+          value={pickedRfq}
+          onChange={setPickedRfq}
+          searchable
+          placeholder={t('quotations.pickRfqPlaceholder')}
+          nothingFoundMessage={t('quotationRequests.emptyTitle')}
+        />
+        <Button mt="md" fullWidth disabled={!pickedRfq} onClick={openCreateFromPickedRfq}>
+          {t('quotations.createFromRfq')}
+        </Button>
+      </Modal>
+
       {showList ? (
         <PageHeader
           className="quotations-page-header"
@@ -190,6 +234,16 @@ export function Quotations() {
           actionsClassName="quotations-page-actions"
           title={t('quotations.title')}
           subtitle={t('quotations.subtitle')}
+          actions={
+            <Button
+              className="quotations-primary-action"
+              leftSection={<IconPlus size={16} />}
+              onClick={() => setPickerOpen(true)}
+              loading={pickerOpen && rfqPickerQuery.isLoading}
+            >
+              {t('quotations.createFromRfq')}
+            </Button>
+          }
         />
       ) : (
         <WorkbenchHeader

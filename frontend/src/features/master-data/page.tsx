@@ -3,6 +3,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   IconAlertCircle,
+  IconBox,
   IconCash,
   IconClipboardList,
   IconFileCode,
@@ -20,6 +21,12 @@ import {
   updateChargeCode,
   type ChargeCode,
 } from '@shared/api/chargeCodes';
+import {
+  deleteContainerType,
+  fetchContainerTypes,
+  updateContainerType,
+  type ContainerType,
+} from '@shared/api/containerTypes';
 import {
   deleteCarrier,
   deleteForwarder,
@@ -71,6 +78,7 @@ import {
 import { ConfirmModal } from '@shared/components/ConfirmModal';
 import { CarrierModal } from './components/CarrierModal';
 import { ChargeCodeModal } from './components/ChargeCodeModal';
+import { ContainerTypeModal } from './components/ContainerTypeModal';
 import { CurrencyModal } from './components/CurrencyModal';
 import { ForwarderModal } from './components/ForwarderModal';
 import { ForwardersCarriersSection } from './components/ForwardersCarriersSection';
@@ -80,6 +88,7 @@ import { FILTER_SELECT_WIDTH } from './components/MasterDataToolbar';
 import { ReferenceDataPanel } from './components/ReferenceDataPanel';
 import {
   buildChargeCodeColumns,
+  buildContainerTypeColumns,
   buildCurrencyColumns,
   buildIncotermColumns,
   buildItemColumns,
@@ -108,7 +117,7 @@ const CHARGE_MODES = [
   { value: 'rail', labelKey: 'masterData.rail' },
 ];
 
-type ToggleEntityKind = 'item' | 'currency' | 'incoterm' | 'transportMode' | 'chargeCode' | 'uom' | 'supplier';
+type ToggleEntityKind = 'item' | 'currency' | 'incoterm' | 'transportMode' | 'chargeCode' | 'uom' | 'containerType' | 'supplier';
 type DeleteEntityKind = ToggleEntityKind | 'forwarder' | 'carrier' | 'taskTemplate';
 
 export function MasterData() {
@@ -126,6 +135,7 @@ export function MasterData() {
     chargeGroupFilter,
     clearCarrierFilters,
     clearChargeCodeFilters,
+    clearContainerTypeFilters,
     clearCurrencyFilters,
     clearForwarderFilters,
     clearIncotermFilters,
@@ -134,6 +144,7 @@ export function MasterData() {
     clearTaskTemplateFilters,
     clearTransportModeFilters,
     clearUomFilters,
+    containerTypeStatusFilter,
     currencyStatusFilter,
     forwarderStatusFilter,
     forwarderTypeFilter,
@@ -149,6 +160,7 @@ export function MasterData() {
     setChargeCodeRevCostFilter,
     setChargeCodeStatusFilter,
     setChargeGroupFilter,
+    setContainerTypeStatusFilter,
     setCurrencyStatusFilter,
     setForwarderStatusFilter,
     setForwarderTypeFilter,
@@ -178,6 +190,7 @@ export function MasterData() {
   const [transportModeModalOpened, transportModeModalHandlers] = useDisclosure(false);
   const [chargeCodeModalOpened, chargeCodeModalHandlers] = useDisclosure(false);
   const [uomModalOpened, uomModalHandlers] = useDisclosure(false);
+  const [containerTypeModalOpened, containerTypeModalHandlers] = useDisclosure(false);
   const [supplierModalOpened, supplierModalHandlers] = useDisclosure(false);
   const [forwarderModalOpened, forwarderModalHandlers] = useDisclosure(false);
   const [carrierModalOpened, carrierModalHandlers] = useDisclosure(false);
@@ -189,6 +202,7 @@ export function MasterData() {
   const [editingTransportMode, setEditingTransportMode] = useState<TransportMode | null>(null);
   const [editingChargeCode, setEditingChargeCode] = useState<ChargeCode | null>(null);
   const [editingUom, setEditingUom] = useState<Uom | null>(null);
+  const [editingContainerType, setEditingContainerType] = useState<ContainerType | null>(null);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [editingForwarder, setEditingForwarder] = useState<Forwarder | null>(null);
   const [editingCarrier, setEditingCarrier] = useState<Carrier | null>(null);
@@ -358,6 +372,14 @@ export function MasterData() {
     },
   });
 
+  const deleteContainerTypeMutation = useMutation({
+    mutationFn: deleteContainerType,
+    onSuccess: () => {
+      invalidateTradeMasterData(queryKeys.containerTypeLists);
+      setConfirmDelete(null);
+    },
+  });
+
   const deleteSupplierMutation = useMutation({
     mutationFn: deleteSupplier,
     onSuccess: () => {
@@ -412,6 +434,8 @@ export function MasterData() {
           return updateChargeCode(record.id, { is_active });
         case 'uom':
           return updateUom(record.id, { is_active });
+        case 'containerType':
+          return updateContainerType(record.id, { is_active });
         case 'supplier':
           return updateSupplier(record.id, { is_active });
       }
@@ -436,6 +460,9 @@ export function MasterData() {
           break;
         case 'uom':
           invalidateTradeMasterData(queryKeys.uomLists);
+          break;
+        case 'containerType':
+          invalidateTradeMasterData(queryKeys.containerTypeLists);
           break;
         case 'supplier':
           invalidateTradeMasterData(queryKeys.supplierLists);
@@ -469,6 +496,8 @@ export function MasterData() {
         return `${record.charge_code} - ${record.charge_name_en}`;
       case 'uom':
         return record.uom_code;
+      case 'containerType':
+        return `${record.cont_code} - ${record.name_en}`;
       case 'supplier':
         return `${record.supplier_code} - ${record.supplier_name}`;
     }
@@ -490,6 +519,8 @@ export function MasterData() {
         return `${record.charge_code} - ${record.charge_name_en}`;
       case 'uom':
         return record.uom_code;
+      case 'containerType':
+        return `${record.cont_code} - ${record.name_en}`;
       case 'supplier':
         return `${record.supplier_code} - ${record.supplier_name}`;
       case 'forwarder':
@@ -517,6 +548,8 @@ export function MasterData() {
         return t('masterData.confirmDeleteChargeCode', { name });
       case 'uom':
         return t('masterData.confirmDeleteUom', { name });
+      case 'containerType':
+        return t('masterData.confirmDeleteContainerType', { name });
       case 'supplier':
         return t('masterData.confirmDeleteSupplier', { name });
       case 'forwarder':
@@ -543,6 +576,8 @@ export function MasterData() {
         return deleteChargeCodeMutation.isPending;
       case 'uom':
         return deleteUomMutation.isPending;
+      case 'containerType':
+        return deleteContainerTypeMutation.isPending;
       case 'supplier':
         return deleteSupplierMutation.isPending;
       case 'forwarder':
@@ -576,6 +611,9 @@ export function MasterData() {
       case 'uom':
         deleteUomMutation.mutate(record.id);
         break;
+      case 'containerType':
+        deleteContainerTypeMutation.mutate(record.id);
+        break;
       case 'supplier':
         deleteSupplierMutation.mutate(record.id);
         break;
@@ -605,6 +643,9 @@ export function MasterData() {
 
   const openAddUom = () => { setEditingUom(null); uomModalHandlers.open(); };
   const openEditUom = (uom: Uom) => { setEditingUom(uom); uomModalHandlers.open(); };
+
+  const openAddContainerType = () => { setEditingContainerType(null); containerTypeModalHandlers.open(); };
+  const openEditContainerType = (containerType: ContainerType) => { setEditingContainerType(containerType); containerTypeModalHandlers.open(); };
 
   const openAddSupplier = () => { setEditingSupplier(null); supplierModalHandlers.open(); };
   const openEditSupplier = (supplier: Supplier) => { setEditingSupplier(supplier); supplierModalHandlers.open(); };
@@ -636,6 +677,9 @@ export function MasterData() {
   const handleDeleteUom = (uom: Uom) => {
     setConfirmDelete({ entity: 'uom', record: uom });
   };
+  const handleDeleteContainerType = (containerType: ContainerType) => {
+    setConfirmDelete({ entity: 'containerType', record: containerType });
+  };
   const handleDeleteSupplier = (supplier: Supplier) => {
     setConfirmDelete({ entity: 'supplier', record: supplier });
   };
@@ -666,6 +710,7 @@ export function MasterData() {
     chargeCodeRevCostFilter !== null ||
     chargeCodeModeFilter !== null;
   const hasUomFilters = uomStatusFilter !== null;
+  const hasContainerTypeFilters = containerTypeStatusFilter !== null;
 
   const itemColumns = useMemo(
     () => buildItemColumns(t, canManageMasterData ? (rec) => handleToggleActive('item', rec) : undefined),
@@ -689,6 +734,10 @@ export function MasterData() {
   );
   const uomColumns = useMemo(
     () => buildUomColumns(t, canManageMasterData ? (rec) => handleToggleActive('uom', rec) : undefined),
+    [t, canManageMasterData],
+  );
+  const containerTypeColumns = useMemo(
+    () => buildContainerTypeColumns(t, canManageMasterData ? (rec) => handleToggleActive('containerType', rec) : undefined),
     [t, canManageMasterData],
   );
   const supplierColumns = useMemo(
@@ -748,6 +797,9 @@ export function MasterData() {
               </Tabs.Tab>
               <Tabs.Tab value="uoms" leftSection={<IconRulerMeasure size={16} />}>
                 {t('masterData.tabUoms')}
+              </Tabs.Tab>
+              <Tabs.Tab value="containerTypes" leftSection={<IconBox size={16} />}>
+                {t('masterData.tabContainerTypes')}
               </Tabs.Tab>
             </Tabs.List>
           </div>
@@ -1003,6 +1055,27 @@ export function MasterData() {
             onDelete={handleDeleteUom}
           />
         </Tabs.Panel>
+
+        <Tabs.Panel value="containerTypes" pt="md">
+          <ReferenceDataPanel
+            addLabel={t('masterData.addContainerType')}
+            canManage={canManageMasterData}
+            title={t('masterData.containerTypesTitle')}
+            searchPlaceholder={t('masterData.searchContainerTypes')}
+            emptyTitle={t('masterData.noContainerTypes')}
+            emptyDescription={t('masterData.noContainerTypesDescription')}
+            columns={containerTypeColumns}
+            queryKey={queryKeys.containerTypes}
+            fetcher={fetchContainerTypes}
+            statusFilter={containerTypeStatusFilter}
+            onStatusFilterChange={setContainerTypeStatusFilter}
+            hasActiveFilters={hasContainerTypeFilters}
+            onClearFilters={clearContainerTypeFilters}
+            onAdd={openAddContainerType}
+            onEdit={openEditContainerType}
+            onDelete={handleDeleteContainerType}
+          />
+        </Tabs.Panel>
       </Tabs>
 
       <CurrencyModal
@@ -1034,6 +1107,12 @@ export function MasterData() {
         editing={editingUom}
         onClose={uomModalHandlers.close}
         opened={uomModalOpened}
+      />
+
+      <ContainerTypeModal
+        editing={editingContainerType}
+        onClose={containerTypeModalHandlers.close}
+        opened={containerTypeModalOpened}
       />
 
       <SupplierModal

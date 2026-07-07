@@ -25,6 +25,7 @@ import { useI18n } from '@shared/i18n';
 import { formatDate } from '@shared/utils/date';
 import { formatMoney, roundToMinorUnits } from '@shared/utils/money';
 
+import { summarizeByCurrency } from '../model/quotationCurrency';
 import { quotationDisplayTotalInCurrency } from '../model/quotationModel';
 import { QuotationOptionsTable } from './QuotationOptionsTable';
 
@@ -116,6 +117,22 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
   const canReject = status === 'REQUEST_FOR_QUOTATION' || status === 'DRAFT' || status === 'PENDING_APPROVAL';
   const total = quotationDisplayTotalInCurrency(quotation, rateToVnd);
   const chargeLines = quotation.charge_lines ?? [];
+  const currencySummary = summarizeByCurrency(
+    chargeLines.map((line) => ({
+      currency: line.currency_code ?? null,
+      amount: Number(line.amount ?? Number(line.quantity) * Number(line.unit_price)),
+      taxable: Number(line.tax_rate) > 0,
+    })),
+    rateToVnd,
+  );
+  const heroTotal =
+    currencySummary.byCurrency.length === 1
+      ? formatMoney(currencySummary.byCurrency[0].total, currencySummary.byCurrency[0].currency)
+      : currencySummary.byCurrency.length > 1
+        ? formatMoney(currencySummary.internalVndTotal, 'VND')
+        : formatMoney(total, quotation.currency_code);
+  const referenceCurrency = currencySummary.byCurrency.find((row) => row.currency !== 'VND')?.currency ?? 'USD';
+  const referenceRate = rateToVnd(referenceCurrency);
   const events = quotation.events ?? [];
   const chargesToggleLabel = chargesExpanded ? t('quotations.collapseCharges') : t('quotations.expandCharges');
   const finalLifecycleStatus: QuotationStatusV1 = status === 'REJECTED' ? 'REJECTED' : 'CONFIRMED';
@@ -156,8 +173,13 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
                 {t('quotations.total')}
               </Text>
               <Text fw={900} size="xl" className="tabular-nums">
-                {formatMoney(total, quotation.currency_code)}
+                {heroTotal}
               </Text>
+              {currencySummary.byCurrency.length > 1 ? (
+                <Text size="xs" c="dimmed">
+                  {t('quotations.internalVndTotal')}
+                </Text>
+              ) : null}
             </div>
           </Group>
         </div>
@@ -193,16 +215,17 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
       ) : null}
 
       <div className="rfq-detail-layout">
-        <Paper withBorder p="md" className="rfq-breakdown-panel">
-          <QuotationOptionsTable
-            mode="read"
-            options={options}
-            selectedOptionId={selectedOptionId}
-            onSelect={(optionId) => selectOptionMutation.mutate(optionId)}
-          />
-        </Paper>
+        <div className="rfq-detail-main">
+          <Paper withBorder p="md" className="rfq-breakdown-panel">
+            <QuotationOptionsTable
+              mode="read"
+              options={options}
+              selectedOptionId={selectedOptionId}
+              onSelect={(optionId) => selectOptionMutation.mutate(optionId)}
+            />
+          </Paper>
 
-        <Paper withBorder p={0} className="rfq-breakdown-panel">
+          <Paper withBorder p={0} className="rfq-breakdown-panel">
           <div className="rfq-panel-head">
             <div>
               <Text fw={800}>{t('quotations.chargeBreakdown')}</Text>
@@ -255,27 +278,27 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
                       const lineCurrency = line.currency_code ?? quotation.currency_code;
 
                       return (
-                      <Table.Tr key={line.id}>
-                        <Table.Td>
-                          <Text fw={600} size="sm">{formatChargeDescription(line.description ?? line.charge_type)}</Text>
-                          {line.note ? (
-                            <Text size="xs" c="dimmed">{line.note}</Text>
-                          ) : null}
-                        </Table.Td>
-                        <Table.Td ta="right" className="tabular-nums">
-                          {Number.isFinite(quantity) ? new Intl.NumberFormat().format(quantity) : '-'}
-                        </Table.Td>
-                        <Table.Td>{line.unit ?? '—'}</Table.Td>
-                        <Table.Td ta="right" className="tabular-nums">
-                          {Number.isFinite(unitPrice) ? formatAmount(unitPrice, lineCurrency) : '-'}
-                        </Table.Td>
-                        <Table.Td ta="right" className="tabular-nums">
-                          {Number.isFinite(taxAmount) ? formatAmount(taxAmount, lineCurrency) : '-'}
-                        </Table.Td>
-                        <Table.Td ta="right" className="tabular-nums">
-                          {Number.isFinite(lineTotal) ? formatAmount(lineTotal, lineCurrency) : '-'}
-                        </Table.Td>
-                      </Table.Tr>
+                        <Table.Tr key={line.id}>
+                          <Table.Td>
+                            <Text fw={600} size="sm">{formatChargeDescription(line.description ?? line.charge_type)}</Text>
+                            {line.note ? (
+                              <Text size="xs" c="dimmed">{line.note}</Text>
+                            ) : null}
+                          </Table.Td>
+                          <Table.Td ta="right" className="tabular-nums">
+                            {Number.isFinite(quantity) ? new Intl.NumberFormat().format(quantity) : '-'}
+                          </Table.Td>
+                          <Table.Td>{line.unit ?? '—'}</Table.Td>
+                          <Table.Td ta="right" className="tabular-nums">
+                            {Number.isFinite(unitPrice) ? formatAmount(unitPrice, lineCurrency) : '-'}
+                          </Table.Td>
+                          <Table.Td ta="right" className="tabular-nums">
+                            {Number.isFinite(taxAmount) ? formatAmount(taxAmount, lineCurrency) : '-'}
+                          </Table.Td>
+                          <Table.Td ta="right" className="tabular-nums">
+                            {Number.isFinite(lineTotal) ? formatAmount(lineTotal, lineCurrency) : '-'}
+                          </Table.Td>
+                        </Table.Tr>
                       );
                     })}
                   </Table.Tbody>
@@ -284,14 +307,37 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
             )}
 
             <div className="rfq-breakdown-total">
-              <Text fw={800}>{t('quotations.total')}</Text>
-              <div>
-                <Text fw={900} className="tabular-nums">{formatMoney(total, quotation.currency_code)}</Text>
-                <Text size="xs" c="dimmed">{t('quotations.computedTotal', { currency: quotation.currency_code ?? 'USD' })}</Text>
+              <Text fw={800}>{t('quotations.subtotalsByCurrency')}</Text>
+              <div className="rfq-breakdown-total-stack">
+                {currencySummary.byCurrency.length > 0 ? (
+                  currencySummary.byCurrency.map((row) => (
+                    <Group justify="flex-end" gap="sm" wrap="nowrap" key={row.currency}>
+                      <Text size="sm" c="dimmed">
+                        {t('quotations.subtotalPrefix')} {row.currency}
+                      </Text>
+                      <Text fw={900} className="tabular-nums">
+                        {formatMoney(row.total, row.currency)}
+                      </Text>
+                    </Group>
+                  ))
+                ) : (
+                  <Text fw={900} className="tabular-nums">
+                    {formatMoney(total, quotation.currency_code)}
+                  </Text>
+                )}
+                <Text size="xs" c="dimmed" ta="right">
+                  {t('quotations.referenceRate')}: 1 {referenceCurrency} = {new Intl.NumberFormat('vi-VN').format(referenceRate)} VND
+                </Text>
+                {currencySummary.byCurrency.length > 1 ? (
+                  <Text size="xs" c="dimmed" ta="right">
+                    {t('quotations.internalVndTotal')}: ≈ {formatMoney(currencySummary.internalVndTotal, 'VND')}
+                  </Text>
+                ) : null}
               </div>
             </div>
           </Collapse>
-        </Paper>
+          </Paper>
+        </div>
 
         <aside className="rfq-detail-side">
           <Paper withBorder p={0} className="rfq-action-panel">

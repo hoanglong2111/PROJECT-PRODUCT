@@ -8,7 +8,6 @@ import {
   Group,
   NumberInput,
   Paper,
-  Select,
   SimpleGrid,
   Stack,
   Text,
@@ -47,8 +46,9 @@ import { useTradeMasterDataOptions } from '@shared/hooks/useTradeMasterDataOptio
 import { useI18n } from '@shared/i18n';
 import { QUOTATION_CHARGE_GROUPS } from '@shared/lib/quotationChargeGroups';
 import { chargeCodeToChargeType } from '@shared/lib/quotationCharges';
-import { convertMoney, formatMoney, sumMoney } from '@shared/utils/money';
+import { formatMoney } from '@shared/utils/money';
 
+import { summarizeByCurrency } from '../model/quotationCurrency';
 import { toShippingMode } from '../model/quotationModel';
 import { type ChargeLineState, type FeeRow, QuotationFeeTable, seedLineState } from './QuotationFeeTable';
 import { hasMinimumOptions, QuotationOptionsTable } from './QuotationOptionsTable';
@@ -86,7 +86,7 @@ function numberOrNull(value: number | string | null | undefined): number | null 
   return Number.isFinite(numeric) ? numeric : null;
 }
 
-function seedGroupsFromQuotation(quotation: QuotationV1 | undefined, defaultCurrency: string): GroupLines {
+function seedGroupsFromQuotation(quotation: QuotationV1 | undefined): GroupLines {
   const groups = emptyGroups();
 
   for (const line of quotation?.charge_lines ?? []) {
@@ -97,7 +97,7 @@ function seedGroupsFromQuotation(quotation: QuotationV1 | undefined, defaultCurr
       quantity: String(line.quantity ?? 1),
       unit: line.unit ?? null,
       unitPrice: line.unit_price == null ? '' : String(line.unit_price),
-      currency: line.currency_code ?? defaultCurrency,
+      currency: line.currency_code ?? null,
     });
   }
 
@@ -121,7 +121,7 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
   const { language, t } = useI18n();
   const queryClient = useQueryClient();
   const { currencyOptions } = useTradeMasterDataOptions();
-  const { isLoading: ratesLoading, rateToVnd } = useExchangeRates();
+  const { rateToVnd } = useExchangeRates();
   const isRevise = Boolean(sourceQuotation);
 
   const header = {
@@ -140,9 +140,8 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
   };
   const shippingMode = toShippingMode(header.mode);
 
-  const [currency, setCurrency] = useState<string | null>(sourceQuotation?.currency_code ?? rfq?.currency_code ?? 'USD');
   const [validUntil, setValidUntil] = useState(sourceQuotation?.valid_until?.slice(0, 10) ?? '');
-  const [groups, setGroups] = useState<GroupLines>(() => seedGroupsFromQuotation(sourceQuotation, currency ?? 'USD'));
+  const [groups, setGroups] = useState<GroupLines>(() => seedGroupsFromQuotation(sourceQuotation));
   const [expanded, setExpanded] = useState<Record<QuotationChargeGroup, boolean>>({
     FREIGHT: true,
     ORIGIN: false,
@@ -201,7 +200,7 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
   function addLine(group: QuotationChargeGroup) {
     setGroups((current) => ({
       ...current,
-      [group]: [...current[group], { uid: nextUid(), ...seedLineState(null, currency ?? 'USD') }],
+      [group]: [...current[group], { uid: nextUid(), ...seedLineState(null) }],
     }));
   }
 
@@ -228,41 +227,32 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
     [groups],
   );
 
-  const defaultCurrency = currency ?? 'USD';
-  const missingRateCurrencies = useMemo(() => {
-    if (ratesLoading) return [];
-    const codes = new Set(
-      allLines
-        .map(({ line }) => line.currency)
-        .filter((code): code is string => Boolean(code))
-        .map((code) => code.toUpperCase()),
-    );
-    return Array.from(codes).filter((code) => code !== 'VND' && rateToVnd(code) === 1);
-  }, [allLines, rateToVnd, ratesLoading]);
-
-  const totalInDefault = useMemo(() => {
-    const totals = allLines.map(({ line }) => {
+  const currencySummary = useMemo(() => {
+    const summaryLines = allLines.map(({ line }) => {
       const amount = Number(line.quantity) * Number(line.unitPrice);
-      if (!Number.isFinite(amount) || amount <= 0) return 0;
       const chargeCode = findChargeCode(line.chargeCode);
-      const withTax = amount * (chargeCode?.taxable ? 1.1 : 1);
-      return convertMoney(withTax, line.currency, defaultCurrency, rateToVnd);
+      return {
+        currency: line.currency,
+        amount: Number.isFinite(amount) ? amount : 0,
+        taxable: Boolean(chargeCode?.taxable),
+      };
     });
-    return sumMoney(totals, defaultCurrency);
+    return summarizeByCurrency(summaryLines, rateToVnd);
     // chargeCodes affects findChargeCode and is intentionally tracked.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allLines, chargeCodes, defaultCurrency, rateToVnd]);
-  const totalInVnd = useMemo(
-    () => convertMoney(totalInDefault, defaultCurrency, 'VND', rateToVnd),
-    [defaultCurrency, rateToVnd, totalInDefault],
-  );
+  }, [allLines, chargeCodes, rateToVnd]);
+  const primarySubtotal = currencySummary.byCurrency[0] ?? null;
+  const referenceCurrency = currencySummary.byCurrency.find((row) => row.currency !== 'VND')?.currency ?? 'USD';
+  const referenceRate = rateToVnd(referenceCurrency);
 
-  const filledLineCount = allLines.filter(({ line }) => line.chargeCode && Number(line.unitPrice) > 0).length;
-  const canSubmit = filledLineCount > 0 && Boolean(currency);
+  const pricedLineCount = allLines.filter(({ line }) => line.chargeCode && Number(line.unitPrice) > 0).length;
+  const filledLineCount = allLines.filter(({ line }) => line.chargeCode && Number(line.unitPrice) > 0 && line.currency).length;
+  const hasPricedLineMissingCurrency = pricedLineCount > filledLineCount;
+  const canSubmit = filledLineCount > 0 && !hasPricedLineMissingCurrency;
 
   function buildChargeLines(): QuotationChargeLinePayload[] {
     return allLines
-      .filter(({ line }) => line.chargeCode && Number(line.unitPrice) > 0)
+      .filter(({ line }) => line.chargeCode && Number(line.unitPrice) > 0 && line.currency)
       .map(({ group, line }, index) => {
         const chargeCode = findChargeCode(line.chargeCode);
         return {
@@ -343,16 +333,16 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
       const chargeLines = buildChargeLines();
       const quotation = isRevise
         ? await createQuotationVersion(sourceQuotation!.id, {
-            status: 'DRAFT',
-            currency_code: currency ?? 'USD',
-            valid_until: validUntil || null,
-            charge_lines: chargeLines,
-          })
+          status: 'DRAFT',
+          currency_code: null,
+          valid_until: validUntil || null,
+          charge_lines: chargeLines,
+        })
         : await createQuotationFromRequest(rfq!.id, {
-            currency_code: currency ?? 'USD',
-            valid_until: validUntil || null,
-            charge_lines: chargeLines,
-          });
+          currency_code: null,
+          valid_until: validUntil || null,
+          charge_lines: chargeLines,
+        });
 
       for (const option of draftOptions) {
         await createQuotationOption(quotation.id, {
@@ -418,13 +408,8 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
                     {t('quotations.chargeLinesCount', { count: filledLineCount })}
                   </Text>
                   <Text size="sm" fw={800}>
-                    {formatMoney(totalInDefault, defaultCurrency)}
+                    {primarySubtotal ? formatMoney(primarySubtotal.total, primarySubtotal.currency) : '-'}
                   </Text>
-                  {defaultCurrency.toUpperCase() !== 'VND' ? (
-                    <Text size="xs" c="dimmed">
-                      ≈ {formatMoney(totalInVnd, 'VND')}
-                    </Text>
-                  ) : null}
                 </div>
               </div>
             </div>
@@ -461,16 +446,6 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
                     )
                   }
                 />
-                <Select
-                  className="rfq-scope-field"
-                  label={t('quotations.defaultCurrency')}
-                  data={currencyOptions}
-                  leftSection={<IconWallet size={16} />}
-                  leftSectionPointerEvents="none"
-                  value={currency}
-                  onChange={setCurrency}
-                  searchable
-                />
                 <TextInput
                   className="rfq-scope-field"
                   label={t('quotations.validUntil')}
@@ -479,11 +454,6 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
                   onChange={(event) => setValidUntil(event.currentTarget.value)}
                 />
               </SimpleGrid>
-              {missingRateCurrencies.length > 0 ? (
-                <Alert color="yellow" icon={<IconAlertTriangle size={16} />} mt="md">
-                  {t('quotations.missingRateWarning')} ({missingRateCurrencies.join(', ')})
-                </Alert>
-              ) : null}
             </section>
 
             <section className="rfq-form-section">
@@ -557,8 +527,6 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
                             rows={rows}
                             chargeCodeOptions={chargeCodeOptions}
                             currencyOptions={currencyOptions}
-                            defaultCurrency={defaultCurrency}
-                            rateToVnd={rateToVnd}
                             uoms={uoms}
                             removable
                             onChange={(uid, patch) => updateLine(group.value, uid, patch)}
@@ -593,14 +561,32 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
               <Group justify="space-between" align="flex-start" gap="sm">
                 <div>
                   <Text size="xs" tt="uppercase" fw={800} c="dimmed">
-                    {t('quotations.computedTotal', { currency: defaultCurrency })}
+                    {t('quotations.subtotalsByCurrency')}
                   </Text>
-                  <Text fw={900} size="xl" className="tabular-nums">
-                    {formatMoney(totalInDefault, defaultCurrency)}
+                  {currencySummary.byCurrency.length > 0 ? (
+                    <Stack gap={4} mt={6}>
+                      {currencySummary.byCurrency.map((row) => (
+                        <Group justify="space-between" gap="md" wrap="nowrap" key={row.currency}>
+                          <Text size="sm" c="dimmed">
+                            {t('quotations.subtotalPrefix')} {row.currency}
+                          </Text>
+                          <Text fw={900} className="tabular-nums">
+                            {formatMoney(row.total, row.currency)}
+                          </Text>
+                        </Group>
+                      ))}
+                    </Stack>
+                  ) : (
+                    <Text fw={900} size="xl" className="tabular-nums">
+                      -
+                    </Text>
+                  )}
+                  <Text size="xs" c="dimmed" mt="xs">
+                    {t('quotations.referenceRate')}: 1 {referenceCurrency} = {new Intl.NumberFormat('vi-VN').format(referenceRate)} VND
                   </Text>
-                  {defaultCurrency.toUpperCase() !== 'VND' ? (
+                  {currencySummary.byCurrency.length > 1 ? (
                     <Text size="xs" c="dimmed">
-                      ≈ {formatMoney(totalInVnd, 'VND')}
+                      {t('quotations.internalVndTotal')}: ≈ {formatMoney(currencySummary.internalVndTotal, 'VND')}
                     </Text>
                   ) : null}
                 </div>
@@ -611,7 +597,7 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
             </div>
             {!canSubmit ? (
               <Text size="xs" c="dimmed" className="rfq-submit-hint">
-                {t('quotations.enterAtLeastOneFee')}
+                {hasPricedLineMissingCurrency ? t('quotations.selectCurrencyForAllFees') : t('quotations.enterAtLeastOneFee')}
               </Text>
             ) : null}
             <Group justify="flex-end" className="rfq-rail-actions" grow>

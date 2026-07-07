@@ -2,6 +2,7 @@ import { Badge, Group, Stack, Text, Tooltip } from '@mantine/core';
 import { IconCheck, IconStarFilled } from '@tabler/icons-react';
 
 import type { ChargeCode } from '@shared/api/chargeCodes';
+import type { ContainerType } from '@shared/api/containerTypes';
 import type { Carrier, Forwarder } from '@shared/api/forwarders';
 import type { Item } from '@shared/api/items';
 import type { Currency, Incoterm, Supplier, TransportMode } from '@shared/api/tradeMasterData';
@@ -423,6 +424,80 @@ export function buildUomColumns(t: T, onToggleActive?: (record: Uom) => void): A
       label: t('masterData.updatedAt'),
       width: 150,
       render: (uom) => <DateTimeText size="sm" value={uom.update_at} />,
+    },
+  ];
+}
+
+export function buildContainerTypeColumns(
+  t: T,
+  onToggleActive?: (record: ContainerType) => void,
+): Array<ReferenceColumn<ContainerType>> {
+  return [
+    {
+      key: 'identity',
+      label: t('masterData.containerTypeCode'),
+      width: 270,
+      render: (containerType) => (
+        <Stack gap={4}>
+          <Group gap="xs" wrap="nowrap">
+            <Badge variant="light">{containerType.cont_code}</Badge>
+            <Text size="sm" fw={700} lineClamp={1} title={containerType.name_en}>
+              {containerType.name_en}
+            </Text>
+          </Group>
+          <Text size="xs" c="dimmed" lineClamp={1}>
+            {containerType.name_vn || '-'}
+          </Text>
+        </Stack>
+      ),
+    },
+    {
+      key: 'category',
+      label: t('masterData.containerTypeCategory'),
+      width: 140,
+      render: (containerType) => <Badge color="blue" variant="outline">{containerType.category}</Badge>,
+    },
+    {
+      key: 'iso',
+      label: t('masterData.containerTypeIsoCode'),
+      width: 110,
+      render: (containerType) => textCell(containerType.iso_code, 'dl-code-text'),
+    },
+    {
+      key: 'specs',
+      label: t('masterData.containerTypeKeySpecs'),
+      width: 220,
+      render: (containerType) => (
+        <Stack gap={2}>
+          <Text size="sm" fw={600}>
+            {t('masterData.containerTypeTeu')}: {formatDecimal(containerType.teu)}
+          </Text>
+          <Text size="xs" c="dimmed" lineClamp={1}>
+            {t('masterData.containerTypeGrossKg')}: {formatDecimal(containerType.gross_kg)} kg
+          </Text>
+          <Text size="xs" c="dimmed" lineClamp={1}>
+            CBM: {formatDecimal(containerType.capacity_cbm)}
+          </Text>
+        </Stack>
+      ),
+    },
+    {
+      key: 'status',
+      label: t('common.status'),
+      align: 'center',
+      width: 96,
+      render: (containerType) => (
+        <StatusToggle
+          active={containerType.is_active !== false}
+          onToggle={onToggleActive ? () => onToggleActive(containerType) : undefined}
+        />
+      ),
+    },
+    {
+      key: 'updated',
+      label: t('masterData.updatedAt'),
+      width: 150,
+      render: (containerType) => <DateTimeText size="sm" value={containerType.update_at} />,
     },
   ];
 }
