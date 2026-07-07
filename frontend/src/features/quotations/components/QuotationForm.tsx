@@ -8,7 +8,6 @@ import {
   SimpleGrid,
   Stack,
   Text,
-  TextInput,
   Title,
 } from '@mantine/core';
 import {
@@ -24,6 +23,7 @@ import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
 import { fetchChargeCodes, type ChargeCode } from '@shared/api/chargeCodes';
+import { DateField } from '@shared/components/DateField';
 import {
   createQuotationOption,
   createQuotationVersion,
@@ -408,12 +408,11 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
                     )
                   }
                 />
-                <TextInput
+                <DateField
                   className="rfq-scope-field"
                   label={t('quotations.validUntil')}
-                  type="date"
-                  value={validUntil}
-                  onChange={(event) => setValidUntil(event.currentTarget.value)}
+                  value={validUntil || null}
+                  onChange={(value) => setValidUntil(value ?? '')}
                 />
               </SimpleGrid>
             </section>

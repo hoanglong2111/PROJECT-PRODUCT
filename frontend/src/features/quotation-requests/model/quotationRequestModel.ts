@@ -61,10 +61,20 @@ export function isAirMode(mode?: string | null): boolean {
   return (mode ?? '').toUpperCase() === 'AIR';
 }
 
-export function rfqDimWeightKg(volumeCbm: number | string | null | undefined): number {
-  const cbm = Number(volumeCbm ?? 0);
-  if (!Number.isFinite(cbm) || cbm <= 0) return 0;
-  return (cbm * 1_000_000) / 6000;
+export function rfqLineDimWeightKg(line: RfqDimensionLine): number {
+  const qty = Number(line.qty ?? 0);
+  const length = Number(line.length_cm ?? 0);
+  const width = Number(line.width_cm ?? 0);
+  const height = Number(line.height_cm ?? 0);
+  if ([qty, length, width, height].some((value) => !Number.isFinite(value) || value <= 0)) return 0;
+  return (qty * length * width * height) / 6000;
+}
+
+export function rfqPackagesDimWeightKg(
+  pkgs: (RfqDimensionLine & { parent_client_id?: string })[] = [],
+): number {
+  const topLevelPackages = pkgs.filter((pkg) => !pkg.parent_client_id);
+  return topLevelPackages.reduce((total, pkg) => total + rfqLineDimWeightKg(pkg), 0);
 }
 
 export function rfqChargeableWeightKg(
@@ -89,46 +99,50 @@ export function rfqTotalCbm(lines: RfqDimensionLine[] = []): number {
   return lines.reduce((total, line) => total + rfqLineCbm(line), 0);
 }
 
-export const rfqPackageTypes = ['CARTON', 'PALLET', 'CRATE', 'DRUM', 'BAG', 'ROLL'] as const;
-export type RfqPackageType = (typeof rfqPackageTypes)[number];
-
-export type RfqPackageSizePreset = {
-  value: string;
-  length_cm: number;
-  width_cm: number;
-  height_cm: number;
-  types?: RfqPackageType[];
+export type RfqPackageLineDraft = {
+  clientId: string;
+  item_id: string;
+  item_description: string;
+  qty: number | '';
+  unit: string;
+  unit_price: number | '';
+  note: string;
 };
 
-export const RFQ_PACKAGE_CUSTOM_PRESET = 'CUSTOM';
+let rfqPackageLineClientIdSeq = 0;
+export function newRfqPackageLine(defaults?: Partial<RfqPackageLineDraft>): RfqPackageLineDraft {
+  rfqPackageLineClientIdSeq += 1;
+  return {
+    clientId: `pkgl-${Date.now()}-${rfqPackageLineClientIdSeq}`,
+    item_id: '',
+    item_description: '',
+    qty: 1,
+    unit: '',
+    unit_price: '',
+    note: '',
+    ...defaults,
+  };
+}
 
-export const rfqPackageSizePresets: RfqPackageSizePreset[] = [
-  { value: 'PALLET_STD', length_cm: 120, width_cm: 100, height_cm: 150, types: ['PALLET'] },
-  { value: 'PALLET_EUR', length_cm: 120, width_cm: 80, height_cm: 150, types: ['PALLET'] },
-  { value: 'PALLET_LOW', length_cm: 120, width_cm: 100, height_cm: 100, types: ['PALLET'] },
-  { value: 'CARTON_S', length_cm: 40, width_cm: 30, height_cm: 30, types: ['CARTON'] },
-  { value: 'CARTON_M', length_cm: 60, width_cm: 40, height_cm: 40, types: ['CARTON'] },
-  { value: 'CARTON_L', length_cm: 60, width_cm: 50, height_cm: 50, types: ['CARTON'] },
-];
-
-export function rfqPackageSizePreset(value: string): RfqPackageSizePreset | undefined {
-  return rfqPackageSizePresets.find((preset) => preset.value === value);
+export function rfqPackageLineAmount(line: { qty?: number | string | null; unit_price?: number | string | null }): number {
+  const qty = Number(line.qty ?? 0);
+  const unitPrice = Number(line.unit_price ?? 0);
+  if (!Number.isFinite(qty) || !Number.isFinite(unitPrice)) return 0;
+  return qty * unitPrice;
 }
 
 export type RfqPackageDraft = {
   clientId: string;
   package_no: number;
-  package_type: RfqPackageType;
-  size_preset: string;
+  /** Free text (e.g. "Carton", "Pallet") — not a fixed enum, packers use their own wording. */
+  package_type: string;
   length_cm: number | '';
   width_cm: number | '';
   height_cm: number | '';
   qty: number | '';
   gross_weight_per_package_kg: number | '';
-  item_id: string;
-  item_description: string;
-  unit: string;
-  unit_price: number | '';
+  /** Item lines packed inside this physical package (e.g. several SKUs boxed into one carton). */
+  lines: RfqPackageLineDraft[];
   note: string;
   /** clientId of another package this one is packed inside (e.g. a Carton loaded onto a Pallet). Empty = top-level. */
   parent_client_id: string;
@@ -140,28 +154,21 @@ export function newRfqPackage(index: number, defaults?: Partial<RfqPackageDraft>
   return {
     clientId: `pkg-${Date.now()}-${rfqPackageClientIdSeq}`,
     package_no: index + 1,
-    package_type: 'CARTON',
-    size_preset: RFQ_PACKAGE_CUSTOM_PRESET,
+    package_type: '',
     length_cm: '',
     width_cm: '',
     height_cm: '',
     qty: 1,
     gross_weight_per_package_kg: '',
-    item_id: '',
-    item_description: '',
-    unit: '',
-    unit_price: '',
+    lines: [newRfqPackageLine()],
     note: '',
     parent_client_id: '',
     ...defaults,
   };
 }
 
-export function rfqPackageAmount(pkg: { qty?: number | string | null; unit_price?: number | string | null }): number {
-  const qty = Number(pkg.qty ?? 0);
-  const unitPrice = Number(pkg.unit_price ?? 0);
-  if (!Number.isFinite(qty) || !Number.isFinite(unitPrice)) return 0;
-  return qty * unitPrice;
+export function rfqPackageAmount(pkg: { lines?: { qty?: number | string | null; unit_price?: number | string | null }[] }): number {
+  return (pkg.lines ?? []).reduce((total, line) => total + rfqPackageLineAmount(line), 0);
 }
 
 /** Top-level packages only (no parent) — the unit CBM/weight are declared/quoted on, to avoid double-counting nested cartons already inside a pallet. */
@@ -202,6 +209,34 @@ export function rfqPackageCbm(pkg: {
   return (qty * length * width * height) / 1_000_000;
 }
 
+export function rfqPackageOwnGrossKg(pkg: {
+  qty?: number | string | null;
+  gross_weight_per_package_kg?: number | string | null;
+}): number {
+  const qty = Number(pkg.qty ?? 0);
+  const grossPerPkg = Number(pkg.gross_weight_per_package_kg ?? 0);
+  if (!Number.isFinite(qty) || !Number.isFinite(grossPerPkg)) return 0;
+  return qty * grossPerPkg;
+}
+
+export function rfqPackageEffectiveGrossKg(
+  packages: {
+    clientId: string;
+    parent_client_id?: string;
+    qty?: number | string | null;
+    gross_weight_per_package_kg?: number | string | null;
+  }[],
+  clientId: string,
+): number {
+  const current = packages.find((pkg) => pkg.clientId === clientId);
+  if (!current) return 0;
+  const descendantIds = rfqPackageDescendantIds(packages, clientId);
+  return packages.reduce((total, pkg) => {
+    if (pkg.clientId !== clientId && !descendantIds.has(pkg.clientId)) return total;
+    return total + rfqPackageOwnGrossKg(pkg);
+  }, 0);
+}
+
 export type RfqPackagesTotals = {
   totalCbm: number;
   grossKg: number;
@@ -209,6 +244,8 @@ export type RfqPackagesTotals = {
 
 export function rfqPackagesTotals(
   pkgs: {
+    clientId?: string;
+    parent_client_id?: string;
     qty?: number | string | null;
     length_cm?: number | string | null;
     width_cm?: number | string | null;
@@ -216,20 +253,16 @@ export function rfqPackagesTotals(
     gross_weight_per_package_kg?: number | string | null;
   }[] = [],
 ): RfqPackagesTotals {
-  const totalCbm = pkgs.reduce((total, pkg) => total + rfqPackageCbm(pkg), 0);
-  const grossKg = pkgs.reduce((total, pkg) => {
-    const qty = Number(pkg.qty ?? 0);
-    const grossPerPkg = Number(pkg.gross_weight_per_package_kg ?? 0);
-    if (!Number.isFinite(qty) || !Number.isFinite(grossPerPkg)) return total;
-    return total + qty * grossPerPkg;
-  }, 0);
+  const topLevelPackages = pkgs.filter((pkg) => !pkg.parent_client_id);
+  const totalCbm = topLevelPackages.reduce((total, pkg) => total + rfqPackageCbm(pkg), 0);
+  const grossKg = pkgs.reduce((total, pkg) => total + rfqPackageOwnGrossKg(pkg), 0);
   return { totalCbm, grossKg };
 }
 
 /**
  * SEA LCL "W/M" (weight-or-measurement) revenue ton, per the industry rule KBFE follows:
  * 1 CBM ≡ 1 RT and 1000 kg ≡ 1 RT — chargeable RT is whichever is larger. This is distinct
- * from the AIR volumetric divisor (rfqDimWeightKg/rfqChargeableWeightKg, ÷6000, kg-based).
+ * from the AIR volumetric divisor (rfqLineDimWeightKg/rfqChargeableWeightKg, ÷6000, kg-based).
  */
 export function rfqLclChargeableRevenueTon(
   totalCbm: number | string | null | undefined,

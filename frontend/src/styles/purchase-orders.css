@@ -153,6 +153,10 @@
 }
 
 .purchase-order-form-summary-tile {
+  display: grid;
+  align-content: center;
+  gap: 0.25rem;
+  min-height: 4.25rem;
   min-width: 0;
   padding: 0.5rem 0.625rem;
   border: 1px solid var(--kbfe-border-primary);
@@ -166,6 +170,45 @@
 }
 
 .purchase-order-form-summary-tile .mantine-Text-root {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.purchase-order-form-summary-tile .purchase-order-form-summary-label {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 1rem;
+  line-height: 1.1;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.purchase-order-form-summary-label-inner,
+.kbfe-field-hint-label {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  min-width: 0;
+  line-height: 1.2;
+  vertical-align: middle;
+}
+
+.purchase-order-form-summary-label-inner>span:first-child,
+.kbfe-field-hint-label>span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.purchase-order-form-summary-label-inner svg,
+.kbfe-field-hint-label svg {
+  flex: 0 0 auto;
+  margin-top: 0.0625rem;
+}
+
+.purchase-order-form-summary-tile .purchase-order-form-summary-value {
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -359,6 +402,14 @@
   text-align: right;
 }
 
+.rfq-package-rail-metrics {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  gap: 0.25rem;
+  white-space: nowrap;
+}
+
 .purchase-order-line-rail-meta {
   grid-column: 1 / -1;
 }
@@ -380,6 +431,18 @@
 .purchase-order-line-detail .mantine-Input-input,
 .purchase-order-line-detail .mantine-Textarea-input {
   background: var(--kbfe-surface-elevated);
+}
+
+.rfq-gross-input-stack {
+  display: grid;
+  align-content: start;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.rfq-gross-effective-description {
+  min-height: 1rem;
+  line-height: 1.15;
 }
 
 .purchase-order-line-detail-grid {

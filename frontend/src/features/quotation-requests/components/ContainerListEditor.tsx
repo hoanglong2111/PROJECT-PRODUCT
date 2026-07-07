@@ -155,7 +155,7 @@ export function ContainerListEditor({
                 <span>{t('quotationRequests.field.containerItems')}</span>
                 <span>{t('quotations.quantity')}</span>
                 <span>{t('forms.unit')}</span>
-                <span>{t('quotations.unitPrice')}</span>
+                <span>{t('quotationRequests.field.unitPriceUsd')}</span>
                 <span>{t('quotationRequests.field.lineWeight')}</span>
                 <span />
               </div>
@@ -206,9 +206,9 @@ export function ContainerListEditor({
                     />
                   </div>
                   <div className="rfq-container-line-cell rfq-container-line-cell-price">
-                    <span className="rfq-package-cell-label">{t('quotations.unitPrice')}</span>
+                    <span className="rfq-package-cell-label">{t('quotationRequests.field.unitPriceUsd')}</span>
                     <NumberInput
-                      aria-label={t('quotations.unitPrice')}
+                      aria-label={t('quotationRequests.field.unitPriceUsd')}
                       value={line.unit_price}
                       min={0}
                       thousandSeparator=","
