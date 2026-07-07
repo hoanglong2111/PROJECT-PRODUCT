@@ -6,7 +6,6 @@ export type OperationalRiskCode =
   | 'BLOCKED_TASKS'
   | 'REQUIRED_TASKS'
   | 'WAREHOUSE_DELAY'
-  | 'FINANCE_NOT_READY'
   | 'QUOTATION_SLA'
   | 'DRAFT_BL_SLA';
 
@@ -126,21 +125,6 @@ export function getDeliveryOrderRisks(
       owner: 'Warehouse Staff',
       severity: 'high',
       sla: 'Today',
-    });
-  }
-
-  if (
-    deliveryOrder.order_info.status !== 'DELIVERED' &&
-    (deliveryOrder.logistics_shipping.missing_documents.length > 0 ||
-      deliveryOrder.task_summary.required_tasks_remaining > 0 ||
-      deliveryOrder.task_summary.blocked_tasks > 0)
-  ) {
-    risks.push({
-      code: 'FINANCE_NOT_READY',
-      detail: 'OF/AF and Final Debit Note gate blocked',
-      owner: 'Finance Officer',
-      severity: 'low',
-      sla: 'Before close',
     });
   }
 

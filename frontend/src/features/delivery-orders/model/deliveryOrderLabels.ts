@@ -20,7 +20,6 @@ export function gateLabel(id: string, t: ReturnType<typeof useI18n>['t']) {
 export function riskLabel(code: OperationalRiskCode, t: ReturnType<typeof useI18n>['t']) {
   const labels: Record<OperationalRiskCode, string> = {
     BLOCKED_TASKS: t('opsRisk.blockedTasks'),
-    FINANCE_NOT_READY: t('opsRisk.financeNotReady'),
     MISSING_DOCUMENTS: t('opsRisk.missingDocuments'),
     REQUIRED_TASKS: t('opsRisk.requiredTasks'),
     WAREHOUSE_DELAY: t('opsRisk.warehouseDelay'),
@@ -65,9 +64,6 @@ export function riskDetail(risk: OperationalRisk, t: ReturnType<typeof useI18n>[
   if (risk.code === 'REQUIRED_TASKS') {
     const count = Number.parseInt(risk.detail, 10);
     return t('deliveryOrders.riskRequiredTasksDetail', { count: Number.isFinite(count) ? count : 0 });
-  }
-  if (risk.code === 'FINANCE_NOT_READY') {
-    return t('deliveryOrders.financeBlockedDetail');
   }
   return risk.detail;
 }
