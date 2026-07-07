@@ -45,6 +45,7 @@ export type QuotationRequestPackageV1 = {
   unit?: string | null;
   unit_price?: ApiDecimal | null;
   note?: string | null;
+  parent_package_no?: number | null;
   item?: Item | null;
   create_at?: string;
   update_at?: string;
@@ -149,6 +150,7 @@ export type CreateQuotationRequestPackagePayload = {
   unit?: string | null;
   unit_price?: number | null;
   note?: string | null;
+  parent_package_no?: number | null;
 };
 
 export type CreateQuotationRequestContainerLinePayload = {

@@ -12,6 +12,8 @@ import {
   rfqPackageCbm,
   rfqPackageSizePreset,
   rfqPackagesTotals,
+  rfqPackageDescendantIds,
+  rfqTopLevelPackages,
   rfqTotalCbm,
 } from '../quotationRequestModel';
 
@@ -90,6 +92,33 @@ describe('RFQ LCL revenue ton (W/M rule)', () => {
   it('does not apply the AIR /6000 divisor', () => {
     // A naive AIR-style calc would give dimKg = 3.696e6/6000 = 616; RT must stay in CBM/ton units, not kg
     expect(rfqLclChargeableRevenueTon(3.696, 620)).toBeCloseTo(3.696, 5);
+  });
+});
+
+describe('RFQ nested packages (packed-inside)', () => {
+  it('excludes nested (non-top-level) packages from top-level totals', () => {
+    const pallet = { clientId: 'pallet-1', parent_client_id: '' };
+    const carton = { clientId: 'carton-1', parent_client_id: 'pallet-1' };
+    expect(rfqTopLevelPackages([pallet, carton])).toEqual([pallet]);
+  });
+
+  it('resolves all descendants (children and grandchildren) of a package', () => {
+    const packages = [
+      { clientId: 'pallet-1', parent_client_id: '' },
+      { clientId: 'carton-1', parent_client_id: 'pallet-1' },
+      { clientId: 'box-1', parent_client_id: 'carton-1' },
+      { clientId: 'carton-2', parent_client_id: 'pallet-1' },
+    ];
+    const descendants = rfqPackageDescendantIds(packages, 'pallet-1');
+    expect(descendants).toEqual(new Set(['carton-1', 'box-1', 'carton-2']));
+  });
+
+  it('returns an empty set for a leaf package with no children', () => {
+    const packages = [
+      { clientId: 'pallet-1', parent_client_id: '' },
+      { clientId: 'carton-1', parent_client_id: 'pallet-1' },
+    ];
+    expect(rfqPackageDescendantIds(packages, 'carton-1').size).toBe(0);
   });
 });
 

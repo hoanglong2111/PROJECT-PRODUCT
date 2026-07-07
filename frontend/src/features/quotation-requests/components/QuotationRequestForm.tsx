@@ -30,6 +30,7 @@ import {
   rfqLclChargeableRevenueTon,
   rfqPackageCbm,
   rfqPackagesTotals,
+  rfqTopLevelPackages,
   rfqModeOptions,
   type RfqContainerDraft,
   type RfqPackageDraft,
@@ -90,7 +91,7 @@ function containersToLines(containers: RfqContainerDraft[]): EffectiveLine[] {
 
 function sourcePackagesToDrafts(source?: QuotationRequestV1): RfqPackageDraft[] {
   if (source?.packages?.length) {
-    return source.packages.map((pkg, index) => newRfqPackage(index, {
+    const drafts = source.packages.map((pkg, index) => newRfqPackage(index, {
       package_type: (pkg.package_type as RfqPackageDraft['package_type']) ?? 'CARTON',
       length_cm: num(pkg.length_cm) ?? '',
       width_cm: num(pkg.width_cm) ?? '',
@@ -103,6 +104,13 @@ function sourcePackagesToDrafts(source?: QuotationRequestV1): RfqPackageDraft[] 
       unit_price: num(pkg.unit_price) ?? '',
       note: pkg.note ?? '',
     }));
+    const clientIdByPackageNo = new Map(source.packages.map((pkg, index) => [pkg.package_no, drafts[index].clientId]));
+    source.packages.forEach((pkg, index) => {
+      if (pkg.parent_package_no != null) {
+        drafts[index].parent_client_id = clientIdByPackageNo.get(pkg.parent_package_no) ?? '';
+      }
+    });
+    return drafts;
   }
   const legacyLines = source?.lines?.filter((line) => num(line.length_cm) && num(line.width_cm) && num(line.height_cm));
   if (legacyLines?.length) {
@@ -184,12 +192,14 @@ export function QuotationRequestForm({ onCancel, onCreated, source }: Props) {
   const [note, setNote] = useState(() => textOrEmpty(source?.note));
   const [packages, setPackages] = useState<RfqPackageDraft[]>(() => sourcePackagesToDrafts(source));
   const [containers, setContainers] = useState<RfqContainerDraft[]>(() => sourceContainersToDrafts(source));
+  const [activePackageId, setActivePackageId] = useState<string | null>(null);
+  const [activeContainerId, setActiveContainerId] = useState<string | null>(null);
 
   const selectedSupplier = masterData.suppliers.find((supplier) => supplier.id === supplierId);
   const fclMode = isFclMode(mode);
   const airMode = isAirMode(mode);
   const lclMode = !fclMode && !airMode;
-  const packagesTotals = useMemo(() => rfqPackagesTotals(packages), [packages]);
+  const packagesTotals = useMemo(() => rfqPackagesTotals(rfqTopLevelPackages(packages)), [packages]);
   const { totalCbm, grossKg: packagesWeight } = packagesTotals;
   const containersWeight = useMemo(() => rfqContainersTotalWeight(containers), [containers]);
   const totalWeight = fclMode ? containersWeight : packagesWeight;
@@ -214,15 +224,19 @@ export function QuotationRequestForm({ onCancel, onCreated, source }: Props) {
   };
 
   const addPackage = () => {
-    setPackages((current) => [...current, newRfqPackage(current.length)]);
+    const next = newRfqPackage(packages.length);
+    setPackages((current) => [...current, next]);
+    setActivePackageId(next.clientId);
   };
 
   const removePackage = (clientId: string) => {
     setPackages((current) => {
       if (current.length === 1) return current;
-      return current
+      const next = current
         .filter((pkg) => pkg.clientId !== clientId)
         .map((pkg, index) => ({ ...pkg, package_no: index + 1 }));
+      setActivePackageId((activeId) => (activeId === clientId ? next[0]?.clientId ?? null : activeId));
+      return next;
     });
   };
 
@@ -231,15 +245,22 @@ export function QuotationRequestForm({ onCancel, onCreated, source }: Props) {
   };
 
   const addContainer = () => {
-    setContainers((current) => [...current, newRfqContainer()]);
+    const next = newRfqContainer();
+    setContainers((current) => [...current, next]);
+    setActiveContainerId(next.clientId);
   };
 
   const removeContainer = (clientId: string) => {
     setContainers((current) => {
       if (current.length === 1) return current;
-      return current.filter((container) => container.clientId !== clientId);
+      const next = current.filter((container) => container.clientId !== clientId);
+      setActiveContainerId((activeId) => (activeId === clientId ? next[0]?.clientId ?? null : activeId));
+      return next;
     });
   };
+
+  const packagesForPayload = packages.filter((pkg) => rfqPackageCbm(pkg) > 0);
+  const packageNoByClientId = new Map(packagesForPayload.map((pkg, index) => [pkg.clientId, index + 1]));
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -272,23 +293,22 @@ export function QuotationRequestForm({ onCancel, onCreated, source }: Props) {
         })),
         packages: fclMode
           ? []
-          : packages
-              .filter((pkg) => rfqPackageCbm(pkg) > 0)
-              .map<CreateQuotationRequestPackagePayload>((pkg, index) => ({
-                package_no: index + 1,
-                package_type: pkg.package_type,
-                length_cm: num(pkg.length_cm),
-                width_cm: num(pkg.width_cm),
-                height_cm: num(pkg.height_cm),
-                qty: numOrDefault(pkg.qty, 1),
-                gross_weight_per_package_kg: num(pkg.gross_weight_per_package_kg),
-                cbm: rfqPackageCbm(pkg) || null,
-                item_id: pkg.item_id || null,
-                item_description: pkg.item_description || null,
-                unit: pkg.unit || null,
-                unit_price: num(pkg.unit_price),
-                note: pkg.note || null,
-              })),
+          : packagesForPayload.map<CreateQuotationRequestPackagePayload>((pkg, index) => ({
+            package_no: index + 1,
+            package_type: pkg.package_type,
+            length_cm: num(pkg.length_cm),
+            width_cm: num(pkg.width_cm),
+            height_cm: num(pkg.height_cm),
+            qty: numOrDefault(pkg.qty, 1),
+            gross_weight_per_package_kg: num(pkg.gross_weight_per_package_kg),
+            cbm: rfqPackageCbm(pkg) || null,
+            item_id: pkg.item_id || null,
+            item_description: pkg.item_description || null,
+            unit: pkg.unit || null,
+            unit_price: num(pkg.unit_price),
+            note: pkg.note || null,
+            parent_package_no: pkg.parent_client_id ? packageNoByClientId.get(pkg.parent_client_id) ?? null : null,
+          })),
         containers: fclMode
           ? containers
               .filter((container) => container.container_type && Number(container.qty) > 0)
@@ -550,16 +570,23 @@ export function QuotationRequestForm({ onCancel, onCreated, source }: Props) {
           <Group justify="space-between" align="flex-start" mb="sm">
             <div>
               <Text fw={700}>
-                {fclMode ? t('quotationRequests.section.containers') : t('quotationRequests.section.packages')}
+                {fclMode ? t('quotationRequests.section.containerLines') : t('quotationRequests.section.packages')}
               </Text>
               <Text size="sm" c="dimmed">
-                {fclMode ? t('quotationRequests.section.containersHint') : t('quotationRequests.section.packagesHint')}
+                {fclMode ? t('quotationRequests.section.containerLinesHint') : t('quotationRequests.section.packagesHint')}
               </Text>
             </div>
+            <SummaryTile
+              label={t('quotationRequests.field.requestTotal')}
+              tone="accent"
+              value={requestTotal.toLocaleString()}
+            />
           </Group>
           {fclMode ? (
             <ContainerListEditor
               containers={containers}
+              activeId={activeContainerId}
+              onActiveChange={setActiveContainerId}
               containerTypeOptions={masterData.containerTypeOptions}
               items={masterData.items}
               itemOptions={masterData.itemOptions}
@@ -571,6 +598,8 @@ export function QuotationRequestForm({ onCancel, onCreated, source }: Props) {
           ) : (
             <PackageListEditor
               packages={packages}
+              activeId={activePackageId}
+              onActiveChange={setActivePackageId}
               items={masterData.items}
               itemOptions={masterData.itemOptions}
               unitOptions={masterData.uomOptions}

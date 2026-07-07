@@ -130,6 +130,8 @@ export type RfqPackageDraft = {
   unit: string;
   unit_price: number | '';
   note: string;
+  /** clientId of another package this one is packed inside (e.g. a Carton loaded onto a Pallet). Empty = top-level. */
+  parent_client_id: string;
 };
 
 let rfqPackageClientIdSeq = 0;
@@ -150,6 +152,7 @@ export function newRfqPackage(index: number, defaults?: Partial<RfqPackageDraft>
     unit: '',
     unit_price: '',
     note: '',
+    parent_client_id: '',
     ...defaults,
   };
 }
@@ -159,6 +162,30 @@ export function rfqPackageAmount(pkg: { qty?: number | string | null; unit_price
   const unitPrice = Number(pkg.unit_price ?? 0);
   if (!Number.isFinite(qty) || !Number.isFinite(unitPrice)) return 0;
   return qty * unitPrice;
+}
+
+/** Top-level packages only (no parent) — the unit CBM/weight are declared/quoted on, to avoid double-counting nested cartons already inside a pallet. */
+export function rfqTopLevelPackages<T extends { clientId: string; parent_client_id?: string }>(packages: T[]): T[] {
+  return packages.filter((pkg) => !pkg.parent_client_id);
+}
+
+/** clientIds of pkg's descendants (children, grandchildren, ...), used to keep the "packed inside" picker cycle-safe. */
+export function rfqPackageDescendantIds(
+  packages: { clientId: string; parent_client_id?: string }[],
+  clientId: string,
+): Set<string> {
+  const descendants = new Set<string>();
+  const stack = [clientId];
+  while (stack.length > 0) {
+    const current = stack.pop()!;
+    for (const pkg of packages) {
+      if (pkg.parent_client_id === current && !descendants.has(pkg.clientId)) {
+        descendants.add(pkg.clientId);
+        stack.push(pkg.clientId);
+      }
+    }
+  }
+  return descendants;
 }
 
 export function rfqPackageCbm(pkg: {
