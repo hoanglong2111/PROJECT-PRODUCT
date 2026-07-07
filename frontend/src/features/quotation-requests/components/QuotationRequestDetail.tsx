@@ -70,6 +70,9 @@ export function QuotationRequestDetail({ onBack, requestId }: QuotationRequestDe
   const canCreateQuotation = request.status === 'SUBMITTED' || request.status === 'RECEIVED';
   const canCancel = request.status !== 'CONFIRMED' && request.status !== 'CANCELLED';
   const totalWeight = rfqTotalWeight(request.lines ?? []) || Number(request.gross_weight_kg ?? 0);
+  const linkedQuotations = request.quotations ?? [];
+  const responseQuotations = linkedQuotations.filter((quotation) => quotation.status !== 'DRAFT');
+  const hasDraftQuotation = linkedQuotations.some((quotation) => quotation.status === 'DRAFT');
 
   return (
     <Stack gap="md" className="rfq-detail">
@@ -324,14 +327,16 @@ export function QuotationRequestDetail({ onBack, requestId }: QuotationRequestDe
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {(request.quotations ?? []).length === 0 ? (
+              {responseQuotations.length === 0 ? (
                 <Table.Tr>
                   <Table.Td colSpan={9}>
-                    <Text c="dimmed" size="sm">{t('quotationRequests.noLinkedQuotations')}</Text>
+                    <Text c="dimmed" size="sm">
+                      {hasDraftQuotation ? t('quotationRequests.draftQuotationInProgress') : t('quotationRequests.noLinkedQuotations')}
+                    </Text>
                   </Table.Td>
                 </Table.Tr>
               ) : (
-                request.quotations?.map((quotation) => {
+                responseQuotations.map((quotation) => {
                   const recommendedOption = quotation.options?.find((option) => option.is_recommended)
                     ?? quotation.options?.find((option) => option.is_selected)
                     ?? null;

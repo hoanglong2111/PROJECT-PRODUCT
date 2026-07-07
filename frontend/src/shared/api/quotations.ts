@@ -5,7 +5,6 @@ import type { Currency, Supplier } from './tradeMasterData';
 // 5-state quotation lifecycle (reversed flow). KBI raises the RFQ; FDS drafts then
 // submits for approval; KBI confirms (opens the PO-create gate) or rejects.
 export type QuotationStatusV1 =
-  | 'REQUEST_FOR_QUOTATION'
   | 'DRAFT'
   | 'PENDING_APPROVAL'
   | 'PENDING_ADJUSTMENT'
@@ -150,6 +149,7 @@ export type QuotationV1 = {
   incoterm_code?: string | null;
   mode?: string | null;
   rfq_id?: string | null;
+  rfq_no?: string | null;
   origin_port?: string | null;
   destination_port?: string | null;
   selected_option_id?: string | null;
@@ -340,11 +340,6 @@ export type CreateQuotationPayload = {
 // Standalone (pre-PO) freight quotation create. Not bound to a DO.
 export async function createQuotation(payload: CreateQuotationPayload) {
   const response = await apiClient.post<V1Response<QuotationV1>>('/v1/quotations', payload);
-  return unwrapV1Data(response);
-}
-
-export async function requestQuotation(id: string) {
-  const response = await apiClient.post<V1Response<QuotationV1>>(`/v1/quotations/${id}/request`);
   return unwrapV1Data(response);
 }
 

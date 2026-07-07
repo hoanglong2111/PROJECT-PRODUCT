@@ -8,7 +8,6 @@ import type {
 import {
   chargeCodeToChargeType,
   computeQuotationLineVnd,
-  QUOTATION_VAT_RATE,
   summarizeQuotationVndLines,
 } from '@shared/lib/quotationCharges';
 
@@ -60,7 +59,8 @@ function toPayload(
     quantity: Number(line.quantity) || 1,
     unit: line.unit ?? code?.default_uom ?? 'SET',
     unit_price: Number(line.unitPrice),
-    tax_rate: code?.taxable ? QUOTATION_VAT_RATE : 0,
+    tax_rate: 0,
+    tax_amount: 0,
     note: code ? `Rev/Cost: ${code.rev_cost}` : null,
   };
 }
@@ -93,7 +93,6 @@ function vndTotal(lines: QuotationDraftGroupLine[], ctx: DraftBuildContext): num
         unitPrice: line.unitPrice,
         currency: line.currency,
         endpointCurrency: line.endpointCurrency,
-        taxable: Boolean(ctx.findChargeCode(line.chargeCode)?.taxable),
       },
       ctx.rateToVndOrNull,
     ),

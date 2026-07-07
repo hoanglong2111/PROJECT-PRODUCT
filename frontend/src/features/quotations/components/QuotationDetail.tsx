@@ -9,7 +9,6 @@ import {
   fetchQuotationVersions,
   markQuotationFinal,
   negotiateQuotation,
-  receiveQuotation,
   rejectQuotation,
   selectQuotationOption,
   submitQuotationToKbi,
@@ -90,8 +89,7 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
   });
 
   const transitionMutation = useMutation({
-    mutationFn: (next: 'draft' | 'submit' | 'confirm') => {
-      if (next === 'draft') return receiveQuotation(quotation.id);
+    mutationFn: (next: 'submit' | 'confirm') => {
       if (next === 'submit') return submitQuotationToKbi(quotation.id);
       return markQuotationFinal(quotation.id);
     },
@@ -120,14 +118,13 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
         if (!line) return Promise.resolve(null);
         const quantity = Number(line.quantity ?? 1);
         const amount = roundToMinorUnits(quantity * draft.proposed_unit_price, line.currency_code);
-        const taxRate = Number(line.tax_rate || 0);
-        const taxAmount = roundToMinorUnits(amount * taxRate / 100, line.currency_code);
 
         return updateQuotationChargeLine(draft.charge_line_id, {
           unit_price: draft.proposed_unit_price,
           amount,
-          tax_amount: taxAmount,
-          total_amount: roundToMinorUnits(amount + taxAmount, line.currency_code),
+          tax_rate: 0,
+          tax_amount: 0,
+          total_amount: amount,
           note: draft.note ?? line.note ?? null,
         });
       }));
@@ -145,7 +142,6 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
     visibleChargeLines.map((line) => ({
       currency: line.currency_code ?? null,
       amount: Number(line.amount ?? Number(line.quantity) * Number(line.unit_price)),
-      taxable: Number(line.tax_rate) > 0,
     })),
     rateToVnd,
   );
@@ -206,7 +202,7 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
             label={t('quotations.rfqLink')}
             value={quotation.rfq_id ? (
               <Anchor component={Link} to={`/quotation-requests?view=${quotation.rfq_id}`}>
-                {quotation.rfq_id}
+                {quotation.rfq_no ?? quotation.rfq_id}
               </Anchor>
             ) : '-'}
           />

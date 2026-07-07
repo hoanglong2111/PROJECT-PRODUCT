@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { computeQuotationLineVnd, QUOTATION_VAT_RATE, summarizeQuotationVndLines } from '../quotationCharges';
+import { computeQuotationLineVnd, summarizeQuotationVndLines } from '../quotationCharges';
 
 const rateToVnd = (code: string | null | undefined) => {
   const normalized = code?.trim().toUpperCase();
@@ -12,13 +12,12 @@ const rateToVnd = (code: string | null | undefined) => {
 };
 
 describe('quotation charge VND breakdown', () => {
-  it('converts a non-taxable local-currency line to VND without VAT', () => {
+  it('converts a local-currency line to VND without VAT', () => {
     const line = computeQuotationLineVnd(
       {
         quantity: 1,
         unitPrice: 120,
         currency: 'USD',
-        taxable: false,
       },
       rateToVnd,
     );
@@ -33,54 +32,52 @@ describe('quotation charge VND breakdown', () => {
     expect(line.totalEndpoint).toBe(3_054_000);
   });
 
-  it('computes VAT on the VND equivalent for taxable lines', () => {
+  it('keeps VAT at zero for quotation lines', () => {
     const line = computeQuotationLineVnd(
       {
         quantity: 1,
         unitPrice: 1_500_000,
         currency: 'VND',
-        taxable: true,
       },
       rateToVnd,
     );
 
-    expect(QUOTATION_VAT_RATE).toBe(10);
     expect(line.conversionRate).toBe(1);
     expect(line.amountVnd).toBe(1_500_000);
-    expect(line.vatVnd).toBe(150_000);
-    expect(line.totalVnd).toBe(1_650_000);
+    expect(line.vatVnd).toBe(0);
+    expect(line.totalVnd).toBe(1_500_000);
   });
 
-  it('summarizes subtotal, VAT, and total from the same line breakdowns', () => {
+  it('summarizes subtotal as the final total from the same line breakdowns', () => {
     const lines = [
-      computeQuotationLineVnd({ quantity: 1, unitPrice: 120, currency: 'USD', taxable: false }, rateToVnd),
-      computeQuotationLineVnd({ quantity: 1, unitPrice: 1_500_000, currency: 'VND', taxable: true }, rateToVnd),
+      computeQuotationLineVnd({ quantity: 1, unitPrice: 120, currency: 'USD' }, rateToVnd),
+      computeQuotationLineVnd({ quantity: 1, unitPrice: 1_500_000, currency: 'VND' }, rateToVnd),
     ];
 
     expect(summarizeQuotationVndLines(lines)).toEqual({
       subtotalVnd: 4_554_000,
-      taxVnd: 150_000,
-      totalVnd: 4_704_000,
+      taxVnd: 0,
+      totalVnd: 4_554_000,
       missingRateCount: 0,
-      totalsByEndpoint: [{ currency: 'VND', total: 4_704_000 }],
+      totalsByEndpoint: [{ currency: 'VND', total: 4_554_000 }],
     });
   });
 
   it('converts the final line total to the selected endpoint currency', () => {
     const line = computeQuotationLineVnd(
-      { quantity: 1, unitPrice: 1_720_000, currency: 'VND', endpointCurrency: 'JPY', taxable: true },
+      { quantity: 1, unitPrice: 1_720_000, currency: 'VND', endpointCurrency: 'JPY' },
       rateToVnd,
     );
 
-    expect(line.totalVnd).toBe(1_892_000);
+    expect(line.totalVnd).toBe(1_720_000);
     expect(line.endpointCurrency).toBe('JPY');
     expect(line.conversionRate).toBeCloseTo(1 / 172, 8);
-    expect(line.totalEndpoint).toBe(11_000);
+    expect(line.totalEndpoint).toBe(10_000);
   });
 
   it('does not treat a non-VND endpoint as rate 1 when the source currency is VND', () => {
     const line = computeQuotationLineVnd(
-      { quantity: 1, unitPrice: 25_450_000, currency: 'VND', endpointCurrency: 'USD', taxable: false },
+      { quantity: 1, unitPrice: 25_450_000, currency: 'VND', endpointCurrency: 'USD' },
       rateToVnd,
     );
 
@@ -93,7 +90,7 @@ describe('quotation charge VND breakdown', () => {
 
   it('uses a direct conversion rate of 1 when source and endpoint currencies match', () => {
     const line = computeQuotationLineVnd(
-      { quantity: 1, unitPrice: 120, currency: 'USD', endpointCurrency: 'USD', taxable: false },
+      { quantity: 1, unitPrice: 120, currency: 'USD', endpointCurrency: 'USD' },
       rateToVnd,
     );
 
@@ -106,7 +103,7 @@ describe('quotation charge VND breakdown', () => {
 
   it('converts non-VND source to a non-VND endpoint through VND', () => {
     const line = computeQuotationLineVnd(
-      { quantity: 1, unitPrice: 120, currency: 'USD', endpointCurrency: 'CNY', taxable: false },
+      { quantity: 1, unitPrice: 120, currency: 'USD', endpointCurrency: 'CNY' },
       rateToVnd,
     );
 
@@ -119,11 +116,11 @@ describe('quotation charge VND breakdown', () => {
 
   it('marks missing source or endpoint rates and excludes them from totals', () => {
     const missingSource = computeQuotationLineVnd(
-      { quantity: 1, unitPrice: 120, currency: 'XXX', endpointCurrency: 'VND', taxable: true },
+      { quantity: 1, unitPrice: 120, currency: 'XXX', endpointCurrency: 'VND' },
       rateToVnd,
     );
     const missingEndpoint = computeQuotationLineVnd(
-      { quantity: 1, unitPrice: 120, currency: 'USD', endpointCurrency: 'XXX', taxable: true },
+      { quantity: 1, unitPrice: 120, currency: 'USD', endpointCurrency: 'XXX' },
       rateToVnd,
     );
 

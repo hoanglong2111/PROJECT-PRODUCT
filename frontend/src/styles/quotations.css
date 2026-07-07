@@ -357,7 +357,7 @@
 }
 
 .rfq-fee-grid {
-  --rfq-fee-columns: minmax(11rem, 1.35fr) minmax(4.25rem, 0.44fr) minmax(5.75rem, 0.55fr) minmax(7rem, 0.68fr) minmax(6rem, 0.55fr) minmax(8.25rem, 0.72fr) minmax(6.5rem, 0.58fr) minmax(8.5rem, 0.78fr) minmax(8.25rem, 0.72fr) minmax(8rem, 0.72fr) minmax(8.5rem, 0.82fr);
+  --rfq-fee-columns: minmax(11rem, 1.35fr) minmax(4.25rem, 0.44fr) minmax(5.75rem, 0.55fr) minmax(7rem, 0.68fr) minmax(6rem, 0.55fr) minmax(8.25rem, 0.72fr) minmax(6.5rem, 0.58fr) minmax(8.5rem, 0.78fr) minmax(8rem, 0.72fr) minmax(8.5rem, 0.82fr);
 
   display: grid;
   gap: 0.5rem;
@@ -365,7 +365,7 @@
 }
 
 .rfq-fee-grid.has-remove {
-  --rfq-fee-columns: minmax(11rem, 1.35fr) minmax(4.25rem, 0.44fr) minmax(5.75rem, 0.55fr) minmax(7rem, 0.68fr) minmax(6rem, 0.55fr) minmax(8.25rem, 0.72fr) minmax(6.5rem, 0.58fr) minmax(8.5rem, 0.78fr) minmax(8.25rem, 0.72fr) minmax(8rem, 0.72fr) minmax(8.5rem, 0.82fr) 2.25rem;
+  --rfq-fee-columns: minmax(11rem, 1.35fr) minmax(4.25rem, 0.44fr) minmax(5.75rem, 0.55fr) minmax(7rem, 0.68fr) minmax(6rem, 0.55fr) minmax(8.25rem, 0.72fr) minmax(6.5rem, 0.58fr) minmax(8.5rem, 0.78fr) minmax(8rem, 0.72fr) minmax(8.5rem, 0.82fr) 2.25rem;
 }
 
 .rfq-fee-header,
@@ -440,7 +440,6 @@
 .rfq-fee-total .mantine-Text-root,
 .rfq-fee-exchange .mantine-Text-root,
 .rfq-fee-amount-vnd .mantine-Text-root,
-.rfq-fee-vat-vnd .mantine-Text-root,
 .rfq-fee-total-endpoint .mantine-Text-root {
   min-width: 0;
 }
@@ -481,7 +480,6 @@
 .rfq-fee-total .mantine-Text-root,
 .rfq-fee-exchange .mantine-Text-root,
 .rfq-fee-amount-vnd .mantine-Text-root,
-.rfq-fee-vat-vnd .mantine-Text-root,
 .rfq-fee-total-endpoint .mantine-Text-root {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -490,7 +488,6 @@
 .rfq-fee-total,
 .rfq-fee-exchange,
 .rfq-fee-amount-vnd,
-.rfq-fee-vat-vnd,
 .rfq-fee-total-endpoint {
   text-align: right;
 }
@@ -1199,6 +1196,12 @@
   gap: 0.5rem;
 }
 
+.rfq-turn-banner {
+  padding: 0.625rem 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 80%, transparent);
+  background: color-mix(in srgb, var(--kbfe-primary-color) 8%, var(--kbfe-surface-elevated));
+}
+
 .rfq-adjust-actions {
   border-top: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 80%, transparent);
   background: color-mix(in srgb, var(--kbfe-surface-elevated) 96%, var(--kbfe-surface-subtle) 4%);
@@ -1557,7 +1560,7 @@
       "name name name"
       "qty uom currency"
       "price total exchange"
-      "amountvnd vatvnd endpointcurrency"
+      "amountvnd endpointcurrency endpointcurrency"
       "endpointtotal endpointtotal endpointtotal";
     align-items: start;
   }
@@ -1568,7 +1571,7 @@
       "name name name remove"
       "qty uom currency remove"
       "price total exchange remove"
-      "amountvnd vatvnd endpointcurrency remove"
+      "amountvnd endpointcurrency endpointcurrency remove"
       "endpointtotal endpointtotal endpointtotal remove";
   }
 
@@ -1604,11 +1607,6 @@
 
   .rfq-fee-amount-vnd {
     grid-area: amountvnd;
-    text-align: left;
-  }
-
-  .rfq-fee-vat-vnd {
-    grid-area: vatvnd;
     text-align: left;
   }
 
@@ -1674,7 +1672,6 @@
       "total"
       "exchange"
       "amountvnd"
-      "vatvnd"
       "endpointcurrency"
       "endpointtotal"
       "remove";

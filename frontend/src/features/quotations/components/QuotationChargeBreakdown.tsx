@@ -7,7 +7,6 @@ import { useI18n } from '@shared/i18n';
 import { QUOTATION_CHARGE_GROUPS } from '@shared/lib/quotationChargeGroups';
 import {
   computeQuotationLineVnd,
-  QUOTATION_VAT_RATE,
   summarizeQuotationVndLines,
 } from '@shared/lib/quotationCharges';
 import { formatMoney, roundToMinorUnits } from '@shared/utils/money';
@@ -153,7 +152,6 @@ export function QuotationChargeBreakdown({
           unitPrice: proposedUnitPrice,
           currency: line.currency_code,
           endpointCurrency: paymentCurrency,
-          taxable: numeric(line.tax_rate) > 0,
         },
         (code) => rateToVnd(code),
       );
@@ -179,16 +177,6 @@ export function QuotationChargeBreakdown({
   );
   const paymentRate = paymentCurrency === 'VND' ? 1 : rateToVnd(paymentCurrency);
   const customerPaysTotal = paymentRate ? quotationVndTotals.totalVnd / paymentRate : null;
-  const originalCurrencyItems = displayLines
-    .filter(({ line, localAmount }) => line.currency_code && localAmount > 0)
-    .map(({ line, localAmount }) => ({
-      key: line.id,
-      name: line.description || line.charge_code || line.charge_type,
-      amount: localAmount,
-      currency: line.currency_code as string,
-    }));
-  const referenceCurrency = displayLines.find(({ line }) => line.currency_code && line.currency_code !== 'VND')?.line.currency_code ?? null;
-  const referenceRate = referenceCurrency ? rateToVnd(referenceCurrency) : null;
   const changedLines = displayLines
     .filter(({ enabled, unitDelta }) => enabled && Math.abs(unitDelta) > 0.000001)
     .map(({ line, proposedUnitPrice, note }) => ({
@@ -270,7 +258,6 @@ export function QuotationChargeBreakdown({
                             </>
                           ) : (
                             <>
-                              <Table.Th ta="right">{t('forms.taxAmount')}</Table.Th>
                               <Table.Th ta="right">{t('quotations.lineTotal')}</Table.Th>
                             </>
                           )}
@@ -282,7 +269,6 @@ export function QuotationChargeBreakdown({
                           const deltaColor = unitDelta > 0 ? 'red' : unitDelta < 0 ? 'teal' : 'dimmed';
                           const lineHistory = buildLineHistory(line, quotation.adjustments ?? []);
                           const isHistoryExpanded = Boolean(historyExpandedByLineId[line.id]);
-                          const taxAmount = vndBreakdown.vatVnd;
                           const totalAmount = vndBreakdown.totalEndpoint;
 
                           return (
@@ -370,9 +356,6 @@ export function QuotationChargeBreakdown({
                                 ) : (
                                   <>
                                     <Table.Td ta="right" className="tabular-nums">
-                                      {Number.isFinite(taxAmount) ? formatMoney(taxAmount, 'VND') : '-'}
-                                    </Table.Td>
-                                    <Table.Td ta="right" className="tabular-nums">
                                       {Number.isFinite(totalAmount) ? formatMoney(totalAmount, paymentCurrency) : '-'}
                                     </Table.Td>
                                   </>
@@ -380,7 +363,7 @@ export function QuotationChargeBreakdown({
                               </Table.Tr>
                               {isHistoryExpanded ? (
                                 <Table.Tr className="rfq-price-history-row">
-                                  <Table.Td colSpan={adjustMode ? 8 : 6}>
+                                  <Table.Td colSpan={adjustMode ? 8 : 5}>
                                     <div className="rfq-price-history-ladder">
                                       {lineHistory.map((entry, index) => (
                                         <div className="rfq-price-history-step" key={entry.key}>
@@ -420,34 +403,12 @@ export function QuotationChargeBreakdown({
         )}
 
         <div className="rfq-breakdown-total">
-          <Stack gap="xs">
-            <Text fw={800}>{t('quotations.subtotalsByCurrency')}</Text>
-            {adjustMode && submitAttempted && changedLines.length === 0 ? (
-              <Alert color="yellow" py={6}>
-                {t('quotations.noAdjustedLines')}
-              </Alert>
-            ) : null}
-          </Stack>
+          {adjustMode && submitAttempted && changedLines.length === 0 ? (
+            <Alert color="yellow" py={6} mb="xs">
+              {t('quotations.noAdjustedLines')}
+            </Alert>
+          ) : null}
           <div className="rfq-breakdown-total-stack">
-            {originalCurrencyItems.map((item) => (
-              <Group justify="flex-end" gap="sm" wrap="nowrap" key={item.key}>
-                <Text size="sm" c="dimmed" className="rfq-original-item-name">
-                  {item.name}
-                </Text>
-                <Text fw={700} className="tabular-nums">
-                  {formatMoney(item.amount, item.currency)}
-                </Text>
-              </Group>
-            ))}
-            <div className="rfq-total-separator" />
-            <Group justify="flex-end" gap="sm" wrap="nowrap">
-              <Text size="sm" c="dimmed">
-                {t('quotations.vatLabel', { rate: QUOTATION_VAT_RATE })}
-              </Text>
-              <Text fw={800} className="tabular-nums">
-                {paymentRate ? formatMoney(quotationVndTotals.taxVnd / paymentRate, paymentCurrency) : '-'}
-              </Text>
-            </Group>
             <Group justify="flex-end" gap="sm" wrap="nowrap" className="rfq-customer-pays-summary">
               <Text size="sm" c="dimmed">
                 {t('quotations.customerPays')} ({paymentCurrency})
@@ -456,14 +417,6 @@ export function QuotationChargeBreakdown({
                 {customerPaysTotal != null ? formatMoney(customerPaysTotal, paymentCurrency) : '-'}
               </Text>
             </Group>
-            <Text size="xs" c="dimmed" ta="right">
-              {t('quotations.internalVndTotal')}: {formatMoney(quotationVndTotals.totalVnd, 'VND')}
-            </Text>
-            {referenceCurrency && referenceRate ? (
-              <Text size="xs" c="dimmed" ta="right">
-                {t('quotations.referenceRate')}: 1 {referenceCurrency} = {new Intl.NumberFormat('vi-VN').format(referenceRate)} VND
-              </Text>
-            ) : null}
           </div>
         </div>
 

@@ -66,9 +66,7 @@ import {
   fetchQuotationV1,
   fetchQuotationsV1,
   markQuotationFinal,
-  receiveQuotation,
   rejectQuotation,
-  requestQuotation,
   submitQuotationToKbi,
   type QuotationChargeLineV1,
   type QuotationChargeTypeV1,
@@ -758,7 +756,6 @@ function mapTaskScreenToPoStageTask(task: TaskScreenItem): Gd1PoStageTask {
 
 function quotationStatusToUi(status: QuotationStatusV1): QuotationStatus {
   const statusMap: Record<QuotationStatusV1, QuotationStatus> = {
-    REQUEST_FOR_QUOTATION: 'PRELIMINARY_SENT',
     DRAFT: 'DRAFT',
     PENDING_APPROVAL: 'OFFICIAL_SENT',
     PENDING_ADJUSTMENT: 'OFFICIAL_SENT',
@@ -1610,16 +1607,10 @@ export async function updateQuotationAction(quotationId: string, payload: Update
   const quotation = await fetchQuotationV1(quotationId);
 
   if (payload.action === 'SEND_PRELIMINARY') {
-    if (quotation.status === 'DRAFT') {
-      return mapV1Quotation(await requestQuotation(quotationId));
-    }
     return mapV1Quotation(quotation);
   }
 
   if (payload.action === 'SEND_OFFICIAL') {
-    if (quotation.status === 'REQUEST_FOR_QUOTATION') {
-      return mapV1Quotation(await receiveQuotation(quotationId));
-    }
     if (quotation.status === 'DRAFT') {
       return mapV1Quotation(await submitQuotationToKbi(quotationId));
     }
@@ -1638,7 +1629,7 @@ export async function updateQuotationAction(quotationId: string, payload: Update
   }
 
   if (payload.action === 'REVISION_REQUESTED') {
-    return mapV1Quotation(await requestQuotation(quotationId));
+    return mapV1Quotation(quotation);
   }
 
   return mapV1Quotation(quotation);

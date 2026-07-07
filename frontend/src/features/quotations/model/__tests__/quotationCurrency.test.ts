@@ -8,21 +8,21 @@ describe('summarizeByCurrency', () => {
   it('groups subtotals per currency and never merges currencies', () => {
     const summary = summarizeByCurrency(
       [
-        { currency: 'USD', amount: 1200, taxable: false },
-        { currency: 'USD', amount: 250, taxable: false },
-        { currency: 'VND', amount: 3_500_000, taxable: true },
+        { currency: 'USD', amount: 1200 },
+        { currency: 'USD', amount: 250 },
+        { currency: 'VND', amount: 3_500_000 },
       ],
       rate,
     );
 
     expect(summary.byCurrency).toEqual([
       { currency: 'USD', subtotal: 1450, tax: 0, total: 1450 },
-      { currency: 'VND', subtotal: 3_500_000, tax: 350_000, total: 3_850_000 },
+      { currency: 'VND', subtotal: 3_500_000, tax: 0, total: 3_500_000 },
     ]);
   });
 
   it('computes an internal VND-equivalent across currencies', () => {
-    const summary = summarizeByCurrency([{ currency: 'USD', amount: 100, taxable: false }], rate);
+    const summary = summarizeByCurrency([{ currency: 'USD', amount: 100 }], rate);
 
     expect(summary.internalVndTotal).toBe(2_630_100);
   });

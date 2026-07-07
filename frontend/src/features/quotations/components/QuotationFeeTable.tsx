@@ -25,7 +25,6 @@ type Props = {
   currencyOptions: { label: string; value: string }[];
   removable?: boolean;
   rateToVndOrNull: (code: string | null | undefined) => number | null;
-  isTaxable: (chargeCode: string | null | undefined) => boolean;
   onChange: (rowIndex: number, patch: Partial<ChargeLineState>) => void;
   onRemove?: (rowIndex: number) => void;
 };
@@ -33,7 +32,6 @@ type Props = {
 export function QuotationFeeTable({
   chargeCodeOptions,
   currencyOptions,
-  isTaxable,
   onChange,
   onRemove,
   rateToVndOrNull,
@@ -68,7 +66,6 @@ export function QuotationFeeTable({
         <span>{t('quotations.localAmount')}</span>
         <span>{t('quotations.exchangeRate')}</span>
         <span>{t('quotations.amountVnd')}</span>
-        <span>{t('quotations.vatVnd')}</span>
         <span>{t('quotations.endpointCurrency')}</span>
         <span>{t('quotations.lineTotalEndpoint')}</span>
         {removable ? <span /> : null}
@@ -85,7 +82,6 @@ export function QuotationFeeTable({
             unitPrice: row.state.unitPrice,
             currency: row.state.currency,
             endpointCurrency: row.state.endpointCurrency,
-            taxable: isTaxable(row.state.chargeCode),
           },
           rateToVndOrNull,
         );
@@ -181,13 +177,6 @@ export function QuotationFeeTable({
               <span className="rfq-fee-cell-label">{t('quotations.amountVnd')}</span>
               <Text size="sm" fw={700} c={showVndBreakdown ? undefined : 'dimmed'}>
                 {showVndBreakdown ? formatMoney(vndBreakdown.amountVnd, 'VND') : missingRate}
-              </Text>
-            </div>
-
-            <div className="rfq-fee-cell rfq-fee-vat-vnd tabular-nums">
-              <span className="rfq-fee-cell-label">{t('quotations.vatVnd')}</span>
-              <Text size="sm" c={showVndBreakdown ? undefined : 'dimmed'}>
-                {showVndBreakdown ? formatMoney(vndBreakdown.vatVnd, 'VND') : missingRate}
               </Text>
             </div>
 

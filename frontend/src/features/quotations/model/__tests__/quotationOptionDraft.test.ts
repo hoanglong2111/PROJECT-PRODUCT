@@ -88,6 +88,7 @@ describe('buildQuotationChargeLinePayloads', () => {
     expect(payloads.find((payload) => payload.option_no === 1)?.charge_group).toBe('FREIGHT');
     expect(payloads.map((payload) => payload.charge_group)).toContain('ORIGIN');
     expect(payloads.map((payload) => payload.charge_group)).toContain('DESTINATION');
+    expect(payloads.every((payload) => payload.tax_rate === 0 && payload.tax_amount === 0)).toBe(true);
   });
 
   it('skips lines without a charge code, price, or currency', () => {

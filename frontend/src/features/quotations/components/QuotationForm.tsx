@@ -39,7 +39,6 @@ import { useI18n } from '@shared/i18n';
 import { QUOTATION_CHARGE_GROUPS } from '@shared/lib/quotationChargeGroups';
 import {
   computeQuotationLineVnd,
-  QUOTATION_VAT_RATE,
   summarizeQuotationVndLines,
 } from '@shared/lib/quotationCharges';
 import { formatMoney } from '@shared/utils/money';
@@ -104,6 +103,7 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
     mode: sourceQuotation?.mode ?? rfq?.mode ?? '-',
     incoterm: sourceQuotation?.incoterm_code ?? rfq?.incoterm_code ?? '-',
     rfqId: sourceQuotation?.rfq_id ?? rfq?.id ?? null,
+    rfqNo: sourceQuotation?.rfq_no ?? rfq?.rfq_no ?? null,
   };
   const shippingMode = toShippingMode(header.mode);
 
@@ -227,14 +227,12 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
 
   const quotationVndLines = useMemo(() => {
     return allLines.map(({ line }) => {
-      const chargeCode = findChargeCode(line.chargeCode);
       return computeQuotationLineVnd(
         {
           quantity: line.quantity,
           unitPrice: line.unitPrice,
           currency: line.currency,
           endpointCurrency: line.endpointCurrency,
-          taxable: Boolean(chargeCode?.taxable),
         },
         rateToVndOrNull,
       );
@@ -403,7 +401,7 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
                   value={
                     header.rfqId ? (
                       <Anchor component={Link} to={`/quotation-requests?view=${header.rfqId}`}>
-                        {header.rfqId}
+                        {header.rfqNo ?? header.rfqId}
                       </Anchor>
                     ) : (
                       '-'
@@ -457,7 +455,6 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
                     uoms={uoms}
                     buildCtx={buildCtx}
                     rateToVndOrNull={rateToVndOrNull}
-                    isTaxable={(chargeCode) => Boolean(findChargeCode(chargeCode)?.taxable)}
                     onUpdateOption={updateOption}
                     onAddLine={addOptionLine}
                     onUpdateLine={updateOptionLine}
@@ -491,14 +488,6 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
                         ))}
                       </Stack>
                       <div className="rfq-total-separator" />
-                      <Group justify="space-between" gap="md" wrap="nowrap">
-                        <Text size="sm" c="dimmed">
-                          {t('quotations.vatLabel', { rate: QUOTATION_VAT_RATE })}
-                        </Text>
-                        <Text fw={800} className="tabular-nums">
-                          {customerPaysTotal != null ? formatMoney(quotationVndTotals.taxVnd / (paymentRate || 1), paymentCurrency) : '-'}
-                        </Text>
-                      </Group>
                       <div className="rfq-customer-pays">
                         <Group justify="space-between" gap="md" wrap="nowrap" align="center">
                           <Text size="sm" c="dimmed">

@@ -35,7 +35,6 @@ type QuotationOptionEditorProps = {
   uoms: Uom[];
   buildCtx: DraftBuildContext;
   rateToVndOrNull: (code: string | null | undefined) => number | null;
-  isTaxable: (chargeCode: string | null | undefined) => boolean;
   onUpdateOption: (id: string, patch: Partial<DraftQuotationOption>) => void;
   onAddLine: (optionId: string, group: QuotationChargeGroup) => void;
   onUpdateLine: (
@@ -54,7 +53,6 @@ export function QuotationOptionEditor({
   carriers,
   chargeCodeOptions,
   currencyOptions,
-  isTaxable,
   onAddLine,
   onRemoveLine,
   onRemoveOption,
@@ -215,7 +213,6 @@ export function QuotationOptionEditor({
                         uoms={uoms}
                         removable
                         rateToVndOrNull={rateToVndOrNull}
-                        isTaxable={isTaxable}
                         onChange={(rowIndex, patch) => onUpdateLine(option.id, group.value, rowIndex, patch)}
                         onRemove={(rowIndex) => onRemoveLine(option.id, group.value, rowIndex)}
                       />

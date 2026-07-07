@@ -44,29 +44,33 @@ export function QuotationRequestListView({
   const { t } = useI18n();
   const [search, setSearch] = useState('');
   const normalizedSearch = search.toLowerCase().trim();
+  const sortedRequests = useMemo(
+    () => [...requests].sort((left, right) => String(right.create_at || '').localeCompare(String(left.create_at || ''))),
+    [requests],
+  );
 
   const tabCounts = useMemo(
     () =>
       quotationRequestTabItems.reduce<Record<QuotationRequestTab, number>>(
         (counts, tab) => {
           if (tab.value === 'all') {
-            counts.all = requests.length;
+            counts.all = sortedRequests.length;
             return counts;
           }
           const tabValue = tab.value as Exclude<QuotationRequestTab, 'all'>;
-          counts[tabValue] = requests.filter((request) =>
+          counts[tabValue] = sortedRequests.filter((request) =>
             quotationRequestStatusTabs[tabValue].includes(request.status),
           ).length;
           return counts;
         },
         { all: 0, submitted: 0, received: 0, quoted: 0, confirmed: 0, cancelled: 0 },
       ),
-    [requests],
+    [sortedRequests],
   );
 
   const filteredRequests = useMemo(
     () =>
-      requests.filter((request) => {
+      sortedRequests.filter((request) => {
         const matchesTab = activeTab === 'all'
           || quotationRequestStatusTabs[activeTab as Exclude<QuotationRequestTab, 'all'>].includes(request.status);
         const matchesSearch = [
@@ -86,7 +90,7 @@ export function QuotationRequestListView({
           .includes(normalizedSearch);
         return matchesTab && matchesSearch;
       }),
-    [requests, activeTab, normalizedSearch],
+    [sortedRequests, activeTab, normalizedSearch],
   );
 
   return (
@@ -179,7 +183,9 @@ export function QuotationRequestListView({
                       </Badge>
                     </Table.Td>
                     <Table.Td ta="right" className="tabular-nums">
-                      {request.quotations?.length ?? 0}
+                      {request.quotations?.filter(
+                        (quotation) => quotation.status !== 'DRAFT' && quotation.status !== 'REJECTED',
+                      ).length ?? 0}
                     </Table.Td>
                     <Table.Td ta="right">
                       <Tooltip label={t('quotationRequests.inspect')}>
