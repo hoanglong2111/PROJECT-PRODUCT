@@ -187,7 +187,7 @@ export function PackageListEditor({
                 value={<NumberFormatter value={rfqPackageCbm(active)} thousandSeparator decimalScale={3} />}
               />
               <SummaryTile
-                label={t('quotationRequests.field.requestTotalUsd')}
+                label={t('quotationRequests.field.packageTotalUsd')}
                 value={<NumberFormatter value={activeAmount} thousandSeparator decimalScale={2} />}
               />
             </SimpleGrid>

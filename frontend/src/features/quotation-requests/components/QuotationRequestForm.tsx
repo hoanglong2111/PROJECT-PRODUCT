@@ -656,11 +656,6 @@ export function QuotationRequestForm({ onCancel, onCreated, source }: Props) {
                 {fclMode ? t('quotationRequests.section.containerLinesHint') : t('quotationRequests.section.packagesHint')}
               </Text>
             </div>
-            <SummaryTile
-              label={t('quotationRequests.field.requestTotalUsd')}
-              tone="accent"
-              value={requestTotal.toLocaleString()}
-            />
           </Group>
           {fclMode ? (
             <ContainerListEditor
