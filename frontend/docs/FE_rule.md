@@ -491,14 +491,15 @@ Important rules:
 - Quotation options compare carrier, ETD/ETA, transit days, risk warning, and headline amount.
 - Show a warning when fewer than two carrier/ETD options exist; do not hard-block drafting on that warning.
 - KBI must select one quotation option before confirm; frontend disables Confirm and backend rejects missing selection.
-- Do not edit old quotation price directly; create a new version when price changes.
+- Price negotiation adds PENDING_ADJUSTMENT as a loop state: KBI proposes new unit prices from PENDING_APPROVAL, then FDS accepts/counters line by line back to PENDING_APPROVAL.
+- In REQUEST_FOR_QUOTATION / DRAFT, inline price adjustment is a quick edit for FDS and does not change status.
 - Only one CONFIRMED quotation per quotation_group_id.
 - A PO can only be created from a CONFIRMED quotation (see §8 Purchase Orders).
 ```
 
 Frontend actions: open manual quotation creation from an RFQ, submit the manual
-quotation form, advance status (submit for approval / confirm / reject), view
-charge lines/events, and **Create PO from quotation** (on a CONFIRMED quotation,
+quotation form, advance status (submit for approval / confirm / reject), negotiate
+charge-line prices, view charge lines/events/adjustment history, and **Create PO from quotation** (on a CONFIRMED quotation,
 opens the PO create form prefilled with the commercial header + `quotation_id`;
 goods lines prefill from the originating RFQ when `rfq_id` exists).
 
