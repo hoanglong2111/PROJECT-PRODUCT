@@ -2,6 +2,7 @@ import {
   ActionIcon,
   Badge,
   Button,
+  Checkbox,
   Collapse,
   Group,
   NumberInput,
@@ -17,6 +18,7 @@ import dayjs from 'dayjs';
 import { useRef, useState } from 'react';
 
 import type { QuotationChargeGroup } from '@shared/api/quotations';
+import type { Currency } from '@shared/api/tradeMasterData';
 import type { Uom } from '@shared/api/uoms';
 import { DateField } from '@shared/components/DateField';
 import { useI18n } from '@shared/i18n';
@@ -24,7 +26,8 @@ import { QUOTATION_CHARGE_GROUPS } from '@shared/lib/quotationChargeGroups';
 import { formatMoney } from '@shared/utils/money';
 
 import type { QuotationDraftChargeLineState } from '../model/quotationDraftLines';
-import { computeOptionHeadlineVnd, type DraftBuildContext, type DraftQuotationOption } from '../model/quotationOptionDraft';
+import type { DraftQuotationOption } from '../model/quotationOptionDraft';
+import type { QuotationMoneyTotals } from '../model/quotationMoney';
 import { type FeeRow, QuotationFeeTable } from './QuotationFeeTable';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -49,12 +52,14 @@ type QuotationOptionEditorProps = {
   carrierOptions: { label: string; value: string }[];
   transportModeOptions: { label: string; value: string }[];
   chargeCodeOptions: { label: string; value: string }[];
-  currencyOptions: { label: string; value: string }[];
+  currencies: Currency[];
   uoms: Uom[];
-  buildCtx: DraftBuildContext;
+  moneyTotals: QuotationMoneyTotals | null;
+  paymentCurrency: string;
   rateToVndOrNull: (code: string | null | undefined) => number | null;
   collapsed: boolean;
   onToggleCollapsed: (id: string) => void;
+  onSetRecommended: (id: string) => void;
   onUpdateOption: (id: string, patch: Partial<DraftQuotationOption>) => void;
   onAddLine: (optionId: string, group: QuotationChargeGroup) => void;
   onUpdateLine: (
@@ -68,18 +73,20 @@ type QuotationOptionEditorProps = {
 };
 
 export function QuotationOptionEditor({
-  buildCtx,
   carrierOptions,
   carriers,
   chargeCodeOptions,
-  currencyOptions,
+  currencies,
+  moneyTotals,
   onAddLine,
   onRemoveLine,
   onRemoveOption,
+  onSetRecommended,
   onToggleCollapsed,
   onUpdateLine,
   onUpdateOption,
   option,
+  paymentCurrency,
   rateToVndOrNull,
   collapsed,
   transportModeOptions,
@@ -92,8 +99,9 @@ export function QuotationOptionEditor({
     DESTINATION: false,
   });
   const chargeGroupRefs = useRef<Partial<Record<QuotationChargeGroup, HTMLDivElement | null>>>({});
-  const headline = computeOptionHeadlineVnd(option, buildCtx);
   const lineCount = QUOTATION_CHARGE_GROUPS.reduce((count, group) => count + option.groupLines[group.value].length, 0);
+  const customerPayTotal = moneyTotals?.customerPayTotal ?? null;
+  const totalVnd = moneyTotals?.totalVnd ?? 0;
 
   function scrollChargeGroupIntoView(group: QuotationChargeGroup) {
     window.setTimeout(() => {
@@ -130,19 +138,34 @@ export function QuotationOptionEditor({
       <div className="rfq-option-editor-head">
         <Group justify="space-between" align="flex-start" gap="sm">
           <div>
-            <Group gap="xs">
+            <Group gap="xs" align="center">
               <Text fw={700} size="sm">
                 {t('quotations.options')} #{option.option_no}
               </Text>
-              {option.is_recommended ? (
-                <Badge size="xs" color="green" variant="light">
-                  {t('quotations.recommendedOption')}
-                </Badge>
-              ) : null}
+              <Checkbox
+                aria-label={`${t('quotations.recommendedOption')} #${option.option_no}`}
+                checked={option.is_recommended}
+                className="rfq-option-recommended-check"
+                label={t('quotations.recommendedOption')}
+                onChange={(event) => {
+                  if (event.currentTarget.checked || !option.is_recommended) {
+                    onSetRecommended(option.id);
+                  }
+                }}
+                size="xs"
+              />
             </Group>
-            <Text size="xs" c="dimmed" className="tabular-nums">
-              {formatMoney(headline, 'VND')} · {t('quotations.chargeLinesCount', { count: lineCount })}
-            </Text>
+            <Group gap="xs" mt={4} wrap="wrap" className="rfq-option-total-strip">
+              <Badge size="xs" variant="light" color={lineCount > 0 ? 'teal' : 'gray'} className="tabular-nums">
+                {t('quotations.chargeLinesCount', { count: lineCount })}
+              </Badge>
+              <Text size="xs" c="dimmed" className="tabular-nums">
+                {t('quotations.totalVnd')}: {totalVnd > 0 ? formatMoney(totalVnd, 'VND') : '-'}
+              </Text>
+              <Text size="xs" fw={700} className="tabular-nums">
+                {t('quotations.customerPays')} ({paymentCurrency}): {customerPayTotal != null ? formatMoney(customerPayTotal, paymentCurrency) : '-'}
+              </Text>
+            </Group>
           </div>
           <Group gap="xs" wrap="nowrap">
             <Tooltip label={collapsed ? t('quotations.expandOption') : t('quotations.collapseOption')}>
@@ -287,9 +310,10 @@ export function QuotationOptionEditor({
                         <QuotationFeeTable
                           rows={rows}
                           chargeCodeOptions={chargeCodeOptions}
-                          currencyOptions={currencyOptions}
+                          currencies={currencies}
                           uoms={uoms}
                           removable
+                          paymentCurrency={paymentCurrency}
                           rateToVndOrNull={rateToVndOrNull}
                           onChange={(rowIndex, patch) => onUpdateLine(option.id, group.value, rowIndex, patch)}
                           onRemove={(rowIndex) => onRemoveLine(option.id, group.value, rowIndex)}

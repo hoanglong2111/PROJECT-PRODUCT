@@ -2,12 +2,14 @@ import { ActionIcon, NumberInput, Select, Text, Tooltip } from '@mantine/core';
 import { IconAlertTriangle, IconTrash } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 
+import type { Currency } from '@shared/api/tradeMasterData';
 import type { Uom } from '@shared/api/uoms';
 import { useI18n } from '@shared/i18n';
 import { computeQuotationLineVnd } from '@shared/lib/quotationCharges';
 import { formatMoney } from '@shared/utils/money';
 
 import type { QuotationDraftChargeLineState as ChargeLineState } from '../model/quotationDraftLines';
+import { CurrencySelect } from './CurrencySelect';
 
 export type FeeRow = {
   key: string;
@@ -22,8 +24,10 @@ type Props = {
   rows: FeeRow[];
   uoms: Uom[];
   chargeCodeOptions: { label: string; value: string }[];
-  currencyOptions: { label: string; value: string }[];
+  currencies: Currency[];
   removable?: boolean;
+  /** Quotation-level customer payment currency; every row's "Tổng" is converted into it. */
+  paymentCurrency: string;
   rateToVndOrNull: (code: string | null | undefined) => number | null;
   onChange: (rowIndex: number, patch: Partial<ChargeLineState>) => void;
   onRemove?: (rowIndex: number) => void;
@@ -31,9 +35,10 @@ type Props = {
 
 export function QuotationFeeTable({
   chargeCodeOptions,
-  currencyOptions,
+  currencies,
   onChange,
   onRemove,
+  paymentCurrency,
   rateToVndOrNull,
   removable = false,
   rows,
@@ -72,12 +77,13 @@ export function QuotationFeeTable({
         const total = Number(row.state.quantity) * Number(row.state.unitPrice);
         const showTotal = Number.isFinite(total) && Number(row.state.unitPrice) > 0;
         const formattedTotal = showTotal ? formatMoney(total, lineCurrency) : '-';
+        const outputCurrency = row.state.endpointCurrency ?? paymentCurrency;
         const vndBreakdown = computeQuotationLineVnd(
           {
             quantity: row.state.quantity,
             unitPrice: row.state.unitPrice,
             currency: row.state.currency,
-            endpointCurrency: row.state.endpointCurrency,
+            endpointCurrency: outputCurrency,
           },
           rateToVndOrNull,
         );
@@ -146,9 +152,9 @@ export function QuotationFeeTable({
 
               <div className="rfq-fee-cell rfq-fee-currency">
                 <span className="rfq-fee-cell-label">{t('quotations.localCurrency')}</span>
-                <Select
+                <CurrencySelect
                   aria-label={t('quotations.localCurrency')}
-                  data={currencyOptions}
+                  currencies={currencies}
                   value={row.state.currency}
                   onChange={(value) => onChange(row.rowIndex, { currency: value })}
                   searchable
@@ -193,20 +199,22 @@ export function QuotationFeeTable({
                 </Text>
               </div>
 
-              <div className="rfq-fee-derived-item rfq-fee-endpoint-currency">
+              <div className="rfq-fee-derived-item rfq-fee-output-currency">
                 <span className="rfq-fee-cell-label">{t('quotations.endpointCurrency')}</span>
-                <Select
+                <CurrencySelect
                   aria-label={t('quotations.endpointCurrency')}
-                  data={currencyOptions}
-                  value={row.state.endpointCurrency ?? 'VND'}
-                  onChange={(value) => onChange(row.rowIndex, { endpointCurrency: value ?? 'VND' })}
+                  currencies={currencies}
+                  value={outputCurrency}
+                  onChange={(value) => onChange(row.rowIndex, { endpointCurrency: value ?? paymentCurrency })}
                   searchable
                   size="xs"
                 />
               </div>
 
               <div className="rfq-fee-derived-item rfq-fee-total-endpoint tabular-nums">
-                <span className="rfq-fee-cell-label">{t('quotations.lineTotalEndpoint')}</span>
+                <span className="rfq-fee-cell-label">
+                  {t('quotations.lineTotalEndpoint')} ({vndBreakdown.endpointCurrency})
+                </span>
                 <Text size="sm" fw={700} c={showVndBreakdown ? undefined : 'dimmed'}>
                   {showVndBreakdown ? formatMoney(vndBreakdown.totalEndpoint, vndBreakdown.endpointCurrency) : missingRate}
                 </Text>

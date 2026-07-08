@@ -1,5 +1,5 @@
-import { ActionIcon, Badge, Button, Group, Radio, Text, Tooltip } from '@mantine/core';
-import { IconEdit, IconPlus, IconTrash } from '@tabler/icons-react';
+import { ActionIcon, Badge, Button, Checkbox, Group, Radio, Text, Tooltip } from '@mantine/core';
+import { IconEdit, IconGitCompare, IconPlus, IconTrash } from '@tabler/icons-react';
 
 import type { QuotationOptionV1 } from '@shared/api/quotations';
 import { useI18n } from '@shared/i18n';
@@ -9,10 +9,16 @@ import { formatMoney } from '@shared/utils/money';
 type QuotationOptionsTableProps = {
   options: QuotationOptionV1[];
   mode: 'edit' | 'read';
+  activeOptionId?: string | null;
+  previewOptionId?: string | null;
   selectedOptionId?: string | null;
+  compareOptionIds?: string[];
   optionTotals?: Record<string, number>;
   optionTotalsCurrency?: string | null;
+  onPreview?: (optionId: string) => void;
   onSelect?: (optionId: string) => void;
+  onToggleCompare?: (optionId: string) => void;
+  onOpenCompare?: () => void;
   onAdd?: () => void;
   onEdit?: (option: QuotationOptionV1) => void;
   onRemove?: (option: QuotationOptionV1) => void;
@@ -23,18 +29,25 @@ export function hasMinimumOptions(options: { id: string }[]): boolean {
 }
 
 export function QuotationOptionsTable({
+  activeOptionId,
+  compareOptionIds = [],
   mode,
   onAdd,
   onEdit,
+  onOpenCompare,
+  onPreview,
   onRemove,
   onSelect,
+  onToggleCompare,
   options,
   optionTotals,
   optionTotalsCurrency,
+  previewOptionId,
   selectedOptionId,
 }: QuotationOptionsTableProps) {
   const { t } = useI18n();
-  const selected = selectedOptionId ?? options.find((option) => option.is_selected)?.id ?? null;
+  const officialSelected = selectedOptionId ?? options.find((option) => option.is_selected)?.id ?? null;
+  const active = activeOptionId ?? officialSelected ?? options.find((option) => option.is_recommended)?.id ?? options[0]?.id ?? null;
 
   return (
     <div className="rfq-options-panel">
@@ -43,11 +56,24 @@ export function QuotationOptionsTable({
           <Text fw={700}>{t('quotations.options')}</Text>
           <Text size="xs" c="dimmed">{t('quotations.optionsHint')}</Text>
         </div>
-        {mode === 'edit' && onAdd ? (
-          <Button size="xs" variant="light" leftSection={<IconPlus size={14} />} onClick={onAdd}>
-            {t('quotations.addOption')}
-          </Button>
-        ) : null}
+        <Group gap="xs" justify="flex-end">
+          {mode === 'read' && onOpenCompare ? (
+            <Button
+              disabled={compareOptionIds.length !== 2}
+              leftSection={<IconGitCompare size={14} />}
+              onClick={onOpenCompare}
+              size="xs"
+              variant="light"
+            >
+              {t('quotations.compareOptions')} ({compareOptionIds.length}/2)
+            </Button>
+          ) : null}
+          {mode === 'edit' && onAdd ? (
+            <Button size="xs" variant="light" leftSection={<IconPlus size={14} />} onClick={onAdd}>
+              {t('quotations.addOption')}
+            </Button>
+          ) : null}
+        </Group>
       </Group>
       {options.length === 0 ? (
         <div className="rfq-empty-lines">
@@ -56,6 +82,7 @@ export function QuotationOptionsTable({
       ) : (
         <div className="rfq-option-row-list" data-mode={mode}>
           <div className="rfq-option-row-head" aria-hidden="true">
+            {mode === 'read' ? <span /> : null}
             {mode === 'read' ? <span /> : null}
             <span>{t('quotations.carrier')}</span>
             <span>{t('quotations.mode')}</span>
@@ -67,18 +94,34 @@ export function QuotationOptionsTable({
             {mode === 'edit' ? <span /> : null}
           </div>
           {options.map((option) => {
-            const isSelected = selected === option.id;
+            const isActive = active === option.id;
+            const isOfficialSelected = officialSelected === option.id;
+            const isPreviewing = previewOptionId === option.id && !isOfficialSelected;
+            const isCompared = compareOptionIds.includes(option.id);
             const headlineAmount = optionTotals?.[option.id] != null
               ? formatMoney(optionTotals[option.id], optionTotalsCurrency ?? 'VND')
-              : formatMoney(Number(option.headline_amount ?? 0), 'VND');
+              : formatMoney(Number(option.headline_amount ?? 0), optionTotalsCurrency ?? 'VND');
             const rowBody = (
               <>
                 {mode === 'read' ? (
                   <div className="rfq-option-cell rfq-option-cell-select">
                     <Radio
-                      checked={isSelected}
+                      checked={isOfficialSelected}
                       aria-label={t('quotations.selectOption')}
+                      onClick={(event) => event.stopPropagation()}
                       onChange={() => onSelect?.(option.id)}
+                    />
+                  </div>
+                ) : null}
+
+                {mode === 'read' ? (
+                  <div className="rfq-option-cell rfq-option-cell-compare">
+                    <Checkbox
+                      aria-label={t('quotations.compareOption')}
+                      checked={isCompared}
+                      onClick={(event) => event.stopPropagation()}
+                      onChange={() => onToggleCompare?.(option.id)}
+                      size="xs"
                     />
                   </div>
                 ) : null}
@@ -93,6 +136,12 @@ export function QuotationOptionsTable({
                     </Text>
                     {option.is_recommended ? (
                       <Badge size="xs" color="green" variant="light">{t('quotations.recommendedOption')}</Badge>
+                    ) : null}
+                    {isOfficialSelected ? (
+                      <Badge size="xs" color="blue" variant="light">{t('quotations.selectedOption')}</Badge>
+                    ) : null}
+                    {isPreviewing ? (
+                      <Badge size="xs" color="yellow" variant="light">{t('quotations.previewingOption')}</Badge>
                     ) : null}
                   </Group>
                   {option.carrier_code ? <Text size="xs" c="dimmed">{option.carrier_code}</Text> : null}
@@ -178,11 +227,24 @@ export function QuotationOptionsTable({
             );
 
             return mode === 'read' ? (
-              <label className="rfq-option-row" data-selected={isSelected ? 'true' : undefined} key={option.id}>
+              <div
+                className="rfq-option-row"
+                data-selected={isActive ? 'true' : undefined}
+                key={option.id}
+                onClick={() => onPreview?.(option.id)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    onPreview?.(option.id);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+              >
                 {rowBody}
-              </label>
+              </div>
             ) : (
-              <article className="rfq-option-row" data-selected={isSelected ? 'true' : undefined} key={option.id}>
+              <article className="rfq-option-row" data-selected={isActive ? 'true' : undefined} key={option.id}>
                 {rowBody}
               </article>
             );

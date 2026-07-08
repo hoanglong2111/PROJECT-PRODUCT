@@ -4,7 +4,6 @@ import {
   Button,
   Group,
   Paper,
-  Select,
   SimpleGrid,
   Stack,
   Text,
@@ -37,10 +36,6 @@ import { useExchangeRates } from '@shared/hooks/useExchangeRates';
 import { useTradeMasterDataOptions } from '@shared/hooks/useTradeMasterDataOptions';
 import { useI18n } from '@shared/i18n';
 import { QUOTATION_CHARGE_GROUPS } from '@shared/lib/quotationChargeGroups';
-import {
-  computeQuotationLineVnd,
-  summarizeQuotationVndLines,
-} from '@shared/lib/quotationCharges';
 import { formatMoney } from '@shared/utils/money';
 
 import {
@@ -53,11 +48,13 @@ import {
 } from '../model/quotationDraftLines';
 import {
   buildQuotationChargeLinePayloads,
-  computeOptionHeadlineVnd,
+  computeOptionCustomerPayAmount,
+  computeOptionMoneyTotals,
   type DraftBuildContext,
   type DraftQuotationOption,
 } from '../model/quotationOptionDraft';
 import { toShippingMode } from '../model/quotationModel';
+import { CurrencySelect } from './CurrencySelect';
 import { QuotationOptionEditor } from './QuotationOptionEditor';
 import { hasMinimumOptions } from './QuotationOptionsTable';
 
@@ -86,7 +83,7 @@ function ReadOnlyContext({ label, value }: { label: string; value: ReactNode }) 
 export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: QuotationFormProps) {
   const { language, t } = useI18n();
   const queryClient = useQueryClient();
-  const { carrierOptions, carriers, currencyOptions, transportModeOptions } = useTradeMasterDataOptions();
+  const { carrierOptions, carriers, currencies, transportModeOptions } = useTradeMasterDataOptions();
   const { rateToVndOrNull } = useExchangeRates();
   const isRevise = Boolean(sourceQuotation);
 
@@ -170,6 +167,10 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
     setDraftOptions((current) => current.map((option) => (option.id === id ? { ...option, ...patch } : option)));
   }
 
+  function setRecommendedOption(id: string) {
+    setDraftOptions((current) => current.map((option) => ({ ...option, is_recommended: option.id === id })));
+  }
+
   function addOptionLine(id: string, group: QuotationChargeGroup) {
     setDraftOptions((current) =>
       current.map((option) => (
@@ -243,48 +244,18 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
     }, 180);
   }
 
-  const previewOption = draftOptions.find((option) => option.is_recommended) ?? draftOptions[0] ?? null;
-  const allLines = useMemo(() => {
-    if (!previewOption) return [];
-    return QUOTATION_CHARGE_GROUPS.flatMap((group) => (
-      previewOption.groupLines[group.value].map((line) => ({ group: group.value, line }))
-    ));
-  }, [previewOption]);
-
   const validationLines = useMemo(
     () => draftOptions.flatMap((option) => QUOTATION_CHARGE_GROUPS.flatMap((group) => option.groupLines[group.value])),
     [draftOptions],
   );
-
-  const quotationVndLines = useMemo(() => {
-    return allLines.map(({ line }) => {
-      return computeQuotationLineVnd(
-        {
-          quantity: line.quantity,
-          unitPrice: line.unitPrice,
-          currency: line.currency,
-          endpointCurrency: line.endpointCurrency,
-        },
-        rateToVndOrNull,
-      );
-    });
-  }, [allLines, findChargeCode, rateToVndOrNull]);
-  const quotationVndTotals = useMemo(() => summarizeQuotationVndLines(quotationVndLines), [quotationVndLines]);
-  const referenceCurrency = allLines.find(({ line }) => line.currency && line.currency !== 'VND')?.line.currency ?? null;
+  const optionMoneyTotals = useMemo(() => {
+    return new Map(draftOptions.map((option) => [option.id, computeOptionMoneyTotals(option, paymentCurrency, buildCtx)]));
+  }, [buildCtx, draftOptions, paymentCurrency]);
+  const activeOption = draftOptions.find((option) => option.is_recommended) ?? draftOptions[0] ?? null;
+  const activeOptionTotals = activeOption ? optionMoneyTotals.get(activeOption.id) ?? null : null;
+  const totalMissingRateCount = Array.from(optionMoneyTotals.values()).reduce((count, totals) => count + totals.missingRateCount, 0);
+  const referenceCurrency = validationLines.find((line) => line.currency && line.currency !== 'VND')?.currency ?? null;
   const referenceRate = referenceCurrency ? rateToVndOrNull(referenceCurrency) : null;
-  const paymentRate = paymentCurrency === 'VND' ? 1 : rateToVndOrNull(paymentCurrency);
-  const customerPaysTotal = paymentRate ? quotationVndTotals.totalVnd / paymentRate : null;
-
-  const totalsByOriginalCurrency = (() => {
-    const buckets = new Map<string, number>();
-    for (const { line } of allLines) {
-      if (!line.chargeCode || !line.currency || !(Number(line.unitPrice) > 0)) continue;
-      const currency = line.currency.trim().toUpperCase();
-      const amount = Number(line.quantity) * Number(line.unitPrice);
-      buckets.set(currency, (buckets.get(currency) ?? 0) + amount);
-    }
-    return Array.from(buckets, ([currency, amount]) => ({ currency, amount }));
-  })();
 
   const pricedLineCount = validationLines.filter((line) => line.chargeCode && Number(line.unitPrice) > 0).length;
   const filledLineCount = validationLines.filter((line) => line.chargeCode && Number(line.unitPrice) > 0 && line.currency).length;
@@ -323,9 +294,15 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
       next.delete(optionId);
       return next;
     });
-    setDraftOptions((current) =>
-      current.filter((item) => item.id !== optionId).map((item, index) => ({ ...item, option_no: index + 1 })),
-    );
+    setDraftOptions((current) => {
+      const remaining = current
+        .filter((item) => item.id !== optionId)
+        .map((item, index) => ({ ...item, option_no: index + 1 }));
+      if (remaining.length > 0 && !remaining.some((option) => option.is_recommended)) {
+        return remaining.map((option, index) => ({ ...option, is_recommended: index === 0 }));
+      }
+      return remaining;
+    });
   }
 
   const createMutation = useMutation({
@@ -355,7 +332,7 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
           eta: option.eta,
           transit_time_days: option.transit_time_days,
           risk_warning: option.risk_warning,
-          headline_amount: computeOptionHeadlineVnd(option, buildCtx),
+          headline_amount: computeOptionCustomerPayAmount(option, paymentCurrency, buildCtx) ?? 0,
           is_recommended: option.is_recommended,
         });
       }
@@ -409,7 +386,7 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
                     {t('quotations.chargeLinesCount', { count: filledLineCount })}
                   </Text>
                   <Text size="sm" fw={700}>
-                    {quotationVndTotals.totalVnd > 0 ? formatMoney(quotationVndTotals.totalVnd, 'VND') : '-'}
+                    {activeOptionTotals && activeOptionTotals.totalVnd > 0 ? formatMoney(activeOptionTotals.totalVnd, 'VND') : '-'}
                   </Text>
                 </div>
               </div>
@@ -494,12 +471,14 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
                       carrierOptions={carrierOptions}
                       transportModeOptions={transportModeOptions}
                       chargeCodeOptions={chargeCodeOptions}
-                      currencyOptions={currencyOptions}
+                      currencies={currencies}
                       uoms={uoms}
-                      buildCtx={buildCtx}
+                      moneyTotals={optionMoneyTotals.get(option.id) ?? null}
+                      paymentCurrency={paymentCurrency}
                       rateToVndOrNull={rateToVndOrNull}
                       collapsed={collapsedOptionIds.has(option.id)}
                       onToggleCollapsed={toggleOptionCollapsed}
+                      onSetRecommended={setRecommendedOption}
                       onUpdateOption={updateOption}
                       onAddLine={addOptionLine}
                       onUpdateLine={updateOptionLine}
@@ -523,10 +502,10 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
                     {t('quotations.totalInCurrency', { currency: paymentCurrency })}
                   </Text>
                 </div>
-                <Select
+                <CurrencySelect
                   aria-label={t('quotations.customerPaysCurrency')}
-                  className="rfq-total-currency-select"
-                  data={currencyOptions}
+                  wrapperClassName="rfq-total-currency-select"
+                  currencies={currencies}
                   value={paymentCurrency}
                   onChange={(value) => setPaymentCurrency(value ?? 'VND')}
                   searchable
@@ -535,34 +514,47 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
                   allowDeselect={false}
                 />
               </div>
-              {filledLineCount > 0 ? (
+              {activeOption && activeOptionTotals ? (
                 <Stack gap={4} mt={8}>
-                  <Stack gap={4} className="rfq-original-items">
-                    {totalsByOriginalCurrency.map((bucket) => (
-                      <div key={bucket.currency} className="rfq-original-item">
-                        <Text size="sm" c="dimmed" className="rfq-original-item-name">
-                          {bucket.currency}
-                        </Text>
-                        <Text fw={700} className="tabular-nums rfq-total-value">
-                          {formatMoney(bucket.amount, bucket.currency)}
-                        </Text>
-                      </div>
-                    ))}
-                  </Stack>
+                  <Text size="xs" c="dimmed">
+                    {t('quotations.recommendedOption')} #{activeOption.option_no}
+                  </Text>
+                  {activeOptionTotals.subtotalsBySourceCurrency.length > 0 ? (
+                    <Stack gap={4} className="rfq-original-items">
+                      {activeOptionTotals.subtotalsBySourceCurrency.map((bucket) => (
+                        <div key={bucket.currency} className="rfq-original-item">
+                          <Text size="sm" c="dimmed" className="rfq-original-item-name">
+                            {bucket.currency}
+                          </Text>
+                          <Text fw={700} className="tabular-nums rfq-total-value">
+                            {formatMoney(bucket.amount, bucket.currency)}
+                          </Text>
+                        </div>
+                      ))}
+                    </Stack>
+                  ) : null}
                   <div className="rfq-total-separator" />
                   <div className="rfq-customer-pays">
                     <Text size="sm" c="dimmed" className="rfq-customer-pays-label">
-                      {t('quotations.customerPays')}
+                      {t('quotations.totalVnd')}
                     </Text>
                     <Text fw={800} size="lg" className="tabular-nums rfq-customer-pays-value">
-                      {customerPaysTotal != null ? formatMoney(customerPaysTotal, paymentCurrency) : '-'}
+                      {activeOptionTotals.totalVnd > 0 ? formatMoney(activeOptionTotals.totalVnd, 'VND') : '-'}
                     </Text>
                   </div>
-                  {quotationVndTotals.missingRateCount > 0 ? (
+                  <div className="rfq-customer-pays">
+                    <Text size="sm" c="dimmed" className="rfq-customer-pays-label">
+                      {t('quotations.customerPays')} ({paymentCurrency})
+                    </Text>
+                    <Text fw={800} size="lg" className="tabular-nums rfq-customer-pays-value">
+                      {activeOptionTotals.customerPayTotal != null ? formatMoney(activeOptionTotals.customerPayTotal, paymentCurrency) : '-'}
+                    </Text>
+                  </div>
+                  {totalMissingRateCount > 0 ? (
                     <Group gap={6} wrap="nowrap" className="rfq-missing-rate-total">
                       <IconAlertTriangle size={14} />
                       <Text size="xs" fw={700}>
-                        {t('quotations.missingRateTotal', { count: quotationVndTotals.missingRateCount })}
+                        {t('quotations.missingRateTotal', { count: totalMissingRateCount })}
                       </Text>
                     </Group>
                   ) : null}

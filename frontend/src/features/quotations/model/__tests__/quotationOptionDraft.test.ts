@@ -1,13 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import type { QuotationChargeLineV1 } from '@shared/api/quotations';
-
 import type { DraftQuotationOption } from '../quotationOptionDraft';
-import {
-  buildQuotationChargeLinePayloads,
-  computeOptionHeadlineVnd,
-  selectOptionChargeLines,
-} from '../quotationOptionDraft';
+import { buildQuotationChargeLinePayloads, computeOptionMoneyTotals } from '../quotationOptionDraft';
 import type { QuotationDraftGroupLine } from '../quotationDraftLines';
 import { emptyDraftGroups } from '../quotationDraftLines';
 
@@ -105,8 +99,8 @@ describe('buildQuotationChargeLinePayloads', () => {
   });
 });
 
-describe('computeOptionHeadlineVnd', () => {
-  it('sums all three groups inside the option', () => {
+describe('computeOptionMoneyTotals', () => {
+  it('sums all three groups inside the option as an internal VND total', () => {
     const opt = option({
       groupLines: {
         ...emptyDraftGroups(),
@@ -114,23 +108,18 @@ describe('computeOptionHeadlineVnd', () => {
         ORIGIN: [line({ currency: 'VND', unitPrice: '500000' })],
       },
     });
-    expect(computeOptionHeadlineVnd(opt, ctx)).toBe(500000 + 25000000);
-  });
-});
-
-describe('selectOptionChargeLines', () => {
-  const lines: QuotationChargeLineV1[] = [
-    { option_no: null, charge_group: 'ORIGIN' } as QuotationChargeLineV1,
-    { option_no: 1, charge_group: 'FREIGHT' } as QuotationChargeLineV1,
-    { option_no: 2, charge_group: 'FREIGHT' } as QuotationChargeLineV1,
-  ];
-
-  it('returns shared lines plus the selected option freight', () => {
-    expect(selectOptionChargeLines(lines, 1)).toHaveLength(2);
-    expect(selectOptionChargeLines(lines, 2).map((row) => row.option_no)).toEqual([null, 2]);
+    expect(computeOptionMoneyTotals(opt, 'VND', ctx).totalVnd).toBe(500000 + 25000000);
   });
 
-  it('returns only shared lines when optionNo is null', () => {
-    expect(selectOptionChargeLines(lines, null)).toHaveLength(1);
+  it('converts the total into the given customer payment currency', () => {
+    const opt = option({
+      groupLines: {
+        ...emptyDraftGroups(),
+        FREIGHT: [line({ currency: 'USD', unitPrice: '1000' })],
+      },
+    });
+    const totals = computeOptionMoneyTotals(opt, 'USD', ctx);
+    expect(totals.totalVnd).toBe(25_000_000);
+    expect(totals.customerPayTotal).toBe(1000);
   });
 });

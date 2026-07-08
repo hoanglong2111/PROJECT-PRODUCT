@@ -40,7 +40,7 @@ type QuotationChargeBreakdownProps = {
   chargeLines: QuotationChargeLineV1[];
   adjustMode: boolean;
   isSubmitting?: boolean;
-  rateToVnd: (code: string | null | undefined) => number;
+  rateToVndOrNull: (code: string | null | undefined) => number | null;
   onCancelAdjust: () => void;
   onSubmitAdjust: (lines: QuotationChargeAdjustmentDraft[]) => void;
 };
@@ -106,7 +106,7 @@ export function QuotationChargeBreakdown({
   chargeLines,
   adjustMode,
   isSubmitting,
-  rateToVnd,
+  rateToVndOrNull,
   onCancelAdjust,
   onSubmitAdjust,
 }: QuotationChargeBreakdownProps) {
@@ -153,7 +153,7 @@ export function QuotationChargeBreakdown({
           currency: line.currency_code,
           endpointCurrency: paymentCurrency,
         },
-        (code) => rateToVnd(code),
+        (code) => rateToVndOrNull(code),
       );
 
       return {
@@ -168,14 +168,14 @@ export function QuotationChargeBreakdown({
         vndBreakdown,
       };
     })
-  ), [adjustMode, chargeLines, draftByLineId, paymentCurrency, rateToVnd]);
+  ), [adjustMode, chargeLines, draftByLineId, paymentCurrency, rateToVndOrNull]);
 
   const groupedLines = useMemo(() => groupLines(displayLines), [displayLines]);
   const quotationVndTotals = useMemo(
     () => summarizeQuotationVndLines(displayLines.map((row) => row.vndBreakdown)),
     [displayLines],
   );
-  const paymentRate = paymentCurrency === 'VND' ? 1 : rateToVnd(paymentCurrency);
+  const paymentRate = paymentCurrency === 'VND' ? 1 : rateToVndOrNull(paymentCurrency);
   const customerPaysTotal = paymentRate ? quotationVndTotals.totalVnd / paymentRate : null;
   const changedLines = displayLines
     .filter(({ enabled, unitDelta }) => enabled && Math.abs(unitDelta) > 0.000001)

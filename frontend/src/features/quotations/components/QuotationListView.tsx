@@ -14,13 +14,8 @@ import { useI18n } from '@shared/i18n';
 import { formatDate } from '@shared/utils/date';
 import { formatMoney } from '@shared/utils/money';
 
-import {
-  quotationTabItems,
-  quotationDisplayTotalInCurrency,
-  quotationTypeFullLabelKeys,
-  quotationTypeShortLabels,
-  type QuotationTab,
-} from '../model/quotationModel';
+import { computeQuotationCustomerPayTotal } from '../model/quotationMoney';
+import { quotationTabItems, quotationTypeFullLabelKeys, quotationTypeShortLabels, type QuotationTab } from '../model/quotationModel';
 import { useQuotationsUiStore } from '../model/quotationsUiStore';
 import { QuotationValidityBadge } from './QuotationValidityBadge';
 
@@ -41,7 +36,7 @@ const quotationTabColors: Record<QuotationTab, string> = {
 
 export function QuotationListView({ filteredQuotations, onInspect, supplierOptions, tabCounts }: QuotationListViewProps) {
   const { t } = useI18n();
-  const { rateToVnd } = useExchangeRates();
+  const { rateToVndOrNull } = useExchangeRates();
   const activeTab = useQuotationsUiStore((s) => s.activeTab);
   const setActiveTab = useQuotationsUiStore((s) => s.setActiveTab);
   const search = useQuotationsUiStore((s) => s.search);
@@ -196,105 +191,108 @@ export function QuotationListView({ filteredQuotations, onInspect, supplierOptio
               </div>
 
               <div className="rfq-list-rows">
-                {pagination.visibleItems.map((quotation) => (
-                  <article className="rfq-list-row" key={quotation.id}>
-                    <div className="rfq-list-cell rfq-list-code">
-                      <Text size="xs" c="dimmed" className="rfq-list-mobile-label">
-                        {t('quotations.quoteNumber')}
-                      </Text>
-                      <CopyValue value={quotation.quotation_no} hoverReveal>
-                        <Group gap={6} wrap="nowrap" component="span" align="center">
-                          <Text component="span" fw={800} size="sm" className="dl-code-text">
-                            {quotation.quotation_no}
-                          </Text>
-                          {quotation.is_final ? (
-                            <Badge size="xs" variant="light" color="blue">
-                              FINAL
-                            </Badge>
-                          ) : null}
-                        </Group>
-                      </CopyValue>
-                      <Group gap={8} wrap="wrap" align="center" className="rfq-code-meta">
-                        <Tooltip label={t('quotations.createdColumn')}>
-                          <Text component="span" size="xs" c="dimmed" className="rfq-code-created">
-                            <IconCalendarPlus size={12} className="rfq-code-created-icon" />
-                            {formatDate(quotation.create_at)}
-                          </Text>
-                        </Tooltip>
-                        <QuotationValidityBadge validUntil={quotation.valid_until} />
-                      </Group>
-                    </div>
-
-                    <div className="rfq-list-cell">
-                      <Text size="xs" c="dimmed" className="rfq-list-mobile-label">
-                        {t('quotations.customer')}
-                      </Text>
-                      <Text size="sm" fw={600}>
-                        {quotation.customer_ref ?? '-'}
-                      </Text>
-                      {quotation.supplier?.supplier_name ? (
-                        <Text size="xs" c="dimmed">
-                          {t('quotations.supplierShort')}: {quotation.supplier.supplier_name}
+                {pagination.visibleItems.map((quotation) => {
+                  const moneyTotals = computeQuotationCustomerPayTotal(quotation, rateToVndOrNull);
+                  return (
+                    <article className="rfq-list-row" key={quotation.id}>
+                      <div className="rfq-list-cell rfq-list-code">
+                        <Text size="xs" c="dimmed" className="rfq-list-mobile-label">
+                          {t('quotations.quoteNumber')}
                         </Text>
-                      ) : null}
-                    </div>
+                        <CopyValue value={quotation.quotation_no} hoverReveal>
+                          <Group gap={6} wrap="nowrap" component="span" align="center">
+                            <Text component="span" fw={800} size="sm" className="dl-code-text">
+                              {quotation.quotation_no}
+                            </Text>
+                            {quotation.is_final ? (
+                              <Badge size="xs" variant="light" color="blue">
+                                FINAL
+                              </Badge>
+                            ) : null}
+                          </Group>
+                        </CopyValue>
+                        <Group gap={8} wrap="wrap" align="center" className="rfq-code-meta">
+                          <Tooltip label={t('quotations.createdColumn')}>
+                            <Text component="span" size="xs" c="dimmed" className="rfq-code-created">
+                              <IconCalendarPlus size={12} className="rfq-code-created-icon" />
+                              {formatDate(quotation.create_at)}
+                            </Text>
+                          </Tooltip>
+                          <QuotationValidityBadge validUntil={quotation.valid_until} />
+                        </Group>
+                      </div>
 
-                    <div className="rfq-list-cell rfq-list-route">
-                      <Text size="xs" c="dimmed" className="rfq-list-mobile-label">
-                        {t('quotations.route')}
-                      </Text>
-                      <Text size="sm" fw={600}>
-                        {quotation.origin_port || quotation.destination_port
-                          ? `${quotation.origin_port ?? '-'} → ${quotation.destination_port ?? '-'}`
-                          : quotation.mode ?? '-'}
-                      </Text>
-                      <Text size="xs" c="dimmed">
-                        {quotation.origin_port || quotation.destination_port
-                          ? `${quotation.mode ?? '-'} / ${quotation.incoterm_code ?? '-'}`
-                          : quotation.incoterm_code ?? '-'}
-                      </Text>
-                    </div>
+                      <div className="rfq-list-cell">
+                        <Text size="xs" c="dimmed" className="rfq-list-mobile-label">
+                          {t('quotations.customer')}
+                        </Text>
+                        <Text size="sm" fw={600}>
+                          {quotation.customer_ref ?? '-'}
+                        </Text>
+                        {quotation.supplier?.supplier_name ? (
+                          <Text size="xs" c="dimmed">
+                            {t('quotations.supplierShort')}: {quotation.supplier.supplier_name}
+                          </Text>
+                        ) : null}
+                      </div>
 
-                    <div className="rfq-list-cell rfq-list-type">
-                      <Text size="xs" c="dimmed" className="rfq-list-mobile-label">
-                        {t('quotations.typeColumn')}
-                      </Text>
-                      <Tooltip label={t(quotationTypeFullLabelKeys[quotation.quotation_type])}>
-                        <Badge size="xs" variant="light" color="grape">
-                          {quotationTypeShortLabels[quotation.quotation_type]}
-                        </Badge>
-                      </Tooltip>
-                    </div>
+                      <div className="rfq-list-cell rfq-list-route">
+                        <Text size="xs" c="dimmed" className="rfq-list-mobile-label">
+                          {t('quotations.route')}
+                        </Text>
+                        <Text size="sm" fw={600}>
+                          {quotation.origin_port || quotation.destination_port
+                            ? `${quotation.origin_port ?? '-'} → ${quotation.destination_port ?? '-'}`
+                            : quotation.mode ?? '-'}
+                        </Text>
+                        <Text size="xs" c="dimmed">
+                          {quotation.origin_port || quotation.destination_port
+                            ? `${quotation.mode ?? '-'} / ${quotation.incoterm_code ?? '-'}`
+                            : quotation.incoterm_code ?? '-'}
+                        </Text>
+                      </div>
 
-                    <div className="rfq-list-cell rfq-list-money">
-                      <Text size="xs" c="dimmed" className="rfq-list-mobile-label">
-                        {t('quotations.total')}
-                      </Text>
-                      <Text size="sm" fw={800} className="tabular-nums">
-                        {formatMoney(quotationDisplayTotalInCurrency(quotation, rateToVnd), quotation.currency_code)}
-                      </Text>
-                    </div>
+                      <div className="rfq-list-cell rfq-list-type">
+                        <Text size="xs" c="dimmed" className="rfq-list-mobile-label">
+                          {t('quotations.typeColumn')}
+                        </Text>
+                        <Tooltip label={t(quotationTypeFullLabelKeys[quotation.quotation_type])}>
+                          <Badge size="xs" variant="light" color="grape">
+                            {quotationTypeShortLabels[quotation.quotation_type]}
+                          </Badge>
+                        </Tooltip>
+                      </div>
 
-                    <div className="rfq-list-cell rfq-list-status">
-                      <Text size="xs" c="dimmed" className="rfq-list-mobile-label">
-                        {t('quotations.status')}
-                      </Text>
-                      <StatusBadge status={quotation.status} />
-                    </div>
+                      <div className="rfq-list-cell rfq-list-money">
+                        <Text size="xs" c="dimmed" className="rfq-list-mobile-label">
+                          {t('quotations.total')}
+                        </Text>
+                        <Text size="sm" fw={800} className="tabular-nums">
+                          {moneyTotals.customerPayTotal != null ? formatMoney(moneyTotals.customerPayTotal, quotation.currency_code) : '-'}
+                        </Text>
+                      </div>
 
-                    <div className="rfq-list-cell rfq-list-action">
-                      <Tooltip label={t('quotations.inspect')}>
-                        <ActionIcon
-                          variant="light"
-                          aria-label={t('quotations.inspect')}
-                          onClick={() => onInspect(quotation)}
-                        >
-                          <IconEye size={18} />
-                        </ActionIcon>
-                      </Tooltip>
-                    </div>
-                  </article>
-                ))}
+                      <div className="rfq-list-cell rfq-list-status">
+                        <Text size="xs" c="dimmed" className="rfq-list-mobile-label">
+                          {t('quotations.status')}
+                        </Text>
+                        <StatusBadge status={quotation.status} />
+                      </div>
+
+                      <div className="rfq-list-cell rfq-list-action">
+                        <Tooltip label={t('quotations.inspect')}>
+                          <ActionIcon
+                            variant="light"
+                            aria-label={t('quotations.inspect')}
+                            onClick={() => onInspect(quotation)}
+                          >
+                            <IconEye size={18} />
+                          </ActionIcon>
+                        </Tooltip>
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
 
               <ListPagination

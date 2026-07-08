@@ -63,17 +63,19 @@ export function useTradeMasterDataOptions({ supplierRole }: UseTradeMasterDataOp
   const transportModes = useMemo(() => transportModesQuery.data?.data ?? [], [transportModesQuery.data]);
   const carriers = useMemo(() => carriersQuery.data?.data ?? [], [carriersQuery.data]);
   const incoterms = useMemo(() => incotermsQuery.data?.data ?? [], [incotermsQuery.data]);
+  const currencies = useMemo(() => currenciesQuery.data?.data ?? [], [currenciesQuery.data]);
 
   return {
     carrierOptions: useMemo<Option[]>(() => mapCarrierOptions(carriers), [carriers]),
     carriers,
+    currencies,
     currencyOptions: useMemo<Option[]>(
       () =>
-        (currenciesQuery.data?.data ?? []).map((currency) => ({
+        currencies.map((currency) => ({
           label: `${currency.currency_code} - ${currency.currency_name}`,
           value: currency.currency_code,
         })),
-      [currenciesQuery.data],
+      [currencies],
     ),
     incotermOptions: useMemo<Option[]>(
       () =>

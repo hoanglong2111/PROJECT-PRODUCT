@@ -3,16 +3,12 @@ import type {
   CreateQuotationOptionPayload,
   QuotationChargeGroup,
   QuotationChargeLinePayload,
-  QuotationChargeLineV1,
 } from '@shared/api/quotations';
-import {
-  chargeCodeToChargeType,
-  computeQuotationLineVnd,
-  summarizeQuotationVndLines,
-} from '@shared/lib/quotationCharges';
+import { chargeCodeToChargeType } from '@shared/lib/quotationCharges';
 
 import type { QuotationDraftGroupLine } from './quotationDraftLines';
 import type { QuotationDraftGroupLines } from './quotationDraftLines';
+import { computeQuotationMoneyTotals, type QuotationMoneyTotals } from './quotationMoney';
 
 export type DraftQuotationOption = Omit<CreateQuotationOptionPayload, 'carrier_code'> & {
   id: string;
@@ -85,66 +81,31 @@ export function buildQuotationChargeLinePayloads(
   return payloads;
 }
 
-function vndTotal(lines: QuotationDraftGroupLine[], ctx: DraftBuildContext): number {
-  const breakdowns = lines.filter(isPriced).map((line) =>
-    computeQuotationLineVnd(
-      {
-        quantity: line.quantity,
-        unitPrice: line.unitPrice,
-        currency: line.currency,
-        endpointCurrency: line.endpointCurrency,
-      },
-      ctx.rateToVndOrNull,
-    ),
-  );
-
-  return summarizeQuotationVndLines(breakdowns).totalVnd;
-}
-
-export function computeOptionHeadlineVnd(
+// Customer-pays total for a single draft option, in the quotation's payment currency —
+// mirrors the "Khách trả" total in QuotationChargeBreakdown so the option card estimate
+// (and the submitted `headline_amount`) always matches the persisted charge detail.
+export function computeOptionMoneyTotals(
   option: DraftQuotationOption,
+  paymentCurrency: string | null | undefined,
   ctx: DraftBuildContext,
-): number {
-  return vndTotal(
-    [
-      ...option.groupLines.FREIGHT,
-      ...option.groupLines.ORIGIN,
-      ...option.groupLines.DESTINATION,
-    ],
-    ctx,
+): QuotationMoneyTotals {
+  const lines = [
+    ...option.groupLines.FREIGHT,
+    ...option.groupLines.ORIGIN,
+    ...option.groupLines.DESTINATION,
+  ].filter(isPriced);
+
+  return computeQuotationMoneyTotals(
+    lines.map((line) => ({ quantity: line.quantity, unitPrice: line.unitPrice, currency: line.currency })),
+    paymentCurrency,
+    ctx.rateToVndOrNull,
   );
 }
 
-export function selectOptionChargeLines(
-  lines: QuotationChargeLineV1[],
-  optionNo: number | null,
-): QuotationChargeLineV1[] {
-  return lines.filter((line) => line.option_no == null || line.option_no === optionNo);
-}
-
-// Customer-pays total for a single option, computed from its charge lines in the
-// payment currency — mirrors the "Khách trả" total in QuotationChargeBreakdown so the
-// option card estimate always matches the charge detail (instead of a stale headline_amount).
-export function computeOptionCustomerPays(
-  lines: QuotationChargeLineV1[],
-  optionNo: number | null,
-  paymentCurrency: string,
-  rateToVnd: (code: string | null | undefined) => number | null,
+export function computeOptionCustomerPayAmount(
+  option: DraftQuotationOption,
+  paymentCurrency: string | null | undefined,
+  ctx: DraftBuildContext,
 ): number | null {
-  const breakdowns = selectOptionChargeLines(lines, optionNo).map((line) =>
-    computeQuotationLineVnd(
-      {
-        quantity: line.quantity,
-        unitPrice: line.unit_price,
-        currency: line.currency_code,
-        endpointCurrency: paymentCurrency,
-      },
-      rateToVnd,
-    ),
-  );
-  const totalVnd = summarizeQuotationVndLines(breakdowns).totalVnd;
-  const normalized = (paymentCurrency ?? 'VND').trim().toUpperCase();
-  const paymentRate = normalized === 'VND' ? 1 : rateToVnd(normalized);
-  if (!paymentRate) return null;
-  return totalVnd / paymentRate;
+  return computeOptionMoneyTotals(option, paymentCurrency, ctx).customerPayTotal;
 }
