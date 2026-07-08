@@ -20,6 +20,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
 import {
+  assigneeRoleLabel,
   DEPARTMENTS,
   MILESTONE_CODES,
   fetchTaskTemplates,
@@ -42,7 +43,6 @@ import { FILTER_SELECT_WIDTH, MasterDataToolbar } from './MasterDataToolbar';
 
 type TaskTemplateGroup = {
   key: string;
-  groupCode: string;
   groupName: string;
   templates: TaskTemplate[];
 };
@@ -60,7 +60,7 @@ function groupTaskTemplates(templates: TaskTemplate[]) {
   const groups = new Map<string, TaskTemplateGroup>();
 
   templates.forEach((template) => {
-    const key = `${template.group_code}::${template.group_name}`;
+    const key = template.group_name || '-';
     const existing = groups.get(key);
 
     if (existing) {
@@ -70,8 +70,7 @@ function groupTaskTemplates(templates: TaskTemplate[]) {
 
     groups.set(key, {
       key,
-      groupCode: template.group_code,
-      groupName: template.group_name,
+      groupName: key,
       templates: [template],
     });
   });
@@ -270,7 +269,6 @@ export function TaskTemplatesSection({
                   >
                     {collapsed ? <IconChevronRight size={16} /> : <IconChevronDown size={16} />}
                   </ActionIcon>
-                  <Badge variant="light">{group.groupCode}</Badge>
                   <Text size="sm" fw={700}>{group.groupName}</Text>
                 </Group>
                 <Badge color="gray" variant="light">
@@ -347,7 +345,14 @@ export function TaskTemplatesSection({
                             </Badge>
                           </Table.Td>
                           <Table.Td className="md-cell-clamp">
-                            <Text size="sm" lineClamp={1}>{template.assignee_code || '-'}</Text>
+                            <Stack gap={2}>
+                              <Text size="sm" lineClamp={1}>{template.assignee_role || '-'}</Text>
+                              {assigneeRoleLabel(template.assignee_role) !== '-' ? (
+                                <Text size="xs" c="dimmed" lineClamp={1}>
+                                  {assigneeRoleLabel(template.assignee_role)}
+                                </Text>
+                              ) : null}
+                            </Stack>
                           </Table.Td>
                           <Table.Td className="md-cell-align-center">
                             <StatusToggle active={template.is_active !== false} />

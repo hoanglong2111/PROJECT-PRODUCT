@@ -84,8 +84,8 @@ export function TaskTemplateModal({
       slaHours: editing.sla_hours === null ? '' : String(editing.sla_hours),
       slaText: editing.sla_text ?? '',
       department: editing.department,
-      assigneeCode: editing.assignee_code ?? '',
-      relatedDocuments: editing.related_documents,
+      assigneeCode: editing.assignee_role ?? '',
+      relatedDocuments: editing.required_documents,
       note: editing.note ?? '',
       sortOrder: String(editing.sort_order),
     });
@@ -133,8 +133,8 @@ export function TaskTemplateModal({
         sla_hours: slaHoursNumber ?? null,
         sla_text: optionalString(form.values.slaText) ?? null,
         department: form.values.department,
-        assignee_code: optionalString(form.values.assigneeCode) ?? null,
-        related_documents: optionalString(form.values.relatedDocuments) ?? '',
+        assignee_role: optionalString(form.values.assigneeCode) ?? null,
+        required_documents: optionalString(form.values.relatedDocuments) ?? '',
         note: optionalString(form.values.note) ?? null,
         sort_order: sortOrderNumber ?? 0,
       };

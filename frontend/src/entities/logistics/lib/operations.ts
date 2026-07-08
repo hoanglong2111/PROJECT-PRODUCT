@@ -1,4 +1,5 @@
 import type { DeliveryOrder, DocumentReview, Quotation } from '@shared/model/logistics';
+import type { DepartmentCode } from '@shared/api/taskTemplates';
 import { calcDelay } from './delay';
 
 export type OperationalRiskCode =
@@ -20,9 +21,12 @@ export type OperationalOwner =
 export type OperationalRisk = {
   code: OperationalRiskCode;
   severity: 'high' | 'medium' | 'low';
-  owner: OperationalOwner;
-  sla: '1h' | '2h' | '8h' | 'Today' | 'Before close';
-  detail: string;
+  ownerDept: DepartmentCode;
+  slaCode: '1H' | '2H' | '8H' | 'TODAY' | 'BEFORE_CLOSE';
+  detail: {
+    key: string;
+    params?: Record<string, string | number>;
+  };
 };
 
 export type OperationalGate = {
@@ -53,18 +57,18 @@ export function getDeliveryOrderRisks(
   if (orderQuote && (orderQuote.status === 'PRELIMINARY_SENT' || orderQuote.status === 'OFFICIAL_SENT')) {
     risks.push({
       code: 'QUOTATION_SLA',
-      detail: `Quotation ${orderQuote.quoteNumber} pending response`,
-      owner: 'PIC Manager',
+      detail: { key: 'opsRisk.detail.quotationPendingResponse', params: { quoteNumber: orderQuote.quoteNumber } },
+      ownerDept: 'FDS_SALES',
       severity: 'high',
-      sla: '1h',
+      slaCode: '1H',
     });
   } else if (!quotations && deliveryOrder.order_info.status === 'CREATED') {
     risks.push({
       code: 'QUOTATION_SLA',
-      detail: 'Quotation bidding pending response',
-      owner: 'PIC Manager',
+      detail: { key: 'opsRisk.detail.quotationBiddingPending' },
+      ownerDept: 'FDS_SALES',
       severity: 'high',
-      sla: '1h',
+      slaCode: '1H',
     });
   }
 
@@ -73,58 +77,67 @@ export function getDeliveryOrderRisks(
   if (orderReview && orderReview.status === 'READY_FOR_CHECK') {
     risks.push({
       code: 'DRAFT_BL_SLA',
-      detail: 'Draft B/L pending KBI review',
-      owner: 'Customs Officer',
+      detail: { key: 'opsRisk.detail.draftBlPendingKbiReview' },
+      ownerDept: 'FDS_OPS_CUSTOMS',
       severity: 'high',
-      sla: '2h',
+      slaCode: '2H',
     });
   } else if (!documentReviews && deliveryOrder.order_info.status === 'IN_TRANSIT') {
     risks.push({
       code: 'DRAFT_BL_SLA',
-      detail: 'Draft B/L uploaded, pending KBI review',
-      owner: 'Customs Officer',
+      detail: { key: 'opsRisk.detail.draftBlUploadedPendingKbiReview' },
+      ownerDept: 'FDS_OPS_CUSTOMS',
       severity: 'high',
-      sla: '2h',
+      slaCode: '2H',
     });
   }
 
   if (deliveryOrder.logistics_shipping.missing_documents.length > 0) {
     risks.push({
       code: 'MISSING_DOCUMENTS',
-      detail: deliveryOrder.logistics_shipping.missing_documents.join(', '),
-      owner: 'Port Officer',
+      detail: {
+        key: 'opsRisk.detail.missingDocuments',
+        params: { documents: deliveryOrder.logistics_shipping.missing_documents.join(', ') },
+      },
+      ownerDept: 'FDS_OPS_CUSTOMS',
       severity: 'high',
-      sla: '1h',
+      slaCode: '1H',
     });
   }
 
   if (deliveryOrder.task_summary.blocked_tasks > 0) {
     risks.push({
       code: 'BLOCKED_TASKS',
-      detail: `${deliveryOrder.task_summary.blocked_tasks} blocked`,
-      owner: 'PIC Manager',
+      detail: {
+        key: 'opsRisk.detail.blockedTasks',
+        params: { count: deliveryOrder.task_summary.blocked_tasks },
+      },
+      ownerDept: 'FDS_OPS',
       severity: 'high',
-      sla: 'Today',
+      slaCode: 'TODAY',
     });
   }
 
   if (deliveryOrder.task_summary.required_tasks_remaining > 0) {
     risks.push({
       code: 'REQUIRED_TASKS',
-      detail: `${deliveryOrder.task_summary.required_tasks_remaining} required remaining`,
-      owner: 'PIC Manager',
+      detail: {
+        key: 'opsRisk.detail.requiredTasks',
+        params: { count: deliveryOrder.task_summary.required_tasks_remaining },
+      },
+      ownerDept: 'FDS_OPS',
       severity: 'medium',
-      sla: 'Before close',
+      slaCode: 'BEFORE_CLOSE',
     });
   }
 
   if (delay.isLate) {
     risks.push({
       code: 'WAREHOUSE_DELAY',
-      detail: `${delay.days}d`,
-      owner: 'Warehouse Staff',
+      detail: { key: 'opsRisk.detail.warehouseDelay', params: { days: delay.days } },
+      ownerDept: 'KBI_WAREHOUSE',
       severity: 'high',
-      sla: 'Today',
+      slaCode: 'TODAY',
     });
   }
 

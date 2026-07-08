@@ -126,7 +126,7 @@ function currency(patch: Partial<Currency>): Currency {
     id: 'cur',
     currency_code: 'USD',
     currency_name: 'US Dollar',
-    symbol: '$',
+    symbol: 'USD',
     decimal_places: 2,
     is_active: true,
     ...patch,

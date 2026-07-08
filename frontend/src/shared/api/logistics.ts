@@ -699,7 +699,6 @@ function mapTaskScreenToLogisticsTask(task: TaskScreenItem): LogisticsTask {
     do_number: task.ref_no,
     due_date: dateOnly(task.due_at) || '',
     hbl_number: null,
-    is_required_for_do_closure: true,
     notes: task.note ?? task.description ?? '',
     po_number: task.ref_type === 'PURCHASE_ORDER' ? task.ref_no : null,
     priority: task.priority,

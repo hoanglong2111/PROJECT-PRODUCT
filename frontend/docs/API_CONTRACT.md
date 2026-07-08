@@ -250,6 +250,12 @@ for mutations): `/currencies`, `/incoterms`, `/transport-modes`, `/suppliers`,
 `/task-templates`, `/options`. These are part of the contract but use the legacy
 envelope above; handle their shapes separately from the `/v1` envelope.
 
+Task template DTOs mirror the SOP master-data seed and expose:
+`group_code`, `group_name`, `task_name`, `task_description`, `milestone_code`,
+`sla_hours`, `sla_text`, `department`, `assignee_role`, `required_documents`,
+`note`, `sort_order`, and `is_active`. The frontend must not write legacy
+`assignee_code` or `related_documents` fields for this endpoint.
+
 Charge code DTOs expose two independent taxonomy fields: `group` is the seven-section
 macro group (`ORIGIN_EXPORT`, `MAIN_FREIGHT`, `FREIGHT_SURCHARGE`,
 `DOCUMENTATION_FILING`, `DESTINATION_IMPORT`, `ANCILLARY_ACCESSORIAL`,

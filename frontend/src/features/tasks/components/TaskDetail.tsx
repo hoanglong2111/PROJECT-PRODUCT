@@ -18,18 +18,13 @@ export function TaskDetail({
   task: LogisticsTask;
 }) {
   const { priorityLabel, t, taskRoleLabel } = useI18n();
-  const detailFacts = [
+  const detailFacts: Array<{ label: ReactNode; value: ReactNode; tone?: 'attention' | 'neutral' }> = [
     { label: t('common.role'), value: taskRoleLabel(task.role) },
     { label: t('common.assignee'), value: `${task.assignee.name} - ${task.assignee.department}` },
     { label: t('forms.priority'), value: priorityLabel(task.priority) },
     { label: t('tasks.dueDate'), value: task.due_date },
     { label: 'PO', value: task.po_number ?? '-' },
-    {
-      label: t('tasks.requiredForClosure'),
-      value: task.is_required_for_do_closure ? t('common.yes') : t('common.no'),
-      tone: task.is_required_for_do_closure ? 'attention' : 'neutral',
-    },
-  ] satisfies Array<{ label: ReactNode; value: ReactNode; tone?: 'attention' | 'neutral' }>;
+  ];
 
   return (
     <Stack gap="md" className="task-detail-stack">

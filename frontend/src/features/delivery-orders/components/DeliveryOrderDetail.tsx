@@ -56,7 +56,7 @@ import { OperationalGateSummary } from './OperationalGateSummary';
 
 export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: DeliveryOrder; onClose: () => void }) {
   const queryClient = useQueryClient();
-  const { documentLabel, shippingMethodLabel, t, taskRoleLabel } = useI18n();
+  const { departmentLabel, documentLabel, shippingMethodLabel, t, taskRoleLabel } = useI18n();
   const [createShipmentOpen, setCreateShipmentOpen] = useState(false);
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
   const gates = getOperationalGates(deliveryOrder);
@@ -415,7 +415,7 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
                   </Text>
                   <Text size="sm" c="dimmed">
                     {primaryRisk
-                      ? `${taskRoleLabel(primaryRisk.owner)} | ${t('deliveryOrders.sla', { sla: slaLabel(primaryRisk.sla, t) })}`
+                      ? `${departmentLabel(primaryRisk.ownerDept)} | ${t('deliveryOrders.sla', { sla: slaLabel(primaryRisk.slaCode, t) })}`
                       : t('deliveryOrders.nextActionsDescription')}
                   </Text>
                 </Stack>
@@ -503,7 +503,7 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
                           <Text size="sm">{riskDetail(risk, t)}</Text>
                         </Group>
                         <Text size="sm" c="dimmed">
-                          {taskRoleLabel(risk.owner)} · {t('deliveryOrders.sla', { sla: slaLabel(risk.sla, t) })}
+                          {departmentLabel(risk.ownerDept)} · {t('deliveryOrders.sla', { sla: slaLabel(risk.slaCode, t) })}
                         </Text>
                       </Group>
                     ))

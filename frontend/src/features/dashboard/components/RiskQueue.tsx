@@ -3,12 +3,12 @@ import { IconArrowRight, IconClockHour4, IconShieldCheck } from '@tabler/icons-r
 import { Link } from 'react-router-dom';
 
 import { useI18n } from '@shared/i18n';
-import { getRiskColor, type OperationalRiskCode } from '@entities/logistics';
+import { getRiskColor, type OperationalRiskCode, type OperationalRisk } from '@entities/logistics';
 
 import type { DashboardRiskRow } from '../model/dashboardSelectors';
 
 export function RiskQueue({ riskRows }: { riskRows: DashboardRiskRow[] }) {
-  const { t } = useI18n();
+  const { departmentLabel, t } = useI18n();
 
   return (
     <Paper withBorder p="md" className="metric-card dashboard-card dashboard-risk-card dl-data-panel">
@@ -49,7 +49,7 @@ export function RiskQueue({ riskRows }: { riskRows: DashboardRiskRow[] }) {
                     {riskLabel(primaryRisk.code, t)}
                   </Badge>
                   <Text size="xs" c="dimmed" mt={4} lineClamp={2} className="dashboard-risk-subtitle">
-                    {primaryRisk.detail}
+                    {riskDetail(primaryRisk, t)}
                   </Text>
                 </div>
 
@@ -58,13 +58,13 @@ export function RiskQueue({ riskRows }: { riskRows: DashboardRiskRow[] }) {
                     {t('common.owner')}
                   </Text>
                   <Text size="sm" fw={800}>
-                    {primaryRisk.owner}
+                    {departmentLabel(primaryRisk.ownerDept)}
                   </Text>
                 </div>
 
                 <div className="dashboard-risk-sla">
                   <Badge leftSection={<IconClockHour4 size={12} />} color="blue" variant="light">
-                    {primaryRisk.sla}
+                    {slaLabel(primaryRisk.slaCode, t)}
                   </Badge>
                 </div>
               </div>
@@ -102,4 +102,20 @@ function riskLabel(code: OperationalRiskCode, t: ReturnType<typeof useI18n>['t']
   };
 
   return labels[code];
+}
+
+function riskDetail(risk: OperationalRisk, t: ReturnType<typeof useI18n>['t']) {
+  return t(risk.detail.key, risk.detail.params);
+}
+
+function slaLabel(slaCode: OperationalRisk['slaCode'], t: ReturnType<typeof useI18n>['t']) {
+  const labels: Record<OperationalRisk['slaCode'], string> = {
+    '1H': t('opsRisk.sla.1H'),
+    '2H': t('opsRisk.sla.2H'),
+    '8H': t('opsRisk.sla.8H'),
+    BEFORE_CLOSE: t('opsRisk.sla.beforeClose'),
+    TODAY: t('opsRisk.sla.today'),
+  };
+
+  return labels[slaCode];
 }
