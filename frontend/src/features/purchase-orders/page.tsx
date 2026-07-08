@@ -21,6 +21,7 @@ import { PageHeader } from '@shared/components/PageHeader';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
 import { WorkbenchHeader } from '@shared/components/WorkbenchHeader';
 import { useEntityParam } from '@shared/hooks/useEntityParam';
+import { useI18n } from '@shared/i18n';
 
 import {
   PAGE_SIZE,
@@ -36,6 +37,7 @@ import { PurchaseOrderForm } from './components/PurchaseOrderForm';
 import { PurchaseOrderListView } from './components/PurchaseOrderListView';
 
 export function PurchaseOrders() {
+  const { t } = useI18n();
   const [searchParams] = useSearchParams();
   const monthParam = searchParams.get('month');
   const createParam = searchParams.get('create');
@@ -173,9 +175,9 @@ export function PurchaseOrders() {
   if (purchaseOrdersQuery.isLoading) {
     return (
       <PageLoading
-        title="Purchase Orders"
-        description="Loading PO list from the mock API."
-        tableColumns={['PO', 'Supplier', 'Status', 'ETA', 'Amount']}
+        title={t('purchaseOrders.title')}
+        description={t('purchaseOrders.loadingDescription')}
+        tableColumns={['PO', t('purchaseOrders.supplier'), t('common.status'), 'ETA', t('purchaseOrders.poLinesHeaderAmount')]}
       />
     );
   }
@@ -183,8 +185,8 @@ export function PurchaseOrders() {
   if (purchaseOrdersQuery.isError) {
     return (
       <PageError
-        title="Purchase Orders"
-        description="Could not load purchase orders."
+        title={t('purchaseOrders.title')}
+        description={t('purchaseOrders.errorDescription')}
         error={purchaseOrdersQuery.error}
         onRetry={() => {
           void purchaseOrdersQuery.refetch();
@@ -200,8 +202,8 @@ export function PurchaseOrders() {
           className="purchase-orders-page-header"
           titleClassName="purchase-orders-page-title"
           actionsClassName="purchase-orders-page-actions"
-          title="Purchase Orders"
-          subtitle="Operational PO intake, supplier confirmation, and LOT planning."
+          title={t('purchaseOrders.title')}
+          subtitle={t('purchaseOrders.subtitle')}
           actions={
             <Can capability="purchaseOrders.manage">
               <Button
@@ -213,7 +215,7 @@ export function PurchaseOrders() {
                   setWorkbench('create');
                 }}
               >
-                Create PO
+                {t('purchaseOrders.createPo')}
               </Button>
             </Can>
           }

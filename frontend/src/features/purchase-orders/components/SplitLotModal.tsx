@@ -36,7 +36,7 @@ export function SplitLotModal({
       lots
         .filter((lot) => lot.id !== localDraft?.sourceLot.id && !lockedLotStatuses.has(lot.status))
         .map((lot) => ({
-          label: `${lot.lot_no} - ${lot.lot_name || 'Unnamed'}`,
+          label: `${lot.lot_no} - ${lot.lot_name || t('purchaseOrders.unnamedLot')}`,
           value: lot.id,
         })),
     [localDraft?.sourceLot.id, lots],
@@ -79,7 +79,7 @@ export function SplitLotModal({
           ) : null}
           <Paper withBorder p="sm" className="purchase-order-split-source">
             <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-              Source
+              {t('purchaseOrders.splitSource')}
             </Text>
             <Text fw={700} lineClamp={1} title={localDraft.sourceLot.lot_no}>
               {localDraft.sourceLot.lot_no}
@@ -95,7 +95,7 @@ export function SplitLotModal({
           </Paper>
           <SimpleGrid cols={{ base: 1, md: 2 }} className="purchase-order-modal-grid">
             <Select
-              label="Target LOT"
+              label={t('purchaseOrders.targetLot')}
               data={targetOptions}
               value={localDraft.target_lot_id}
               onChange={(value) => setLocalDraft({ ...localDraft, target_lot_id: value ?? '' })}
@@ -103,7 +103,7 @@ export function SplitLotModal({
               required
             />
             <NumberInput
-              label="Split qty"
+              label={t('purchaseOrders.splitQty')}
               min={0}
               max={Math.max(availableQty - 0.0001, 0)}
               value={localDraft.split_qty}
@@ -115,10 +115,10 @@ export function SplitLotModal({
           </SimpleGrid>
           <Group justify="flex-end" wrap="nowrap" className="purchase-order-modal-footer">
             <Button className="purchase-order-action-button" variant="subtle" onClick={onClose}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button className="purchase-order-action-button" type="submit" loading={loading} disabled={!canSubmit} leftSection={<IconGitBranch size={16} />}>
-              Split line
+              {t('purchaseOrders.splitLine')}
             </Button>
           </Group>
         </Stack>

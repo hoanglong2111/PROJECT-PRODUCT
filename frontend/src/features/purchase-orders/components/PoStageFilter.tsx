@@ -37,7 +37,7 @@ function activeStageOf(value: string): PoStageKey | null {
 }
 
 export function PoStageFilter({ value, onChange, stageCounts, subStageCounts, totalCount }: PoStageFilterProps) {
-  const { statusLabel } = useI18n();
+  const { statusLabel, t } = useI18n();
   const activeStage = activeStageOf(value);
   const activeStageDef = activeStage ? PO_STAGES.find((stage) => stage.key === activeStage) : undefined;
   const showSubChips = Boolean(activeStageDef && activeStageDef.members.length > 1);
@@ -50,7 +50,7 @@ export function PoStageFilter({ value, onChange, stageCounts, subStageCounts, to
           <StageChip
             active={value === 'all'}
             color="gray"
-            label="All"
+            label={t('common.all')}
             count={totalCount}
             onClick={() => onChange('all')}
           />
@@ -72,7 +72,7 @@ export function PoStageFilter({ value, onChange, stageCounts, subStageCounts, to
           <Group gap={6} wrap="nowrap" className="po-stage-subfilter">
             <SubChip
               active={value === `stage:${activeStageDef.key}`}
-              label={`All ${statusLabel(activeStageDef.labelKey)}`}
+              label={`${t('common.all')} ${statusLabel(activeStageDef.labelKey)}`}
               count={activeStageTotal}
               onClick={() => onChange(`stage:${activeStageDef.key}`)}
             />
