@@ -115,28 +115,28 @@ export function SupplierConfirmationModal({
           </Alert>
         ) : null}
         <SimpleGrid cols={{ base: 1, md: 2 }} className="purchase-order-modal-grid">
-          <TextInput label="Confirmed by" value={confirmedBy} onChange={(event) => setConfirmedBy(event.currentTarget.value)} />
-          <TextInput label="Supplier ref no" value={supplierRefNo} onChange={(event) => setSupplierRefNo(event.currentTarget.value)} />
-          <Switch label="Full shipment" checked={isFullShipment} onChange={(event) => setIsFullShipment(event.currentTarget.checked)} />
+          <TextInput label={t('purchaseOrders.confirmedBy')} value={confirmedBy} onChange={(event) => setConfirmedBy(event.currentTarget.value)} />
+          <TextInput label={t('purchaseOrders.supplierRefNo')} value={supplierRefNo} onChange={(event) => setSupplierRefNo(event.currentTarget.value)} />
+          <Switch label={t('purchaseOrders.fullShipment')} checked={isFullShipment} onChange={(event) => setIsFullShipment(event.currentTarget.checked)} />
           <Switch
-            label="Allow partial shipment"
+            label={t('purchaseOrders.allowPartialShipment')}
             checked={allowPartialShipment}
             onChange={(event) => setAllowPartialShipment(event.currentTarget.checked)}
           />
         </SimpleGrid>
-        <Textarea label="Note" value={note} onChange={(event) => setNote(event.currentTarget.value)} autosize minRows={2} />
+        <Textarea label={t('purchaseOrders.poLinesMetaNote')} value={note} onChange={(event) => setNote(event.currentTarget.value)} autosize minRows={2} />
         <ScrollArea className="purchase-order-confirmation-scroll" type="always" offsetScrollbars scrollbarSize={8}>
           <Table className="purchase-order-confirmation-table" miw={920} verticalSpacing="xs">
             <Table.Thead>
               <Table.Tr>
-                <Table.Th>Line</Table.Th>
-                <Table.Th>Item</Table.Th>
-                <Table.Th style={{ width: 150 }}>Ordered</Table.Th>
-                <Table.Th style={{ width: 160 }}>Confirmed qty</Table.Th>
+                <Table.Th>{t('purchaseOrders.headerLine')}</Table.Th>
+                <Table.Th>{t('purchaseOrders.poLinesHeaderItem')}</Table.Th>
+                <Table.Th style={{ width: 150 }}>{t('purchaseOrders.poLinesHeaderOrdered')}</Table.Th>
+                <Table.Th style={{ width: 160 }}>{t('purchaseOrders.confirmedQty')}</Table.Th>
                 <Table.Th style={{ width: 160 }}>
-                  <HeaderLabel label="Cargo ready" hint={t('glossary.cargoReady')} />
+                  <HeaderLabel label={t('purchaseOrders.cargoReady')} hint={t('glossary.cargoReady')} />
                 </Table.Th>
-                <Table.Th style={{ width: 90 }}>Can fulfill</Table.Th>
+                <Table.Th style={{ width: 90 }}>{t('purchaseOrders.canFulfill')}</Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -202,10 +202,10 @@ export function SupplierConfirmationModal({
         </ScrollArea>
         <Group justify="flex-end" wrap="nowrap" className="purchase-order-modal-footer">
           <Button className="purchase-order-action-button" variant="subtle" onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button className="purchase-order-action-button" type="submit" loading={mutation.isPending} leftSection={<IconCircleCheck size={16} />}>
-            Confirm PO
+            {t('purchaseOrders.confirmPo')}
           </Button>
         </Group>
       </Stack>

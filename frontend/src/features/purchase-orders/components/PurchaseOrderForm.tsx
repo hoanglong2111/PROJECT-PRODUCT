@@ -210,14 +210,14 @@ export function PurchaseOrderForm({
     <form className="purchase-order-form" onSubmit={handleSubmit}>
       <Stack gap="sm">
         {mutation.isError ? (
-          <Alert color="red" icon={<IconAlertTriangle size={18} />} title="Could not save PO">
+          <Alert color="red" icon={<IconAlertTriangle size={18} />} title={t('purchaseOrders.formSaveError')}>
             {getApiErrorMessage(mutation.error)}
           </Alert>
         ) : null}
 
         {mode === 'create' && !draft.quotation_id ? (
-          <Alert color="yellow" icon={<IconAlertTriangle size={18} />} title="Confirmed quotation required">
-            A PO can only be created from a CONFIRMED quotation. Open a confirmed quotation and use "Create PO from quotation".
+          <Alert color="yellow" icon={<IconAlertTriangle size={18} />} title={t('purchaseOrders.formQuotationRequiredTitle')}>
+            {t('purchaseOrders.formQuotationRequiredBody')}
           </Alert>
         ) : null}
 
@@ -226,19 +226,19 @@ export function PurchaseOrderForm({
             <Stack gap={4}>
               <Group gap="xs">
                 <Text fw={700} size="lg">
-                  {mode === 'create' ? 'Create PO' : 'PO header'}
+                  {mode === 'create' ? t('purchaseOrders.createPo') : t('purchaseOrders.poHeader')}
                 </Text>
                 <Badge variant="light" size="sm">
-                  {mode === 'create' ? 'New order' : 'Header edit'}
+                  {mode === 'create' ? t('purchaseOrders.badgeNewOrder') : t('purchaseOrders.badgeHeaderEdit')}
                 </Badge>
               </Group>
               <Text size="sm" c="dimmed">
-                Capture supplier terms, logistics dates, and PO lines for the V1 workflow.
+                {t('purchaseOrders.formHeroDescription')}
               </Text>
             </Stack>
             <Group gap="xs" className="purchase-order-form-actions">
               <Button type="button" variant="subtle" onClick={onCancel} leftSection={<IconX size={16} />}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button
                 type="submit"
@@ -246,22 +246,22 @@ export function PurchaseOrderForm({
                 disabled={!canSubmit}
                 leftSection={<IconDeviceFloppy size={16} />}
               >
-                {mode === 'create' ? 'Create PO' : 'Save header'}
+                {mode === 'create' ? t('purchaseOrders.createPo') : t('purchaseOrders.saveHeader')}
               </Button>
             </Group>
           </Group>
 
           <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} mt="md">
-            <SummaryTile label="PO no reference" value={draft.po_no || 'Draft'} />
-            <SummaryTile label="Supplier" value={selectedSupplier?.supplier_name ?? 'Supplier required'} />
-            <SummaryTile label="Terms" value={selectedIncoterm?.incoterm_code ?? 'Incoterm required'} />
+            <SummaryTile label={t('purchaseOrders.poNoReference')} value={draft.po_no || t('purchaseOrders.draftValue')} />
+            <SummaryTile label={t('purchaseOrders.supplier')} value={selectedSupplier?.supplier_name ?? t('purchaseOrders.supplierRequired')} />
+            <SummaryTile label={t('purchaseOrders.terms')} value={selectedIncoterm?.incoterm_code ?? t('purchaseOrders.incotermRequired')} />
             <SummaryTile
-              label={mode === 'create' ? 'PO total' : 'Currency'}
+              label={mode === 'create' ? t('purchaseOrders.poTotal') : t('purchaseOrders.currency')}
               value={
                 mode === 'create' ? (
                   <NumberFormatter value={poTotal} thousandSeparator decimalScale={2} />
                 ) : (
-                  selectedCurrency?.currency_code ?? 'Not set'
+                  selectedCurrency?.currency_code ?? t('purchaseOrders.notSet')
                 )
               }
               tone="accent"
@@ -270,10 +270,10 @@ export function PurchaseOrderForm({
         </Paper>
 
         <div className="purchase-order-form-core-grid">
-          <FormSection title="Order identification" description="Short, searchable operational references.">
+          <FormSection title={t('purchaseOrders.sectionIdentificationTitle')} description={t('purchaseOrders.sectionIdentificationDescription')}>
             <SimpleGrid cols={{ base: 1, sm: 2, lg: 1, xl: 2 }} spacing="sm">
               <TextInput
-                label="PO no reference"
+                label={t('purchaseOrders.poNoReference')}
                 value={draft.po_no}
                 onChange={(event) => {
                   const { value } = event.currentTarget;
@@ -286,7 +286,7 @@ export function PurchaseOrderForm({
                 required
               />
               <TextInput
-                label={contractAutoSync ? 'Contract no (auto)' : 'Contract no'}
+                label={contractAutoSync ? t('purchaseOrders.contractNoAuto') : t('purchaseOrders.contractNo')}
                 value={draft.contract_no}
                 onChange={(event) => {
                   const { value } = event.currentTarget;
@@ -298,7 +298,7 @@ export function PurchaseOrderForm({
                     <ActionIcon
                       variant="subtle"
                       color="gray"
-                      aria-label="Re-sync contract no from PO no"
+                      aria-label={t('purchaseOrders.resyncContractNo')}
                       onClick={() => {
                         setContractAutoSync(true);
                         setDraft((current) => ({ ...current, contract_no: deriveContractNo(current.po_no) }));
@@ -312,8 +312,8 @@ export function PurchaseOrderForm({
               <Select
                 label={
                   <HeaderLabel
-                    label="PO type"
-                    hint="Commercial lane (sea / air / domestic). Drives SOP task templates, not the booked container mode."
+                    label={t('purchaseOrders.poType')}
+                    hint={t('purchaseOrders.poTypeHint')}
                   />
                 }
                 data={poTypeOptions.map((type) => ({ label: type, value: type }))}
@@ -325,12 +325,12 @@ export function PurchaseOrderForm({
           </FormSection>
 
           <FormSection
-            title="Supplier and commercial terms"
-            description="Supplier defaults can prefill currency, incoterm, payment, and transport."
+            title={t('purchaseOrders.sectionSupplierTitle')}
+            description={t('purchaseOrders.sectionSupplierDescription')}
           >
             <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
               <Select
-                label="Supplier"
+                label={t('purchaseOrders.supplier')}
                 data={masterData.supplierOptions}
                 value={draft.supplier_id}
                 onChange={(value) => {
@@ -350,7 +350,7 @@ export function PurchaseOrderForm({
                 required
               />
               <Select
-                label="Incoterm"
+                label={t('purchaseOrders.incoterm')}
                 data={masterData.incotermOptions}
                 value={draft.incoterm_id}
                 onChange={(value) => setDraft((current) => ({ ...current, incoterm_id: value ?? '' }))}
@@ -358,7 +358,7 @@ export function PurchaseOrderForm({
                 required
               />
               <Select
-                label="Currency"
+                label={t('purchaseOrders.currency')}
                 data={masterData.currencyOptions}
                 value={draft.currency_id}
                 onChange={(value) => setDraft((current) => ({ ...current, currency_id: value ?? '' }))}
@@ -366,7 +366,7 @@ export function PurchaseOrderForm({
                 clearable
               />
               <NumberInput
-                label="Current exchange rate"
+                label={t('purchaseOrders.exchangeRate')}
                 min={0}
                 value={draft.exchange_rate}
                 thousandSeparator=","
@@ -374,7 +374,7 @@ export function PurchaseOrderForm({
                 onChange={(value) => setDraft((current) => ({ ...current, exchange_rate: toNumber(value, 1) }))}
               />
               <TextInput
-                label="Payment term"
+                label={t('purchaseOrders.paymentTerm')}
                 value={draft.payment_term}
                 onChange={(event) => {
                   const { value } = event.currentTarget;
@@ -385,19 +385,19 @@ export function PurchaseOrderForm({
           </FormSection>
 
           <FormSection
-            title="Transport and schedule"
+            title={t('purchaseOrders.sectionTransportTitle')}
             description={
               selectedTransportMode
-                ? `${selectedTransportMode.mode_code} selected for movement planning.`
-                : 'Expected departure and arrival before LOT planning.'
+                ? t('purchaseOrders.sectionTransportModeSelected', { mode: selectedTransportMode.mode_code })
+                : t('purchaseOrders.sectionTransportDescription')
             }
           >
             <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
               <Select
                 label={
                   <HeaderLabel
-                    label="Transport mode"
-                    hint="Planned method, incl. FCL / LCL / air. The final FCL vs LCL is confirmed downstream on the shipment."
+                    label={t('purchaseOrders.transportMode')}
+                    hint={t('purchaseOrders.transportModeHint')}
                   />
                 }
                 data={masterData.transportModeOptions}
@@ -442,7 +442,7 @@ export function PurchaseOrderForm({
               />
             </SimpleGrid>
             <Textarea
-              label="Notes"
+              label={t('common.notes')}
               value={draft.notes}
               onChange={(event) => {
                 const { value } = event.currentTarget;
@@ -459,22 +459,22 @@ export function PurchaseOrderForm({
             <Group justify="space-between" align="flex-start" gap="sm" className="purchase-order-lines-command">
               <Stack gap={2} className="purchase-order-lines-copy">
                 <Group gap="xs" wrap="wrap">
-                  <Text fw={700}>PO lines</Text>
-                  <Badge variant="light">{validLineCount} ready</Badge>
+                  <Text fw={700}>{t('purchaseOrders.poLinesTitle')}</Text>
+                  <Badge variant="light">{t('purchaseOrders.linesReady', { count: validLineCount })}</Badge>
                   {incompleteLineCount > 0 ? (
                     <Badge color="orange" variant="light">
-                      {incompleteLineCount} incomplete
+                      {t('purchaseOrders.linesIncomplete', { count: incompleteLineCount })}
                     </Badge>
                   ) : null}
                 </Group>
                 <Text size="sm" c="dimmed">
-                  Pick a line on the left, finish the required fields on the right, then create the PO.
+                  {t('purchaseOrders.linesHint')}
                 </Text>
               </Stack>
               <Group gap="xs" className="purchase-order-lines-actions">
                 <Group gap="xs" className="purchase-order-total-pill">
                   <Text size="xs" c="dimmed" fw={700}>
-                    PO total
+                    {t('purchaseOrders.poTotal')}
                   </Text>
                   <Text fw={800} size="md" className="tabular-nums">
                     <NumberFormatter value={poTotal} thousandSeparator decimalScale={2} />
@@ -485,14 +485,13 @@ export function PurchaseOrderForm({
             {validLineCount === 0 ? (
               <Group gap={6} className="purchase-order-line-notice is-error">
                 <IconAlertTriangle size={15} />
-                <Text size="xs">Add at least one line with an item and a quantity before creating the PO.</Text>
+                <Text size="xs">{t('purchaseOrders.linesRequired')}</Text>
               </Group>
             ) : incompleteLineCount > 0 ? (
               <Group gap={6} className="purchase-order-line-notice is-warning">
                 <IconAlertTriangle size={15} />
                 <Text size="xs">
-                  {incompleteLineCount} incomplete line{incompleteLineCount > 1 ? 's' : ''} (missing item or quantity) will not be
-                  saved.
+                  {t('purchaseOrders.linesIncompleteWarning', { count: incompleteLineCount })}
                 </Text>
               </Group>
             ) : null}

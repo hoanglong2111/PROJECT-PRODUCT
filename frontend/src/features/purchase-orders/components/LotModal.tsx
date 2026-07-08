@@ -60,24 +60,24 @@ export function LotModal({
           ) : null}
           <SimpleGrid cols={{ base: 1, md: 2 }} className="purchase-order-modal-grid">
             <TextInput
-              label="LOT no"
+              label={t('purchaseOrders.lotNo')}
               value={localDraft.lot_no}
               onChange={(event) => setLocalDraft({ ...localDraft, lot_no: event.currentTarget.value })}
               required
             />
             <TextInput
-              label="LOT name"
+              label={t('purchaseOrders.lotName')}
               value={localDraft.lot_name}
               onChange={(event) => setLocalDraft({ ...localDraft, lot_name: event.currentTarget.value })}
             />
             <Select
-              label="Status"
+              label={t('common.status')}
               value={localDraft.status}
               data={lotStatusOptions}
               onChange={(value) => setLocalDraft({ ...localDraft, status: (value || 'PLANNED') as PoLotStatus })}
             />
             <DateTimeField
-              label="Cargo ready"
+              label={t('purchaseOrders.cargoReady')}
               value={localDraft.planned_cargo_ready_date}
               onChange={(value) => setLocalDraft({ ...localDraft, planned_cargo_ready_date: value ?? '' })}
             />
@@ -103,7 +103,7 @@ export function LotModal({
             />
           </SimpleGrid>
           <Textarea
-            label="Notes"
+            label={t('common.notes')}
             value={localDraft.notes}
             onChange={(event) => setLocalDraft({ ...localDraft, notes: event.currentTarget.value })}
             autosize
@@ -111,10 +111,10 @@ export function LotModal({
           />
           <Group justify="flex-end" wrap="nowrap" className="purchase-order-modal-footer">
             <Button className="purchase-order-action-button" variant="subtle" onClick={onClose}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button className="purchase-order-action-button" type="submit" loading={loading}>
-              Save
+              {t('common.save')}
             </Button>
           </Group>
         </Stack>

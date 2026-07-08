@@ -31,10 +31,10 @@ export function PurchaseOrderDetailInfo({ lines, order }: { lines: PurchaseOrder
   const maxDelayDays = Math.max(etdDelayDays ?? 0, etaDelayDays ?? 0);
   const hasAnyActualDate = Boolean(actualAtd || actualAta);
   const routeStatus = !hasAnyActualDate
-    ? { color: 'gray', label: 'No actual' }
+    ? { color: 'gray', label: t('purchaseOrders.routeNoActual') }
     : maxDelayDays > 0
-      ? { color: 'red', label: `${maxDelayDays} days late` }
-      : { color: 'teal', label: 'On time' };
+      ? { color: 'red', label: t('purchaseOrders.routeDaysLate', { count: maxDelayDays }) }
+      : { color: 'teal', label: t('purchaseOrders.routeOnTime') };
   const transportMode = order.transport_mode?.mode_code ?? '-';
   const originCountry = resolvePoOriginCountry(order) ?? '-';
   const originPort = order.origin_port || '-';
@@ -44,14 +44,14 @@ export function PurchaseOrderDetailInfo({ lines, order }: { lines: PurchaseOrder
     <Paper withBorder p={0} className="purchase-order-detail-card">
       <Group justify="space-between" align="flex-start" className="purchase-order-detail-header w-full">
         <div>
-          <Text fw={800}>Commercial overview</Text>
+          <Text fw={800}>{t('purchaseOrders.commercialOverview')}</Text>
           <Text size="xs" c="dimmed">
-            Terms, value, and logistics timing for this purchase order.
+            {t('purchaseOrders.commercialOverviewDescription')}
           </Text>
         </div>
         <div className="purchase-order-amount-block">
           <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
-            Amount
+            {t('purchaseOrders.amount')}
           </Text>
           <Text fw={900} size="lg" className="tabular-nums" title={amount}>
             {amount || '-'}
@@ -63,19 +63,19 @@ export function PurchaseOrderDetailInfo({ lines, order }: { lines: PurchaseOrder
         <div className="purchase-order-commercial-panel">
           <InfoCard
             icon={<IconCoins size={18} />}
-            label="Financial"
+            label={t('purchaseOrders.infoFinancial')}
             value={currencyCode}
-            meta={`Exchange rate: ${order.exchange_rate ?? '-'}`}
+            meta={`${t('purchaseOrders.exchangeRate')}: ${order.exchange_rate ?? '-'}`}
           />
           <InfoCard
             icon={<IconFileInvoice size={18} />}
-            label="Trade terms"
+            label={t('purchaseOrders.infoTradeTerms')}
             value={order.incoterm?.incoterm_code ?? '-'}
-            meta={`Payment: ${order.payment_term || '-'}`}
+            meta={`${t('purchaseOrders.paymentTerm')}: ${order.payment_term || '-'}`}
           />
           <InfoCard
             icon={<IconTruckDelivery size={18} />}
-            label="Transport"
+            label={t('purchaseOrders.infoTransport')}
             value={transportMode}
             meta={order.po_type || '-'}
           />
@@ -103,7 +103,7 @@ export function PurchaseOrderDetailInfo({ lines, order }: { lines: PurchaseOrder
       {order.notes ? (
         <div className="purchase-order-detail-notes">
           <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
-            Notes
+            {t('common.notes')}
           </Text>
           <Text size="sm">{order.notes}</Text>
         </div>
@@ -166,6 +166,7 @@ function LogisticsRouteTimeline({
   unloadingPortLabel: string;
   unloadingPortName: string;
 }) {
+  const { t } = useI18n();
   const isAir = transportMode.toLowerCase().includes('air');
   const TransportIcon = isAir ? IconPlaneDeparture : IconShip;
   const hasWarehouseLeg = Boolean(plannedWarehouseEta || actualWarehouseAta);
@@ -178,10 +179,12 @@ function LogisticsRouteTimeline({
         </div>
         <div>
           <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
-            Logistics timeline
+            {t('purchaseOrders.logisticsTimeline')}
           </Text>
           <Text fw={800} size="sm">
-            {loadingPortName} to {unloadingPortName}{hasWarehouseLeg ? ' to warehouse' : ''}
+            {hasWarehouseLeg
+              ? t('purchaseOrders.routeWithWarehouse', { from: loadingPortName, to: unloadingPortName })
+              : t('purchaseOrders.routeSimple', { from: loadingPortName, to: unloadingPortName })}
           </Text>
         </div>
       </Group>
@@ -229,7 +232,7 @@ function LogisticsRouteTimeline({
               <IconBuildingWarehouse size={16} />
             </div>
             <Text className="metric-label" size="xs" tt="uppercase" fw={700}>
-              Warehouse / Kho
+              {t('purchaseOrders.warehouseLabel')}
             </Text>
           </Group>
           <DateValue label="ETA" value={plannedWarehouseEta} />

@@ -1,4 +1,4 @@
-import { ActionIcon, Alert, Button, Checkbox, Collapse, Group, NumberInput, Stack, Table, Text, Textarea, Tooltip } from '@mantine/core';
+import { ActionIcon, Alert, Button, Checkbox, Collapse, Group, NumberInput, Table, Text, Textarea, Tooltip } from '@mantine/core';
 import { IconChevronDown, IconHistory, IconSend, IconX } from '@tabler/icons-react';
 import { Fragment, useEffect, useMemo, useState } from 'react';
 
@@ -31,6 +31,7 @@ type DisplayLine = {
   unitDelta: number;
   note: string;
   enabled: boolean;
+  lineCurrency: string;
   localAmount: number;
   vndBreakdown: ReturnType<typeof computeQuotationLineVnd>;
 };
@@ -60,6 +61,10 @@ function formatChargeDescription(value?: string | null): string {
 function numeric(value: number | string | null | undefined): number {
   const parsed = Number(value ?? 0);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function resolveLineCurrency(line: QuotationChargeLineV1, fallbackCurrency: string): string {
+  return line.currency_code?.trim() || fallbackCurrency;
 }
 
 function groupLines(lines: DisplayLine[]) {
@@ -143,6 +148,7 @@ export function QuotationChargeBreakdown({
       const draft = draftByLineId[line.id];
       const quantity = numeric(line.quantity);
       const unitPrice = numeric(line.unit_price);
+      const lineCurrency = resolveLineCurrency(line, paymentCurrency);
       const enabled = Boolean(draft?.enabled);
       const proposedUnitPrice = adjustMode && enabled ? numeric(draft?.proposedUnitPrice ?? unitPrice) : unitPrice;
       const localAmount = quantity * proposedUnitPrice;
@@ -150,7 +156,7 @@ export function QuotationChargeBreakdown({
         {
           quantity,
           unitPrice: proposedUnitPrice,
-          currency: line.currency_code,
+          currency: lineCurrency,
           endpointCurrency: paymentCurrency,
         },
         (code) => rateToVndOrNull(code),
@@ -164,6 +170,7 @@ export function QuotationChargeBreakdown({
         unitDelta: proposedUnitPrice - unitPrice,
         note: draft?.note ?? '',
         enabled,
+        lineCurrency,
         localAmount,
         vndBreakdown,
       };
@@ -228,44 +235,50 @@ export function QuotationChargeBreakdown({
             <Text c="dimmed" size="sm">{t('quotations.noChargeLines')}</Text>
           </div>
         ) : (
-          <Stack gap="md" p="md">
-            {groupedLines.map((group) => {
-              if (group.lines.length === 0) return null;
-              const groupTotals = summarizeQuotationVndLines(group.lines.map((row) => row.vndBreakdown));
+          <div className="rfq-breakdown-table-wrap">
+            <div className="rfq-table-scroll">
+              <Table
+                highlightOnHover
+                className={`rfq-charge-table rfq-charge-table--breakdown${adjustMode ? ' rfq-charge-table--adjustable' : ''}`}
+              >
+                <Table.Thead>
+                  <Table.Tr>
+                    {adjustMode ? <Table.Th className="rfq-adjust-check-column" /> : null}
+                    <Table.Th>{t('quotations.chargeBreakdown')}</Table.Th>
+                    <Table.Th ta="right">{t('quotations.quantity')}</Table.Th>
+                    <Table.Th>{t('forms.unit')}</Table.Th>
+                    <Table.Th ta="right">{adjustMode ? t('quotations.currentPrice') : t('quotations.unitPrice')}</Table.Th>
+                    <Table.Th>{t('quotations.lineCurrency')}</Table.Th>
+                    {adjustMode ? (
+                      <>
+                        <Table.Th ta="right">{t('quotations.yourProposedPrice')}</Table.Th>
+                        <Table.Th ta="right">{t('quotations.priceDelta')}</Table.Th>
+                        <Table.Th>{t('quotations.lineNote')}</Table.Th>
+                      </>
+                    ) : (
+                      <Table.Th ta="right">{t('quotations.lineTotal')}</Table.Th>
+                    )}
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {groupedLines.map((group) => {
+                    if (group.lines.length === 0) return null;
+                    const groupTotals = summarizeQuotationVndLines(group.lines.map((row) => row.vndBreakdown));
+                    const columnCount = adjustMode ? 9 : 6;
 
-              return (
-                <section className="rfq-breakdown-group" key={group.value}>
-                  <Group justify="space-between" align="center" className="rfq-breakdown-group-head">
-                    <Text fw={700} size="sm">{t(group.labelKey)}</Text>
-                    <Text size="xs" c="dimmed" className="tabular-nums">
-                      {t('quotations.groupSubtotal')}: {formatMoney(groupTotals.totalVnd, 'VND')}
-                    </Text>
-                  </Group>
-                  <div className="rfq-table-scroll">
-                    <Table highlightOnHover className="rfq-charge-table rfq-charge-table--adjustable">
-                      <Table.Thead>
-                        <Table.Tr>
-                          {adjustMode ? <Table.Th className="rfq-adjust-check-column" /> : null}
-                          <Table.Th>{t('quotations.chargeBreakdown')}</Table.Th>
-                          <Table.Th ta="right">{t('quotations.quantity')}</Table.Th>
-                          <Table.Th>{t('forms.unit')}</Table.Th>
-                          <Table.Th ta="right">{adjustMode ? t('quotations.currentPrice') : t('quotations.unitPrice')}</Table.Th>
-                          {adjustMode ? (
-                            <>
-                              <Table.Th ta="right">{t('quotations.yourProposedPrice')}</Table.Th>
-                              <Table.Th ta="right">{t('quotations.priceDelta')}</Table.Th>
-                              <Table.Th>{t('quotations.lineNote')}</Table.Th>
-                            </>
-                          ) : (
-                            <>
-                              <Table.Th ta="right">{t('quotations.lineTotal')}</Table.Th>
-                            </>
-                          )}
+                    return (
+                      <Fragment key={group.value}>
+                        <Table.Tr className="rfq-breakdown-group-row" data-charge-group={group.value}>
+                          <Table.Td colSpan={columnCount}>
+                            <Group justify="space-between" align="center" gap="sm" wrap="nowrap">
+                              <Text className="rfq-breakdown-group-title" fw={800} size="sm">{t(group.labelKey)}</Text>
+                              <Text size="xs" className="rfq-breakdown-group-subtotal tabular-nums">
+                                {t('quotations.groupSubtotal')}: {formatMoney(groupTotals.totalVnd, 'VND')}
+                              </Text>
+                            </Group>
+                          </Table.Td>
                         </Table.Tr>
-                      </Table.Thead>
-                      <Table.Tbody>
-                        {group.lines.map(({ line, quantity, unitPrice, proposedUnitPrice, vndBreakdown, unitDelta, note, enabled }) => {
-                          const lineCurrency = line.currency_code ?? quotation.currency_code;
+                        {group.lines.map(({ line, quantity, unitPrice, proposedUnitPrice, vndBreakdown, unitDelta, note, enabled, lineCurrency }) => {
                           const deltaColor = unitDelta > 0 ? 'red' : unitDelta < 0 ? 'teal' : 'dimmed';
                           const lineHistory = buildLineHistory(line, quotation.adjustments ?? []);
                           const isHistoryExpanded = Boolean(historyExpandedByLineId[line.id]);
@@ -319,16 +332,22 @@ export function QuotationChargeBreakdown({
                                 <Table.Td ta="right" className="tabular-nums">
                                   {Number.isFinite(unitPrice) ? formatAmount(unitPrice, lineCurrency) : '-'}
                                 </Table.Td>
+                                <Table.Td>
+                                  <Tooltip label={`${t('quotations.sourceCurrency')}: ${lineCurrency}`}>
+                                    <span className="rfq-line-currency-badge">{lineCurrency}</span>
+                                  </Tooltip>
+                                </Table.Td>
                                 {adjustMode ? (
                                   <>
                                     <Table.Td ta="right">
                                       <NumberInput
-                                        aria-label={`${t('quotations.yourProposedPrice')} ${line.description}`}
+                                        aria-label={`${t('quotations.yourProposedPrice')} ${line.description ?? ''} ${lineCurrency}`}
                                         className="rfq-adjust-price-input"
                                         decimalScale={6}
                                         disabled={!enabled}
                                         min={0}
                                         size="xs"
+                                        suffix={` ${lineCurrency}`}
                                         thousandSeparator=","
                                         value={draftByLineId[line.id]?.proposedUnitPrice ?? proposedUnitPrice}
                                         onChange={(value) => setDraft(line.id, { proposedUnitPrice: value })}
@@ -354,16 +373,14 @@ export function QuotationChargeBreakdown({
                                     </Table.Td>
                                   </>
                                 ) : (
-                                  <>
-                                    <Table.Td ta="right" className="tabular-nums">
-                                      {Number.isFinite(totalAmount) ? formatMoney(totalAmount, paymentCurrency) : '-'}
-                                    </Table.Td>
-                                  </>
+                                  <Table.Td ta="right" className="tabular-nums">
+                                    {Number.isFinite(totalAmount) ? formatMoney(totalAmount, paymentCurrency) : '-'}
+                                  </Table.Td>
                                 )}
                               </Table.Tr>
                               {isHistoryExpanded ? (
                                 <Table.Tr className="rfq-price-history-row">
-                                  <Table.Td colSpan={adjustMode ? 8 : 5}>
+                                  <Table.Td colSpan={columnCount}>
                                     <div className="rfq-price-history-ladder">
                                       {lineHistory.map((entry, index) => (
                                         <div className="rfq-price-history-step" key={entry.key}>
@@ -393,13 +410,13 @@ export function QuotationChargeBreakdown({
                             </Fragment>
                           );
                         })}
-                      </Table.Tbody>
-                    </Table>
-                  </div>
-                </section>
-              );
-            })}
-          </Stack>
+                      </Fragment>
+                    );
+                  })}
+                </Table.Tbody>
+              </Table>
+            </div>
+          </div>
         )}
 
         <div className="rfq-breakdown-total">

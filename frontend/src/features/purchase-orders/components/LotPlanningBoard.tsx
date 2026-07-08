@@ -23,6 +23,7 @@ import {
   type PurchaseOrderLotPlanning,
 } from '@shared/api/purchaseOrders';
 import { queryKeys } from '@shared/api/queryKeys';
+import { useI18n } from '@shared/i18n';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
 import { usePoInvalidation } from '../hooks/usePoInvalidation';
@@ -33,6 +34,7 @@ import { LotModal } from './LotModal';
 import { SplitLotModal } from './SplitLotModal';
 
 export function LotPlanningBoard({ canManage, planning }: { canManage: boolean; planning: PurchaseOrderLotPlanning }) {
+  const { t } = useI18n();
   const [lotDraft, setLotDraft] = useState<LotDraft | null>(null);
   const [createDoModalOpen, setCreateDoModalOpen] = useState(false);
   const [splitDraft, setSplitDraft] = useState<SplitDraft | null>(null);
@@ -104,7 +106,7 @@ export function LotPlanningBoard({ canManage, planning }: { canManage: boolean; 
       invalidatePo();
     },
     onError: (error) => {
-      setBoardError(`Cannot delete this LOT. ${getApiErrorMessage(error, 'Only empty, unlocked LOTs can be deleted.')}`);
+      setBoardError(`${t('purchaseOrders.cannotDeleteLot')} ${getApiErrorMessage(error, t('purchaseOrders.onlyEmptyLotsDeletable'))}`);
     },
   });
 
@@ -231,7 +233,7 @@ export function LotPlanningBoard({ canManage, planning }: { canManage: boolean; 
 
     if (dragType !== 'lotLine' || !targetLot) return;
     if (lockedLotStatuses.has(targetLot.status)) {
-      setBoardError('Cannot move item lines into a locked LOT.');
+      setBoardError(t('purchaseOrders.cannotMoveIntoLockedLot'));
       return;
     }
 
@@ -272,16 +274,16 @@ export function LotPlanningBoard({ canManage, planning }: { canManage: boolean; 
           <div className="lot-planning-copy">
             <Group gap="xs">
               <IconTruckDelivery size={20} />
-              <Text fw={700}>LOT planning</Text>
+              <Text fw={700}>{t('purchaseOrders.lotPlanningTitle')}</Text>
             </Group>
             <Text size="sm" c="dimmed">
-              Drag LOT rows to reorder. Drag item lines between LOTs, or split a line into another LOT.
+              {t('purchaseOrders.lotPlanningHint')}
             </Text>
           </div>
           <Group gap="xs" wrap="nowrap" className="lot-planning-actions">
             <Checkbox
               className="lot-planning-select-all"
-              label="Select all open LOTs"
+              label={t('purchaseOrders.selectAllOpenLots')}
               checked={selectableLotIds.length > 0 && selectedLotIds.length === selectableLotIds.length}
               indeterminate={selectedLotIds.length > 0 && selectedLotIds.length < selectableLotIds.length}
               disabled={!canManage || selectableLotIds.length === 0 || createDoMutation.isPending}
@@ -299,10 +301,10 @@ export function LotPlanningBoard({ canManage, planning }: { canManage: boolean; 
                 setCreateDoModalOpen(true);
               }}
             >
-              Create Internal DO ({selectedLotIds.length})
+              {t('purchaseOrders.createInternalDo')} ({selectedLotIds.length})
             </Button>
             <Button className="lot-planning-action-button" size="xs" leftSection={<IconPlus size={14} />} onClick={openCreateLot} disabled={!canManage}>
-              Add LOT
+              {t('purchaseOrders.addLot')}
             </Button>
           </Group>
         </Group>
@@ -343,7 +345,7 @@ export function LotPlanningBoard({ canManage, planning }: { canManage: boolean; 
           {sortedLots.length === 0 ? (
             <Paper withBorder p="lg" className="lot-planning-empty">
               <Text size="sm" c="dimmed" ta="center">
-                Add a LOT to start planning.
+                {t('purchaseOrders.addLotToStart')}
               </Text>
             </Paper>
           ) : null}

@@ -108,25 +108,25 @@ export function PurchaseOrderListView({
           omits Total POs / status breakdowns to avoid duplicating them. */}
       <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }} className="purchase-order-metric-grid">
         <Metric
-          label="Delayed"
+          label={t('purchaseOrders.metricDelayed')}
           value={String(delayedPurchaseOrders)}
           color="red"
           icon={<IconAlertTriangle size={22} />}
         />
         <Metric
-          label="On-time rate"
+          label={t('purchaseOrders.metricOnTimeRate')}
           value={`${onTimeRate}%`}
           color="green"
           icon={<IconCircleCheck size={22} />}
         />
         <Metric
-          label="Total Cont."
+          label={t('purchaseOrders.metricTotalContainers')}
           value={String(purchaseOrderSummary.totalContainers)}
           color="teal"
           icon={<IconContainer size={22} />}
         />
         <Metric
-          label="Total LOT"
+          label={t('purchaseOrders.metricTotalLots')}
           value={String(purchaseOrderSummary.totalLots)}
           color="yellow"
           icon={<IconBox size={22} />}
@@ -155,7 +155,7 @@ export function PurchaseOrderListView({
             </div>
             {isClientSideStatusFilter ? (
               <Text size="xs" c="dimmed">
-                Stage / status filtering applies to the current page only.
+                {t('purchaseOrders.stageFilterPageOnly')}
               </Text>
             ) : null}
           </Stack>
@@ -163,31 +163,31 @@ export function PurchaseOrderListView({
           <div className="purchase-order-filter-primary dl-filter-row">
             <TextInput
               className="purchase-order-filter-search dl-filter-search kbfe-search-input"
-              label="Search"
+              label={t('common.search')}
               leftSection={<IconSearch size={16} />}
-              placeholder="PO, contract, type, notes"
+              placeholder={t('purchaseOrders.searchPlaceholder')}
               value={search}
               onChange={(event) => onSearchChange(event.currentTarget.value)}
             />
             <Select
-              label="Supplier"
-              placeholder="All suppliers"
+              label={t('purchaseOrders.supplier')}
+              placeholder={t('purchaseOrders.allSuppliers')}
               value={supplierFilter}
               onChange={onSupplierFilterChange}
               data={supplierOptions}
               searchable
               clearable
-              nothingFoundMessage="No suppliers"
+              nothingFoundMessage={t('purchaseOrders.noSuppliers')}
             />
             <div className="purchase-order-filter-dates dl-filter-dates">
               <DateField
-                label="Date from"
+                label={t('purchaseOrders.dateFrom')}
                 leftSection={<IconCalendarStats size={16} />}
                 value={dateFrom}
                 onChange={(value) => onDateFromChange(value ?? '')}
               />
               <DateField
-                label="Date to"
+                label={t('purchaseOrders.dateTo')}
                 leftSection={<IconCalendarStats size={16} />}
                 value={dateTo}
                 onChange={(value) => onDateToChange(value ?? '')}
@@ -201,7 +201,7 @@ export function PurchaseOrderListView({
                 onClick={onClearFilters}
                 disabled={!hasActiveFilters}
               >
-                Clear
+                {t('purchaseOrders.clearFilters')}
               </Button>
             </Group>
           </div>
@@ -211,7 +211,7 @@ export function PurchaseOrderListView({
       <Paper withBorder p={0} className="purchase-order-list-panel dl-data-panel">
         {purchaseOrders.length === 0 ? (
           <div className="purchase-order-list-empty">
-            <EmptyState title="No purchase orders" description="Create a PO or adjust the filters." />
+            <EmptyState title={t('purchaseOrders.emptyTitle')} description={t('purchaseOrders.emptyDescription')} />
           </div>
         ) : (
           <ScrollArea className="data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
@@ -227,15 +227,15 @@ export function PurchaseOrderListView({
                   <Table.Th>
                     <HeaderLabel label="PO" hint={t('glossary.po')} />
                   </Table.Th>
-                  <Table.Th>Supplier / Terms</Table.Th>
+                  <Table.Th>{t('purchaseOrders.headerSupplierTerms')}</Table.Th>
                   <Table.Th>
                     <HeaderLabel
-                      label="Logistics"
+                      label={t('purchaseOrders.headerLogistics')}
                       hint={`${t('glossary.loadingPort')} -> ${t('glossary.unloadingPort')} -> ${t('glossary.warehouse')}`}
                     />
                   </Table.Th>
-                  <Table.Th>Lines / Amount</Table.Th>
-                  <Table.Th>Stage / Delay</Table.Th>
+                  <Table.Th>{t('purchaseOrders.headerLinesAmount')}</Table.Th>
+                  <Table.Th>{t('purchaseOrders.headerStageDelay')}</Table.Th>
                   <Table.Th />
                 </Table.Tr>
               </Table.Thead>
@@ -249,10 +249,10 @@ export function PurchaseOrderListView({
                         </Text>
                       </CopyValue>
                       <Text size="xs" c="dimmed">
-                        Contract {order.contract_no}
+                        {t('purchaseOrders.contractPrefix')} {order.contract_no}
                       </Text>
                       <Text size="xs" c="dimmed">
-                        Created <DateTimeText value={order.create_at} size="xs" c="dimmed" />
+                        {t('purchaseOrders.createdPrefix')} <DateTimeText value={order.create_at} size="xs" c="dimmed" />
                       </Text>
                     </Table.Td>
                     <Table.Td className="table-cell-truncate purchase-order-list-supplier-cell" style={{ maxWidth: '20rem' }}>
@@ -270,7 +270,7 @@ export function PurchaseOrderListView({
                       <LogisticsRouteCell order={order} />
                     </Table.Td>
                     <Table.Td className="purchase-order-list-lines-cell">
-                      <Badge variant="light">{order.lines?.length ?? 0} lines</Badge>
+                      <Badge variant="light">{t('purchaseOrders.poLinesCount', { count: order.lines?.length ?? 0 })}</Badge>
                       <Text fw={600} className="purchase-order-money">
                         <NumberFormatter value={totalPoAmount(order.lines)} thousandSeparator />{' '}
                         {order.currency?.currency_code ?? ''}
@@ -280,7 +280,7 @@ export function PurchaseOrderListView({
                       <PoStageBadge order={order} />
                       {getDelayedDays(order) > 0 ? (
                         <Badge color="red" variant="light" mt={6} className="purchase-order-nowrap-badge">
-                          {getDelayedDays(order)} days
+                          {t('purchaseOrders.delayedDays', { count: getDelayedDays(order) })}
                         </Badge>
                       ) : (
                         <Text size="xs" c="dimmed" mt={4}>
@@ -289,8 +289,8 @@ export function PurchaseOrderListView({
                       )}
                     </Table.Td>
                     <Table.Td className="purchase-order-list-action-cell">
-                      <Tooltip label="Open detail">
-                        <ActionIcon variant="subtle" aria-label="Open detail" onClick={() => onOpenDetail(order)}>
+                      <Tooltip label={t('purchaseOrders.openDetail')}>
+                        <ActionIcon variant="subtle" aria-label={t('purchaseOrders.openDetail')} onClick={() => onOpenDetail(order)}>
                           <IconEye size={18} />
                         </ActionIcon>
                       </Tooltip>

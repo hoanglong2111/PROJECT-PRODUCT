@@ -3,6 +3,7 @@ import { IconChevronDown, IconGitBranch, IconGripVertical, IconPencil, IconTrash
 import { useState, type DragEvent } from 'react';
 
 import type { PoLot, PoLotLine } from '@shared/api/purchaseOrders';
+import { useI18n } from '@shared/i18n';
 
 import { dateOnly, formatWeightKg, lockedLotStatuses, toNumber } from '../model/purchaseOrderModel';
 
@@ -33,6 +34,7 @@ export function LotCard({
   onSelect: (checked: boolean) => void;
   onSplitLine: (line: PoLotLine) => void;
 }) {
+  const { t } = useI18n();
   const [isExpanded, setIsExpanded] = useState(true);
   // Drag-and-drop visual state (HTML5 native DnD gives no built-in feedback).
   const [isDragging, setIsDragging] = useState(false); // this LOT card is being dragged
@@ -44,7 +46,7 @@ export function LotCard({
   const canDelete = canManage && !isLocked && lines.length === 0;
   const totalQty = lines.reduce((total, line) => total + toNumber(line.qty_lotted), 0);
   const units = Array.from(new Set(lines.map((line) => line.unit).filter(Boolean)));
-  const totalQtyLabel = lines.length ? `${totalQty.toLocaleString()} ${units.length === 1 ? units[0] : 'units'}` : '-';
+  const totalQtyLabel = lines.length ? `${totalQty.toLocaleString()} ${units.length === 1 ? units[0] : t('purchaseOrders.unitsFallback')}` : '-';
 
   return (
     <Paper
@@ -93,7 +95,7 @@ export function LotCard({
         <div className="lot-list-header">
           <Group gap="sm" wrap="nowrap" className="lot-list-title">
             <Checkbox
-              aria-label={`Select ${lot.lot_no} for Internal DO`}
+              aria-label={t('purchaseOrders.selectLotForDo', { lotNo: lot.lot_no })}
               checked={isSelected}
               disabled={!canManage || !isSelectable}
               onChange={(event) => onSelect(event.currentTarget.checked)}
@@ -109,8 +111,8 @@ export function LotCard({
                   {lot.status}
                 </Badge>
               </Group>
-              <Text size="xs" c="dimmed" truncate title={lot.lot_name || 'Empty LOT'}>
-                {lot.lot_name || 'Empty LOT'}
+              <Text size="xs" c="dimmed" truncate title={lot.lot_name || t('purchaseOrders.emptyLot')}>
+                {lot.lot_name || t('purchaseOrders.emptyLot')}
               </Text>
             </div>
           </Group>
@@ -121,21 +123,21 @@ export function LotCard({
             <LotMeta label="ETA" value={dateOnly(lot.planned_eta) || '-'} />
             <LotMeta label="POL" value={lot.origin_port || '-'} />
             <LotMeta label="POD" value={lot.destination_port || '-'} />
-            <LotMeta label="Lines / Qty" value={`${lines.length} / ${totalQtyLabel}`} />
+            <LotMeta label={t('purchaseOrders.lotLinesQty')} value={`${lines.length} / ${totalQtyLabel}`} />
           </SimpleGrid>
 
           <Group gap={4} wrap="nowrap" className="lot-list-actions">
             <Badge size="xs" color={lot.status === 'READY' ? 'teal' : undefined} variant="light" className="purchase-order-nowrap-badge">
-              {isLocked ? 'Locked' : 'Open'}
+              {isLocked ? t('purchaseOrders.lotLocked') : t('purchaseOrders.lotOpen')}
             </Badge>
-            <ActionIcon variant="subtle" size="sm" aria-label="Edit LOT" disabled={!canManage} onClick={onEdit}>
+            <ActionIcon variant="subtle" size="sm" aria-label={t('purchaseOrders.editLotTitle')} disabled={!canManage} onClick={onEdit}>
               <IconPencil size={15} />
             </ActionIcon>
             <ActionIcon
               variant="subtle"
               color="red"
               size="sm"
-              aria-label="Delete empty LOT"
+              aria-label={t('purchaseOrders.deleteEmptyLot')}
               disabled={!canDelete}
               onClick={onDelete}
             >
@@ -145,7 +147,7 @@ export function LotCard({
               variant="subtle"
               size="sm"
               className={isExpanded ? 'lot-toggle-button is-open' : 'lot-toggle-button'}
-              aria-label={isExpanded ? 'Collapse LOT items' : 'Expand LOT items'}
+              aria-label={isExpanded ? t('purchaseOrders.collapseLotItems') : t('purchaseOrders.expandLotItems')}
               aria-expanded={isExpanded}
               onClick={(event) => {
                 event.stopPropagation();
@@ -226,7 +228,7 @@ export function LotCard({
                             </Text>
                           </Text>
                           <Text size="xs" mt={4} className="lot-line-static-meta" truncate>
-                            HSCODE: {hsCode || '-'} <span aria-hidden="true">|</span> Weight:{' '}
+                            HSCODE: {hsCode || '-'} <span aria-hidden="true">|</span> {t('purchaseOrders.poLinesMetaWeight')}:{' '}
                             {formatWeightKg(grossWeightKg) || '-'}
                           </Text>
                         </div>
@@ -234,7 +236,7 @@ export function LotCard({
 
                       <Group gap={6} wrap="nowrap" className="lot-line-right">
                         <Badge size="sm" variant="light" color="orange" radius="sm" className="lot-line-quantity-badge">
-                          Ordered:{' '}
+                          {t('purchaseOrders.poLinesHeaderOrdered')}:{' '}
                           {orderedQty == null ? (
                             '-'
                           ) : (
@@ -244,12 +246,12 @@ export function LotCard({
                           )}
                         </Badge>
                         <Badge size="sm" variant="light" color="teal" radius="sm" className="lot-line-quantity-badge">
-                          Lotted: <NumberFormatter value={line.qty_lotted} thousandSeparator /> {unit}
+                          {t('purchaseOrders.poLinesHeaderLotted')}: <NumberFormatter value={line.qty_lotted} thousandSeparator /> {unit}
                         </Badge>
                         <ActionIcon
                           variant="subtle"
                           size="sm"
-                          aria-label="Split this item line"
+                          aria-label={t('purchaseOrders.splitLotTitle')}
                           disabled={!canManage || isLocked || !hasMoveTargets || toNumber(line.qty_lotted) <= 1}
                           onClick={(event) => {
                             event.stopPropagation();
@@ -266,7 +268,7 @@ export function LotCard({
             ) : (
               <div className="lot-line-empty">
                 <Text size="xs" c="dimmed" fs="italic">
-                  No item lines
+                  {t('purchaseOrders.noItemLines')}
                 </Text>
               </div>
             )}

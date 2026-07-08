@@ -52,7 +52,7 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
       <Paper withBorder p="xl">
         <Group justify="center">
           <Loader size="sm" />
-          <Text c="dimmed">Loading PO detail...</Text>
+          <Text c="dimmed">{t('purchaseOrders.detailLoading')}</Text>
         </Group>
       </Paper>
     );
@@ -61,8 +61,8 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
   if (detailQuery.isError || !detailQuery.data) {
     return (
       <PageError
-        title="PO detail"
-        description="Could not load this purchase order."
+        title={t('purchaseOrders.detailTitle')}
+        description={t('purchaseOrders.detailError')}
         error={detailQuery.error}
         onRetry={() => {
           void detailQuery.refetch();
@@ -92,7 +92,7 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
             />
             <Text c="dimmed" size="sm">/</Text>
             <Text fw={700} size="sm">
-              Edit PO {order.po_no}
+              {t('purchaseOrders.editPo')} {order.po_no}
             </Text>
           </Group>
         </Group>
@@ -124,7 +124,7 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
                 {order.po_type || 'STANDARD'}
               </Badge>
               <Badge size="sm" variant="light" color="blue" className="purchase-order-nowrap-badge">
-                <CopyValue value={order.contract_no ?? ''}>Contract {order.contract_no ?? '-'}</CopyValue>
+                <CopyValue value={order.contract_no ?? ''}>{t('purchaseOrders.contractPrefix')} {order.contract_no ?? '-'}</CopyValue>
               </Badge>
             </Group>
             <Text c="dimmed" size="sm" mt={4}>
@@ -142,7 +142,7 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
               disabled={!canEdit}
               onClick={() => setEditOpen(true)}
             >
-              Edit
+              {t('common.edit')}
             </Button>
             <Button
               className="purchase-order-action-button"
@@ -151,7 +151,7 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
               disabled={!canSend}
               onClick={() => sendMutation.mutate()}
             >
-              Send PO
+              {t('purchaseOrders.sendPo')}
             </Button>
             <Button
               className="purchase-order-action-button"
@@ -160,14 +160,14 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
               disabled={!canConfirm}
               onClick={() => setConfirmOpen(true)}
             >
-              Confirm
+              {t('common.confirm')}
             </Button>
           </Group>
         </Group>
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="sm" className="purchase-order-detail-signal-grid">
-          <FieldPair className="purchase-order-detail-signal" label="Supplier" value={order.supplier?.supplier_name ?? order.supplier_id} />
-          <FieldPair className="purchase-order-detail-signal" label="Lines" value={String(lines.length)} />
-          <FieldPair className="purchase-order-detail-signal" label="Amount" value={amount || '-'} />
+          <FieldPair className="purchase-order-detail-signal" label={t('purchaseOrders.supplier')} value={order.supplier?.supplier_name ?? order.supplier_id} />
+          <FieldPair className="purchase-order-detail-signal" label={t('purchaseOrders.lines')} value={String(lines.length)} />
+          <FieldPair className="purchase-order-detail-signal" label={t('purchaseOrders.amount')} value={amount || '-'} />
           <FieldPair className="purchase-order-detail-signal" label="LOT / ETA" value={`${lotCount} LOT / ${containerCount} cont / ${eta}`} />
         </SimpleGrid>
         {sendMutation.isError ? (
@@ -177,7 +177,7 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
         ) : null}
         {!canConfirm ? (
           <Text size="xs" c="dimmed" mt="xs">
-            Supplier confirmation is enabled only after the PO is sent.
+            {t('purchaseOrders.confirmAfterSend')}
           </Text>
         ) : null}
       </Paper>
@@ -192,7 +192,7 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
         <Paper withBorder p="lg">
           <Group justify="center">
             <Loader size="sm" />
-            <Text c="dimmed">Loading LOT planning...</Text>
+            <Text c="dimmed">{t('purchaseOrders.lotPlanningLoading')}</Text>
           </Group>
         </Paper>
       ) : planningQuery.isError || !planningQuery.data ? (

@@ -6,11 +6,13 @@ import type { ReactNode } from 'react';
 import { fetchPurchaseOrderConfirmations } from '@shared/api/purchaseOrders';
 import { queryKeys } from '@shared/api/queryKeys';
 import { DateTimeText } from '@shared/components/DateTimeText';
+import { useI18n } from '@shared/i18n';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
 import { dateOnly } from '../model/purchaseOrderModel';
 
 export function PurchaseOrderConfirmationsPanel({ purchaseOrderId }: { purchaseOrderId: string }) {
+  const { t } = useI18n();
   const confirmationsQuery = useQuery({
     queryKey: queryKeys.purchaseOrderConfirmations(purchaseOrderId),
     queryFn: () => fetchPurchaseOrderConfirmations(purchaseOrderId),
@@ -21,7 +23,7 @@ export function PurchaseOrderConfirmationsPanel({ purchaseOrderId }: { purchaseO
       <Paper withBorder p="lg" className="purchase-order-confirmations-panel">
         <Group justify="center">
           <Loader size="sm" />
-          <Text c="dimmed">Loading supplier confirmations...</Text>
+          <Text c="dimmed">{t('purchaseOrders.confirmationsLoading')}</Text>
         </Group>
       </Paper>
     );
@@ -45,10 +47,10 @@ export function PurchaseOrderConfirmationsPanel({ purchaseOrderId }: { purchaseO
       <Group justify="space-between" p="sm" className="purchase-order-confirmations-header">
         <Group gap="xs">
           <IconCircleCheck size={18} />
-          <Text fw={700}>Supplier confirmations</Text>
+          <Text fw={700}>{t('purchaseOrders.confirmationsTitle')}</Text>
         </Group>
         <Badge variant="light" className="purchase-order-nowrap-badge">
-          {confirmations.length} {confirmations.length === 1 ? 'record' : 'records'}
+          {t('purchaseOrders.confirmationsCount', { count: confirmations.length })}
         </Badge>
       </Group>
 
@@ -58,29 +60,29 @@ export function PurchaseOrderConfirmationsPanel({ purchaseOrderId }: { purchaseO
             <Group justify="space-between" align="flex-start" wrap="nowrap">
               <div>
                 <Text fw={700} size="sm">
-                  {confirmation.supplier_ref_no ?? 'No supplier ref'}
+                  {confirmation.supplier_ref_no ?? t('purchaseOrders.noSupplierRef')}
                 </Text>
                 <Text size="xs" c="dimmed">
-                  Confirmed by {confirmation.confirmed_by ?? '-'} ·{' '}
+                  {t('purchaseOrders.confirmedBy')} {confirmation.confirmed_by ?? '-'} ·{' '}
                   <DateTimeText value={confirmation.confirmed_at} size="xs" c="dimmed" />
                 </Text>
               </div>
               <Group gap={6} wrap="nowrap">
                 <Badge size="sm" variant="light" color={confirmation.is_full_shipment ? 'teal' : 'orange'} className="purchase-order-nowrap-badge">
-                  {confirmation.is_full_shipment ? 'Full shipment' : 'Partial shipment'}
+                  {confirmation.is_full_shipment ? t('purchaseOrders.fullShipment') : t('purchaseOrders.partialShipment')}
                 </Badge>
                 {confirmation.allow_partial_shipment ? (
                   <Badge size="sm" variant="light" color="blue" className="purchase-order-nowrap-badge">
-                    Partial allowed
+                    {t('purchaseOrders.partialAllowed')}
                   </Badge>
                 ) : null}
               </Group>
             </Group>
 
             <SimpleGrid cols={{ base: 1, sm: 3 }} mt="sm" spacing="xs">
-              <ConfirmationField label="Cargo ready" value={dateOnly(confirmation.cargo_ready_date) || '-'} />
-              <ConfirmationField label="Confirmed at" value={<DateTimeText value={confirmation.confirmed_at} />} />
-              <ConfirmationField label="Lines confirmed" value={String(confirmation.lines?.length ?? '-')} />
+              <ConfirmationField label={t('purchaseOrders.cargoReady')} value={dateOnly(confirmation.cargo_ready_date) || '-'} />
+              <ConfirmationField label={t('purchaseOrders.confirmedAt')} value={<DateTimeText value={confirmation.confirmed_at} />} />
+              <ConfirmationField label={t('purchaseOrders.linesConfirmed')} value={String(confirmation.lines?.length ?? '-')} />
             </SimpleGrid>
 
             {confirmation.note ? (

@@ -23,6 +23,7 @@ import { FieldPair } from '@shared/components/FieldPair';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { useExchangeRates } from '@shared/hooks/useExchangeRates';
 import { useI18n, type MessageKey } from '@shared/i18n';
+import { QUOTATION_CHARGE_GROUPS } from '@shared/lib/quotationChargeGroups';
 import { formatDate } from '@shared/utils/date';
 import { formatMoney, roundToMinorUnits } from '@shared/utils/money';
 
@@ -139,6 +140,18 @@ function CompareMetric({
 }
 
 const COMPARE_GROUP_ORDER: QuotationChargeGroupKey[] = ['FREIGHT', 'ORIGIN', 'DESTINATION'];
+
+function groupCompareLines(lines: NonNullable<QuotationV1['charge_lines']>) {
+  const grouped = new Map<string, NonNullable<QuotationV1['charge_lines']>>();
+  for (const group of QUOTATION_CHARGE_GROUPS) grouped.set(group.value, []);
+  for (const line of lines) {
+    const key = line.charge_group && grouped.has(line.charge_group) ? line.charge_group : 'FREIGHT';
+    grouped.get(key)?.push(line);
+  }
+  return QUOTATION_CHARGE_GROUPS.map((group) => ({ ...group, lines: grouped.get(group.value) ?? [] })).filter(
+    (group) => group.lines.length > 0,
+  );
+}
 
 function QuotationOptionComparePanel({
   option,
@@ -271,24 +284,26 @@ function QuotationOptionComparePanel({
           {optionLines.length === 0 ? (
             <Text c="dimmed" size="sm">{t('quotations.noChargeLines')}</Text>
           ) : (
-            optionLines.map((line) => {
-              const amount = Number(line.amount ?? Number(line.quantity ?? 0) * Number(line.unit_price ?? 0));
-              return (
-                <div className="rfq-compare-line" key={line.id}>
-                  <div>
-                    <Text fw={700} size="xs" lineClamp={1}>
-                      {line.charge_code ?? line.description ?? '-'}
-                    </Text>
-                    <Text c="dimmed" size="xs">
-                      {t(quotationChargeGroupLabelKey(line.charge_group))}
-                    </Text>
-                  </div>
-                  <Text fw={700} size="xs" className="tabular-nums">
-                    {Number.isFinite(amount) ? formatMoney(amount, line.currency_code) : '-'}
-                  </Text>
-                </div>
-              );
-            })
+            groupCompareLines(optionLines).map((group) => (
+              <div className="rfq-compare-line-group" key={group.value}>
+                <Text size="xs" c="dimmed" tt="uppercase" fw={700} className="rfq-compare-line-group-label">
+                  {t(group.labelKey)}
+                </Text>
+                {group.lines.map((line) => {
+                  const amount = Number(line.amount ?? Number(line.quantity ?? 0) * Number(line.unit_price ?? 0));
+                  return (
+                    <div className="rfq-compare-line" key={line.id}>
+                      <Text fw={700} size="xs" lineClamp={1}>
+                        {line.charge_code ?? line.description ?? '-'}
+                      </Text>
+                      <Text fw={700} size="xs" className="tabular-nums">
+                        {Number.isFinite(amount) ? formatMoney(amount, line.currency_code) : '-'}
+                      </Text>
+                    </div>
+                  );
+                })}
+              </div>
+            ))
           )}
         </div>
       </Stack>
