@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 
 import type { PurchaseOrderLineV1, PurchaseOrderV1 } from '@shared/api/purchaseOrders';
 import { useI18n } from '@shared/i18n';
+import { formatMoney } from '@shared/utils/money';
 
 import {
   dateOnly,
@@ -27,7 +28,7 @@ export function PurchaseOrderDetailInfo({ lines, order }: { lines: PurchaseOrder
   const etdDelayDays = getDateDelayDays(plannedEtd, actualAtd);
   const etaDelayDays = getDateDelayDays(plannedEta, actualAta);
   const currencyCode = order.currency?.currency_code ?? '-';
-  const amount = `${totalPoAmount(lines).toLocaleString()} ${order.currency?.currency_code ?? ''}`.trim();
+  const amount = formatMoney(totalPoAmount(lines), order.currency?.currency_code);
   const maxDelayDays = Math.max(etdDelayDays ?? 0, etaDelayDays ?? 0);
   const hasAnyActualDate = Boolean(actualAtd || actualAta);
   const routeStatus = !hasAnyActualDate

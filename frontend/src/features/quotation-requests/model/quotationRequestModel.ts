@@ -1,7 +1,11 @@
-import type { QuotationRequestLineV1, QuotationRequestStatusV1 } from '@shared/api/quotationRequests';
+import type { QuotationRequestLineV1, QuotationRequestStatusV1, QuotationRequestV1 } from '@shared/api/quotationRequests';
+import type { QuotationV1 } from '@shared/api/quotations';
 import type { MessageKey } from '@shared/i18n';
 
 export type QuotationRequestTab = 'all' | 'submitted' | 'received' | 'quoted' | 'confirmed' | 'cancelled';
+
+/** Shared translation-function type used by the extracted RFQ panel components. */
+export type TFn = (key: MessageKey | string, params?: Record<string, number | string | null | undefined>) => string;
 
 export const quotationRequestStatusTabs: Record<Exclude<QuotationRequestTab, 'all'>, QuotationRequestStatusV1[]> = {
   submitted: ['SUBMITTED'],
@@ -59,6 +63,44 @@ export function rfqTotalWeight(lines: { gross_weight_kg?: QuotationRequestLineV1
 
 export function isAirMode(mode?: string | null): boolean {
   return (mode ?? '').toUpperCase() === 'AIR';
+}
+
+export function isFclMode(mode?: string | null): boolean {
+  return (mode ?? '').toUpperCase() === 'SEA_FCL';
+}
+
+/**
+ * Quotations that count as a *response* to the RFQ — everything except an in-progress
+ * DRAFT. REJECTED is included (it's still a delivered answer). Single source of truth
+ * for the linked-quotation count shared by the list view and the detail page, which
+ * previously diverged (list excluded REJECTED, detail did not).
+ */
+export function rfqResponseQuotations(quotations: QuotationV1[] = []): QuotationV1[] {
+  return quotations.filter((quotation) => quotation.status !== 'DRAFT');
+}
+
+export function rfqHasDraftQuotation(quotations: QuotationV1[] = []): boolean {
+  return quotations.some((quotation) => quotation.status === 'DRAFT');
+}
+
+export type RfqReadinessKey = 'supplier' | 'route' | 'terms' | 'readyDate' | 'cargo' | 'items';
+export type RfqReadinessItem = { key: RfqReadinessKey; ok: boolean };
+
+/**
+ * Derives a "can we quote this yet?" checklist purely from data already on the RFQ —
+ * no backend flag exists for readiness, so each row is inferred from the presence of
+ * the fields a quoter needs. `totalWeight` is passed in so the caller reuses the same
+ * value it already computed for the cargo panel.
+ */
+export function rfqReadiness(request: QuotationRequestV1, totalWeight: number): RfqReadinessItem[] {
+  return [
+    { key: 'supplier', ok: Boolean(request.supplier_id || request.supplier) },
+    { key: 'route', ok: Boolean(request.origin_port && request.destination_port) },
+    { key: 'terms', ok: Boolean(request.mode && request.incoterm_code) },
+    { key: 'readyDate', ok: Boolean(request.desired_cargo_ready_date) },
+    { key: 'cargo', ok: Boolean(totalWeight || request.volume_cbm || request.container_type) },
+    { key: 'items', ok: (request.lines?.length ?? 0) > 0 },
+  ];
 }
 
 export function rfqLineDimWeightKg(line: RfqDimensionLine): number {

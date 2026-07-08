@@ -9,19 +9,32 @@ import { createCurrency, updateCurrency, type Currency } from '@shared/api/trade
 import { FieldHint } from '@shared/components/FieldHint';
 import { useI18n } from '@shared/i18n';
 import { getApiErrorMessage } from '@shared/lib/errors';
+import { currencyDecimalScale } from '@shared/utils/money';
 
-import { optionalNumber, optionalString } from '../model/masterDataModel';
+import { optionalString } from '../model/masterDataModel';
 import { MasterDataFormActions, MasterDataFormModal, MasterDataFormSection } from './MasterDataFormModal';
 
 type CurrencyFormValues = {
   code: string;
   name: string;
   symbol: string;
-  decimalPlaces: string;
   isActive: boolean;
 };
 
-const emptyValues: CurrencyFormValues = { code: '', name: '', symbol: '', decimalPlaces: '2', isActive: true };
+const emptyValues: CurrencyFormValues = { code: '', name: '', symbol: '', isActive: true };
+
+// A well-formed ISO 4217 alphabetic code is exactly three letters that Intl accepts as a
+// currency. Anything else makes Intl throw, which is exactly what we guard against.
+function isValidIsoCurrency(code: string) {
+  const normalized = code.trim().toUpperCase();
+  if (!/^[A-Z]{3}$/.test(normalized)) return false;
+  try {
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: normalized });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 function hintedLabel(label: string, hint: string) {
   return (
@@ -53,7 +66,6 @@ export function CurrencyModal({
           code: editing.currency_code,
           name: editing.currency_name,
           symbol: editing.symbol ?? '',
-          decimalPlaces: String(editing.decimal_places),
           isActive: editing.is_active,
         }
         : emptyValues,
@@ -61,13 +73,19 @@ export function CurrencyModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opened, editing]);
 
+  const codeValid = isValidIsoCurrency(form.values.code);
+  // decimal_places is not free-form data: ISO 4217 fixes the minor-unit count per
+  // currency, and the money formatter treats Intl as authoritative. We derive and store
+  // it from the code so master data can never drift from how amounts actually render.
+  const derivedDecimals = codeValid ? currencyDecimalScale(form.values.code) : null;
+
   const mutation = useMutation({
     mutationFn: () => {
       const payload = {
         currency_code: form.values.code.trim().toUpperCase(),
         currency_name: form.values.name.trim(),
         symbol: optionalString(form.values.symbol),
-        decimal_places: optionalNumber(form.values.decimalPlaces) ?? 2,
+        decimal_places: derivedDecimals ?? 2,
         is_active: form.values.isActive,
       };
       return editing ? updateCurrency(editing.id, payload) : createCurrency(payload);
@@ -82,7 +100,7 @@ export function CurrencyModal({
   });
 
   const handleSave = () => {
-    if (!form.values.code.trim() || !form.values.name.trim()) return;
+    if (!form.values.code.trim() || !form.values.name.trim() || !codeValid) return;
     mutation.mutate();
   };
 
@@ -96,7 +114,7 @@ export function CurrencyModal({
           onCancel={onClose}
           onSave={handleSave}
           loading={mutation.isPending}
-          disabled={!form.values.code.trim() || !form.values.name.trim()}
+          disabled={!form.values.code.trim() || !form.values.name.trim() || !codeValid}
         />
       )}
     >
@@ -107,7 +125,12 @@ export function CurrencyModal({
       ) : null}
       <MasterDataFormSection>
         <SimpleGrid cols={{ base: 1, sm: 2 }}>
-          <TextInput label={t('masterData.currencyCode')} required {...form.getInputProps('code')} />
+          <TextInput
+            label={t('masterData.currencyCode')}
+            required
+            {...form.getInputProps('code')}
+            error={form.values.code.trim() && !codeValid ? t('masterData.currencyCodeInvalid') : undefined}
+          />
           <TextInput label={t('masterData.currencyName')} required {...form.getInputProps('name')} />
           <TextInput
             label={hintedLabel(t('masterData.currencySymbol'), t('glossary.currencySymbol'))}
@@ -115,8 +138,10 @@ export function CurrencyModal({
           />
           <TextInput
             label={hintedLabel(t('masterData.decimalPlaces'), t('glossary.decimalPlaces'))}
-            type="number"
-            {...form.getInputProps('decimalPlaces')}
+            description={t('masterData.decimalPlacesDerived')}
+            value={derivedDecimals ?? ''}
+            readOnly
+            placeholder="—"
           />
         </SimpleGrid>
       </MasterDataFormSection>

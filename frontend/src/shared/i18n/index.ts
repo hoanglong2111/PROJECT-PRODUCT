@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import type { BusinessFlowTag, Priority, TaskRole } from '@shared/model/logistics';
 import type { AppRole } from '@shared/auth/types';
 import {
+  localeForLanguage,
   useWorkspacePreferences,
   type AppearanceMode,
   type DensityPreference,
@@ -54,9 +55,18 @@ export function useI18n() {
 
   return useMemo(() => {
     const dictionary = dictionaries[language];
+    const locale = localeForLanguage(language);
+    // Locale-aware separators for money/number inputs (Mantine NumberInput props).
+    // en-US: 1,234.56 · vi-VN: 1.234,56
+    const numberSeparators =
+      language === 'vi'
+        ? { thousandSeparator: '.', decimalSeparator: ',' }
+        : { thousandSeparator: ',', decimalSeparator: '.' };
 
     return {
       language,
+      locale,
+      numberSeparators,
       appearanceModeLabel: (mode: AppearanceMode) => appearanceModeLabels[language][mode],
       densityLabel: (density: DensityPreference) => densityLabels[language][density],
       departmentLabel: (department: string) => departmentLabels[language][department] ?? department,

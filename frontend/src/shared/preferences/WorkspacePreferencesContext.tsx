@@ -1,9 +1,16 @@
 ﻿import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ColorPresetId } from '@shared/theme/colorPresets';
 import { defaultColorPresetId } from '@shared/theme/colorPresets';
+import { setMoneyLocale } from '@shared/utils/money';
 
 export type { ColorPresetId };
 export type WorkspaceLanguage = 'vi' | 'en';
+
+// BCP 47 locale for a workspace language — the single source of truth the money
+// formatter binds to (grouping/decimal separators). vi → vi-VN, en → en-US.
+export function localeForLanguage(language: WorkspaceLanguage) {
+  return language === 'vi' ? 'vi-VN' : 'en-US';
+}
 export type AppearanceMode = 'light' | 'dark' | 'auto';
 export type ResolvedColorScheme = 'light' | 'dark';
 export type VisualTheme = 'standard' | 'high-contrast' | 'eye-comfort';
@@ -210,7 +217,7 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
       return;
     }
 
-    document.documentElement.lang = language === 'vi' ? 'vi-VN' : 'en';
+    document.documentElement.lang = localeForLanguage(language);
     document.documentElement.dataset.kbfeAppearance = appearanceMode;
     document.documentElement.dataset.kbfeDensity = density;
     document.documentElement.dataset.kbfeResolvedColorScheme = resolvedColorScheme;
@@ -310,6 +317,10 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
     setDimLevel(FINE_TUNE_DEFAULTS.dimLevel);
     setContrastLevel(FINE_TUNE_DEFAULTS.contrastLevel);
   };
+
+  // Bind the money formatter's locale to the language synchronously (during render, not
+  // in an effect) so children on the same render pass format money in the right locale.
+  setMoneyLocale(localeForLanguage(language));
 
   const value = useMemo(
     () => ({

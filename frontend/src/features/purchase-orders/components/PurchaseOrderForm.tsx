@@ -4,7 +4,6 @@ import {
   Badge,
   Button,
   Group,
-  NumberFormatter,
   NumberInput,
   Paper,
   Select,
@@ -32,6 +31,7 @@ import { DateTimeField } from '@shared/components/DateField';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { FormSection, OrderLineItemsEditor, SummaryTile, type OrderLineDraft } from '@shared/components/order-intake';
 import { useI18n } from '@shared/i18n';
+import { formatMoney } from '@shared/utils/money';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
 import { usePoInvalidation } from '../hooks/usePoInvalidation';
@@ -259,7 +259,7 @@ export function PurchaseOrderForm({
               label={mode === 'create' ? t('purchaseOrders.poTotal') : t('purchaseOrders.currency')}
               value={
                 mode === 'create' ? (
-                  <NumberFormatter value={poTotal} thousandSeparator decimalScale={2} />
+                  formatMoney(poTotal, selectedCurrency?.currency_code)
                 ) : (
                   selectedCurrency?.currency_code ?? t('purchaseOrders.notSet')
                 )
@@ -477,7 +477,7 @@ export function PurchaseOrderForm({
                     {t('purchaseOrders.poTotal')}
                   </Text>
                   <Text fw={800} size="md" className="tabular-nums">
-                    <NumberFormatter value={poTotal} thousandSeparator decimalScale={2} />
+                    {formatMoney(poTotal, selectedCurrency?.currency_code)}
                   </Text>
                 </Group>
               </Group>

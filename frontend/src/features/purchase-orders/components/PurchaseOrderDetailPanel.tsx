@@ -15,6 +15,7 @@ import { FieldPair } from '@shared/components/FieldPair';
 import { PageError } from '@shared/components/PageFeedback';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { useI18n } from '@shared/i18n';
+import { formatMoney } from '@shared/utils/money';
 import { getApiErrorMessage } from '@shared/lib/errors';
 
 import { usePoInvalidation } from '../hooks/usePoInvalidation';
@@ -76,7 +77,7 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
   const canEdit = canManage && order.status === 'DRAFT';
   const canSend = canManage && order.status === 'DRAFT';
   const canConfirm = canManage && order.status === 'SENT';
-  const amount = `${totalPoAmount(lines).toLocaleString()} ${order.currency?.currency_code ?? ''}`.trim();
+  const amount = formatMoney(totalPoAmount(lines), order.currency?.currency_code);
   const lotCount = order.lot_summary?.total_lots ?? order.total_lots ?? 0;
   const containerCount = order.lot_summary?.total_containers ?? order.total_containers ?? 0;
   const eta = order.logistics_timeline?.unloading_port?.eta ?? order.expected_eta ?? '-';
