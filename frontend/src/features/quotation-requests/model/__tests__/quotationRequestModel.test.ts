@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
+import type { QuotationV1 } from '@shared/api/quotations';
+import type { QuotationRequestV1 } from '@shared/api/quotationRequests';
+
 import {
   isAirMode,
   newRfqPackage,
   quotationRequestStatusTabs,
   rfqChargeableWeightKg,
   rfqContainersTotalWeight,
+  rfqHasDraftQuotation,
   rfqLineDimWeightKg,
   rfqLclChargeableRevenueTon,
   rfqLineCbm,
@@ -16,6 +20,8 @@ import {
   rfqPackageDescendantIds,
   rfqPackageEffectiveGrossKg,
   rfqPackageOwnGrossKg,
+  rfqReadiness,
+  rfqResponseQuotations,
   rfqTopLevelPackages,
   rfqTotalCbm,
 } from '../quotationRequestModel';
@@ -193,5 +199,61 @@ describe('RFQ container calculations', () => {
       { lines: [{ gross_weight_kg: null }, { gross_weight_kg: '' }, { gross_weight_kg: 50 }] },
     ]);
     expect(total).toBe(50);
+  });
+});
+
+function makeQuotation(status: QuotationV1['status']): QuotationV1 {
+  return { id: `q-${status}`, status } as QuotationV1;
+}
+
+describe('rfqResponseQuotations', () => {
+  it('excludes DRAFT but keeps REJECTED (matches the detail page definition)', () => {
+    const quotations = [makeQuotation('DRAFT'), makeQuotation('REJECTED'), makeQuotation('CONFIRMED')];
+    expect(rfqResponseQuotations(quotations).map((q) => q.status)).toEqual(['REJECTED', 'CONFIRMED']);
+  });
+
+  it('is safe on empty / undefined input', () => {
+    expect(rfqResponseQuotations()).toEqual([]);
+    expect(rfqResponseQuotations([])).toEqual([]);
+  });
+});
+
+describe('rfqHasDraftQuotation', () => {
+  it('detects an in-progress draft', () => {
+    expect(rfqHasDraftQuotation([makeQuotation('DRAFT')])).toBe(true);
+    expect(rfqHasDraftQuotation([makeQuotation('CONFIRMED')])).toBe(false);
+    expect(rfqHasDraftQuotation()).toBe(false);
+  });
+});
+
+describe('rfqReadiness', () => {
+  const complete = {
+    supplier_id: 'sup_001',
+    origin_port: 'SHA',
+    destination_port: 'HAN',
+    mode: 'AIR',
+    incoterm_code: 'FOB',
+    desired_cargo_ready_date: '2026-07-10',
+    volume_cbm: 4.8,
+    lines: [{ id: 'l1' }],
+  } as unknown as QuotationRequestV1;
+
+  it('marks every check ok when all fields are present', () => {
+    expect(rfqReadiness(complete, 620).every((item) => item.ok)).toBe(true);
+  });
+
+  it('flags missing supplier, route, items and cargo', () => {
+    const partial = { mode: 'SEA_LCL', incoterm_code: 'FOB', desired_cargo_ready_date: '2026-07-10' } as unknown as QuotationRequestV1;
+    const byKey = Object.fromEntries(rfqReadiness(partial, 0).map((item) => [item.key, item.ok]));
+    expect(byKey.supplier).toBe(false);
+    expect(byKey.route).toBe(false);
+    expect(byKey.items).toBe(false);
+    expect(byKey.cargo).toBe(false);
+    expect(byKey.terms).toBe(true);
+  });
+
+  it('treats container_type alone as valid cargo metrics', () => {
+    const fcl = { container_type: '40HC' } as unknown as QuotationRequestV1;
+    expect(rfqReadiness(fcl, 0).find((item) => item.key === 'cargo')?.ok).toBe(true);
   });
 });

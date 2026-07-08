@@ -2,23 +2,54 @@ type FormatMoneyOptions = {
   locale?: string;
 };
 
+type FormatUnitPriceOptions = {
+  locale?: string;
+  // Unit prices / FX rates are ratios, not settlement amounts, so they may carry more
+  // precision than the currency's ISO 4217 minor unit. maxDigits caps that precision;
+  // minDigits defaults to the currency's minor unit so a whole price still shows cents.
+  maxDigits?: number;
+  minDigits?: number;
+};
+
+const DEFAULT_LOCALE = 'en-US';
+const FALLBACK_FRACTION_DIGITS = 2;
+const DEFAULT_UNIT_PRICE_MAX_DIGITS = 6;
+
+// Single source of truth for the display locale. The i18n/preferences layer owns the
+// language and pushes it here via setMoneyLocale so money formatting never reads the DOM
+// (`document.documentElement.lang`) as a side channel. Math (minor units) is currency-
+// driven and locale-independent; only grouping/decimal separators depend on this.
+let activeLocale = DEFAULT_LOCALE;
+
+export function setMoneyLocale(locale: string | null | undefined) {
+  activeLocale = locale?.trim() || DEFAULT_LOCALE;
+}
+
+function resolveLocale(locale?: string) {
+  return locale?.trim() || activeLocale;
+}
+
 function normalizeCurrencyCode(currencyCode: string | null | undefined) {
   return (currencyCode || 'USD').trim().toUpperCase();
 }
 
-function defaultLocale() {
-  if (typeof document !== 'undefined' && document.documentElement.lang) {
-    return document.documentElement.lang === 'vi' ? 'vi-VN' : document.documentElement.lang;
+export function currencyFractionDigits(currencyCode: string | null | undefined, locale = activeLocale) {
+  const currency = normalizeCurrencyCode(currencyCode);
+  try {
+    return (
+      new Intl.NumberFormat(locale, { style: 'currency', currency }).resolvedOptions()
+        .maximumFractionDigits ?? FALLBACK_FRACTION_DIGITS
+    );
+  } catch {
+    // Non-ISO-4217 codes (e.g. bad master-data input) make Intl throw a RangeError.
+    // Fall back to a sane default so display/rounding never crashes the UI.
+    return FALLBACK_FRACTION_DIGITS;
   }
-  if (typeof navigator !== 'undefined' && navigator.language) {
-    return navigator.language;
-  }
-  return 'en-US';
 }
 
-export function currencyFractionDigits(currencyCode: string | null | undefined, locale = defaultLocale()) {
-  const currency = normalizeCurrencyCode(currencyCode);
-  return new Intl.NumberFormat(locale, { style: 'currency', currency }).resolvedOptions().maximumFractionDigits ?? 2;
+// ISO 4217 minor-unit count for a currency, used to drive input decimalScale.
+export function currencyDecimalScale(currencyCode: string | null | undefined, locale = activeLocale) {
+  return currencyFractionDigits(currencyCode, locale);
 }
 
 export function formatMoney(
@@ -27,7 +58,7 @@ export function formatMoney(
   options: FormatMoneyOptions = {},
 ) {
   const currency = normalizeCurrencyCode(currencyCode);
-  const locale = options.locale ?? defaultLocale();
+  const locale = resolveLocale(options.locale);
   const digits = currencyFractionDigits(currency, locale);
   const value = Number(amount ?? 0);
   const safeValue = Number.isFinite(value) ? value : 0;
@@ -39,10 +70,31 @@ export function formatMoney(
   }).format(rounded)} ${currency}`;
 }
 
+// Format a unit price / FX rate: keeps precision beyond the currency minor unit (up to
+// maxDigits) instead of rounding to a settlement amount, while still grouping by locale
+// and appending the ISO code. Trailing zeros past the currency minor unit are trimmed.
+export function formatUnitPrice(
+  amount: number | string | null | undefined,
+  currencyCode: string | null | undefined,
+  options: FormatUnitPriceOptions = {},
+) {
+  const currency = normalizeCurrencyCode(currencyCode);
+  const locale = resolveLocale(options.locale);
+  const minDigits = options.minDigits ?? currencyFractionDigits(currency, locale);
+  const maxDigits = Math.max(minDigits, options.maxDigits ?? DEFAULT_UNIT_PRICE_MAX_DIGITS);
+  const value = Number(amount ?? 0);
+  const safeValue = Number.isFinite(value) ? value : 0;
+
+  return `${new Intl.NumberFormat(locale, {
+    minimumFractionDigits: minDigits,
+    maximumFractionDigits: maxDigits,
+  }).format(safeValue)} ${currency}`;
+}
+
 export function toMinorUnits(
   amount: number | string | null | undefined,
   currencyCode: string | null | undefined,
-  locale = defaultLocale(),
+  locale = activeLocale,
 ) {
   const value = Number(amount ?? 0);
   if (!Number.isFinite(value)) return 0;
@@ -58,7 +110,7 @@ export function toMinorUnits(
 export function fromMinorUnits(
   minorUnits: number,
   currencyCode: string | null | undefined,
-  locale = defaultLocale(),
+  locale = activeLocale,
 ) {
   const digits = currencyFractionDigits(currencyCode, locale);
   const value = Number(`${minorUnits}e-${digits}`);
@@ -68,7 +120,7 @@ export function fromMinorUnits(
 export function roundToMinorUnits(
   amount: number | string | null | undefined,
   currencyCode: string | null | undefined,
-  locale = defaultLocale(),
+  locale = activeLocale,
 ) {
   return fromMinorUnits(toMinorUnits(amount, currencyCode, locale), currencyCode, locale);
 }
@@ -76,7 +128,7 @@ export function roundToMinorUnits(
 export function sumMoney(
   amounts: Array<number | string | null | undefined>,
   currencyCode: string | null | undefined,
-  locale = defaultLocale(),
+  locale = activeLocale,
 ) {
   const totalMinorUnits = amounts.reduce<number>(
     (sum, amount) => sum + toMinorUnits(amount, currencyCode, locale),
@@ -89,7 +141,7 @@ export function convertToBase(
   amount: number | string | null | undefined,
   rate: number | string | null | undefined,
   baseCurrencyCode = 'VND',
-  locale = defaultLocale(),
+  locale = activeLocale,
 ) {
   const converted = Number(amount ?? 0) * Number(rate ?? 1);
   return roundToMinorUnits(Number.isFinite(converted) ? converted : 0, baseCurrencyCode, locale);
@@ -100,7 +152,7 @@ export function convertMoney(
   fromCurrency: string | null | undefined,
   toCurrency: string | null | undefined,
   rateToVnd: (code: string | null | undefined) => number,
-  locale = defaultLocale(),
+  locale = activeLocale,
 ) {
   const from = normalizeCurrencyCode(fromCurrency);
   const to = normalizeCurrencyCode(toCurrency);

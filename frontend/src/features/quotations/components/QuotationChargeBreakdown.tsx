@@ -9,7 +9,7 @@ import {
   computeQuotationLineVnd,
   summarizeQuotationVndLines,
 } from '@shared/lib/quotationCharges';
-import { formatMoney, roundToMinorUnits } from '@shared/utils/money';
+import { formatMoney, formatUnitPrice } from '@shared/utils/money';
 
 export type QuotationChargeAdjustmentDraft = {
   charge_line_id: string;
@@ -44,12 +44,6 @@ type QuotationChargeBreakdownProps = {
   onCancelAdjust: () => void;
   onSubmitAdjust: (lines: QuotationChargeAdjustmentDraft[]) => void;
 };
-
-function formatAmount(amount: number, currency: string | null | undefined): string {
-  return new Intl.NumberFormat(undefined, {
-    maximumFractionDigits: 6,
-  }).format(roundToMinorUnits(amount, currency));
-}
 
 function formatChargeDescription(value?: string | null): string {
   const description = value?.trim();
@@ -317,7 +311,7 @@ export function QuotationChargeBreakdown({
                                 </Table.Td>
                                 <Table.Td>{line.unit ?? '-'}</Table.Td>
                                 <Table.Td ta="right" className="tabular-nums">
-                                  {Number.isFinite(unitPrice) ? formatAmount(unitPrice, lineCurrency) : '-'}
+                                  {Number.isFinite(unitPrice) ? formatUnitPrice(unitPrice, lineCurrency) : '-'}
                                 </Table.Td>
                                 {adjustMode ? (
                                   <>
@@ -336,7 +330,7 @@ export function QuotationChargeBreakdown({
                                     </Table.Td>
                                     <Table.Td ta="right" className="tabular-nums">
                                       <Text c={deltaColor} fw={700} size="sm">
-                                        {!enabled || unitDelta === 0 ? '-' : formatAmount(unitDelta, lineCurrency)}
+                                        {!enabled || unitDelta === 0 ? '-' : formatUnitPrice(unitDelta, lineCurrency)}
                                       </Text>
                                     </Table.Td>
                                     <Table.Td>
@@ -377,7 +371,7 @@ export function QuotationChargeBreakdown({
                                               {entry.actor}
                                             </Text>
                                             <Text size="sm" fw={700} className="tabular-nums">
-                                              {formatAmount(entry.price, lineCurrency)}
+                                              {formatUnitPrice(entry.price, lineCurrency)}
                                             </Text>
                                             {entry.note ? (
                                               <Text size="xs" c="dimmed">{entry.note}</Text>

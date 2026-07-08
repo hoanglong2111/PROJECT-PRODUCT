@@ -81,7 +81,7 @@ function ReadOnlyContext({ label, value }: { label: string; value: ReactNode }) 
 }
 
 export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: QuotationFormProps) {
-  const { language, t } = useI18n();
+  const { language, locale, t } = useI18n();
   const queryClient = useQueryClient();
   const { carrierOptions, carriers, currencies, transportModeOptions } = useTradeMasterDataOptions();
   const { rateToVndOrNull } = useExchangeRates();
@@ -566,7 +566,7 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
               )}
               {referenceCurrency && referenceRate ? (
                 <Text size="xs" c="dimmed" mt="xs" className="rfq-reference-rate">
-                  {t('quotations.referenceRate')}: 1 {referenceCurrency} = {new Intl.NumberFormat('vi-VN').format(referenceRate)} VND
+                  {t('quotations.referenceRate')}: 1 {referenceCurrency} = {new Intl.NumberFormat(locale).format(referenceRate)} VND
                 </Text>
               ) : null}
             </div>

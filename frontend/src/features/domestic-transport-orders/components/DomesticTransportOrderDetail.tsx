@@ -48,7 +48,7 @@ import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { useI18n } from '@shared/i18n';
 
-import { formatNumber, type FormState } from '../model/domesticTransportOrderModel';
+import { formatDtoMoney, formatNumber, type FormState } from '../model/domesticTransportOrderModel';
 
 export function DomesticTransportOrderDetail({
   actionPending,
@@ -78,7 +78,7 @@ export function DomesticTransportOrderDetail({
   const truckVendor = order.truck_vendor?.forwarder_name ?? order.truck_vendor_id ?? '-';
   const carrierDo = order.carrier_delivery_order?.carrier_do_no ?? order.carrier_delivery_order_id ?? '-';
   const quoteDisplay = order.quote_amount != null
-    ? `${formatNumber(order.quote_amount)} ${order.quote_currency ?? ''}`.trim()
+    ? formatDtoMoney(order.quote_amount, order.quote_currency)
     : '-';
   const deliveryDisplay = order.actual_delivery_at
     ? <DateTimeText value={order.actual_delivery_at} showZone />

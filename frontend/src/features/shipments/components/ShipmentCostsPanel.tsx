@@ -22,7 +22,8 @@ import type { Gd1CostType } from '@shared/model/logistics';
 import { CopyValue } from '@shared/components/CopyValue';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { useTradeMasterDataOptions } from '@shared/hooks/useTradeMasterDataOptions';
-import { convertToBase, formatMoney } from '@shared/utils/money';
+import { useI18n } from '@shared/i18n';
+import { convertToBase, currencyDecimalScale, formatMoney } from '@shared/utils/money';
 
 import { landedCostTotal } from '../model/shipmentModel';
 import { ShipmentMarginSummary } from './ShipmentMarginSummary';
@@ -61,6 +62,7 @@ export function ShipmentCostsPanel({
   shipment: ShipmentRecord;
   t: (key: string, params?: Record<string, string | number>) => string;
 }) {
+  const { numberSeparators } = useI18n();
   const { currencyOptions } = useTradeMasterDataOptions();
   const costs = shipment.costs;
   const total = landedCostTotal(costs);
@@ -170,7 +172,9 @@ export function ShipmentCostsPanel({
             label={t('shipments.costAmount')}
             placeholder="0"
             min={0}
-            thousandSeparator=","
+            thousandSeparator={numberSeparators.thousandSeparator}
+            decimalSeparator={numberSeparators.decimalSeparator}
+            decimalScale={currencyDecimalScale(currency)}
             value={amount}
             onChange={setAmount}
           />
@@ -183,7 +187,8 @@ export function ShipmentCostsPanel({
           <NumberInput
             label={t('shipments.costExchangeRate')}
             min={0}
-            thousandSeparator=","
+            thousandSeparator={numberSeparators.thousandSeparator}
+            decimalSeparator={numberSeparators.decimalSeparator}
             value={rate}
             onChange={setRate}
             withAsterisk={!isBaseCurrency}

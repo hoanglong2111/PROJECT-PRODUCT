@@ -5,7 +5,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 
 import type { PurchaseOrderLineV1 } from '@shared/api/purchaseOrders';
 import { useI18n } from '@shared/i18n';
-import { formatMoney as formatMoneyValue } from '@shared/utils/money';
+import { currencyDecimalScale, formatMoney as formatMoneyValue } from '@shared/utils/money';
 
 import { dateOnly, formatWeightKg, getPoLineLotState, getPoLineReceiptState, toNumber } from '../model/purchaseOrderModel';
 
@@ -156,7 +156,7 @@ export function PoLinesTable({ currencyCode, lines }: { currencyCode: string; li
 }
 
 function PoLineRow({ line, currencyCode }: { line: PurchaseOrderLineV1; currencyCode: string }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [open, { toggle }] = useDisclosure(false);
 
   const lotState = getPoLineLotState(line);
@@ -234,11 +234,11 @@ function PoLineRow({ line, currencyCode }: { line: PurchaseOrderLineV1; currency
           <span
             className="po-line-amount tabular-nums"
             title={t('purchaseOrders.poLinesAmountTitle', {
-              amount: lineAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-              currency: currencyCode ? ` ${currencyCode}` : '',
+              amount: formatMoneyValue(lineAmount, currencyCode),
+              currency: '',
             })}
           >
-            {compactMoney(lineAmount)}
+            {compactMoney(lineAmount, currencyCode, locale)}
           </span>
         </td>
       </tr>
@@ -351,9 +351,13 @@ function compactNumber(value: number) {
   return new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(value);
 }
 
-function compactMoney(value: number) {
+// Currency-aware compact display for the dense amount column (the ISO code lives in the
+// column header, so it is not repeated per cell). Small values keep the currency's ISO
+// 4217 minor units; large values compact to 12.5K / 1.2M. Locale drives the separators.
+function compactMoney(value: number, currencyCode: string, locale: string) {
+  const digits = currencyDecimalScale(currencyCode, locale);
   if (Math.abs(value) < 10_000) {
-    return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return new Intl.NumberFormat(locale, { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value);
   }
-  return new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(value);
+  return new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(value);
 }

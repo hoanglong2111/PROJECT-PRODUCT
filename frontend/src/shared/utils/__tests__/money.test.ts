@@ -3,8 +3,11 @@ import { describe, expect, it } from 'vitest';
 import {
   convertMoney,
   convertToBase,
+  currencyDecimalScale,
   currencyFractionDigits,
   formatMoney,
+  formatUnitPrice,
+  setMoneyLocale,
   sumMoney,
 } from '../money';
 
@@ -38,6 +41,36 @@ describe('money utilities', () => {
   it('rounds converted base currency once to VND minor units', () => {
     expect(convertToBase(12.345, 25000, 'VND', 'en-US')).toBe(308625);
     expect(convertToBase(12.3456, 25000.12, 'VND', 'en-US')).toBe(308641);
+  });
+
+  it('exposes ISO minor units for input decimalScale', () => {
+    expect(currencyDecimalScale('VND', 'en-US')).toBe(0);
+    expect(currencyDecimalScale('USD', 'en-US')).toBe(2);
+  });
+
+  it('never throws on a non-ISO-4217 currency code (bad master data)', () => {
+    expect(currencyFractionDigits('XYZ', 'en-US')).toBe(2);
+    expect(formatMoney(100, 'XYZ', { locale: 'en-US' })).toBe('100.00 XYZ');
+  });
+
+  it('formats unit prices with extra precision, not rounded to settlement minor units', () => {
+    // Keeps up to 6 digits (unit price / rate), min = currency minor unit.
+    expect(formatUnitPrice(1.2345, 'USD', { locale: 'en-US' })).toBe('1.2345 USD');
+    expect(formatUnitPrice(1.2, 'USD', { locale: 'en-US' })).toBe('1.20 USD');
+    expect(formatUnitPrice(1.23456789, 'USD', { locale: 'en-US' })).toBe('1.234568 USD');
+    // VND has 0 minor units but a unit price may still carry decimals.
+    expect(formatUnitPrice(1234.5, 'VND', { locale: 'en-US' })).toBe('1,234.5 VND');
+  });
+
+  it('binds the display locale via setMoneyLocale (vi-VN grouping/decimal separators)', () => {
+    try {
+      setMoneyLocale('vi-VN');
+      expect(formatMoney(1234.56, 'USD')).toBe('1.234,56 USD');
+      setMoneyLocale('en-US');
+      expect(formatMoney(1234.56, 'USD')).toBe('1,234.56 USD');
+    } finally {
+      setMoneyLocale('en-US');
+    }
   });
 
   it('converts between currencies through VND rates and rounds to target minor units', () => {
