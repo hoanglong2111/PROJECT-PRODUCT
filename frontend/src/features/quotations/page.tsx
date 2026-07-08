@@ -1,4 +1,4 @@
-import { Button, Modal, Select, Stack } from '@mantine/core';
+import { Button, Stack } from '@mantine/core';
 import { IconPlus } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
@@ -15,6 +15,7 @@ import { useI18n } from '@shared/i18n';
 import { QuotationDetail } from './components/QuotationDetail';
 import { QuotationForm } from './components/QuotationForm';
 import { QuotationListView } from './components/QuotationListView';
+import { RfqQuotationPickerModal } from './components/RfqQuotationPickerModal';
 import {
   quotationStatusTabs,
   quotationTabItems,
@@ -45,7 +46,9 @@ export function Quotations() {
   const reviseQuote = searchParams.get(REVISE_PARAM);
   const createRfqId = searchParams.get(CREATE_PARAM) ? searchParams.get(RFQ_PARAM) : null;
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [pickedRfq, setPickedRfq] = useState<string | null>(null);
+  // Holds a just-created/revised quotation so its detail renders immediately,
+  // without waiting for the list query to refetch (which would flash the list view).
+  const [createdQuotation, setCreatedQuotation] = useState<QuotationV1 | null>(null);
 
   const activeTab = useQuotationsUiStore((s) => s.activeTab);
   const search = useQuotationsUiStore((s) => s.search);
@@ -76,17 +79,6 @@ export function Quotations() {
         .sort((left, right) => String(right.create_at || '').localeCompare(String(left.create_at || ''))),
     [quotations],
   );
-  const rfqOptions = useMemo(
-    () =>
-      (rfqPickerQuery.data?.data ?? [])
-        .filter((request) => request.status === 'SUBMITTED' || request.status === 'RECEIVED')
-        .map((request) => ({
-          value: request.id,
-          label: `${request.rfq_no} - ${request.customer_ref ?? ''}`,
-        })),
-    [rfqPickerQuery.data],
-  );
-
   const filteredQuotations = useMemo(() => {
     const normalizedSearch = search.toLowerCase().trim();
     return standaloneQuotations.filter((quotation) => {
@@ -128,7 +120,13 @@ export function Quotations() {
 
   const findQuotation = (value: string | null): QuotationV1 | null => {
     if (!value) return null;
-    return standaloneQuotations.find((quotation) => quotation.id === value || quotation.quotation_no === value) ?? null;
+    const fromList = standaloneQuotations.find((quotation) => quotation.id === value || quotation.quotation_no === value);
+    if (fromList) return fromList;
+    // Fall back to the just-created quotation before the list query has refetched.
+    if (createdQuotation && (createdQuotation.id === value || createdQuotation.quotation_no === value)) {
+      return createdQuotation;
+    }
+    return null;
   };
   const selectedQuotation = findQuotation(focusedQuote);
   const selectedQuotationId = selectedQuotation?.id ?? null;
@@ -196,11 +194,11 @@ export function Quotations() {
     });
   };
 
-  const openCreateFromPickedRfq = () => {
-    if (!pickedRfq) return;
+  const openCreateFromPickedRfq = (rfqId: string) => {
+    if (!rfqId) return;
     updateWorkbenchParams((nextParams) => {
       nextParams.set(CREATE_PARAM, '1');
-      nextParams.set(RFQ_PARAM, pickedRfq);
+      nextParams.set(RFQ_PARAM, rfqId);
       nextParams.delete(QUOTE_PARAM);
       nextParams.delete(VIEW_PARAM);
       nextParams.delete(REVISE_PARAM);
@@ -227,31 +225,13 @@ export function Quotations() {
 
   return (
     <Stack gap="lg" className="quotations-workbench">
-      <Modal
+      <RfqQuotationPickerModal
         opened={pickerOpen}
+        requests={rfqPickerQuery.data?.data ?? []}
+        isLoading={rfqPickerQuery.isLoading || rfqPickerQuery.isFetching}
         onClose={() => setPickerOpen(false)}
-        title={t('quotations.pickRfqTitle')}
-        classNames={{
-          body: 'rfq-picker-modal-body',
-          content: 'rfq-picker-modal-content',
-          header: 'rfq-picker-modal-header',
-        }}
-      >
-        <Stack gap="sm" className="rfq-picker-form">
-          <Select
-            className="rfq-picker-select"
-            data={rfqOptions}
-            value={pickedRfq}
-            onChange={setPickedRfq}
-            searchable
-            placeholder={t('quotations.pickRfqPlaceholder')}
-            nothingFoundMessage={t('quotationRequests.emptyTitle')}
-          />
-          <Button fullWidth disabled={!pickedRfq} onClick={openCreateFromPickedRfq}>
-            {t('quotations.createFromRfq')}
-          </Button>
-        </Stack>
-      </Modal>
+        onConfirm={openCreateFromPickedRfq}
+      />
 
       {showList ? (
         <PageHeader
@@ -295,6 +275,7 @@ export function Quotations() {
           rfq={isCreateFromRfq ? rfqQuery.data : undefined}
           onCancel={closeWorkbench}
           onCreated={(quotation) => {
+            setCreatedQuotation(quotation);
             openQuotation(quotation, { replace: true });
           }}
         />
