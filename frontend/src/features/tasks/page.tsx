@@ -92,14 +92,12 @@ export function Tasks() {
   const roleFilter = useTasksUiStore((s) => s.roleFilter);
   const priorityFilter = useTasksUiStore((s) => s.priorityFilter);
   const milestoneFilter = useTasksUiStore((s) => s.milestoneFilter);
-  const requiredOnly = useTasksUiStore((s) => s.requiredOnly);
   const overdueOnly = useTasksUiStore((s) => s.overdueOnly);
   const setSearch = useTasksUiStore((s) => s.setSearch);
   const setStatusFilter = useTasksUiStore((s) => s.setStatusFilter);
   const setRoleFilter = useTasksUiStore((s) => s.setRoleFilter);
   const setPriorityFilter = useTasksUiStore((s) => s.setPriorityFilter);
   const setMilestoneFilter = useTasksUiStore((s) => s.setMilestoneFilter);
-  const setRequiredOnly = useTasksUiStore((s) => s.setRequiredOnly);
   const setOverdueOnly = useTasksUiStore((s) => s.setOverdueOnly);
 
   const tasksQuery = useQuery({
@@ -145,7 +143,6 @@ export function Tasks() {
       const matchesRole = roleFilter === 'all' || task.role === roleFilter;
       const matchesPriority = priorityFilter === 'all' || task.priority === priorityFilter;
       const matchesMilestone = milestoneFilter === 'all' || task.template?.milestone_code === milestoneFilter;
-      const matchesRequired = !requiredOnly || task.is_required_for_do_closure;
       const matchesOverdue = !overdueOnly || isOverdue(task);
       const matchesSearch = [
         task.task_id,
@@ -165,12 +162,11 @@ export function Tasks() {
         matchesRole &&
         matchesPriority &&
         matchesMilestone &&
-        matchesRequired &&
         matchesOverdue &&
         matchesSearch
       );
     });
-  }, [focusedContext, isOverdue, milestoneFilter, overdueOnly, priorityFilter, requiredOnly, roleFilter, search, statusFilter, tasks]);
+  }, [focusedContext, isOverdue, milestoneFilter, overdueOnly, priorityFilter, roleFilter, search, statusFilter, tasks]);
 
   const {
     page,
@@ -179,7 +175,7 @@ export function Tasks() {
     pageStart,
     setPage,
     visibleItems: visibleTasks,
-  } = useListPagination(filteredTasks, [focusedContext, milestoneFilter, overdueOnly, priorityFilter, requiredOnly, roleFilter, search, statusFilter]);
+  } = useListPagination(filteredTasks, [focusedContext, milestoneFilter, overdueOnly, priorityFilter, roleFilter, search, statusFilter]);
 
   const clearFilters = useTasksUiStore((s) => s.clearFilters);
 
@@ -192,7 +188,6 @@ export function Tasks() {
     roleFilter !== 'all' ||
     priorityFilter !== 'all' ||
     milestoneFilter !== 'all' ||
-    requiredOnly ||
     overdueOnly;
   const statusOptions: Array<{ label: string; value: TaskStatus | 'all' }> = [
     { label: t('common.allStatuses'), value: 'all' },
@@ -212,12 +207,6 @@ export function Tasks() {
     { label: taskRoleLabel('PORT_OFFICER'), value: 'PORT_OFFICER' },
     { label: taskRoleLabel('CUSTOMS_OFFICER'), value: 'CUSTOMS_OFFICER' },
     { label: taskRoleLabel('WAREHOUSE_STAFF'), value: 'WAREHOUSE_STAFF' },
-    { label: taskRoleLabel('PIC Manager'), value: 'PIC Manager' },
-    { label: taskRoleLabel('Sale Staff'), value: 'Sale Staff' },
-    { label: taskRoleLabel('Port Officer'), value: 'Port Officer' },
-    { label: taskRoleLabel('Customs Officer'), value: 'Customs Officer' },
-    { label: taskRoleLabel('Finance Officer'), value: 'Finance Officer' },
-    { label: taskRoleLabel('Warehouse Staff'), value: 'Warehouse Staff' },
   ];
   const priorityOptions: Array<{ label: string; value: Priority | 'all' }> = [
     { label: t('tasks.allPriorities'), value: 'all' },
@@ -384,15 +373,6 @@ export function Tasks() {
                 </SimpleGrid>
 
                 <Group className="tasks-filter-toggles" gap="xs" wrap="wrap">
-                  <Button
-                    className="tasks-filter-toggle dl-toggle mr-2"
-                    variant={requiredOnly ? 'light' : 'subtle'}
-                    color={requiredOnly ? 'blue' : 'gray'}
-                    onClick={() => setRequiredOnly(!requiredOnly)}
-                    aria-pressed={requiredOnly}
-                  >
-                    {t('tasks.filterRequiredOnly')}
-                  </Button>
                   <Button
                     className="tasks-filter-toggle dl-toggle mr-2"
                     variant={overdueOnly ? 'light' : 'subtle'}

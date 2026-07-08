@@ -63,8 +63,8 @@ export type TaskTemplate = {
   sla_hours: number | null;
   sla_text: string | null;
   department: DepartmentCode | string;
-  assignee_code: string | null;
-  related_documents: string;
+  assignee_role: string | null;
+  required_documents: string;
   note: string | null;
   sort_order: number;
   is_active?: boolean;
@@ -83,8 +83,8 @@ export type TaskTemplatePayload = {
   sla_hours?: number | null;
   sla_text?: string | null;
   department?: DepartmentCode | string;
-  assignee_code?: string | null;
-  related_documents?: string;
+  assignee_role?: string | null;
+  required_documents?: string;
   note?: string | null;
   sort_order?: number;
   is_active?: boolean;
@@ -99,13 +99,52 @@ function unwrapData<T>(response: { data: { data: T } }) {
   return response.data.data;
 }
 
+export const ASSIGNEE_ROLE_TEAMS = {
+  A: 'FDS Accounting',
+  KBI: 'KBI',
+  O: 'FDS Ops',
+  S: 'FDS Sales',
+} as const;
+
+function assigneeRoleTokens(code: string) {
+  return code
+    .split(/(?:\/|->|→|,|;|\+|&|\band\b)/i)
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+function assigneeRoleTeamKey(token: string): keyof typeof ASSIGNEE_ROLE_TEAMS | null {
+  const normalized = token.toUpperCase();
+  if (normalized.startsWith('KBI') || normalized.startsWith('(KBI')) return 'KBI';
+  if (/^A\d*/.test(normalized)) return 'A';
+  if (/^O\d*/.test(normalized)) return 'O';
+  if (/^S\d*/.test(normalized)) return 'S';
+  return null;
+}
+
+export function assigneeRoleLabel(code: string | null | undefined) {
+  if (!code) return '-';
+
+  const teams = Array.from(
+    new Set(
+      assigneeRoleTokens(code)
+        .map(assigneeRoleTeamKey)
+        .filter((key): key is keyof typeof ASSIGNEE_ROLE_TEAMS => Boolean(key))
+        .map((key) => ASSIGNEE_ROLE_TEAMS[key]),
+    ),
+  );
+
+  return teams.length > 0 ? teams.join(' / ') : '-';
+}
+
 export function normalizeTaskTemplate(template: TaskTemplate): TaskTemplate {
   return {
     ...template,
     milestone_code: template.milestone_code ?? null,
     sla_hours: template.sla_hours ?? null,
     sla_text: template.sla_text ?? null,
-    assignee_code: template.assignee_code ?? null,
+    assignee_role: template.assignee_role ?? null,
+    required_documents: template.required_documents ?? '',
     note: template.note ?? null,
     sort_order: Number(template.sort_order ?? 0),
     is_active: template.is_active !== false,

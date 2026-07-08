@@ -57,21 +57,19 @@ export function gateDetail(gate: OperationalGate, t: ReturnType<typeof useI18n>[
 }
 
 export function riskDetail(risk: OperationalRisk, t: ReturnType<typeof useI18n>['t']) {
-  if (risk.code === 'BLOCKED_TASKS') {
-    const count = Number.parseInt(risk.detail, 10);
-    return t('deliveryOrders.riskBlockedTasksDetail', { count: Number.isFinite(count) ? count : 0 });
-  }
-  if (risk.code === 'REQUIRED_TASKS') {
-    const count = Number.parseInt(risk.detail, 10);
-    return t('deliveryOrders.riskRequiredTasksDetail', { count: Number.isFinite(count) ? count : 0 });
-  }
-  return risk.detail;
+  return t(risk.detail.key, risk.detail.params);
 }
 
-export function slaLabel(sla: OperationalRisk['sla'], t: ReturnType<typeof useI18n>['t']) {
-  if (sla === 'Today') return t('deliveryOrders.slaToday');
-  if (sla === 'Before close') return t('deliveryOrders.slaBeforeClose');
-  return sla;
+export function slaLabel(slaCode: OperationalRisk['slaCode'], t: ReturnType<typeof useI18n>['t']) {
+  const keys: Record<OperationalRisk['slaCode'], string> = {
+    '1H': 'opsRisk.sla.1H',
+    '2H': 'opsRisk.sla.2H',
+    '8H': 'opsRisk.sla.8H',
+    BEFORE_CLOSE: 'opsRisk.sla.beforeClose',
+    TODAY: 'opsRisk.sla.today',
+  };
+
+  return t(keys[slaCode]);
 }
 
 export function extractTaskGateCounts(detail: string) {

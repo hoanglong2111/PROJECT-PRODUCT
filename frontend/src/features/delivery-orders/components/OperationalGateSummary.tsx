@@ -16,7 +16,7 @@ export function OperationalGateSummary({
   gates: ReturnType<typeof getOperationalGates>;
   risks: ReturnType<typeof getDeliveryOrderRisks>;
 }) {
-  const { t, taskRoleLabel } = useI18n();
+  const { departmentLabel, t } = useI18n();
   const passedCount = gates.filter((gate) => gate.passed).length;
   const delay = calcDelay({
     actualEntryDate: deliveryOrder.warehouse_tracking.actual_entry_date,
@@ -56,7 +56,7 @@ export function OperationalGateSummary({
           <Title order={4}>{risks[0] ? riskLabel(risks[0].code, t) : t('deliveryOrders.readyForClosure')}</Title>
           <Text size="sm" c="dimmed">
             {risks[0]
-              ? `${taskRoleLabel(risks[0].owner)} | ${t('deliveryOrders.sla', { sla: slaLabel(risks[0].sla, t) })}`
+              ? `${departmentLabel(risks[0].ownerDept)} | ${t('deliveryOrders.sla', { sla: slaLabel(risks[0].slaCode, t) })}`
               : t('deliveryOrders.noOpsRisk')}
           </Text>
         </div>

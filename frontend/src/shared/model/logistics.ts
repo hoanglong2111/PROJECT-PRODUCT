@@ -548,7 +548,6 @@ export type LogisticsTask = {
   priority: Priority;
   due_date: string;
   notes: string;
-  is_required_for_do_closure: boolean;
   blocked_reason: string | null;
   task_template_id: string | null;
   template: LogisticsTaskTemplateRef | null;
