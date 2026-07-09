@@ -98,16 +98,6 @@ export function QuotationRequestForm({ onCancel, onCreated, source }: Props) {
               </div>
             </dl>
 
-            <div className="feature-hero-actions">
-              <Button
-                type="submit"
-                loading={createMutation.isPending || masterData.isLoading}
-                disabled={!canSubmit}
-                leftSection={<IconDeviceFloppy size={16} />}
-              >
-                {t('common.save')}
-              </Button>
-            </div>
           </Paper>
         </FeatureHeaderShell>
 
