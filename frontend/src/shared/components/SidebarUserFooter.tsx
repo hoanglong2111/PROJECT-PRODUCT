@@ -16,7 +16,7 @@ function getInitials(fullName: string): string {
 }
 
 export function SidebarUserFooter({ railMode }: { railMode: boolean }) {
-  const { can, logout, user } = useAuth();
+  const { logout, user } = useAuth();
   const { roleLabel, t } = useI18n();
 
   if (!user) {
@@ -51,16 +51,14 @@ export function SidebarUserFooter({ railMode }: { railMode: boolean }) {
         >
           {t('shell.profile')}
         </Menu.Item>
-        {can('settings.view') ? (
-          <Menu.Item
-            className="profile-menu-item"
-            component={Link}
-            to="/settings"
-            leftSection={<IconSettings size={16} />}
-          >
-            {t('shell.settings')}
-          </Menu.Item>
-        ) : null}
+        <Menu.Item
+          className="profile-menu-item"
+          component={Link}
+          to="/settings"
+          leftSection={<IconSettings size={16} />}
+        >
+          {t('shell.settings')}
+        </Menu.Item>
       </Menu.Dropdown>
     </Menu>
   );

@@ -5,14 +5,9 @@ import {
   getUiDefaultUser,
   persistAuthUser,
 } from '@shared/api/auth';
-import { capabilitiesForUser } from './accessPolicy';
-import type { Capability } from './capabilities';
-import { isDemoHidden } from '@shared/config/featureFlags';
-import type { AppRole, AuthUser, UpdateEmailPayload, UpdatePasswordPayload, UpdateProfilePayload } from './types';
+import type { AuthUser, UpdateEmailPayload, UpdatePasswordPayload, UpdateProfilePayload } from './types';
 
 type AuthContextValue = {
-  capabilities: Set<Capability>;
-  can: (capability: Capability) => boolean;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (params: { email: string; password: string }) => Promise<AuthUser>;
@@ -21,7 +16,6 @@ type AuthContextValue = {
   updatePassword: (params: UpdatePasswordPayload) => Promise<void>;
   updateProfile: (params: UpdateProfilePayload) => Promise<AuthUser>;
   user: AuthUser | null;
-  hasAnyRole: (roles: AppRole[]) => boolean;
 };
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -83,20 +77,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const capabilities = useMemo(() => {
-    if (!user) {
-      return new Set<Capability>();
-    }
-
-    return new Set(capabilitiesForUser(user).filter((capability) => !isDemoHidden(capability)));
-  }, [user]);
-
-  const can = useCallback((capability: Capability) => capabilities.has(capability), [capabilities]);
-
   const value = useMemo<AuthContextValue>(
     () => ({
-      capabilities,
-      can,
       isLoading,
       isAuthenticated: Boolean(user),
       login,
@@ -105,9 +87,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       updatePassword,
       updateProfile,
       user,
-      hasAnyRole: (roles) => (user ? roles.includes(user.role) : false),
     }),
-    [can, capabilities, isLoading, login, logout, updateEmail, updatePassword, updateProfile, user],
+    [isLoading, login, logout, updateEmail, updatePassword, updateProfile, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

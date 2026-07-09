@@ -8,7 +8,6 @@ import type { Item } from '@shared/api/items';
 import type { TaskTemplate } from '@shared/api/taskTemplates';
 import type { Currency, Incoterm, Supplier, TransportMode } from '@shared/api/tradeMasterData';
 import type { Uom } from '@shared/api/uoms';
-import { useCan } from '@shared/auth/useCan';
 import { PageHeader } from '@shared/components/PageHeader';
 import { useEntityModal } from '@shared/hooks/useEntityModal';
 import { useI18n } from '@shared/i18n';
@@ -22,7 +21,7 @@ import { useMasterDataStore } from './model/masterDataStore';
 
 export function MasterData() {
   const { t } = useI18n();
-  const canManageMasterData = useCan('masterData.manage');
+  const canManageMasterData = true;
   const activeTab = useMasterDataStore((state) => state.activeTab);
 
   const modals: MasterDataModalSet = {

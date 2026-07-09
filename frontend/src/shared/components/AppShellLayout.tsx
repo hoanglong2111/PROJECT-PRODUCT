@@ -18,7 +18,6 @@ import {
 } from '@tabler/icons-react';
 import { Link, NavLink as RouterNavLink, Outlet, useLocation } from 'react-router-dom';
 
-import { useAuth } from '@shared/auth/useAuth';
 import { useI18n } from '@shared/i18n';
 import { workspaceModules } from '@shared/navigation/workspaceModules';
 import { useWorkspacePreferences } from '@shared/preferences/WorkspacePreferencesContext';
@@ -33,7 +32,6 @@ export function AppShellLayout() {
   const [mobileOpened, mobileHandlers] = useDisclosure(false);
   const isDesktop = useMediaQuery('(min-width: 48em)', false);
   const location = useLocation();
-  const { can } = useAuth();
   const { t } = useI18n();
   const {
     appearanceMode,
@@ -48,7 +46,6 @@ export function AppShellLayout() {
   const sidebarToggleLabel = sidebarCollapsed ? t('shell.expandSidebar') : t('shell.collapseSidebar');
 
   const links = workspaceModules
-    .filter((item) => can(item.capability))
     .map((item) => {
       const Icon = item.icon;
       const active = item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path);

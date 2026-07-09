@@ -16,7 +16,7 @@ type LoginForm = {
 export function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { can, isAuthenticated, login, user } = useAuth();
+  const { isAuthenticated, login, user } = useAuth();
   const { t } = useI18n();
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,7 +32,7 @@ export function Login() {
   });
 
   if (isAuthenticated) {
-    return <Navigate to={user ? getPreferredModulePath(user.preferredModulePath, can) : '/'} replace />;
+    return <Navigate to={user ? getPreferredModulePath(user.preferredModulePath) : '/'} replace />;
   }
 
   const fromPath = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? '/';

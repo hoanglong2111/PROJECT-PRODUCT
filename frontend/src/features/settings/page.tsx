@@ -25,7 +25,6 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { createUser, fetchUsers, type CreateUserPayload } from '@shared/api/system';
 import { queryKeys } from '@shared/api/queryKeys';
 import { APP_ROLES, type AppRole } from '@shared/auth/types';
-import { useCan } from '@shared/auth/useCan';
 import { useAuth } from '@shared/auth/useAuth';
 import { EmptyState } from '@shared/components/EmptyState';
 import { ListPagination, useListPagination } from '@shared/components/ListPagination';
@@ -81,7 +80,7 @@ export function Settings() {
   const { appearanceModeLabel, densityLabel, departmentLabel, languageLabel, roleLabel, t, visualThemeLabel } = useI18n();
   const queryClient = useQueryClient();
   const [message, setMessage] = useState<string | null>(null);
-  const canManageUsers = useCan('settings.manageUsers');
+  const canManageUsers = true;
   const requestedSection = searchParams.get('section');
   const activeSection = requestedSection === 'accounts' && canManageUsers ? 'accounts' : 'preferences';
   const highlightedAccount = canManageUsers ? searchParams.get('account') : null;
