@@ -1,4 +1,5 @@
 import { Stack } from '@mantine/core';
+import { IconClipboardList, IconFileInvoice, IconPackage } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -9,6 +10,7 @@ import {
   receiveQuotationRequest,
 } from '@shared/api/quotationRequests';
 import { queryKeys } from '@shared/api/queryKeys';
+import { AnchoredWorkflowRail, useAnchoredWorkflowSections, type AnchoredWorkflowStep } from '@shared/components/AnchoredWorkflow';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
 import { useI18n } from '@shared/i18n';
 import { getApiErrorMessage } from '@shared/lib/errors';
@@ -60,12 +62,35 @@ export function QuotationRequestDetail({ onBack, requestId }: QuotationRequestDe
       setCancelConfirmOpened(false);
     },
   });
+  const request = requestQuery.data;
+  const workflowSteps: AnchoredWorkflowStep[] = request
+    ? [
+      {
+        id: 'rfq-detail-overview',
+        label: t('quotationRequests.detailNav.overview'),
+        icon: <IconClipboardList size={14} />,
+      },
+      {
+        id: 'rfq-detail-cargo',
+        label: t('quotationRequests.detailNav.cargo'),
+        icon: <IconPackage size={14} />,
+      },
+      {
+        id: LINKED_QUOTATIONS_SECTION_ID,
+        label: t('quotationRequests.detailNav.responses'),
+        description: t('quotationRequests.detailNav.responsesHint', { count: request.quotations?.length ?? 0 }),
+        icon: <IconFileInvoice size={14} />,
+      },
+    ]
+    : [];
+  const workflowSectionIds = workflowSteps.map((step) => step.id);
+  const { activeSectionId, scrollToSection } = useAnchoredWorkflowSections(workflowSectionIds);
 
   if (requestQuery.isLoading) {
     return <PageLoading title={t('quotationRequests.detailTitle')} description={t('quotationRequests.loadingDescription')} />;
   }
 
-  if (requestQuery.isError || !requestQuery.data) {
+  if (requestQuery.isError || !request) {
     return (
       <PageError
         title={t('quotationRequests.errorTitle')}
@@ -78,14 +103,11 @@ export function QuotationRequestDetail({ onBack, requestId }: QuotationRequestDe
     );
   }
 
-  const request = requestQuery.data;
   const canReceive = request.status === 'SUBMITTED';
   const canCreateQuotation = request.status === 'SUBMITTED' || request.status === 'RECEIVED';
   const canCancel = request.status !== 'CONFIRMED' && request.status !== 'CANCELLED';
   const totalWeight = rfqTotalWeight(request.lines ?? []) || Number(request.gross_weight_kg ?? 0);
-  const scrollToLinkedQuotations = () => {
-    document.getElementById(LINKED_QUOTATIONS_SECTION_ID)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
+  const scrollToLinkedQuotations = () => scrollToSection(LINKED_QUOTATIONS_SECTION_ID);
 
   const primaryAction = resolvePrimaryAction({
     status: request.status,
@@ -108,8 +130,14 @@ export function QuotationRequestDetail({ onBack, requestId }: QuotationRequestDe
       />
       <RfqQuickSummaryStrip request={request} t={t} totalWeight={totalWeight} />
 
-      <div className="rfq-detail-layout">
-        <aside className="rfq-detail-side" aria-label={t('quotationRequests.actionsLabel')}>
+      <div className="rfq-detail-layout quote-workflow-detail-layout">
+        <aside className="rfq-detail-side quote-workflow-side">
+          <AnchoredWorkflowRail
+            activeStepId={activeSectionId}
+            steps={workflowSteps}
+            title={t('quotationRequests.workflowTitle')}
+            onStepSelect={scrollToSection}
+          />
           <QuotationRequestActionPanel
             request={request}
             t={t}
@@ -129,17 +157,21 @@ export function QuotationRequestDetail({ onBack, requestId }: QuotationRequestDe
           <QuoteReadinessPanel request={request} t={t} totalWeight={totalWeight} />
         </aside>
 
-        <main className="rfq-detail-main">
-          <RfqOverviewPanel request={request} t={t} totalWeight={totalWeight} />
-          <PackagesPanel request={request} t={t} />
-          <ContainersPanel request={request} t={t} />
+        <div className="rfq-detail-main">
+          <section id="rfq-detail-overview" className="quote-workflow-section">
+            <RfqOverviewPanel request={request} t={t} totalWeight={totalWeight} />
+          </section>
+          <section id="rfq-detail-cargo" className="quote-workflow-section">
+            <PackagesPanel request={request} t={t} />
+            <ContainersPanel request={request} t={t} />
+          </section>
           <LinkedQuotationsPanel
             request={request}
             t={t}
             statusLabel={statusLabel}
             onView={(quotationId) => navigate(`/quotations?view=${quotationId}`)}
           />
-        </main>
+        </div>
       </div>
 
       <QuotationRequestMobileActionBar

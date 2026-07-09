@@ -22,6 +22,7 @@ import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
 import { fetchChargeCodes, type ChargeCode } from '@shared/api/chargeCodes';
+import { AnchoredWorkflowRail, useAnchoredWorkflowSections, type AnchoredWorkflowStep } from '@shared/components/AnchoredWorkflow';
 import { DateField } from '@shared/components/DateField';
 import {
   createQuotationOption,
@@ -32,7 +33,6 @@ import {
 import { createQuotationFromRequest, type QuotationRequestV1 } from '@shared/api/quotationRequests';
 import { queryKeys } from '@shared/api/queryKeys';
 import { fetchUoms } from '@shared/api/uoms';
-import { BackActionButton } from '@shared/components/BackActionButton';
 import { useExchangeRates } from '@shared/hooks/useExchangeRates';
 import { useTradeMasterDataOptions } from '@shared/hooks/useTradeMasterDataOptions';
 import { useI18n } from '@shared/i18n';
@@ -262,6 +262,25 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
   const filledLineCount = validationLines.filter((line) => line.chargeCode && Number(line.unitPrice) > 0 && line.currency).length;
   const hasPricedLineMissingCurrency = pricedLineCount > filledLineCount;
   const canSubmit = draftOptions.length > 0 && filledLineCount > 0 && !hasPricedLineMissingCurrency;
+  const workflowSteps = useMemo<AnchoredWorkflowStep[]>(() => [
+    {
+      id: 'qform-context',
+      label: t('quotations.rfqContext'),
+      icon: <IconRoute size={14} />,
+    },
+    {
+      id: 'qform-options',
+      label: t('quotations.options'),
+      icon: <IconFileInvoice size={14} />,
+    },
+    {
+      id: 'qform-pricing',
+      label: t('quotations.pricingCharges'),
+      icon: <IconReceipt2 size={14} />,
+    },
+  ], [t]);
+  const workflowSectionIds = useMemo(() => workflowSteps.map((step) => step.id), [workflowSteps]);
+  const { activeSectionId, scrollToSection } = useAnchoredWorkflowSections(workflowSectionIds);
 
   function addDraftOption() {
     const nextId = `draft-option-${Date.now()}`;
@@ -353,25 +372,22 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
   const submitLabel = t('quotations.actionResubmit');
 
   return (
-    <Stack gap="md" className="rfq-form">
-      <Paper withBorder p={0} className="rfq-form-panel">
-        <div className="rfq-form-hero feature-form-hero">
-          <div className="feature-hero-nav">
-            <BackActionButton label={t('common.back')} onClick={onCancel} />
-          </div>
-          <Group justify="space-between" align="flex-start" gap="md" className="rfq-form-hero-inner">
-            <Group gap="sm" align="flex-start" wrap="nowrap" className="rfq-form-title-row">
-              <div className="rfq-icon-box feature-hero-icon">
-                <IconFileInvoice size={18} />
+    <Stack gap="md" className="rfq-form quote-workflow quote-workflow--qform">
+      <Paper withBorder p={0} className="quote-workflow-hero quote-workflow-hero--qform">
+        <div className="quote-workflow-hero-content">
+          <Group justify="space-between" align="flex-start" gap="md" className="quote-workflow-hero-head">
+            <Group gap="sm" align="flex-start" wrap="nowrap" className="quote-workflow-title-row">
+              <div className="quote-workflow-icon-box quote-workflow-icon-box--qform">
+                <IconFileInvoice size={20} />
               </div>
-              <div className="rfq-form-title-copy">
-                <Title order={3}>{formTitle}</Title>
+              <div className="quote-workflow-title-copy">
+                <Title order={2}>{formTitle}</Title>
                 <Text c="dimmed" size="sm" mt={4}>
                   {formSubtitle}
                 </Text>
               </div>
             </Group>
-            <div className="rfq-form-hero-metrics">
+            <div className="rfq-form-hero-metrics quote-workflow-hero-metrics">
               <div className="rfq-form-hero-metric">
                 <IconRoute size={16} />
                 <div>
@@ -397,199 +413,208 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
             </div>
           </Group>
         </div>
+      </Paper>
 
-        <div className="rfq-form-layout">
-          <div className="rfq-form-main">
-            {isRevise && sourceQuotation?.reject_reason ? (
-              <Alert color="red" icon={<IconAlertTriangle size={16} />} title={t('quotations.reviseFromRejectedBanner')} mb="md">
-                {sourceQuotation.reject_reason}
+      <div className="quote-workflow-layout quote-workflow-layout--with-summary">
+        <aside className="quote-workflow-side">
+          <AnchoredWorkflowRail
+            activeStepId={activeSectionId}
+            steps={workflowSteps}
+            title={t('quotations.workflowTitle')}
+            onStepSelect={scrollToSection}
+          />
+        </aside>
+
+        <div className="rfq-form-main quote-workflow-main">
+          {isRevise && sourceQuotation?.reject_reason ? (
+            <Alert color="red" icon={<IconAlertTriangle size={16} />} title={t('quotations.reviseFromRejectedBanner')} mb="md">
+              {sourceQuotation.reject_reason}
+            </Alert>
+          ) : null}
+
+          <section id="qform-context" className="rfq-form-section quote-workflow-section">
+            <div className="rfq-section-head">
+              <Text fw={700}>{t('quotations.rfqContext')}</Text>
+            </div>
+            <SimpleGrid cols={{ base: 1, sm: 2 }} mt="md" spacing="md" className="rfq-setup-grid">
+              <ReadOnlyContext label={t('quotations.customer')} value={header.customer} />
+              <ReadOnlyContext label={t('quotationRequests.field.supplier')} value={header.supplier} />
+              <ReadOnlyContext label={t('quotationRequests.field.route')} value={`${header.origin} -> ${header.destination}`} />
+              <ReadOnlyContext label={t('quotations.mode')} value={header.mode} />
+              <ReadOnlyContext label={t('quotations.incoterm')} value={header.incoterm} />
+              <ReadOnlyContext
+                label={t('quotations.rfqLink')}
+                value={
+                  header.rfqId ? (
+                    <Anchor component={Link} to={`/quotation-requests?view=${header.rfqId}`}>
+                      {header.rfqNo ?? header.rfqId}
+                    </Anchor>
+                  ) : (
+                    '-'
+                  )
+                }
+              />
+              <DateField
+                className="rfq-scope-field"
+                label={t('quotations.validUntil')}
+                value={validUntil || null}
+                onChange={(value) => setValidUntil(value ?? '')}
+              />
+            </SimpleGrid>
+          </section>
+
+          <section id="qform-options" className="rfq-form-section quote-workflow-section">
+            <div className="rfq-section-head">
+              <Text fw={700}>{t('quotations.options')}</Text>
+              <Text size="xs" c="dimmed" className="rfq-section-summary">
+                {t('quotations.optionsHint')}
+              </Text>
+            </div>
+            {!hasMinimumOptions(draftOptions) ? (
+              <Alert color="yellow" icon={<IconAlertTriangle size={16} />} mt="md">
+                {t('quotations.minimumOptionsWarning')}
               </Alert>
             ) : null}
-
-            <section className="rfq-form-section">
-              <div className="rfq-section-head">
-                <Text fw={700}>{t('quotations.rfqContext')}</Text>
-              </div>
-              <SimpleGrid cols={{ base: 1, sm: 2 }} mt="md" spacing="md" className="rfq-setup-grid">
-                <ReadOnlyContext label={t('quotations.customer')} value={header.customer} />
-                <ReadOnlyContext label={t('quotationRequests.field.supplier')} value={header.supplier} />
-                <ReadOnlyContext label={t('quotationRequests.field.route')} value={`${header.origin} -> ${header.destination}`} />
-                <ReadOnlyContext label={t('quotations.mode')} value={header.mode} />
-                <ReadOnlyContext label={t('quotations.incoterm')} value={header.incoterm} />
-                <ReadOnlyContext
-                  label={t('quotations.rfqLink')}
-                  value={
-                    header.rfqId ? (
-                      <Anchor component={Link} to={`/quotation-requests?view=${header.rfqId}`}>
-                        {header.rfqNo ?? header.rfqId}
-                      </Anchor>
-                    ) : (
-                      '-'
-                    )
-                  }
-                />
-                <DateField
-                  className="rfq-scope-field"
-                  label={t('quotations.validUntil')}
-                  value={validUntil || null}
-                  onChange={(value) => setValidUntil(value ?? '')}
-                />
-              </SimpleGrid>
-            </section>
-
-            <section className="rfq-form-section">
-              <div className="rfq-section-head">
-                <Text fw={700}>{t('quotations.options')}</Text>
-                <Text size="xs" c="dimmed" className="rfq-section-summary">
-                  {t('quotations.optionsHint')}
-                </Text>
-              </div>
-              {!hasMinimumOptions(draftOptions) ? (
-                <Alert color="yellow" icon={<IconAlertTriangle size={16} />} mt="md">
-                  {t('quotations.minimumOptionsWarning')}
-                </Alert>
-              ) : null}
-              <Group justify="flex-end" mt="md">
-                <Button variant="light" leftSection={<IconPlus size={14} />} onClick={addDraftOption}>
-                  {t('quotations.addOption')}
-                </Button>
-              </Group>
-              <Stack gap="md" mt="md">
-                {draftOptions.length === 0 ? (
-                  <div className="rfq-empty-lines">
-                    <Text size="sm" c="dimmed">
-                      {t('quotations.minimumOptionsWarning')}
-                    </Text>
-                  </div>
-                ) : null}
-                {draftOptions.map((option) => (
-                  <div
-                    key={option.id}
-                    ref={(node) => {
-                      optionRefs.current[option.id] = node;
-                    }}
-                  >
-                    <QuotationOptionEditor
-                      option={option}
-                      carriers={carriers}
-                      carrierOptions={carrierOptions}
-                      transportModeOptions={transportModeOptions}
-                      chargeCodeOptions={chargeCodeOptions}
-                      currencies={currencies}
-                      uoms={uoms}
-                      moneyTotals={optionMoneyTotals.get(option.id) ?? null}
-                      paymentCurrency={paymentCurrency}
-                      rateToVndOrNull={rateToVndOrNull}
-                      collapsed={collapsedOptionIds.has(option.id)}
-                      onToggleCollapsed={toggleOptionCollapsed}
-                      onSetRecommended={setRecommendedOption}
-                      onUpdateOption={updateOption}
-                      onAddLine={addOptionLine}
-                      onUpdateLine={updateOptionLine}
-                      onRemoveLine={removeOptionLine}
-                      onRemoveOption={removeDraftOption}
-                    />
-                  </div>
-                ))}
-              </Stack>
-            </section>
-          </div>
-
-          <aside className="rfq-form-rail">
-            <div className="rfq-total-card">
-              <div className="rfq-total-card-head">
-                <div className="rfq-total-title">
-                  <span className="rfq-total-icon" aria-hidden="true">
-                    <IconWallet size={15} />
-                  </span>
-                  <Text size="xs" tt="uppercase" fw={600} c="dimmed">
-                    {t('quotations.totalInCurrency', { currency: paymentCurrency })}
-                  </Text>
-                </div>
-                <CurrencySelect
-                  aria-label={t('quotations.customerPaysCurrency')}
-                  wrapperClassName="rfq-total-currency-select"
-                  currencies={currencies}
-                  value={paymentCurrency}
-                  onChange={(value) => setPaymentCurrency(value ?? 'VND')}
-                  searchable
-                  size="xs"
-                  variant="unstyled"
-                  allowDeselect={false}
-                />
-              </div>
-              {activeOption && activeOptionTotals ? (
-                <Stack gap={4} mt={8}>
-                  <Text size="xs" c="dimmed">
-                    {t('quotations.recommendedOption')} #{activeOption.option_no}
-                  </Text>
-                  {activeOptionTotals.subtotalsBySourceCurrency.length > 0 ? (
-                    <Stack gap={4} className="rfq-original-items">
-                      {activeOptionTotals.subtotalsBySourceCurrency.map((bucket) => (
-                        <div key={bucket.currency} className="rfq-original-item">
-                          <Text size="sm" c="dimmed" className="rfq-original-item-name">
-                            {bucket.currency}
-                          </Text>
-                          <Text fw={700} className="tabular-nums rfq-total-value">
-                            {formatMoney(bucket.amount, bucket.currency)}
-                          </Text>
-                        </div>
-                      ))}
-                    </Stack>
-                  ) : null}
-                  <div className="rfq-total-separator" />
-                  <div className="rfq-customer-pays">
-                    <Text size="sm" c="dimmed" className="rfq-customer-pays-label">
-                      {t('quotations.totalVnd')}
-                    </Text>
-                    <Text fw={800} size="lg" className="tabular-nums rfq-customer-pays-value">
-                      {activeOptionTotals.totalVnd > 0 ? formatMoney(activeOptionTotals.totalVnd, 'VND') : '-'}
-                    </Text>
-                  </div>
-                  <div className="rfq-customer-pays">
-                    <Text size="sm" c="dimmed" className="rfq-customer-pays-label">
-                      {t('quotations.customerPays')} ({paymentCurrency})
-                    </Text>
-                    <Text fw={800} size="lg" className="tabular-nums rfq-customer-pays-value">
-                      {activeOptionTotals.customerPayTotal != null ? formatMoney(activeOptionTotals.customerPayTotal, paymentCurrency) : '-'}
-                    </Text>
-                  </div>
-                  {totalMissingRateCount > 0 ? (
-                    <Group gap={6} wrap="nowrap" className="rfq-missing-rate-total">
-                      <IconAlertTriangle size={14} />
-                      <Text size="xs" fw={700}>
-                        {t('quotations.missingRateTotal', { count: totalMissingRateCount })}
-                      </Text>
-                    </Group>
-                  ) : null}
-                </Stack>
-              ) : (
-                <Text fw={800} size="lg" className="tabular-nums rfq-customer-pays-value" mt={8}>
-                  -
-                </Text>
-              )}
-              {referenceCurrency && referenceRate ? (
-                <Text size="xs" c="dimmed" mt="xs" className="rfq-reference-rate">
-                  {t('quotations.referenceRate')}: 1 {referenceCurrency} = {new Intl.NumberFormat(locale).format(referenceRate)} VND
-                </Text>
-              ) : null}
-            </div>
-            {!canSubmit ? (
-              <Text size="xs" c="dimmed" className="rfq-submit-hint">
-                {hasPricedLineMissingCurrency ? t('quotations.selectCurrencyForAllFees') : t('quotations.enterAtLeastOneFee')}
-              </Text>
-            ) : null}
-            <Group justify="flex-end" className="rfq-rail-actions" grow>
-              <Button variant="default" onClick={onCancel}>
-                {t('common.cancel')}
-              </Button>
-              <Button disabled={!canSubmit} loading={createMutation.isPending} onClick={() => createMutation.mutate()}>
-                {submitLabel}
+            <Group justify="flex-end" mt="md">
+              <Button variant="light" leftSection={<IconPlus size={14} />} onClick={addDraftOption}>
+                {t('quotations.addOption')}
               </Button>
             </Group>
-          </aside>
+            <Stack id="qform-pricing" gap="md" mt="md" className="quote-workflow-pricing-anchor">
+              {draftOptions.length === 0 ? (
+                <div className="rfq-empty-lines">
+                  <Text size="sm" c="dimmed">
+                    {t('quotations.minimumOptionsWarning')}
+                  </Text>
+                </div>
+              ) : null}
+              {draftOptions.map((option) => (
+                <div
+                  key={option.id}
+                  ref={(node) => {
+                    optionRefs.current[option.id] = node;
+                  }}
+                >
+                  <QuotationOptionEditor
+                    option={option}
+                    carriers={carriers}
+                    carrierOptions={carrierOptions}
+                    transportModeOptions={transportModeOptions}
+                    chargeCodeOptions={chargeCodeOptions}
+                    currencies={currencies}
+                    uoms={uoms}
+                    moneyTotals={optionMoneyTotals.get(option.id) ?? null}
+                    paymentCurrency={paymentCurrency}
+                    rateToVndOrNull={rateToVndOrNull}
+                    collapsed={collapsedOptionIds.has(option.id)}
+                    onToggleCollapsed={toggleOptionCollapsed}
+                    onSetRecommended={setRecommendedOption}
+                    onUpdateOption={updateOption}
+                    onAddLine={addOptionLine}
+                    onUpdateLine={updateOptionLine}
+                    onRemoveLine={removeOptionLine}
+                    onRemoveOption={removeDraftOption}
+                  />
+                </div>
+              ))}
+            </Stack>
+          </section>
         </div>
-      </Paper>
+
+        <aside id="qform-review" className="rfq-form-rail quote-workflow-summary-rail">
+          <div className="rfq-total-card">
+            <div className="rfq-total-card-head">
+              <div className="rfq-total-title">
+                <span className="rfq-total-icon" aria-hidden="true">
+                  <IconWallet size={15} />
+                </span>
+                <Text size="xs" tt="uppercase" fw={600} c="dimmed">
+                  {t('quotations.totalInCurrency', { currency: paymentCurrency })}
+                </Text>
+              </div>
+              <CurrencySelect
+                aria-label={t('quotations.customerPaysCurrency')}
+                wrapperClassName="rfq-total-currency-select"
+                currencies={currencies}
+                value={paymentCurrency}
+                onChange={(value) => setPaymentCurrency(value ?? 'VND')}
+                searchable
+                size="xs"
+                variant="unstyled"
+                allowDeselect={false}
+              />
+            </div>
+            {activeOption && activeOptionTotals ? (
+              <Stack gap={4} mt={8}>
+                <Text size="xs" c="dimmed">
+                  {t('quotations.recommendedOption')} #{activeOption.option_no}
+                </Text>
+                {activeOptionTotals.subtotalsBySourceCurrency.length > 0 ? (
+                  <Stack gap={4} className="rfq-original-items">
+                    {activeOptionTotals.subtotalsBySourceCurrency.map((bucket) => (
+                      <div key={bucket.currency} className="rfq-original-item">
+                        <Text size="sm" c="dimmed" className="rfq-original-item-name">
+                          {bucket.currency}
+                        </Text>
+                        <Text fw={700} className="tabular-nums rfq-total-value">
+                          {formatMoney(bucket.amount, bucket.currency)}
+                        </Text>
+                      </div>
+                    ))}
+                  </Stack>
+                ) : null}
+                <div className="rfq-total-separator" />
+                <div className="rfq-customer-pays">
+                  <Text size="sm" c="dimmed" className="rfq-customer-pays-label">
+                    {t('quotations.totalVnd')}
+                  </Text>
+                  <Text fw={800} size="lg" className="tabular-nums rfq-customer-pays-value">
+                    {activeOptionTotals.totalVnd > 0 ? formatMoney(activeOptionTotals.totalVnd, 'VND') : '-'}
+                  </Text>
+                </div>
+                <div className="rfq-customer-pays">
+                  <Text size="sm" c="dimmed" className="rfq-customer-pays-label">
+                    {t('quotations.customerPays')} ({paymentCurrency})
+                  </Text>
+                  <Text fw={800} size="lg" className="tabular-nums rfq-customer-pays-value">
+                    {activeOptionTotals.customerPayTotal != null ? formatMoney(activeOptionTotals.customerPayTotal, paymentCurrency) : '-'}
+                  </Text>
+                </div>
+                {totalMissingRateCount > 0 ? (
+                  <Group gap={6} wrap="nowrap" className="rfq-missing-rate-total">
+                    <IconAlertTriangle size={14} />
+                    <Text size="xs" fw={700}>
+                      {t('quotations.missingRateTotal', { count: totalMissingRateCount })}
+                    </Text>
+                  </Group>
+                ) : null}
+              </Stack>
+            ) : (
+              <Text fw={800} size="lg" className="tabular-nums rfq-customer-pays-value" mt={8}>
+                -
+              </Text>
+            )}
+            {referenceCurrency && referenceRate ? (
+              <Text size="xs" c="dimmed" mt="xs" className="rfq-reference-rate">
+                {t('quotations.referenceRate')}: 1 {referenceCurrency} = {new Intl.NumberFormat(locale).format(referenceRate)} VND
+              </Text>
+            ) : null}
+          </div>
+          {!canSubmit ? (
+            <Text size="xs" c="dimmed" className="rfq-submit-hint">
+              {hasPricedLineMissingCurrency ? t('quotations.selectCurrencyForAllFees') : t('quotations.enterAtLeastOneFee')}
+            </Text>
+          ) : null}
+          <Group justify="flex-end" className="rfq-rail-actions" grow>
+            <Button variant="default" onClick={onCancel}>
+              {t('common.cancel')}
+            </Button>
+            <Button disabled={!canSubmit} loading={createMutation.isPending} onClick={() => createMutation.mutate()}>
+              {submitLabel}
+            </Button>
+          </Group>
+        </aside>
+      </div>
     </Stack>
   );
 }

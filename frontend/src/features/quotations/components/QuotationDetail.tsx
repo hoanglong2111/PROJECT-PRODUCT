@@ -1,5 +1,5 @@
 import { Alert, Anchor, Badge, Group, Modal, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core';
-import { IconFileInvoice, IconGitCompare } from '@tabler/icons-react';
+import { IconFileInvoice, IconGitCompare, IconReceipt2 } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
@@ -17,6 +17,7 @@ import {
   type QuotationV1,
 } from '@shared/api/quotations';
 import { queryKeys } from '@shared/api/queryKeys';
+import { AnchoredWorkflowRail, useAnchoredWorkflowSections, type AnchoredWorkflowStep } from '@shared/components/AnchoredWorkflow';
 import { CopyValue } from '@shared/components/CopyValue';
 import { BackActionButton } from '@shared/components/BackActionButton';
 import { DateTimeText } from '@shared/components/DateTimeText';
@@ -437,10 +438,25 @@ export function QuotationDetail({ onBack, quotation, onRevise, onInspectVersion 
   const heroMoney = computeQuotationCustomerPayTotal(quotation, rateToVndOrNull, activeOptionNo);
   const heroTotal = heroMoney.customerPayTotal != null ? formatMoney(heroMoney.customerPayTotal, paymentCurrency) : '-';
   const events = quotation.events ?? [];
+  const workflowSteps: AnchoredWorkflowStep[] = [
+    {
+      id: 'quotation-detail-options',
+      label: t('quotations.options'),
+      icon: <IconGitCompare size={14} />,
+    },
+    {
+      id: 'quotation-detail-charges',
+      label: t('quotations.chargeBreakdown'),
+      description: t('quotations.chargeLinesCount', { count: visibleChargeLines.length }),
+      icon: <IconReceipt2 size={14} />,
+    },
+  ];
+  const workflowSectionIds = workflowSteps.map((step) => step.id);
+  const { activeSectionId, scrollToSection } = useAnchoredWorkflowSections(workflowSectionIds);
 
   return (
     <Stack gap="sm" className="rfq-detail">
-      <Paper withBorder p={0} className="rfq-detail-hero feature-detail-hero">
+      <Paper withBorder p={0} className="rfq-detail-hero quote-workflow-hero quote-workflow-hero--qform quote-workflow-detail-hero">
         <div className="rfq-detail-hero-main">
           <div className="feature-hero-nav">
             <BackActionButton label={t('common.backToList')} onClick={onBack} />
@@ -511,51 +527,63 @@ export function QuotationDetail({ onBack, quotation, onRevise, onInspectVersion 
         </Alert>
       ) : null}
 
-      <div className="rfq-detail-layout">
+      <div className="rfq-detail-layout quote-workflow-detail-layout">
         <div className="rfq-detail-main">
-          <Paper withBorder p="md" className="rfq-breakdown-panel">
-            <QuotationOptionsTable
-              mode="read"
-              options={options}
-              activeOptionId={activeOptionId}
-              compareOptionIds={compareOptionIds}
-              optionTotals={optionCustomerPays}
-              optionTotalsCurrency={paymentCurrency}
-              previewOptionId={previewOptionId}
-              selectedOptionId={selectedOptionId}
-              onOpenCompare={() => setCompareOpened(true)}
-              onPreview={(optionId) => setPreviewOption({ quotationId: quotation.id, optionId })}
-              onSelect={(optionId) => selectOptionMutation.mutate(optionId)}
-              onToggleCompare={toggleCompareOption}
-            />
-          </Paper>
+          <section id="quotation-detail-options" className="quote-workflow-section">
+            <Paper withBorder p="md" className="rfq-breakdown-panel">
+              <QuotationOptionsTable
+                mode="read"
+                options={options}
+                activeOptionId={activeOptionId}
+                compareOptionIds={compareOptionIds}
+                optionTotals={optionCustomerPays}
+                optionTotalsCurrency={paymentCurrency}
+                previewOptionId={previewOptionId}
+                selectedOptionId={selectedOptionId}
+                onOpenCompare={() => setCompareOpened(true)}
+                onPreview={(optionId) => setPreviewOption({ quotationId: quotation.id, optionId })}
+                onSelect={(optionId) => selectOptionMutation.mutate(optionId)}
+                onToggleCompare={toggleCompareOption}
+              />
+            </Paper>
+          </section>
 
-          <Paper withBorder p={0} className="rfq-breakdown-panel">
-            <QuotationChargeBreakdown
-              quotation={quotation}
-              chargeLines={visibleChargeLines}
-              adjustMode={adjustMode}
-              isSubmitting={adjustMutation.isPending}
-              rateToVndOrNull={rateToVndOrNull}
-              onCancelAdjust={() => setAdjustMode(false)}
-              onSubmitAdjust={(lines) => adjustMutation.mutate(lines)}
-            />
-          </Paper>
+          <section id="quotation-detail-charges" className="quote-workflow-section">
+            <Paper withBorder p={0} className="rfq-breakdown-panel">
+              <QuotationChargeBreakdown
+                quotation={quotation}
+                chargeLines={visibleChargeLines}
+                adjustMode={adjustMode}
+                isSubmitting={adjustMutation.isPending}
+                rateToVndOrNull={rateToVndOrNull}
+                onCancelAdjust={() => setAdjustMode(false)}
+                onSubmitAdjust={(lines) => adjustMutation.mutate(lines)}
+              />
+            </Paper>
+          </section>
         </div>
 
-        <aside className="rfq-detail-side">
-          <QuotationResponsePanel
-            quotation={quotation}
-            selectedOptionId={selectedOptionId}
-            isLatestKnownVersion={isLatestKnownVersion}
-            versionsQueryIsSuccess={versionsQuery.isSuccess}
-            transitionLoading={transitionMutation.isPending}
-            rejectLoading={rejectMutation.isPending}
-            onRevise={onRevise}
-            onTransition={(next) => transitionMutation.mutate(next)}
-            onReject={(reason) => rejectMutation.mutate(reason)}
-            onEnterAdjust={() => setAdjustMode(true)}
+        <aside className="rfq-detail-side quote-workflow-side">
+          <AnchoredWorkflowRail
+            activeStepId={activeSectionId}
+            steps={workflowSteps}
+            title={t('quotations.workflowTitle')}
+            onStepSelect={scrollToSection}
           />
+          <section id="quotation-detail-response" className="quote-workflow-section">
+            <QuotationResponsePanel
+              quotation={quotation}
+              selectedOptionId={selectedOptionId}
+              isLatestKnownVersion={isLatestKnownVersion}
+              versionsQueryIsSuccess={versionsQuery.isSuccess}
+              transitionLoading={transitionMutation.isPending}
+              rejectLoading={rejectMutation.isPending}
+              onRevise={onRevise}
+              onTransition={(next) => transitionMutation.mutate(next)}
+              onReject={(reason) => rejectMutation.mutate(reason)}
+              onEnterAdjust={() => setAdjustMode(true)}
+            />
+          </section>
 
           {status === 'REJECTED' && (versionsQuery.isPending || versionsQuery.isError || versions.length > 1) ? (
             <Paper withBorder p={0} className="rfq-timeline-panel">
@@ -607,38 +635,40 @@ export function QuotationDetail({ onBack, quotation, onRevise, onInspectVersion 
             </Paper>
           ) : null}
 
-          <Paper withBorder p={0} className="rfq-timeline-panel">
-            <div className="rfq-panel-head">
-              <div>
-                <Text fw={700}>{t('quotations.lifecycle')}</Text>
-                <DateTimeText value={quotation.update_at} size="xs" c="dimmed" showZone />
+          <section id="quotation-detail-lifecycle" className="quote-workflow-section">
+            <Paper withBorder p={0} className="rfq-timeline-panel">
+              <div className="rfq-panel-head">
+                <div>
+                  <Text fw={700}>{t('quotations.lifecycle')}</Text>
+                  <DateTimeText value={quotation.update_at} size="xs" c="dimmed" showZone />
+                </div>
               </div>
-            </div>
-            <div className="rfq-timeline-list">
-              {events.length === 0 ? (
-                <Text c="dimmed" size="sm">{t('quotations.noEvents')}</Text>
-              ) : (
-                events.map((event) => (
-                  <div className="rfq-timeline-item" key={event.id}>
-                    <span className="rfq-timeline-dot" aria-hidden="true" />
-                    <div>
-                      <Text fw={700} size="sm">{formatEventType(event.event_type ?? event.event_code)}</Text>
-                      <DateTimeText value={event.event_at} size="xs" c="dimmed" />
-                      {event.old_status || event.new_status ? (
-                        <Text size="xs" c="dimmed">
-                          {event.old_status ? statusLabel(event.old_status) : '-'} {'->'}{' '}
-                          {event.new_status ? statusLabel(event.new_status) : '-'}
-                        </Text>
-                      ) : null}
-                      {event.note ? (
-                        <Text size="xs">{event.note}</Text>
-                      ) : null}
+              <div className="rfq-timeline-list">
+                {events.length === 0 ? (
+                  <Text c="dimmed" size="sm">{t('quotations.noEvents')}</Text>
+                ) : (
+                  events.map((event) => (
+                    <div className="rfq-timeline-item" key={event.id}>
+                      <span className="rfq-timeline-dot" aria-hidden="true" />
+                      <div>
+                        <Text fw={700} size="sm">{formatEventType(event.event_type ?? event.event_code)}</Text>
+                        <DateTimeText value={event.event_at} size="xs" c="dimmed" />
+                        {event.old_status || event.new_status ? (
+                          <Text size="xs" c="dimmed">
+                            {event.old_status ? statusLabel(event.old_status) : '-'} {'->'}{' '}
+                            {event.new_status ? statusLabel(event.new_status) : '-'}
+                          </Text>
+                        ) : null}
+                        {event.note ? (
+                          <Text size="xs">{event.note}</Text>
+                        ) : null}
+                      </div>
                     </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </Paper>
+                  ))
+                )}
+              </div>
+            </Paper>
+          </section>
         </aside>
       </div>
 

@@ -1273,28 +1273,25 @@
 .po-line-detail {
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 0.35rem;
   /* Left padding clears the rail and lines the fields up just inside the table's
-     content edge, so the panel reads as a continuation of the row above. */
-  padding: 0.5rem 0.5rem 0.8rem 0.85rem;
+     content edge, so the panel reads as a continuation of the row above. Kept
+     shallow (vs. the old stacked-grid layout) so an expanded row adds ~40-48px,
+     not 90-120px — the strip below scrolls horizontally instead of wrapping. */
+  padding: 0.4rem 0.65rem 0.45rem 0.85rem;
+  min-height: 2.5rem;
+  justify-content: center;
 }
 
-/* Pipeline fallback and customs/pricing share one even grid so every field lines
-   up in the same columns — a light left gridline on each field echoes the table
-   columns above. Hidden on wide screens (pipeline already shown as columns). */
-.po-line-detail-pipeline,
-.po-line-card-meta {
-  display: grid;
+/* Pipeline fallback (narrow screens only) keeps the old stacked-grid look —
+   it is the one place quantities still need label-over-value legibility. */
+.po-line-detail-pipeline {
+  display: none;
   grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
   gap: 0.4rem 0;
 }
 
-.po-line-detail-pipeline {
-  display: none;
-}
-
-.po-line-detail-stage,
-.po-line-meta-cell {
+.po-line-detail-stage {
   display: flex;
   flex-direction: column;
   gap: 0.12rem;
@@ -1303,28 +1300,60 @@
   border-left: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 45%, transparent);
 }
 
+/* Customs/pricing metadata renders as a single-line pill strip (not a grid) so
+   expanding a row never grows the table height — extra fields scroll sideways
+   instead of wrapping onto a second line. */
+.po-line-card-meta {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.4rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+.po-line-meta-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  flex: 0 0 auto;
+  white-space: nowrap;
+  padding: 0.22rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 55%, transparent);
+  background: var(--kbfe-surface-elevated);
+}
+
 .po-line-meta-cell.is-wide {
-  grid-column: 1 / -1;
+  max-width: 16rem;
+}
+
+.po-line-meta-cell.is-wide .po-line-meta-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .po-line-meta-label,
 .po-line-detail-stage .po-line-meta-label {
-  font-size: 0.6875rem;
-  font-weight: 600;
+  font-size: 0.625rem;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   color: var(--kbfe-text-secondary, var(--kbfe-text-primary));
 }
 
-.po-line-meta-value {
-  font-size: 0.8125rem;
-  color: var(--kbfe-text-primary);
-  font-variant-numeric: tabular-nums;
+.po-line-detail-stage .po-line-meta-label {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.po-line-meta-value {
+  font-size: 0.75rem;
+  color: var(--kbfe-text-primary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .purchase-order-detail-card {
