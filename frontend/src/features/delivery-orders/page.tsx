@@ -56,27 +56,10 @@ export function DeliveryOrders() {
   }, [statusParam]);
 
   useEffect(() => {
-    if (!focusedDo && !focusedPo) {
-      setSelectedId(null);
-      return;
-    }
-
     if (deliveryOrders.length === 0) {
       return;
     }
-
     const matchedOrder = deliveryOrders.find((deliveryOrder) => {
-      if (focusedDo) {
-        return deliveryOrder.order_info.order_number === focusedDo;
-      }
-
-      if (focusedPo) {
-        return (
-          deliveryOrder.source_po_number === focusedPo ||
-          deliveryOrder.sap_integration.po_number === focusedPo
-        );
-      }
-
       return false;
     });
 
@@ -190,13 +173,6 @@ export function DeliveryOrders() {
           subtitle={t('deliveryOrders.subtitle')}
         />
       ) : null}
-
-      {focusedDo || focusedPo ? (
-        <FlowContextBanner
-          message={t('deliveryOrders.context', { kind: focusedDo ? 'DO' : 'PO', id: focusedDo ?? focusedPo })}
-        />
-      ) : null}
-
       {selectedDeliveryOrder ? (
         <DeliveryOrderDetail deliveryOrder={selectedDeliveryOrder} onClose={closeDetail} />
       ) : (

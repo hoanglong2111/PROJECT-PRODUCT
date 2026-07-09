@@ -32,7 +32,7 @@ import {
 import { createQuotationFromRequest, type QuotationRequestV1 } from '@shared/api/quotationRequests';
 import { queryKeys } from '@shared/api/queryKeys';
 import { fetchUoms } from '@shared/api/uoms';
-import { BackActionButton } from '@shared/components/BackActionButton';
+import { FeatureHeaderShell } from '@shared/components/FeatureHeaderShell';
 import { useExchangeRates } from '@shared/hooks/useExchangeRates';
 import { useTradeMasterDataOptions } from '@shared/hooks/useTradeMasterDataOptions';
 import { useI18n } from '@shared/i18n';
@@ -354,13 +354,10 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
 
   return (
     <Stack gap="md" className="rfq-form">
-      <Paper withBorder p={0} className="rfq-form-panel">
+      <FeatureHeaderShell backLabel={t('common.back')} onBack={onCancel}>
         <div className="rfq-form-hero feature-form-hero">
-          <div className="feature-hero-nav">
-            <BackActionButton label={t('common.back')} onClick={onCancel} />
-          </div>
-          <Group justify="space-between" align="flex-start" gap="md" className="rfq-form-hero-inner">
-            <Group gap="sm" align="flex-start" wrap="nowrap" className="rfq-form-title-row">
+          <Group justify="space-between" align="flex-start" gap="md" className="rfq-form-hero-inner feature-hero-layout">
+            <Group gap="sm" align="flex-start" wrap="nowrap" className="rfq-form-title-row feature-hero-identity">
               <div className="rfq-icon-box feature-hero-icon">
                 <IconFileInvoice size={18} />
               </div>
@@ -371,7 +368,7 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
                 </Text>
               </div>
             </Group>
-            <div className="rfq-form-hero-metrics">
+            <div className="rfq-form-hero-metrics feature-hero-facts">
               <div className="rfq-form-hero-metric">
                 <IconRoute size={16} />
                 <div>
@@ -397,7 +394,9 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
             </div>
           </Group>
         </div>
+      </FeatureHeaderShell>
 
+      <Paper withBorder p={0} className="rfq-form-panel">
         <div className="rfq-form-layout">
           <div className="rfq-form-main">
             {isRevise && sourceQuotation?.reject_reason ? (

@@ -18,7 +18,7 @@ import type { ShipmentRecord } from '@shared/api/logistics';
 import type { ShipmentCostPayload, ShipmentDocumentPayload, ShipmentMilestoneCodeV1 } from '@shared/api/shipments';
 import { EntityLink } from '@entities/logistics';
 import { CopyValue } from '@shared/components/CopyValue';
-import { BackActionButton } from '@shared/components/BackActionButton';
+import { FeatureHeaderShell } from '@shared/components/FeatureHeaderShell';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { AdminOnly } from '@shared/auth/AdminOnly';
 
@@ -68,12 +68,9 @@ export function ShipmentDetailView({
   return (
     <Stack gap="lg">
       {/* Identity card */}
-      <Paper withBorder p="md" className="workbench-section shipment-detail-identity feature-detail-hero">
-        <div className="feature-hero-nav">
-          <BackActionButton label={t('common.backToList')} onClick={onBack} />
-        </div>
-        <Group justify="space-between" align="flex-start">
-          <Group gap="sm" align="flex-start" wrap="nowrap" className="feature-detail-heading">
+      <FeatureHeaderShell backLabel={t('common.backToList')} onBack={onBack}>
+        <Paper withBorder p="md" className="workbench-section shipment-detail-identity feature-detail-hero feature-hero-layout">
+          <Group gap="sm" align="flex-start" wrap="nowrap" className="feature-detail-heading feature-hero-identity">
             <div className="feature-hero-icon" aria-hidden="true"><IconShip size={19} /></div>
             <div className="feature-detail-copy">
               <Group gap="xs" mb={4} wrap="wrap">
@@ -87,12 +84,22 @@ export function ShipmentDetailView({
               </Text>
             </div>
           </Group>
-          <Group gap="xs">
+          <dl className="feature-hero-facts">
+            <div className="feature-hero-fact">
+              <dt>{t('shipments.carrier')}</dt>
+              <dd>{shipment.carrier_name || '-'}</dd>
+            </div>
+            <div className="feature-hero-fact">
+              <dt>{t('shipments.vesselVoyage')}</dt>
+              <dd>{shipment.vessel_voyage || '-'}</dd>
+            </div>
+          </dl>
+          <Group gap="xs" className="feature-hero-actions">
             <EntityLink type="do" id={shipment.do_number} />
             <EntityLink type="po" id={shipment.po_number} />
           </Group>
-        </Group>
-      </Paper>
+        </Paper>
+      </FeatureHeaderShell>
 
       <Tabs
         defaultValue="overview"

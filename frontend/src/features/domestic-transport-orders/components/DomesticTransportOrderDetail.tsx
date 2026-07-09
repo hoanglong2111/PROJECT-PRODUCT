@@ -155,8 +155,8 @@ export function DomesticTransportOrderDetail({
     <Stack gap="md" className="dto-detail-stack">
       <Paper withBorder p="md" className="dto-detail-hero feature-detail-hero">
         <Stack gap="md">
-          <Group justify="space-between" align="flex-start" className="dto-detail-title-row">
-            <Group gap="sm" align="flex-start" wrap="nowrap" className="feature-detail-heading">
+          <Group justify="space-between" align="flex-start" className="dto-detail-title-row feature-hero-layout">
+            <Group gap="sm" align="flex-start" wrap="nowrap" className="feature-detail-heading feature-hero-identity">
               <div className="feature-hero-icon" aria-hidden="true"><IconTruck size={19} /></div>
               <div className="feature-detail-copy">
                 <Group gap="xs">
@@ -171,7 +171,7 @@ export function DomesticTransportOrderDetail({
                 </Text>
               </div>
             </Group>
-            <Group gap="xs" className="dto-detail-actions">
+            <Group gap="xs" className="dto-detail-actions feature-hero-actions">
               {order.shipment ? <EntityLink compact id={order.shipment.shipment_no} type="shp" /> : null}
             </Group>
           </Group>

@@ -27,12 +27,12 @@ export function EmptyState({
       aria-label={title}
       align="center"
       gap="xs"
-      py="xl"
+      py="lg"
       className={classes}
       data-surface-tone="neutral"
     >
-      <ThemeIcon size={48} radius="md" variant="light" className="kbfe-empty-icon">
-        <IconInbox size={28} />
+      <ThemeIcon size={40} radius="md" variant="light" className="kbfe-empty-icon">
+        <IconInbox size={22} />
       </ThemeIcon>
       <Text fw={700}>{title}</Text>
       <Text size="sm" c="dimmed" ta="center">

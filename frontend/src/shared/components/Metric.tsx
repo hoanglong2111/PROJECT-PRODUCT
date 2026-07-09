@@ -1,4 +1,4 @@
-import { Group, NumberFormatter, Paper, Text, Title } from '@mantine/core';
+import { Group, NumberFormatter, Paper, Text } from '@mantine/core';
 import type { ReactNode } from 'react';
 
 type MetricProps = {
@@ -28,21 +28,21 @@ export function Metric({
     : value || '-';
 
   return (
-    <Paper withBorder p="md" className={classes} data-surface-tone={color}>
+    <Paper withBorder p="sm" className={classes} data-surface-tone={color}>
       <Group justify="space-between" align="flex-start" wrap="nowrap">
-        <div>
-          <Text className="metric-label" size="xs" fw={700} lts="0.05em" tt="uppercase" mb={4}>
+        <div className="metric-copy">
+          <Text className="metric-label" size="xs" fw={600} mb={2}>
             {label}
           </Text>
-          <Title
-            order={1}
+          <Text
+            component="div"
             fw={800}
-            className={valueClassName}
-            style={{ lineHeight: 1.1, color: `var(--kbfe-status-${color}, var(--mantine-color-${color}-7))` }}
+            className={['metric-value', valueClassName].filter(Boolean).join(' ')}
+            style={{ color: `var(--kbfe-status-${color}, var(--mantine-color-${color}-7))` }}
             title={String(value)}
           >
             {displayValue}
-          </Title>
+          </Text>
         </div>
         {icon && <span className={`metric-icon metric-icon-${color}`}>{icon}</span>}
       </Group>
