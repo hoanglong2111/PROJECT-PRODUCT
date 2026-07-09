@@ -522,12 +522,12 @@ export function QuotationDetail({ onBack, quotation, onRevise, onInspectVersion 
       </Paper>
 
       {
-    status === 'REJECTED' && quotation.reject_reason ? (
-      <Alert color="red" title={t('quotations.rejectReason')}>
-        {quotation.reject_reason}
-      </Alert>
-    ) : null
-  }
+        status === 'REJECTED' && quotation.reject_reason ? (
+          <Alert color="red" title={t('quotations.rejectReason')}>
+            {quotation.reject_reason}
+          </Alert>
+        ) : null
+      }
 
       <div className="rfq-detail-layout quote-workflow-detail-layout">
         <div className="rfq-detail-main">
