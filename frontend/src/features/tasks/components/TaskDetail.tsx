@@ -29,8 +29,8 @@ export function TaskDetail({
   return (
     <Stack gap="md" className="task-detail-stack">
       <Paper withBorder p={0} className="task-detail-workbench">
-        <div className="task-detail-hero feature-detail-hero">
-          <Group justify="space-between" align="flex-start" gap="sm" className="task-detail-title-row">
+        <div className="task-detail-hero feature-detail-hero feature-hero-layout">
+          <Group justify="space-between" align="flex-start" gap="sm" className="task-detail-title-row feature-hero-identity">
             <Group gap="sm" align="flex-start" wrap="nowrap" className="feature-detail-heading">
               <div className="feature-hero-icon" aria-hidden="true"><IconChecklist size={19} /></div>
               <div className="task-detail-title-block feature-detail-copy">
@@ -51,7 +51,7 @@ export function TaskDetail({
             ) : null}
           </Group>
 
-          <div className="task-detail-progress-panel">
+          <div className="task-detail-progress-panel feature-hero-summary">
             <Group justify="space-between" mb="xs" gap="sm" wrap="nowrap">
               <Text fw={700}>{t('tasks.progress')}</Text>
               <Text fw={800} className="tabular-nums">{task.progress}%</Text>

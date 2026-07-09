@@ -31,7 +31,7 @@ import {
   createDomesticTransportOrderFromShipment,
 } from '@shared/api/domesticTransportOrders';
 import { DateTimeField } from '@shared/components/DateField';
-import { BackActionButton } from '@shared/components/BackActionButton';
+import { FeatureHeaderShell } from '@shared/components/FeatureHeaderShell';
 import type { ShipmentRecord } from '@shared/api/logistics';
 import {
   createShipmentContainer,
@@ -260,16 +260,6 @@ export function CreateDtoFromShipmentPanel({
 
   const content = (
     <Stack gap="md">
-      <div>
-        <div className="feature-hero-nav">
-          <BackActionButton label={t('common.back')} onClick={onClose} />
-        </div>
-        <Title order={3}>
-          {isConsolidation
-            ? t('shipments.createDtoTitle', { count: shipments.length })
-            : t('shipments.createDtoFromShipment', { shipmentNumber: shipments[0]?.shipment_number ?? '' })}
-        </Title>
-      </div>
       <Alert color={isConsolidation ? 'orange' : 'teal'} icon={<IconTruck size={18} />}>
         {isConsolidation
           ? t('shipments.dtoConsolidationInfo')
@@ -485,8 +475,21 @@ export function CreateDtoFromShipmentPanel({
   if (!opened) return null;
 
   return (
-    <Paper withBorder p="lg" className="shipment-dto-create-panel feature-form-hero">
-      {content}
-    </Paper>
+    <Stack gap="sm">
+      <FeatureHeaderShell backLabel={t('common.back')} onBack={onClose}>
+        <div className="feature-form-hero feature-hero-layout">
+          <div className="feature-hero-identity">
+            <Title order={3}>
+              {isConsolidation
+                ? t('shipments.createDtoTitle', { count: shipments.length })
+                : t('shipments.createDtoFromShipment', { shipmentNumber: shipments[0]?.shipment_number ?? '' })}
+            </Title>
+          </div>
+        </div>
+      </FeatureHeaderShell>
+      <Paper withBorder p="lg" className="shipment-dto-create-panel">
+        {content}
+      </Paper>
+    </Stack>
   );
 }

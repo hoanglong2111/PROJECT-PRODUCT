@@ -92,8 +92,8 @@
   --kbfe-surface-wash-strength: 10%;
   --kbfe-surface-base-tint: 3%;
   --kbfe-surface-border-tint: 16%;
-  --kbfe-surface-shadow-tint: 22%;
-  box-shadow: 0 8px 20px -22px
+  --kbfe-surface-shadow-tint: 18%;
+  box-shadow: 0 6px 16px -22px
     color-mix(in srgb, var(--kbfe-surface-accent) var(--kbfe-surface-shadow-tint), var(--kbfe-shadow-color, #0f172a));
 }
 
@@ -106,8 +106,8 @@
   --kbfe-surface-wash-strength: 6%;
   --kbfe-surface-base-tint: 2%;
   --kbfe-surface-border-tint: 14%;
-  --kbfe-surface-shadow-tint: 16%;
-  box-shadow: 0 6px 16px -24px
+  --kbfe-surface-shadow-tint: 14%;
+  box-shadow: 0 4px 12px -22px
     color-mix(in srgb, var(--kbfe-surface-accent) var(--kbfe-surface-shadow-tint), var(--kbfe-shadow-color, #0f172a));
 }
 

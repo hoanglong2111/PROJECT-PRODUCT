@@ -18,9 +18,9 @@ import {
 } from '@shared/api/quotations';
 import { queryKeys } from '@shared/api/queryKeys';
 import { AnchoredWorkflowRail, useAnchoredWorkflowSections, type AnchoredWorkflowStep } from '@shared/components/AnchoredWorkflow';
-import { BackActionButton } from '@shared/components/BackActionButton';
 import { CopyValue } from '@shared/components/CopyValue';
 import { DateTimeText } from '@shared/components/DateTimeText';
+import { FeatureHeaderShell } from '@shared/components/FeatureHeaderShell';
 import { FieldPair } from '@shared/components/FieldPair';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { useExchangeRates } from '@shared/hooks/useExchangeRates';
@@ -456,13 +456,10 @@ export function QuotationDetail({ onBack, quotation, onRevise, onInspectVersion 
 
   return (
     <Stack gap="sm" className="rfq-detail">
-      <Paper withBorder p={0} className="rfq-detail-hero quote-workflow-hero quote-workflow-hero--qform quote-workflow-detail-hero">
-        <div className="rfq-detail-hero-main">
-          <div className="feature-hero-nav">
-            <BackActionButton label={t('common.backToList')} onClick={onBack} />
-          </div>
-          <Group justify="space-between" align="flex-start" gap="md" className="rfq-detail-hero-inner">
-            <Group gap="sm" align="flex-start" wrap="nowrap" className="rfq-detail-title-row">
+      <FeatureHeaderShell backLabel={t('common.backToList')} onBack={onBack}>
+        <Paper withBorder p={0} className="rfq-detail-hero feature-detail-hero quote-workflow-detail-hero">
+          <div className="rfq-detail-hero-main feature-hero-layout">
+            <Group gap="sm" align="flex-start" wrap="nowrap" className="rfq-detail-title-row feature-hero-identity">
               <div className="rfq-icon-box feature-hero-icon">
                 <IconFileInvoice size={18} />
               </div>
@@ -478,7 +475,7 @@ export function QuotationDetail({ onBack, quotation, onRevise, onInspectVersion 
                 </Text>
               </div>
             </Group>
-            <div className="rfq-detail-total">
+            <div className="rfq-detail-total feature-hero-summary">
               <Text size="xs" tt="uppercase" fw={600} c="dimmed">
                 {t('quotations.customerPays')} ({paymentCurrency})
               </Text>
@@ -494,32 +491,32 @@ export function QuotationDetail({ onBack, quotation, onRevise, onInspectVersion 
                 </Text>
               ) : null}
             </div>
-          </Group>
-        </div>
+          </div>
 
-        <div className="rfq-detail-fact-strip">
-          <FieldPair className="rfq-fact" label={t('quotations.customer')} value={quotation.customer_ref ?? '-'} />
-          <FieldPair
-            className="rfq-fact"
-            label={t('quotationRequests.field.route')}
-            value={quotation.origin_port || quotation.destination_port ? `${quotation.origin_port ?? '-'} -> ${quotation.destination_port ?? '-'}` : '-'}
-          />
-          <FieldPair
-            className="rfq-fact"
-            label={t('quotations.rfqLink')}
-            value={quotation.rfq_id ? (
-              <Anchor component={Link} to={`/quotation-requests?view=${quotation.rfq_id}`}>
-                {quotation.rfq_no ?? quotation.rfq_id}
-              </Anchor>
-            ) : '-'}
-          />
-          <FieldPair className="rfq-fact" label={t('quotations.incoterm')} value={quotation.incoterm_code ?? '-'} />
-          <FieldPair className="rfq-fact" label={t('quotations.mode')} value={quotation.mode ?? '-'} />
-          <FieldPair className="rfq-fact" label={t('quotations.paymentCurrencyLabel')} value={quotation.currency_code ?? '-'} />
-          <FieldPair className="rfq-fact" label={t('quotations.validUntil')} value={formatDate(quotation.valid_until)} />
-          <FieldPair className="rfq-fact" label={t('quotations.createdAt')} value={<DateTimeText value={quotation.create_at} showZone />} />
-        </div>
-      </Paper>
+          <div className="rfq-detail-fact-strip">
+            <FieldPair className="rfq-fact" label={t('quotations.customer')} value={quotation.customer_ref ?? '-'} />
+            <FieldPair
+              className="rfq-fact"
+              label={t('quotationRequests.field.route')}
+              value={quotation.origin_port || quotation.destination_port ? `${quotation.origin_port ?? '-'} -> ${quotation.destination_port ?? '-'}` : '-'}
+            />
+            <FieldPair
+              className="rfq-fact"
+              label={t('quotations.rfqLink')}
+              value={quotation.rfq_id ? (
+                <Anchor component={Link} to={`/quotation-requests?view=${quotation.rfq_id}`}>
+                  {quotation.rfq_no ?? quotation.rfq_id}
+                </Anchor>
+              ) : '-'}
+            />
+            <FieldPair className="rfq-fact" label={t('quotations.incoterm')} value={quotation.incoterm_code ?? '-'} />
+            <FieldPair className="rfq-fact" label={t('quotations.mode')} value={quotation.mode ?? '-'} />
+            <FieldPair className="rfq-fact" label={t('quotations.paymentCurrencyLabel')} value={quotation.currency_code ?? '-'} />
+            <FieldPair className="rfq-fact" label={t('quotations.validUntil')} value={formatDate(quotation.valid_until)} />
+            <FieldPair className="rfq-fact" label={t('quotations.createdAt')} value={<DateTimeText value={quotation.create_at} showZone />} />
+          </div>
+        </Paper>
+      </FeatureHeaderShell>
 
       {
         status === 'REJECTED' && quotation.reject_reason ? (

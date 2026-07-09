@@ -25,7 +25,7 @@ export function PageHeader({
   const actionClasses = ['dl-page-actions', actionsClassName].filter(Boolean).join(' ');
 
   return (
-    <Group justify="space-between" align="flex-start" gap="md" className={classes}>
+    <div className={classes}>
       <div className="dl-page-heading">
         {icon ? <div className="dl-page-icon" aria-hidden="true">{icon}</div> : null}
         <div className={titleClasses}>
@@ -42,6 +42,6 @@ export function PageHeader({
           {actions}
         </Group>
       ) : null}
-    </Group>
+    </div>
   );
 }

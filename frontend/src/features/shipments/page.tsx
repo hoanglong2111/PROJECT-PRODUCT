@@ -14,7 +14,7 @@ import { IconAnchor, IconCheck, IconClock, IconPlus, IconShield, IconShip } from
 import { useEffect, useMemo, useState } from 'react';
 
 import { DateField } from '@shared/components/DateField';
-import { BackActionButton } from '@shared/components/BackActionButton';
+import { FeatureHeaderShell } from '@shared/components/FeatureHeaderShell';
 import { FieldPair } from '@shared/components/FieldPair';
 import { Metric } from '@shared/components/Metric';
 import { PageHeader } from '@shared/components/PageHeader';
@@ -398,19 +398,16 @@ export function Shipments() {
       ) : null}
 
       {workbench === 'create' ? (
-        <Paper withBorder p="sm" className="shipment-create-panel feature-form-hero">
-          <Stack gap="sm">
-            <div className="feature-hero-nav">
-              <BackActionButton label={t('common.back')} onClick={closeWorkbench} />
-            </div>
-            <Group justify="space-between" align="flex-start" gap="sm" className="shipment-create-command">
-              <div>
+        <Stack gap="sm">
+          <FeatureHeaderShell backLabel={t('common.back')} onBack={closeWorkbench}>
+            <Group justify="space-between" align="flex-start" gap="sm" className="shipment-create-command feature-form-hero feature-hero-layout">
+              <div className="feature-hero-identity">
                 <Title order={3}>{t('shipments.create')}</Title>
                 <Text size="sm" c="dimmed">
                   {t('shipments.createHint')}
                 </Text>
               </div>
-              <Group gap="xs">
+              <Group gap="xs" className="feature-hero-actions">
                 <Button
                   onClick={handleCreateShipment}
                   leftSection={<IconPlus size={16} />}
@@ -421,7 +418,10 @@ export function Shipments() {
                 </Button>
               </Group>
             </Group>
+          </FeatureHeaderShell>
 
+          <Paper withBorder p="sm" className="shipment-create-panel">
+            <Stack gap="sm">
             <div className="shipment-create-layout">
               <div className="shipment-create-source">
                 <Select
@@ -520,8 +520,9 @@ export function Shipments() {
                 </SimpleGrid>
               </div>
             </div>
-          </Stack>
-        </Paper>
+            </Stack>
+          </Paper>
+        </Stack>
       ) : null}
 
       {workbench === 'detail' && selectedShipment ? (

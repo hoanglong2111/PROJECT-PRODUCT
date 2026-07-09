@@ -1,4 +1,4 @@
-import { Alert, Button, Group, NumberInput, Paper, Select, SimpleGrid, Stack, Text, Textarea, TextInput, Title } from '@mantine/core';
+import { Alert, Button, Group, NumberInput, Paper, Select, SimpleGrid, Stack, Text, Textarea, TextInput } from '@mantine/core';
 import { IconAlertTriangle, IconClipboardList, IconDeviceFloppy, IconFileInvoice, IconPackage, IconX } from '@tabler/icons-react';
 import { useMemo } from 'react';
 
@@ -13,7 +13,6 @@ import { useI18n } from '@shared/i18n';
 import { rfqModeOptions } from '../model/quotationRequestModel';
 import { useQuotationRequestForm } from '../hooks/useQuotationRequestForm';
 import { RfqCargoEditorPanel } from './RfqCargoEditorPanel';
-import { RfqFormSummaryTiles } from './RfqFormSummaryTiles';
 
 type Props = {
   onCancel: () => void;
@@ -117,32 +116,6 @@ export function QuotationRequestForm({ onCancel, onCreated, source }: Props) {
             {(createMutation.error as Error).message}
           </Alert>
         ) : null}
-
-        <Paper withBorder p={0} className="quote-workflow-hero quote-workflow-hero--rfq">
-          <div className="quote-workflow-hero-content">
-            <Group justify="space-between" align="flex-start" gap="md" className="quote-workflow-hero-head">
-              <Group gap="sm" align="flex-start" wrap="nowrap" className="quote-workflow-title-row">
-                <div className="quote-workflow-icon-box">
-                  <IconClipboardList size={20} />
-                </div>
-                <div className="quote-workflow-title-copy">
-                  <Title order={2}>{t('quotationRequests.formTitle')}</Title>
-                  <Text c="dimmed" size="sm">
-                    {t('quotationRequests.formSubtitle')}
-                  </Text>
-                  {source ? (
-                    <Text c="dimmed" size="xs" mt={2}>
-                      {t('quotationRequests.copiedFrom', { rfqNo: source.rfq_no })}
-                    </Text>
-                  ) : null}
-                </div>
-              </Group>
-            </Group>
-            <div className="quote-workflow-hero-summary">
-              <RfqFormSummaryTiles form={form} t={t} />
-            </div>
-          </div>
-        </Paper>
 
         <div className="quote-workflow-layout">
           <aside className="quote-workflow-side">

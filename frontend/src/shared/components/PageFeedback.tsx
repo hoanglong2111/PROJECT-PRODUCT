@@ -71,7 +71,7 @@ export function PageLoading({
           <Paper
             key={index}
             withBorder
-            p="md"
+            p="sm"
             className="metric-card kbfe-surface-wash kbfe-surface-wash--soft"
             data-surface-tone="neutral"
           >
@@ -120,8 +120,8 @@ export function PageLoading({
 export function FullPageLoading({ description, title }: { description: string; title: string }) {
   return (
     <Center h="100dvh" p="md">
-      <Paper withBorder p="xl" maw={520} w="100%" className="page-state-panel">
-        <Stack gap="md" align="center">
+      <Paper withBorder p="lg" maw={520} w="100%" className="page-state-panel">
+        <Stack gap="sm" align="center">
           <Skeleton height={44} circle />
           <div>
             <Title order={3} ta="center">
@@ -143,14 +143,14 @@ export function PageError({ actionLabel, description, error, onRetry, title }: P
   return (
     <Paper
       withBorder
-      p="lg"
+      p="md"
       className="page-state-panel page-state-panel-error kbfe-surface-wash kbfe-surface-wash--soft"
       data-surface-tone="danger"
     >
-      <Stack gap="md">
+      <Stack gap="sm">
         <Group align="flex-start" gap="sm" wrap="nowrap">
-          <ThemeIcon variant="light" size={42} radius="md" className="kbfe-error-icon">
-            <IconAlertTriangle size={24} />
+          <ThemeIcon variant="light" size={36} radius="md" className="kbfe-error-icon">
+            <IconAlertTriangle size={20} />
           </ThemeIcon>
           <div>
             <Title order={3}>{title}</Title>

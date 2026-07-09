@@ -1,4 +1,4 @@
-import { Alert, Badge, Button, Group, Loader, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core';
+import { Alert, Button, Group, Loader, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core';
 import { IconAlertTriangle, IconCircleCheck, IconPencil, IconSend, IconShoppingCart } from '@tabler/icons-react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -9,8 +9,8 @@ import {
   sendPurchaseOrder,
 } from '@shared/api/purchaseOrders';
 import { queryKeys } from '@shared/api/queryKeys';
-import { BackActionButton } from '@shared/components/BackActionButton';
 import { CopyValue } from '@shared/components/CopyValue';
+import { FeatureHeaderShell } from '@shared/components/FeatureHeaderShell';
 import { FieldPair } from '@shared/components/FieldPair';
 import { PageError } from '@shared/components/PageFeedback';
 import { StatusBadge } from '@shared/components/StatusBadge';
@@ -100,12 +100,10 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
 
   return (
     <Stack gap="lg">
-      <Paper withBorder p={0} className="purchase-order-detail-hero feature-detail-hero">
-        <div className="feature-hero-nav feature-hero-nav--inset">
-          <BackActionButton label={t('common.backToList')} onClick={onClose} />
-        </div>
-        <Group justify="space-between" align="flex-start" className="purchase-order-detail-hero-inner">
-          <Group gap="sm" align="flex-start" wrap="nowrap" className="feature-detail-heading">
+      <FeatureHeaderShell backLabel={t('common.backToList')} onBack={onClose}>
+        <Paper withBorder p={0} className="purchase-order-detail-hero feature-detail-hero">
+          <div className="purchase-order-detail-hero-inner feature-hero-layout">
+            <Group gap="sm" align="flex-start" wrap="nowrap" className="feature-detail-heading feature-hero-identity">
             <div className="feature-hero-icon" aria-hidden="true"><IconShoppingCart size={19} /></div>
             <div className="purchase-order-detail-title feature-detail-copy">
               <Group gap="xs" className="purchase-order-detail-title-row">
@@ -113,19 +111,26 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
                   <CopyValue value={order.po_no}>{order.po_no}</CopyValue>
                 </Title>
                 <StatusBadge status={order.status} />
-                <Badge size="sm" variant="light" className="purchase-order-nowrap-badge">
-                  {order.po_type || 'STANDARD'}
-                </Badge>
-                <Badge size="sm" variant="light" color="blue" className="purchase-order-nowrap-badge">
-                  <CopyValue value={order.contract_no ?? ''}>{t('purchaseOrders.contractPrefix')} {order.contract_no ?? '-'}</CopyValue>
-                </Badge>
               </Group>
-              <Text c="dimmed" size="sm" mt={4}>
-                {order.supplier?.supplier_name ?? order.supplier_id}
-              </Text>
             </div>
-          </Group>
-          <Group gap="xs" wrap="nowrap" className="purchase-order-detail-actions">
+            </Group>
+
+            <dl className="feature-hero-facts">
+              <div className="feature-hero-fact">
+                <dt>{t('purchaseOrders.supplier')}</dt>
+                <dd>{order.supplier?.supplier_name ?? order.supplier_id}</dd>
+              </div>
+              <div className="feature-hero-fact">
+                <dt>{t('purchaseOrders.poType')}</dt>
+                <dd>{order.po_type || 'STANDARD'}</dd>
+              </div>
+              <div className="feature-hero-fact">
+                <dt>{t('purchaseOrders.contractPrefix')}</dt>
+                <dd><CopyValue value={order.contract_no ?? ''}>{order.contract_no ?? '-'}</CopyValue></dd>
+              </div>
+            </dl>
+
+            <Group gap="xs" wrap="wrap" className="purchase-order-detail-actions feature-hero-actions">
             <Button
               className="purchase-order-action-button"
               variant="light"
@@ -153,25 +158,25 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
             >
               {t('common.confirm')}
             </Button>
-          </Group>
-        </Group>
-        <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="sm" className="purchase-order-detail-signal-grid">
-          <FieldPair className="purchase-order-detail-signal" label={t('purchaseOrders.supplier')} value={order.supplier?.supplier_name ?? order.supplier_id} />
-          <FieldPair className="purchase-order-detail-signal" label={t('purchaseOrders.lines')} value={String(lines.length)} />
-          <FieldPair className="purchase-order-detail-signal" label={t('purchaseOrders.amount')} value={amount || '-'} />
-          <FieldPair className="purchase-order-detail-signal" label="LOT / ETA" value={`${lotCount} LOT / ${containerCount} cont / ${eta}`} />
-        </SimpleGrid>
-        {sendMutation.isError ? (
-          <Alert color="red" icon={<IconAlertTriangle size={18} />} mt="md">
-            {getApiErrorMessage(sendMutation.error)}
-          </Alert>
-        ) : null}
-        {!canConfirm ? (
-          <Text size="xs" c="dimmed" mt="xs">
-            {t('purchaseOrders.confirmAfterSend')}
-          </Text>
-        ) : null}
-      </Paper>
+            </Group>
+          </div>
+          <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm" className="purchase-order-detail-signal-grid">
+            <FieldPair className="purchase-order-detail-signal" label={t('purchaseOrders.lines')} value={String(lines.length)} />
+            <FieldPair className="purchase-order-detail-signal" label={t('purchaseOrders.amount')} value={amount || '-'} />
+            <FieldPair className="purchase-order-detail-signal" label="LOT / ETA" value={`${lotCount} LOT / ${containerCount} cont / ${eta}`} />
+          </SimpleGrid>
+          {sendMutation.isError ? (
+            <Alert color="red" icon={<IconAlertTriangle size={18} />} mt="md">
+              {getApiErrorMessage(sendMutation.error)}
+            </Alert>
+          ) : null}
+          {!canConfirm ? (
+            <Text size="xs" c="dimmed" mt="xs">
+              {t('purchaseOrders.confirmAfterSend')}
+            </Text>
+          ) : null}
+        </Paper>
+      </FeatureHeaderShell>
 
       <PurchaseOrderDetailInfo order={order} lines={lines} />
 

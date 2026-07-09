@@ -26,9 +26,9 @@ import {
 } from '@shared/api/purchaseOrders';
 import type { QuotationV1 } from '@shared/api/quotations';
 import { fetchQuotationRequest } from '@shared/api/quotationRequests';
-import { BackActionButton } from '@shared/components/BackActionButton';
 import { queryKeys } from '@shared/api/queryKeys';
 import { DateTimeField } from '@shared/components/DateField';
+import { FeatureHeaderShell } from '@shared/components/FeatureHeaderShell';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { FormSection, OrderLineItemsEditor, SummaryTile, type OrderLineDraft } from '@shared/components/order-intake';
 import { useI18n } from '@shared/i18n';
@@ -222,12 +222,9 @@ export function PurchaseOrderForm({
           </Alert>
         ) : null}
 
-        <Paper withBorder p="sm" className="purchase-order-form-hero feature-form-hero">
-          <div className="feature-hero-nav">
-            <BackActionButton label={t('common.back')} onClick={onCancel} />
-          </div>
-          <Group justify="space-between" align="flex-start" gap="md">
-            <Group gap="sm" align="flex-start" wrap="nowrap" className="feature-detail-heading">
+        <FeatureHeaderShell backLabel={t('common.back')} onBack={onCancel}>
+          <Paper withBorder p="sm" className="purchase-order-form-hero feature-form-hero feature-hero-layout">
+            <Group gap="sm" align="flex-start" wrap="nowrap" className="feature-detail-heading feature-hero-identity">
               <div className="feature-hero-icon" aria-hidden="true"><IconShoppingCart size={19} /></div>
               <Stack gap={4} className="feature-detail-copy">
                 <Group gap="xs">
@@ -243,7 +240,25 @@ export function PurchaseOrderForm({
                 </Text>
               </Stack>
             </Group>
-            <Group gap="xs" className="purchase-order-form-actions">
+
+            <SimpleGrid cols={{ base: 2, lg: 4 }} className="purchase-order-form-summary-grid feature-hero-facts">
+              <SummaryTile label={t('purchaseOrders.poNoReference')} value={draft.po_no || t('purchaseOrders.draftValue')} />
+              <SummaryTile label={t('purchaseOrders.supplier')} value={selectedSupplier?.supplier_name ?? t('purchaseOrders.supplierRequired')} />
+              <SummaryTile label={t('purchaseOrders.terms')} value={selectedIncoterm?.incoterm_code ?? t('purchaseOrders.incotermRequired')} />
+              <SummaryTile
+                label={mode === 'create' ? t('purchaseOrders.poTotal') : t('purchaseOrders.currency')}
+                value={
+                  mode === 'create' ? (
+                    formatMoney(poTotal, selectedCurrency?.currency_code)
+                  ) : (
+                    selectedCurrency?.currency_code ?? t('purchaseOrders.notSet')
+                  )
+                }
+                tone="accent"
+              />
+            </SimpleGrid>
+
+            <Group gap="xs" className="purchase-order-form-actions feature-hero-actions">
               <Button
                 type="submit"
                 loading={mutation.isPending}
@@ -253,25 +268,8 @@ export function PurchaseOrderForm({
                 {mode === 'create' ? t('purchaseOrders.createPo') : t('purchaseOrders.saveHeader')}
               </Button>
             </Group>
-          </Group>
-
-          <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} mt="md">
-            <SummaryTile label={t('purchaseOrders.poNoReference')} value={draft.po_no || t('purchaseOrders.draftValue')} />
-            <SummaryTile label={t('purchaseOrders.supplier')} value={selectedSupplier?.supplier_name ?? t('purchaseOrders.supplierRequired')} />
-            <SummaryTile label={t('purchaseOrders.terms')} value={selectedIncoterm?.incoterm_code ?? t('purchaseOrders.incotermRequired')} />
-            <SummaryTile
-              label={mode === 'create' ? t('purchaseOrders.poTotal') : t('purchaseOrders.currency')}
-              value={
-                mode === 'create' ? (
-                  formatMoney(poTotal, selectedCurrency?.currency_code)
-                ) : (
-                  selectedCurrency?.currency_code ?? t('purchaseOrders.notSet')
-                )
-              }
-              tone="accent"
-            />
-          </SimpleGrid>
-        </Paper>
+          </Paper>
+        </FeatureHeaderShell>
 
         <div className="purchase-order-form-core-grid">
           <FormSection title={t('purchaseOrders.sectionIdentificationTitle')} description={t('purchaseOrders.sectionIdentificationDescription')}>

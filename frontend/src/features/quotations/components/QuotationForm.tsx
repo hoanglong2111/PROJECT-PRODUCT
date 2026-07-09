@@ -33,6 +33,7 @@ import {
 import { createQuotationFromRequest, type QuotationRequestV1 } from '@shared/api/quotationRequests';
 import { queryKeys } from '@shared/api/queryKeys';
 import { fetchUoms } from '@shared/api/uoms';
+import { FeatureHeaderShell } from '@shared/components/FeatureHeaderShell';
 import { useExchangeRates } from '@shared/hooks/useExchangeRates';
 import { useTradeMasterDataOptions } from '@shared/hooks/useTradeMasterDataOptions';
 import { useI18n } from '@shared/i18n';
@@ -373,12 +374,12 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
 
   return (
     <Stack gap="md" className="rfq-form quote-workflow quote-workflow--qform">
-      <Paper withBorder p={0} className="quote-workflow-hero quote-workflow-hero--qform">
-        <div className="quote-workflow-hero-content">
-          <Group justify="space-between" align="flex-start" gap="md" className="quote-workflow-hero-head">
-            <Group gap="sm" align="flex-start" wrap="nowrap" className="quote-workflow-title-row">
-              <div className="quote-workflow-icon-box quote-workflow-icon-box--qform">
-                <IconFileInvoice size={20} />
+      <FeatureHeaderShell backLabel={t('common.back')} onBack={onCancel}>
+        <div className="rfq-form-hero feature-form-hero">
+          <Group justify="space-between" align="flex-start" gap="md" className="rfq-form-hero-inner feature-hero-layout">
+            <Group gap="sm" align="flex-start" wrap="nowrap" className="rfq-form-title-row feature-hero-identity">
+              <div className="rfq-icon-box feature-hero-icon">
+                <IconFileInvoice size={18} />
               </div>
               <div className="quote-workflow-title-copy">
                 <Title order={2}>{formTitle}</Title>
@@ -387,7 +388,7 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
                 </Text>
               </div>
             </Group>
-            <div className="rfq-form-hero-metrics quote-workflow-hero-metrics">
+            <div className="rfq-form-hero-metrics feature-hero-facts">
               <div className="rfq-form-hero-metric">
                 <IconRoute size={16} />
                 <div>
@@ -413,7 +414,7 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
             </div>
           </Group>
         </div>
-      </Paper>
+      </FeatureHeaderShell>
 
       <div className="quote-workflow-layout quote-workflow-layout--with-summary">
         <aside className="quote-workflow-side">

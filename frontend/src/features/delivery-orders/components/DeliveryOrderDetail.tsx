@@ -39,9 +39,9 @@ import {
   markDeliveryOrderReadyForQuotation,
 } from '@shared/api/deliveryOrders';
 import { queryKeys } from '@shared/api/queryKeys';
-import { BackActionButton } from '@shared/components/BackActionButton';
 import { CopyValue } from '@shared/components/CopyValue';
 import { DelayBadge } from '@shared/components/DelayBadge';
+import { FeatureHeaderShell } from '@shared/components/FeatureHeaderShell';
 import { ModalTitle } from '@shared/components/ModalTitle';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { useI18n } from '@shared/i18n';
@@ -134,14 +134,12 @@ export function DeliveryOrderDetail({ deliveryOrder, onClose }: { deliveryOrder:
 
   return (
     <Stack gap="md">
-      <Paper withBorder p="md" className="delivery-order-detail-hero feature-detail-hero">
-        <div className="feature-hero-nav">
-          <BackActionButton label={t('common.backToList')} onClick={onClose} />
-        </div>
-        <div className="delivery-order-detail-hero-grid">
-          <Group gap="sm" align="flex-start" wrap="nowrap" className="delivery-order-detail-main feature-detail-heading">
+      <FeatureHeaderShell backLabel={t('common.backToList')} onBack={onClose}>
+        <Paper withBorder p="md" className="delivery-order-detail-hero feature-detail-hero">
+          <div className="delivery-order-detail-hero-grid feature-hero-layout">
+            <Group gap="sm" align="flex-start" wrap="nowrap" className="delivery-order-detail-main feature-detail-heading feature-hero-identity">
             <div className="feature-hero-icon" aria-hidden="true"><IconTruckDelivery size={19} /></div>
-            <Stack gap="sm" className="feature-detail-copy">
+            <Stack gap="xs" className="feature-detail-copy">
               <Group gap="xs" align="center" wrap="wrap">
                 <Title order={3}>
                   <CopyValue value={deliveryOrder.order_info.order_number}>
@@ -151,9 +149,6 @@ export function DeliveryOrderDetail({ deliveryOrder, onClose }: { deliveryOrder:
                 <StatusBadge status={deliveryOrder.order_info.status} />
                 <FlowTagBadge tags={deliveryOrder.flow_tags} />
               </Group>
-              <Text c="dimmed" size="sm" lineClamp={2}>
-                {sourcePoNumber} / {sourceLotNumber} - {deliveryOrder.product_details.item_name_requested}
-              </Text>
               <Group gap="xs" wrap="wrap" className="delivery-order-detail-links">
                 <EntityLink type="po" id={sourcePoNumber} />
                 <Button
@@ -167,9 +162,20 @@ export function DeliveryOrderDetail({ deliveryOrder, onClose }: { deliveryOrder:
                 </Button>
               </Group>
             </Stack>
-          </Group>
+            </Group>
 
-          <Stack gap="sm" className="delivery-order-detail-action-panel">
+            <dl className="feature-hero-facts">
+              <div className="feature-hero-fact">
+                <dt>PO / LOT</dt>
+                <dd>{sourcePoNumber} / {sourceLotNumber}</dd>
+              </div>
+              <div className="feature-hero-fact">
+                <dt>{t('deliveryOrders.overviewItems')}</dt>
+                <dd>{deliveryOrder.product_details.item_name_requested}</dd>
+              </div>
+            </dl>
+
+            <Stack gap="xs" className="delivery-order-detail-action-panel feature-hero-command">
             <Group justify="space-between" gap="sm" wrap="nowrap">
               <Text size="xs" c="dimmed" fw={700}>
                 {t('tasks.progress')}
@@ -214,8 +220,8 @@ export function DeliveryOrderDetail({ deliveryOrder, onClose }: { deliveryOrder:
                 </Button>
               ) : null}
             </Group>
-          </Stack>
-        </div>
+            </Stack>
+          </div>
 
         <SimpleGrid cols={{ base: 1, sm: 2, xl: 4 }} spacing={0} className="do-fact-strip">
           <DeliveryOrderFact
@@ -255,7 +261,8 @@ export function DeliveryOrderDetail({ deliveryOrder, onClose }: { deliveryOrder:
             {getApiErrorMessage(actionMutation.error, t('forms.apiUnknownError'))}
           </Alert>
         ) : null}
-      </Paper>
+        </Paper>
+      </FeatureHeaderShell>
 
       <Grid gap="md" className="delivery-order-control-grid">
         <Grid.Col span={{ base: 12, xl: 6 }}>
