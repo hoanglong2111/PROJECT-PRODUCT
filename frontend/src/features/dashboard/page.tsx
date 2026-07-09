@@ -71,14 +71,8 @@ export function Dashboard() {
     <Stack gap="lg" className="dashboard-page">
       <PageHeader
         className="dashboard-header"
-        title={
-          <>
-            <span className="dashboard-header-icon">
-              <IconPackageExport size={20} />
-            </span>
-            {t('dashboard.title')}
-          </>
-        }
+        icon={<IconPackageExport size={20} />}
+        title={t('dashboard.title')}
         subtitle={t('dashboard.subtitle')}
         actions={
           <SegmentedControl

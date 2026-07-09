@@ -1,5 +1,5 @@
-import { Badge, Button, Paper, Stack, Text } from '@mantine/core';
-import { IconBan, IconCheck, IconExternalLink, IconSend } from '@tabler/icons-react';
+import { Alert, Badge, Button, Paper, Stack, Text } from '@mantine/core';
+import { IconAlertTriangle, IconBan, IconCheck, IconExternalLink, IconSend } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 
 import type { QuotationRequestStatusV1, QuotationRequestV1 } from '@shared/api/quotationRequests';
@@ -73,6 +73,7 @@ export function QuotationRequestActionPanel({
   request,
   t,
   primaryAction,
+  actionError,
   canCancel,
   cancelLoading,
   onCancel,
@@ -80,6 +81,7 @@ export function QuotationRequestActionPanel({
   request: QuotationRequestV1;
   t: TFn;
   primaryAction: PrimaryAction;
+  actionError?: string;
   canCancel: boolean;
   cancelLoading: boolean;
   onCancel: () => void;
@@ -98,9 +100,9 @@ export function QuotationRequestActionPanel({
           : 'quotationRequests.closedRequest';
 
   return (
-    <Paper withBorder p={0} className="rfq-action-panel">
+    <Paper component="section" withBorder p={0} className="rfq-action-panel" aria-labelledby="rfq-next-action-title">
       <div className="rfq-panel-head">
-        <Text fw={700}>{t('quotationRequests.nextAction')}</Text>
+        <Text id="rfq-next-action-title" fw={700}>{t('quotationRequests.nextAction')}</Text>
         <Badge color={rfqStatusColor(request.status)} variant="light">
           {t(`quotationRequests.status.${request.status}` as never)}
         </Badge>
@@ -134,8 +136,9 @@ export function QuotationRequestActionPanel({
       )}
 
       <div className="rfq-action-body">
-        <Stack gap="sm">
+        <Stack gap="sm" className="rfq-action-stack">
           <Button
+            className="rfq-primary-action"
             fullWidth
             leftSection={primaryAction.icon}
             loading={primaryAction.loading}
@@ -145,8 +148,19 @@ export function QuotationRequestActionPanel({
           >
             {primaryAction.label}
           </Button>
-          <Text size="xs" c="dimmed">{t(hintKey)}</Text>
+          <Text size="xs" c="dimmed" className="rfq-action-hint">{t(hintKey)}</Text>
+          {actionError ? (
+            <Alert
+              className="rfq-action-error"
+              color="red"
+              icon={<IconAlertTriangle size={16} />}
+              title={t('quotationRequests.actionError')}
+            >
+              {actionError}
+            </Alert>
+          ) : null}
           <Button
+            className="rfq-cancel-action"
             fullWidth
             color="red"
             variant="light"
@@ -160,5 +174,29 @@ export function QuotationRequestActionPanel({
         </Stack>
       </div>
     </Paper>
+  );
+}
+
+export function QuotationRequestMobileActionBar({
+  primaryAction,
+  ariaLabel,
+}: {
+  primaryAction: PrimaryAction;
+  ariaLabel: string;
+}) {
+  if (primaryAction.isTerminal) return null;
+
+  return (
+    <div className="rfq-mobile-action-bar" role="region" aria-label={ariaLabel}>
+      <Button
+        fullWidth
+        leftSection={primaryAction.icon}
+        loading={primaryAction.loading}
+        disabled={primaryAction.disabled}
+        onClick={primaryAction.onClick}
+      >
+        {primaryAction.label}
+      </Button>
+    </div>
   );
 }

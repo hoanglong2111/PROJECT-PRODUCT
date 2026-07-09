@@ -20,13 +20,15 @@ export function Metric({
   value,
   valueClassName,
 }: MetricProps) {
-  const classes = ['metric-card', className].filter(Boolean).join(' ');
+  const classes = ['metric-card', 'kbfe-surface-wash', 'kbfe-surface-wash--emphasis', className]
+    .filter(Boolean)
+    .join(' ');
   const displayValue = format && typeof value === 'number'
     ? <NumberFormatter value={value} thousandSeparator />
     : value || '-';
 
   return (
-    <Paper withBorder p="md" className={classes}>
+    <Paper withBorder p="md" className={classes} data-surface-tone={color}>
       <Group justify="space-between" align="flex-start" wrap="nowrap">
         <div>
           <Text className="metric-label" size="xs" fw={700} lts="0.05em" tt="uppercase" mb={4}>

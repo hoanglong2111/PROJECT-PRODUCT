@@ -275,7 +275,12 @@ export function QuotationRequestListView({
 
 function Metric({ color, icon, label, value }: { color: 'blue' | 'cyan' | 'orange'; icon: ReactNode; label: string; value: number }) {
   return (
-    <Paper withBorder p="md" className="metric-card rfq-metric-card">
+    <Paper
+      withBorder
+      p="md"
+      className="metric-card rfq-metric-card kbfe-surface-wash kbfe-surface-wash--emphasis"
+      data-surface-tone={color}
+    >
       <div>
         <Text className="metric-label" size="xs" fw={700} tt="uppercase" mb={4}>
           {label}

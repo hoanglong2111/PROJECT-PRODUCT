@@ -67,30 +67,11 @@
   box-shadow: var(--kbfe-shadow-md);
 }
 
-.dashboard-header {
-  padding: 0.25rem 0 0.125rem;
-}
-
-.dashboard-header .mantine-Title-root {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.dashboard-header-icon,
 .dashboard-mini-icon {
   display: grid;
   place-items: center;
   flex: 0 0 auto;
   border-radius: var(--kbfe-radius-md);
-}
-
-.dashboard-header-icon {
-  width: 2.25rem;
-  height: 2.25rem;
-  border: 1px solid var(--kbfe-icon-border);
-  color: var(--kbfe-icon-color);
-  background: linear-gradient(135deg, color-mix(in srgb, var(--kbfe-primary-color) 18%, var(--kbfe-surface-elevated)), var(--kbfe-icon-background));
 }
 
 .dashboard-mini-icon {

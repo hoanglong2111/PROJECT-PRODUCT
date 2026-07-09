@@ -1,5 +1,5 @@
 import { Alert, Badge, Stack } from '@mantine/core';
-import { IconAlertCircle } from '@tabler/icons-react';
+import { IconAlertCircle, IconDatabase } from '@tabler/icons-react';
 
 import type { ChargeCode } from '@shared/api/chargeCodes';
 import type { ContainerType } from '@shared/api/containerTypes';
@@ -53,6 +53,7 @@ export function MasterData() {
   return (
     <Stack gap="lg">
       <PageHeader
+        icon={<IconDatabase size={20} />}
         title={t('masterData.title')}
         subtitle={t('masterData.subtitle')}
         actions={!canManageMasterData && (

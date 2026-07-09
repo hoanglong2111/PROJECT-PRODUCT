@@ -1,5 +1,5 @@
 import { Button, Stack } from '@mantine/core';
-import { IconPlus } from '@tabler/icons-react';
+import { IconPlus, IconReceipt2 } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -8,7 +8,6 @@ import { fetchQuotationV1, fetchQuotationsV1, type QuotationV1 } from '@shared/a
 import { fetchQuotationRequest, fetchQuotationRequests } from '@shared/api/quotationRequests';
 import { PageHeader } from '@shared/components/PageHeader';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
-import { WorkbenchHeader } from '@shared/components/WorkbenchHeader';
 import { queryKeys } from '@shared/api/queryKeys';
 import { useI18n } from '@shared/i18n';
 import { buildTabCounts } from '@shared/lib/tabCounts';
@@ -232,6 +231,7 @@ export function Quotations() {
           className="quotations-page-header"
           titleClassName="quotations-page-title"
           actionsClassName="quotations-page-actions"
+          icon={<IconReceipt2 size={20} />}
           title={t('quotations.title')}
           subtitle={t('quotations.subtitle')}
           actions={
@@ -245,12 +245,7 @@ export function Quotations() {
             </Button>
           }
         />
-      ) : (
-        <WorkbenchHeader
-          className="quotations-subheader"
-          onBack={closeWorkbench}
-        />
-      )}
+      ) : null}
 
       {isCreateFromRfq && rfqQuery.isLoading ? (
         <PageLoading title={t('quotations.formTitle')} description={t('quotationRequests.loadingDescription')} />
@@ -275,6 +270,7 @@ export function Quotations() {
         />
       ) : selectedQuotation ? (
         <QuotationDetail
+          onBack={closeWorkbench}
           quotation={quotationDetailQuery.data ?? selectedQuotation}
           onRevise={openReviseForm}
           onInspectVersion={openQuotation}

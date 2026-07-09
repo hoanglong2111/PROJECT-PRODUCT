@@ -1,4 +1,5 @@
 import { Stack } from '@mantine/core';
+import { IconTruckDelivery } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -6,7 +7,6 @@ import { useSearchParams } from 'react-router-dom';
 import { FlowContextBanner } from '@shared/components/FlowContextBanner';
 import { PageHeader } from '@shared/components/PageHeader';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
-import { WorkbenchHeader } from '@shared/components/WorkbenchHeader';
 import { fetchDeliveryOrders } from '@shared/api/logistics';
 import { queryKeys } from '@shared/api/queryKeys';
 import { useEntityParam } from '@shared/hooks/useEntityParam';
@@ -184,10 +184,12 @@ export function DeliveryOrders() {
   return (
     <Stack gap="md">
       {!selectedDeliveryOrder ? (
-        <PageHeader title={t('deliveryOrders.title')} subtitle={t('deliveryOrders.subtitle')} />
-      ) : (
-        <WorkbenchHeader onBack={closeDetail} />
-      )}
+        <PageHeader
+          icon={<IconTruckDelivery size={20} />}
+          title={t('deliveryOrders.title')}
+          subtitle={t('deliveryOrders.subtitle')}
+        />
+      ) : null}
 
       {focusedDo || focusedPo ? (
         <FlowContextBanner

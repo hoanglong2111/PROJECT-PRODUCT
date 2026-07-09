@@ -1,0 +1,152 @@
+/* ==========================================================================
+   Ambient Gradient Surface System
+   --------------------------------------------------------------------------
+   A single "ambient radial gradient wash" recipe shared by every elevated
+   surface in the app. It exists so the same gradient is NOT copy-pasted into
+   PageHeader, feature heroes and per-module CSS. One accent color per surface,
+   one light source (0% 0%), one fade-out. Tiers only tune the ratios.
+
+   FOUR TIERS (apply exactly one via a --<tier> modifier class):
+     • hero      wash 10% · base 3% · border 16% · shadow 36% — page header,
+                 detail hero, form hero. May carry a left accent bar.
+     • emphasis  wash  6% · base 2% · border 14% · shadow 24% — real KPI/metric,
+                 action panel, selected/active card, risk panel. No accent bar.
+                 Keep ~1–3 emphasis groups per viewport, no more.
+     • soft      wash  3% · base 1% · border  8% · no outer shadow — summary
+                 tile, standalone empty state, loading/readiness/info panel.
+     • neutral   no wash — this is the DEFAULT token state; used implicitly by
+                 everything below and never needs the class.
+
+   NEVER apply an ambient wash to (keep them neutral):
+     .dl-filter-panel, .dl-data-panel, table body/row/cell, inputs/select/
+     textarea/date fields, Modal/Drawer/Popover/Menu/Dropdown, global Mantine
+     Paper/Card, nested form sections, toolbar/pagination, skeleton metrics
+     without semantic data. Table headers keep their own neutral linear tint.
+
+   Adoption is always EXPLICIT (class on the element). Never attach these
+   classes to a global selector like .mantine-Paper-root.
+   ========================================================================== */
+
+/* Tone mapping — data-surface-tone remaps the single accent for a surface.
+   Absent / `primary` → primary. Component color aliases resolve here too. */
+[data-surface-tone='primary'] {
+  --kbfe-surface-accent: var(--kbfe-primary-color);
+}
+[data-surface-tone='info'],
+[data-surface-tone='blue'],
+[data-surface-tone='cyan'] {
+  --kbfe-surface-accent: var(--kbfe-status-blue);
+}
+[data-surface-tone='success'],
+[data-surface-tone='green'],
+[data-surface-tone='teal'] {
+  --kbfe-surface-accent: var(--kbfe-status-teal);
+}
+[data-surface-tone='warning'],
+[data-surface-tone='orange'],
+[data-surface-tone='yellow'] {
+  --kbfe-surface-accent: var(--kbfe-status-orange);
+}
+[data-surface-tone='danger'],
+[data-surface-tone='red'] {
+  --kbfe-surface-accent: var(--kbfe-status-red);
+}
+[data-surface-tone='neutral'],
+[data-surface-tone='gray'] {
+  --kbfe-surface-accent: var(--kbfe-status-gray);
+}
+
+/* Shared wash recipe. background is built once from the tier variables:
+   radial ambient wash (single 0% 0% light source, fade to transparent at
+   --wash-reach) over a flat base fill lightly tinted with the accent. */
+.kbfe-surface-wash,
+.dl-page-header,
+.feature-detail-hero,
+.feature-form-hero,
+.rfq-detail-hero.feature-detail-hero .rfq-detail-hero-main {
+  position: relative;
+  border-color: color-mix(
+    in srgb,
+    var(--kbfe-border-primary) calc(100% - var(--kbfe-surface-border-tint)),
+    var(--kbfe-surface-accent) var(--kbfe-surface-border-tint)
+  );
+  background:
+    radial-gradient(
+      circle at 0% 0%,
+      color-mix(in srgb, var(--kbfe-surface-accent) var(--kbfe-surface-wash-strength), transparent),
+      transparent var(--kbfe-surface-wash-reach)
+    ),
+    color-mix(
+      in srgb,
+      var(--kbfe-surface-elevated) calc(100% - var(--kbfe-surface-base-tint)),
+      var(--kbfe-surface-accent) var(--kbfe-surface-base-tint)
+    );
+}
+
+/* Tier ratios — override the variables only. */
+.kbfe-surface-wash--hero,
+.dl-page-header,
+.feature-detail-hero,
+.feature-form-hero,
+.rfq-detail-hero.feature-detail-hero .rfq-detail-hero-main {
+  --kbfe-surface-wash-strength: 10%;
+  --kbfe-surface-base-tint: 3%;
+  --kbfe-surface-border-tint: 16%;
+  --kbfe-surface-shadow-tint: 22%;
+  box-shadow: 0 8px 20px -22px
+    color-mix(in srgb, var(--kbfe-surface-accent) var(--kbfe-surface-shadow-tint), var(--kbfe-shadow-color, #0f172a));
+}
+
+/* Nested hero wash surfaces sit inside their own border, no extra shadow. */
+.rfq-detail-hero.feature-detail-hero .rfq-detail-hero-main {
+  box-shadow: none;
+}
+
+.kbfe-surface-wash--emphasis {
+  --kbfe-surface-wash-strength: 6%;
+  --kbfe-surface-base-tint: 2%;
+  --kbfe-surface-border-tint: 14%;
+  --kbfe-surface-shadow-tint: 16%;
+  box-shadow: 0 6px 16px -24px
+    color-mix(in srgb, var(--kbfe-surface-accent) var(--kbfe-surface-shadow-tint), var(--kbfe-shadow-color, #0f172a));
+}
+
+.kbfe-surface-wash--soft {
+  --kbfe-surface-wash-strength: 3%;
+  --kbfe-surface-base-tint: 1%;
+  --kbfe-surface-border-tint: 8%;
+  box-shadow: none;
+}
+
+/* Optional left accent bar — HERO ONLY (emphasis/soft must not use it). */
+.kbfe-surface-wash--hero.kbfe-surface-accent-bar {
+  overflow: hidden;
+}
+.kbfe-surface-wash--hero.kbfe-surface-accent-bar::after {
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: 1;
+  width: 0.2rem;
+  content: "";
+  pointer-events: none;
+  background: color-mix(in srgb, var(--kbfe-surface-accent) 74%, var(--kbfe-text-primary));
+}
+
+/* Mobile: trim wash reach slightly but keep the same color ratios (no
+   saturation bump to compensate for the smaller area). */
+@media (max-width: 48em) {
+  .kbfe-surface-wash {
+    --kbfe-surface-wash-reach: 34%;
+  }
+}
+
+/* High contrast: no decorative gradient or tinted shadow. Fall back to the
+   elevated surface + strong border; semantics stay carried by text/badges. */
+html[data-kbfe-visual-theme='high-contrast'] .kbfe-surface-wash {
+  border-color: var(--kbfe-border-strong);
+  background: var(--kbfe-surface-elevated);
+  box-shadow: none;
+}
+html[data-kbfe-visual-theme='high-contrast'] .kbfe-surface-wash--hero.kbfe-surface-accent-bar::after {
+  display: none;
+}

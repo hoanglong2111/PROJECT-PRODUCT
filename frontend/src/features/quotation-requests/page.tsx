@@ -1,5 +1,5 @@
 import { Button, Stack } from '@mantine/core';
-import { IconPlus } from '@tabler/icons-react';
+import { IconFileInvoice, IconPlus } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -8,7 +8,6 @@ import { fetchQuotationRequest, fetchQuotationRequests, type QuotationRequestV1 
 import { queryKeys } from '@shared/api/queryKeys';
 import { PageHeader } from '@shared/components/PageHeader';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
-import { WorkbenchHeader } from '@shared/components/WorkbenchHeader';
 import { useI18n } from '@shared/i18n';
 
 import { QuotationRequestDetail } from './components/QuotationRequestDetail';
@@ -76,6 +75,7 @@ export function QuotationRequests() {
           className="quotations-page-header"
           titleClassName="quotations-page-title"
           actionsClassName="quotations-page-actions"
+          icon={<IconFileInvoice size={20} />}
           title={t('quotationRequests.title')}
           subtitle={t('quotationRequests.subtitle')}
           actions={
@@ -84,9 +84,7 @@ export function QuotationRequests() {
             </Button>
           }
         />
-      ) : (
-        <WorkbenchHeader className="quotations-subheader" onBack={closeWorkbench} />
-      )}
+      ) : null}
 
       {createRequested ? (
         copyFromRequestId && copySourceQuery.isLoading ? (

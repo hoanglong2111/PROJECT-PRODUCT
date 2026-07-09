@@ -68,7 +68,13 @@ export function PageLoading({
 
       <SimpleGrid cols={{ base: 1, sm: metricCount }}>
         {Array.from({ length: metricCount }).map((_, index) => (
-          <Paper key={index} withBorder p="md" className="metric-card">
+          <Paper
+            key={index}
+            withBorder
+            p="md"
+            className="metric-card kbfe-surface-wash kbfe-surface-wash--soft"
+            data-surface-tone="neutral"
+          >
             <Skeleton height={14} width="45%" mb="sm" />
             <Skeleton height={32} width="32%" />
           </Paper>
@@ -135,7 +141,12 @@ export function PageError({ actionLabel, description, error, onRetry, title }: P
   const { t } = useI18n();
 
   return (
-    <Paper withBorder p="lg" className="page-state-panel page-state-panel-error">
+    <Paper
+      withBorder
+      p="lg"
+      className="page-state-panel page-state-panel-error kbfe-surface-wash kbfe-surface-wash--soft"
+      data-surface-tone="danger"
+    >
       <Stack gap="md">
         <Group align="flex-start" gap="sm" wrap="nowrap">
           <ThemeIcon variant="light" size={42} radius="md" className="kbfe-error-icon">

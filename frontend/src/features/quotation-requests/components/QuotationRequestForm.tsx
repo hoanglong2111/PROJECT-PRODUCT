@@ -1,7 +1,8 @@
-import { Alert, Button, Group, NumberInput, Select, SimpleGrid, Stack, Text, Textarea, TextInput } from '@mantine/core';
-import { IconAlertTriangle, IconDeviceFloppy, IconX } from '@tabler/icons-react';
+import { Alert, Button, Group, NumberInput, Paper, Select, SimpleGrid, Stack, Text, Textarea, TextInput } from '@mantine/core';
+import { IconAlertTriangle, IconDeviceFloppy, IconFileInvoice } from '@tabler/icons-react';
 
 import type { QuotationRequestV1 } from '@shared/api/quotationRequests';
+import { BackActionButton } from '@shared/components/BackActionButton';
 import { DateField } from '@shared/components/DateField';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { FormSection } from '@shared/components/order-intake';
@@ -48,24 +49,27 @@ export function QuotationRequestForm({ onCancel, onCreated, source }: Props) {
       }}
     >
       <Stack gap="sm">
-        <Group justify="space-between" align="flex-start">
-          <div>
-            <Text fw={700} size="lg">
-              {t('quotationRequests.formTitle')}
-            </Text>
-            <Text c="dimmed" size="sm">
-              {t('quotationRequests.formSubtitle')}
-            </Text>
-            {source ? (
-              <Text c="dimmed" size="xs" mt={2}>
-                {t('quotationRequests.copiedFrom', { rfqNo: source.rfq_no })}
-              </Text>
-            ) : null}
+        <Paper withBorder p="sm" className="feature-form-hero">
+          <div className="feature-hero-nav">
+            <BackActionButton label={t('common.back')} onClick={onCancel} />
           </div>
-          <Group gap="xs">
-            <Button type="button" variant="subtle" leftSection={<IconX size={16} />} onClick={onCancel}>
-              {t('common.cancel')}
-            </Button>
+          <Group justify="space-between" align="flex-start" gap="md">
+            <Group gap="sm" align="flex-start" wrap="nowrap" className="feature-detail-heading">
+              <div className="feature-hero-icon" aria-hidden="true"><IconFileInvoice size={19} /></div>
+              <div className="feature-detail-copy">
+                <Text fw={700} size="lg">
+                  {t('quotationRequests.formTitle')}
+                </Text>
+                <Text c="dimmed" size="sm">
+                  {t('quotationRequests.formSubtitle')}
+                </Text>
+                {source ? (
+                  <Text c="dimmed" size="xs" mt={2}>
+                    {t('quotationRequests.copiedFrom', { rfqNo: source.rfq_no })}
+                  </Text>
+                ) : null}
+              </div>
+            </Group>
             <Button
               type="submit"
               loading={createMutation.isPending || masterData.isLoading}
@@ -75,7 +79,7 @@ export function QuotationRequestForm({ onCancel, onCreated, source }: Props) {
               {t('common.save')}
             </Button>
           </Group>
-        </Group>
+        </Paper>
 
         {createMutation.isError ? (
           <Alert color="red" icon={<IconAlertTriangle size={16} />} title={t('quotationRequests.createError')}>

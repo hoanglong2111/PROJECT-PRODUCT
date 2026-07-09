@@ -10,15 +10,15 @@ import {
   Title,
 } from '@mantine/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { IconAnchor, IconCheck, IconClock, IconPlus, IconShield, IconX } from '@tabler/icons-react';
+import { IconAnchor, IconCheck, IconClock, IconPlus, IconShield, IconShip } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import { DateField } from '@shared/components/DateField';
+import { BackActionButton } from '@shared/components/BackActionButton';
 import { FieldPair } from '@shared/components/FieldPair';
 import { Metric } from '@shared/components/Metric';
 import { PageHeader } from '@shared/components/PageHeader';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
-import { WorkbenchHeader } from '@shared/components/WorkbenchHeader';
 import { fetchShipments, createShipment } from '@shared/api/logistics';
 import { fetchDeliveryOrdersV1 } from '@shared/api/deliveryOrders';
 import {
@@ -377,6 +377,7 @@ export function Shipments() {
     <Stack gap="lg">
       {workbench === 'list' ? (
         <PageHeader
+          icon={<IconShip size={20} />}
           title={t('shipments.title')}
           subtitle={t('shipments.subtitle')}
           actions={
@@ -385,9 +386,7 @@ export function Shipments() {
             </Button>
           }
         />
-      ) : (
-        <WorkbenchHeader onBack={closeWorkbench} />
-      )}
+      ) : null}
 
       {workbench === 'list' ? (
         <SimpleGrid cols={{ base: 1, sm: 4 }} className="dl-metrics-strip">
@@ -399,8 +398,11 @@ export function Shipments() {
       ) : null}
 
       {workbench === 'create' ? (
-        <Paper withBorder p="sm" className="shipment-create-panel">
+        <Paper withBorder p="sm" className="shipment-create-panel feature-form-hero">
           <Stack gap="sm">
+            <div className="feature-hero-nav">
+              <BackActionButton label={t('common.back')} onClick={closeWorkbench} />
+            </div>
             <Group justify="space-between" align="flex-start" gap="sm" className="shipment-create-command">
               <div>
                 <Title order={3}>{t('shipments.create')}</Title>
@@ -409,9 +411,6 @@ export function Shipments() {
                 </Text>
               </div>
               <Group gap="xs">
-                <Button variant="subtle" onClick={closeWorkbench} leftSection={<IconX size={16} />}>
-                  {t('common.cancel')}
-                </Button>
                 <Button
                   onClick={handleCreateShipment}
                   leftSection={<IconPlus size={16} />}
@@ -527,6 +526,7 @@ export function Shipments() {
 
       {workbench === 'detail' && selectedShipment ? (
         <ShipmentDetailView
+          onBack={closeWorkbench}
           shipment={selectedShipment}
           isMilestoneSaving={milestoneMutation.isPending}
           onMarkMilestone={(milestoneCode, payload) => {

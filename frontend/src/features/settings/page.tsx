@@ -181,6 +181,7 @@ export function Settings() {
   return (
     <Stack gap="lg">
       <PageHeader
+        icon={<IconSettings size={20} />}
         title={t('settings.title')}
         subtitle={t('settings.subtitle')}
         actions={
