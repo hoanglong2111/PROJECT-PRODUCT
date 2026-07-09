@@ -1,7 +1,8 @@
-import { ActionIcon, Button, Group, Loader, Menu, Paper, Text, TextInput, Tooltip } from '@mantine/core';
-import { IconChevronDown, IconPlus, IconRefresh, IconSearch } from '@tabler/icons-react';
+import { Button, Group, Loader, Menu, Paper, Text, TextInput } from '@mantine/core';
+import { IconChevronDown, IconPlus, IconSearch } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 
+import { ClearFiltersButton } from '@shared/components/ClearFiltersButton';
 import { FilterSegment } from '@shared/components/FilterSegment';
 import { StatusDot } from '@shared/components/StatusDot';
 import { useI18n } from '@shared/i18n';
@@ -86,13 +87,12 @@ export function MasterDataToolbar({
         {showRightActions ? (
           <div className="md-toolbar-inline-actions">
             <Group gap="xs" wrap="nowrap">
-              {hasActiveFilters ? (
-                <Tooltip label={t('masterData.clearFilters')}>
-                  <ActionIcon variant="subtle" c="var(--kbfe-text-secondary)" size="lg" onClick={onClear} aria-label={t('masterData.clearFilters')}>
-                    <IconRefresh size={16} />
-                  </ActionIcon>
-                </Tooltip>
-              ) : null}
+              <ClearFiltersButton
+                hasActiveFilters={hasActiveFilters}
+                label={t('masterData.clearFilters')}
+                onClick={onClear}
+                variant="icon"
+              />
               {canManage ? (
                 addMenu && addMenu.length > 0 ? (
                   <Menu position="bottom-end" transitionProps={{ transition: 'pop' }} withinPortal>

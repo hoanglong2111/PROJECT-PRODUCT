@@ -1,5 +1,6 @@
 import type { QuotationRequestLineV1, QuotationRequestStatusV1, QuotationRequestV1 } from '@shared/api/quotationRequests';
 import type { QuotationV1 } from '@shared/api/quotations';
+import { getStatusBadgeConfig } from '@shared/components/StatusBadge';
 import type { MessageKey } from '@shared/i18n';
 
 export type QuotationRequestTab = 'all' | 'submitted' | 'received' | 'quoted' | 'confirmed' | 'cancelled';
@@ -24,21 +25,9 @@ export const quotationRequestTabItems: { value: QuotationRequestTab; labelKey: M
   { value: 'cancelled', labelKey: 'quotationRequests.tabCancelled' },
 ];
 
+/** Delegates to the shared status-color map so RFQ badges match every other status badge in the app. */
 export function rfqStatusColor(status: QuotationRequestStatusV1): string {
-  switch (status) {
-    case 'SUBMITTED':
-      return 'blue';
-    case 'RECEIVED':
-      return 'cyan';
-    case 'QUOTED':
-      return 'orange';
-    case 'CONFIRMED':
-      return 'green';
-    case 'CANCELLED':
-      return 'gray';
-    default:
-      return 'gray';
-  }
+  return getStatusBadgeConfig(status).color;
 }
 
 export const rfqModeOptions = [

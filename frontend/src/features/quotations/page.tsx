@@ -11,6 +11,7 @@ import { PageError, PageLoading } from '@shared/components/PageFeedback';
 import { WorkbenchHeader } from '@shared/components/WorkbenchHeader';
 import { queryKeys } from '@shared/api/queryKeys';
 import { useI18n } from '@shared/i18n';
+import { buildTabCounts } from '@shared/lib/tabCounts';
 
 import { QuotationDetail } from './components/QuotationDetail';
 import { QuotationForm } from './components/QuotationForm';
@@ -19,7 +20,6 @@ import { RfqQuotationPickerModal } from './components/RfqQuotationPickerModal';
 import {
   quotationStatusTabs,
   quotationTabItems,
-  type QuotationTab,
 } from './model/quotationModel';
 import { useQuotationsUiStore } from './model/quotationsUiStore';
 
@@ -103,17 +103,11 @@ export function Quotations() {
 
   const tabCounts = useMemo(
     () =>
-      quotationTabItems.reduce<Record<QuotationTab, number>>(
-        (counts, tab) => {
-          if (tab.value === 'all') {
-            counts[tab.value] = standaloneQuotations.length;
-            return counts;
-          }
-          const statuses = quotationStatusTabs[tab.value];
-          counts[tab.value] = standaloneQuotations.filter((quotation) => statuses.includes(quotation.status)).length;
-          return counts;
-        },
-        { all: 0, draft: 0, pending: 0, confirmed: 0, rejected: 0 },
+      buildTabCounts(
+        standaloneQuotations,
+        quotationTabItems.map((tab) => tab.value),
+        quotationStatusTabs,
+        (quotation) => quotation.status,
       ),
     [standaloneQuotations],
   );

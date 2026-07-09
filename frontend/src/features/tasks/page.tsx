@@ -1,57 +1,31 @@
-import {
-  ActionIcon,
-  Badge,
-  Button,
-  Drawer,
-  Group,
-  Loader,
-  Paper,
-  Progress,
-  ScrollArea,
-  Select,
-  SimpleGrid,
-  Stack,
-  Table,
-  Text,
-  TextInput,
-  Tooltip,
-  Tabs,
-} from '@mantine/core';
+import { ActionIcon, Badge, Button, Drawer, Group, SimpleGrid, Stack, Tabs } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
-import { useDisclosure } from '@mantine/hooks';
-import { IconAlertTriangle, IconArrowLeft, IconChecklist, IconClock, IconEye, IconGitBranch, IconPlus, IconSearch, IconUserCheck, IconX } from '@tabler/icons-react';
+import { IconAlertTriangle, IconArrowLeft, IconChecklist, IconClock, IconGitBranch, IconPlus, IconUserCheck } from '@tabler/icons-react';
 import dayjs from 'dayjs';
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
-import { EmptyState } from '@shared/components/EmptyState';
-import { FilterSegment } from '@shared/components/FilterSegment';
-import { HeaderLabel } from '@shared/components/HeaderLabel';
-import { ListPagination, useListPagination } from '@shared/components/ListPagination';
+import { fetchLogisticsTasks, type LogisticsTask } from '@shared/api/logistics';
+import { queryKeys } from '@shared/api/queryKeys';
+import { FlowContextBanner } from '@shared/components/FlowContextBanner';
+import { useListPagination } from '@shared/components/ListPagination';
 import { Metric } from '@shared/components/Metric';
 import { ModalTitle } from '@shared/components/ModalTitle';
-import { PageHeader } from '@shared/components/PageHeader';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
-import { StatusBadge } from '@shared/components/StatusBadge';
-import {
-  fetchLogisticsTasks,
-  type LogisticsTask,
-  type Priority,
-  type TaskRole,
-  type TaskStatus,
-} from '@shared/api/logistics';
-import { queryKeys } from '@shared/api/queryKeys';
+import { PageHeader } from '@shared/components/PageHeader';
 import { useEntityParam } from '@shared/hooks/useEntityParam';
 import { useI18n } from '@shared/i18n';
-import { MILESTONE_CODES } from '@shared/api/taskTemplates';
-import { departmentLabel, milestoneLabel, priorityColor } from './model/tasksModel';
-import { useTasksUiStore } from './model/tasksUiStore';
+
 import { Gd1PoTasksBoard } from './components/Gd1PoTasksBoard';
 import { TaskDetail } from './components/TaskDetail';
 import { TaskFormPanel } from './components/TaskFormPanel';
+import { TaskListTable } from './components/TaskListTable';
+import { TasksFilterPanel } from './components/TasksFilterPanel';
+import { useTaskDrawers } from './hooks/useTaskDrawers';
+import { useTasksUiStore } from './model/tasksUiStore';
 
 export function Tasks() {
-  const { priorityLabel, statusLabel, t, taskRoleLabel } = useI18n();
+  const { t } = useI18n();
   const today = dayjs().startOf('day');
   const isOverdue = (task: LogisticsTask) => task.status !== 'COMPLETED' && dayjs(task.due_date).isBefore(today, 'day');
   const [searchParams] = useSearchParams();
@@ -59,76 +33,28 @@ export function Tasks() {
   const focusedPo = searchParams.get('po');
   const { value: focusedDo } = useEntityParam('do');
   const focusedContext = focusedPo || focusedDo;
-  const { close: closeTaskParam, open: openTaskParam, value: focusedTask } = useEntityParam('task');
-  const [selectedTask, setSelectedTask] = useState<LogisticsTask | null>(null);
-  const [taskFormOpened, taskFormHandlers] = useDisclosure(false);
-  const [editingTask, setEditingTask] = useState<LogisticsTask | null>(null);
-  const [returnToTask, setReturnToTask] = useState<LogisticsTask | null>(null);
-  const [closeRequestToken, setCloseRequestToken] = useState(0);
-  const requestTaskFormClose = () => setCloseRequestToken((n) => n + 1);
-  const openCreateTask = () => {
-    setEditingTask(null);
-    setReturnToTask(null);
-    taskFormHandlers.open();
-  };
-  const openEditTask = (task: LogisticsTask) => {
-    setReturnToTask(selectedTask);
-    setSelectedTask(null);
-    closeTaskParam();
-    setEditingTask(task);
-    taskFormHandlers.open();
-  };
-  const closeTaskForm = () => {
-    taskFormHandlers.close();
-    setEditingTask(null);
-    if (returnToTask) {
-      setSelectedTask(returnToTask);
-      openTaskParam(returnToTask.task_id);
-      setReturnToTask(null);
-    }
-  };
+
   const search = useTasksUiStore((s) => s.search);
   const statusFilter = useTasksUiStore((s) => s.statusFilter);
   const roleFilter = useTasksUiStore((s) => s.roleFilter);
   const priorityFilter = useTasksUiStore((s) => s.priorityFilter);
   const milestoneFilter = useTasksUiStore((s) => s.milestoneFilter);
   const overdueOnly = useTasksUiStore((s) => s.overdueOnly);
-  const setSearch = useTasksUiStore((s) => s.setSearch);
-  const setStatusFilter = useTasksUiStore((s) => s.setStatusFilter);
   const setRoleFilter = useTasksUiStore((s) => s.setRoleFilter);
-  const setPriorityFilter = useTasksUiStore((s) => s.setPriorityFilter);
-  const setMilestoneFilter = useTasksUiStore((s) => s.setMilestoneFilter);
-  const setOverdueOnly = useTasksUiStore((s) => s.setOverdueOnly);
 
   const tasksQuery = useQuery({
     queryKey: queryKeys.tasks,
     queryFn: fetchLogisticsTasks,
   });
   const tasks = tasksQuery.data ?? [];
-  const isFetching = tasksQuery.isFetching;
+
+  const drawers = useTaskDrawers(tasks);
 
   useEffect(() => {
     if (roleParam) {
       setRoleFilter(roleParam as any);
     }
   }, [roleParam, setRoleFilter]);
-
-  useEffect(() => {
-    if (!focusedTask) {
-      setSelectedTask(null);
-      return;
-    }
-
-    if (tasks.length === 0) {
-      return;
-    }
-
-    const matchedTask = tasks.find((task) => task.task_id === focusedTask);
-
-    if (matchedTask) {
-      setSelectedTask(matchedTask);
-    }
-  }, [focusedTask, tasks]);
 
   const filteredTasks = useMemo(() => {
     const normalizedSearch = search.toLowerCase().trim();
@@ -168,74 +94,11 @@ export function Tasks() {
     });
   }, [focusedContext, isOverdue, milestoneFilter, overdueOnly, priorityFilter, roleFilter, search, statusFilter, tasks]);
 
-  const {
-    page,
-    pageCount,
-    pageEnd,
-    pageStart,
-    setPage,
-    visibleItems: visibleTasks,
-  } = useListPagination(filteredTasks, [focusedContext, milestoneFilter, overdueOnly, priorityFilter, roleFilter, search, statusFilter]);
-
-  const clearFilters = useTasksUiStore((s) => s.clearFilters);
+  const pagination = useListPagination(filteredTasks, [focusedContext, milestoneFilter, overdueOnly, priorityFilter, roleFilter, search, statusFilter]);
 
   const blockedCount = tasks.filter((task) => task.status === 'BLOCKED').length;
   const overdueCount = tasks.filter(isOverdue).length;
   const completionRate = tasks.length > 0 ? Math.round((tasks.filter((task) => task.status === 'COMPLETED').length / tasks.length) * 100) : 0;
-  const hasActiveFilters =
-    search.trim().length > 0 ||
-    statusFilter !== 'all' ||
-    roleFilter !== 'all' ||
-    priorityFilter !== 'all' ||
-    milestoneFilter !== 'all' ||
-    overdueOnly;
-  const statusOptions: Array<{ label: string; value: TaskStatus | 'all' }> = [
-    { label: t('common.allStatuses'), value: 'all' },
-    { label: statusLabel('PENDING'), value: 'PENDING' },
-    { label: statusLabel('TODO'), value: 'TODO' },
-    { label: statusLabel('IN_PROGRESS'), value: 'IN_PROGRESS' },
-    { label: statusLabel('WAITING'), value: 'WAITING' },
-    { label: statusLabel('BLOCKED'), value: 'BLOCKED' },
-    { label: statusLabel('COMPLETED'), value: 'COMPLETED' },
-    { label: statusLabel('CANCELLED'), value: 'CANCELLED' },
-  ];
-  const roleOptions: Array<{ label: string; value: TaskRole | 'all' }> = [
-    { label: t('common.allRoles'), value: 'all' },
-    { label: taskRoleLabel('BUYER'), value: 'BUYER' },
-    { label: taskRoleLabel('LOGISTICS_PLANNER'), value: 'LOGISTICS_PLANNER' },
-    { label: taskRoleLabel('PIC_MANAGER'), value: 'PIC_MANAGER' },
-    { label: taskRoleLabel('PORT_OFFICER'), value: 'PORT_OFFICER' },
-    { label: taskRoleLabel('CUSTOMS_OFFICER'), value: 'CUSTOMS_OFFICER' },
-    { label: taskRoleLabel('WAREHOUSE_STAFF'), value: 'WAREHOUSE_STAFF' },
-  ];
-  const priorityOptions: Array<{ label: string; value: Priority | 'all' }> = [
-    { label: t('tasks.allPriorities'), value: 'all' },
-    { label: priorityLabel('URGENT'), value: 'URGENT' },
-    { label: priorityLabel('HIGH'), value: 'HIGH' },
-    { label: priorityLabel('MEDIUM'), value: 'MEDIUM' },
-    { label: priorityLabel('LOW'), value: 'LOW' },
-  ];
-  const milestoneOptions = [
-    { label: t('common.all'), value: 'all' },
-    ...Object.entries(MILESTONE_CODES).map(([value, label]) => ({ label, value })),
-  ];
-  const statusCounts = statusOptions.reduce<Record<string, number>>((acc, option) => {
-    acc[option.value] = option.value === 'all' ? tasks.length : tasks.filter((task) => task.status === option.value).length;
-    return acc;
-  }, {});
-
-  const openTask = (task: LogisticsTask) => {
-    setSelectedTask(task);
-    openTaskParam(task.task_id);
-  };
-
-  const closeTaskDetail = () => {
-    setSelectedTask(null);
-    setEditingTask(null);
-    setReturnToTask(null);
-    taskFormHandlers.close();
-    closeTaskParam();
-  };
 
   if (tasksQuery.isError) {
     return (
@@ -260,8 +123,6 @@ export function Tasks() {
     );
   }
 
-
-
   return (
     <Stack gap="lg">
       <PageHeader
@@ -269,7 +130,7 @@ export function Tasks() {
         subtitle={t('tasks.subtitle')}
         actions={
           <>
-          <Button leftSection={<IconPlus size={16} />} onClick={openCreateTask}>
+          <Button leftSection={<IconPlus size={16} />} onClick={drawers.openCreateTask}>
             {t('tasks.createTask')}
           </Button>
           <Badge leftSection={<IconUserCheck size={14} />} size="lg" variant="light">
@@ -292,16 +153,11 @@ export function Tasks() {
         <Tabs.Panel value="closure">
           <Stack gap="lg">
             {focusedContext ? (
-              <Paper withBorder p="md" className="flow-context">
-                <Group justify="space-between">
-                  <Text size="sm">
-                    {t('tasks.context', { kind: 'PO', id: focusedContext })}
-                  </Text>
-                  <Button component={Link} to={`/purchase-orders?po=${focusedContext}`} size="xs" variant="light">
-                    {t('entityLink.openPo')}
-                  </Button>
-                </Group>
-              </Paper>
+              <FlowContextBanner
+                message={t('tasks.context', { kind: 'PO', id: focusedContext })}
+                linkTo={`/purchase-orders?po=${focusedContext}`}
+                linkLabel={t('entityLink.openPo')}
+              />
             ) : null}
 
             <SimpleGrid cols={{ base: 1, sm: 3 }} className="dl-metrics-strip">
@@ -310,195 +166,21 @@ export function Tasks() {
               <Metric label={t('tasks.overdue')} value={overdueCount} color="orange" icon={<IconClock size={22} />} />
             </SimpleGrid>
 
-            <Paper withBorder p="md" className="tasks-filter-panel dl-filter-panel">
-              <Stack gap="md">
-                <div className="dl-filter-head">
-                  <div className="dl-filter-head__control">
-                    <FilterSegment
-                      ariaLabel={t('common.status')}
-                      value={statusFilter}
-                      onChange={(value) => setStatusFilter(value as TaskStatus | 'all')}
-                      options={statusOptions.map((option) => ({
-                        value: option.value,
-                        label: option.label,
-                        count: statusCounts[option.value],
-                        color: option.value === 'BLOCKED' ? 'red' : option.value === 'COMPLETED' ? 'teal' : undefined,
-                      }))}
-                    />
-                  </div>
-                  <div className="dl-filter-result">
-                    {isFetching ? <Loader size="sm" /> : null}
-                    <Text className="tasks-filter-count" size="sm" c="dimmed">
-                      {t('common.shown', { count: filteredTasks.length })}
-                    </Text>
-                    <Button
-                      variant={hasActiveFilters ? 'light' : 'subtle'}
-                      size="compact-sm"
-                      leftSection={<IconX size={16} />}
-                      onClick={clearFilters}
-                      disabled={!hasActiveFilters}
-                    >
-                      {t('common.clear')}
-                    </Button>
-                  </div>
-                </div>
+            <TasksFilterPanel
+              filteredCount={filteredTasks.length}
+              isFetching={tasksQuery.isFetching}
+              tasks={tasks}
+            />
 
-                <SimpleGrid className="tasks-filter-secondary" cols={{ base: 1, sm: 2, lg: 4 }}>
-                  <TextInput
-                    className="tasks-filter-search dl-filter-search kbfe-search-input"
-                    label={t('common.search')}
-                    placeholder={t('tasks.searchPlaceholder')}
-                    leftSection={<IconSearch size={16} />}
-                    value={search}
-                    onChange={(event) => setSearch(event.currentTarget.value)}
-                  />
-                  <Select
-                    label={t('common.role')}
-                    value={roleFilter}
-                    onChange={(value) => setRoleFilter((value ?? 'all') as TaskRole | 'all')}
-                    data={roleOptions}
-                  />
-                  <Select
-                    label={t('forms.priority')}
-                    value={priorityFilter}
-                    onChange={(value) => setPriorityFilter((value ?? 'all') as Priority | 'all')}
-                    data={priorityOptions}
-                  />
-                  <Select
-                    label={t('tasks.milestone')}
-                    value={milestoneFilter}
-                    onChange={(value) => setMilestoneFilter(value ?? 'all')}
-                    data={milestoneOptions}
-                  />
-                </SimpleGrid>
-
-                <Group className="tasks-filter-toggles" gap="xs" wrap="wrap">
-                  <Button
-                    className="tasks-filter-toggle dl-toggle mr-2"
-                    variant={overdueOnly ? 'light' : 'subtle'}
-                    color={overdueOnly ? 'orange' : 'gray'}
-                    onClick={() => setOverdueOnly(!overdueOnly)}
-                    aria-pressed={overdueOnly}
-                  >
-                    {t('tasks.filterOverdueOnly')}
-                  </Button>
-                </Group>
-              </Stack>
-            </Paper>
-
-            <Paper withBorder p={0} className="dl-data-panel">
-              <ScrollArea className="data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>
-                <Table miw={1320} verticalSpacing="sm" highlightOnHover>
-                  <Table.Thead>
-                    <Table.Tr>
-                      <Table.Th>{t('common.task')}</Table.Th>
-                      <Table.Th>
-                        <HeaderLabel label="DO" hint={t('glossary.do')} />
-                      </Table.Th>
-                      <Table.Th>{t('common.role')}</Table.Th>
-                      <Table.Th>{t('common.assignee')}</Table.Th>
-                      <Table.Th>{t('forms.priority')}</Table.Th>
-                      <Table.Th>{t('common.status')}</Table.Th>
-                      <Table.Th>{t('tasks.progress')}</Table.Th>
-                      <Table.Th>{t('tasks.dueDate')}</Table.Th>
-                      <Table.Th>
-                        <HeaderLabel label={t('common.blocker')} hint={t('glossary.blocker')} />
-                      </Table.Th>
-                      <Table.Th />
-                    </Table.Tr>
-                  </Table.Thead>
-                  <Table.Tbody>
-                    {visibleTasks.map((task) => (
-                      <Table.Tr
-                        key={task.task_id}
-                        className="task-list-row"
-                        data-selected={(selectedTask?.task_id === task.task_id || focusedTask === task.task_id) || undefined}
-                        data-overdue={isOverdue(task) || undefined}
-                      >
-                        <Table.Td className="table-cell-truncate" style={{ maxWidth: '20rem' }}>
-                          <Text fw={700} lineClamp={1} title={task.task_name}>{task.task_name}</Text>
-                          <Group gap={6} mt={2}>
-                            <Text size="xs" c="dimmed">
-                              {task.task_id}
-                            </Text>
-                            {task.template?.milestone_code ? (
-                              <Badge size="xs" variant="light" color="grape">
-                                {milestoneLabel(task.template.milestone_code)}
-                              </Badge>
-                            ) : null}
-                            {task.template?.department ? (
-                              <Badge size="xs" variant="light" color="blue">
-                                {departmentLabel(task.template.department)}
-                              </Badge>
-                            ) : null}
-                          </Group>
-                        </Table.Td>
-                        <Table.Td>
-                          <Text size="sm" fw={600}>
-                            {task.do_number}
-                          </Text>
-                        </Table.Td>
-                        <Table.Td>{taskRoleLabel(task.role)}</Table.Td>
-                        <Table.Td>
-                          <Text size="sm" fw={600}>
-                            {task.assignee.name}
-                          </Text>
-                          <Text size="xs" c="dimmed">
-                            {task.assignee.department}
-                          </Text>
-                        </Table.Td>
-                        <Table.Td>
-                          <Badge color={priorityColor[task.priority]} variant="light">
-                            {priorityLabel(task.priority)}
-                          </Badge>
-                        </Table.Td>
-                        <Table.Td>
-                          <StatusBadge status={task.status} />
-                        </Table.Td>
-                        <Table.Td>
-                          <Progress value={task.progress} color={task.progress === 100 ? 'teal' : 'blue'} size="xs" mb={4} />
-                          <Text size="xs" c="dimmed" className="tabular-nums">
-                            {task.progress}%
-                          </Text>
-                        </Table.Td>
-                        <Table.Td>
-                          <Text className="task-due-date" c={isOverdue(task) ? 'red' : undefined}>
-                            {task.due_date}
-                          </Text>
-                        </Table.Td>
-                        <Table.Td className="table-cell-truncate" style={{ maxWidth: '18rem' }}>
-                          {task.blocked_reason ? (
-                            <Badge color="red" variant="light" size="sm" title={task.blocked_reason}>{task.blocked_reason}</Badge>
-                          ) : (
-                            <Text size="sm" c="dimmed">
-                              -
-                            </Text>
-                          )}
-                        </Table.Td>
-                        <Table.Td>
-                          <Tooltip label={t('tasks.openDetail')}>
-                            <ActionIcon variant="subtle" aria-label={t('tasks.openDetail')} onClick={() => openTask(task)}>
-                              <IconEye size={18} />
-                            </ActionIcon>
-                          </Tooltip>
-                        </Table.Td>
-                      </Table.Tr>
-                    ))}
-                  </Table.Tbody>
-                </Table>
-              </ScrollArea>
-              <ListPagination
-                page={page}
-                pageCount={pageCount}
-                pageEnd={pageEnd}
-                pageStart={pageStart}
-                setPage={setPage}
-                total={filteredTasks.length}
-              />
-              {filteredTasks.length === 0 ? (
-                <EmptyState title={t('tasks.emptyTitle')} description={t('tasks.emptyDescription')} />
-              ) : null}
-            </Paper>
+            <TaskListTable
+              focusedTaskId={drawers.focusedTask}
+              isOverdue={isOverdue}
+              onOpenTask={drawers.openTask}
+              pagination={pagination}
+              selectedTaskId={drawers.selectedTask?.task_id ?? null}
+              total={filteredTasks.length}
+              visibleTasks={pagination.visibleItems}
+            />
           </Stack>
         </Tabs.Panel>
 
@@ -508,54 +190,48 @@ export function Tasks() {
       </Tabs>
 
       <Drawer
-        opened={taskFormOpened}
-        onClose={requestTaskFormClose}
+        opened={drawers.taskFormOpened}
+        onClose={drawers.requestTaskFormClose}
         position="right"
         size="60rem"
         withCloseButton={false}
         title={
           <Group gap="xs" wrap="nowrap">
-            <ActionIcon variant="subtle" c="var(--kbfe-text-secondary)" aria-label={t('common.back')} onClick={requestTaskFormClose}>
+            <ActionIcon variant="subtle" c="var(--kbfe-text-secondary)" aria-label={t('common.back')} onClick={drawers.requestTaskFormClose}>
               <IconArrowLeft size={18} />
             </ActionIcon>
             <ModalTitle
               feature="tasks"
-              title={editingTask ? t('tasks.editTask') : t('tasks.createTask')}
-              subtitle={editingTask?.task_id}
+              title={drawers.editingTask ? t('tasks.editTask') : t('tasks.createTask')}
+              subtitle={drawers.editingTask?.task_id}
             />
           </Group>
         }
       >
         <TaskFormPanel
-          editing={editingTask}
-          opened={taskFormOpened}
-          closeRequestToken={closeRequestToken}
-          onClose={closeTaskForm}
-          onSaved={(saved) => {
-            taskFormHandlers.close();
-            setEditingTask(null);
-            setReturnToTask(null);
-            setSelectedTask(saved);
-            openTaskParam(saved.task_id);
-          }}
+          editing={drawers.editingTask}
+          opened={drawers.taskFormOpened}
+          closeRequestToken={drawers.closeRequestToken}
+          onClose={drawers.closeTaskForm}
+          onSaved={drawers.onTaskSaved}
         />
       </Drawer>
 
       <Drawer
-        opened={!!selectedTask}
-        onClose={closeTaskDetail}
+        opened={!!drawers.selectedTask}
+        onClose={drawers.closeTaskDetail}
         position="right"
         size="60rem"
         title={
           <ModalTitle
             feature="tasks"
-            title={selectedTask?.task_id}
-            subtitle={selectedTask?.task_name}
+            title={drawers.selectedTask?.task_id}
+            subtitle={drawers.selectedTask?.task_name}
           />
         }
       >
-        {selectedTask && (
-          <TaskDetail task={selectedTask} onUpdated={setSelectedTask} onEdit={openEditTask} />
+        {drawers.selectedTask && (
+          <TaskDetail task={drawers.selectedTask} onUpdated={drawers.setSelectedTask} onEdit={drawers.openEditTask} />
         )}
       </Drawer>
     </Stack>

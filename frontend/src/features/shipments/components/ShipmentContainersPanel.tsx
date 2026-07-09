@@ -16,7 +16,7 @@ import {
   TextInput,
   Tooltip,
 } from '@mantine/core';
-import { IconBox, IconPlus, IconTrash, IconX } from '@tabler/icons-react';
+import { IconBox, IconInfoCircle, IconPlus, IconTrash, IconX } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -162,21 +162,34 @@ export function ShipmentContainersPanel({ shipment }: { shipment: ShipmentRecord
             onChange={(event) => setNewNo(event.currentTarget.value)}
             required
           />
-          <Stack gap={4}>
-            <Select
-              label={<HeaderLabel label={t('shipments.containerType')} hint={t('glossary.containerType')} />}
-              data={containerTypeOptions}
-              value={newType}
-              onChange={handleTypeChange}
-              searchable
-              nothingFoundMessage={containerTypesQuery.isLoading ? t('masterData.loadingReferenceData') : t('masterData.noContainerTypes')}
-            />
-            {selectedContainerType ? (
-              <Text size="xs" c="dimmed">
-                Tare {formatSpecValue(selectedContainerType.tare_kg, 'kg')} | Max gross {formatSpecValue(selectedContainerType.gross_kg, 'kg')} | Capacity {formatSpecValue(selectedContainerType.capacity_cbm, 'CBM')}
-              </Text>
-            ) : null}
-          </Stack>
+          <Select
+            label={
+              <Group gap={4} wrap="nowrap">
+                <HeaderLabel label={t('shipments.containerType')} hint={t('glossary.containerType')} />
+                {selectedContainerType ? (
+                  <Tooltip
+                    multiline
+                    w={220}
+                    withArrow
+                    label={
+                      <Stack gap={2}>
+                        <Text size="xs">Tare: {formatSpecValue(selectedContainerType.tare_kg, 'kg')}</Text>
+                        <Text size="xs">Max gross: {formatSpecValue(selectedContainerType.gross_kg, 'kg')}</Text>
+                        <Text size="xs">Capacity: {formatSpecValue(selectedContainerType.capacity_cbm, 'CBM')}</Text>
+                      </Stack>
+                    }
+                  >
+                    <IconInfoCircle size={14} style={{ cursor: 'help' }} />
+                  </Tooltip>
+                ) : null}
+              </Group>
+            }
+            data={containerTypeOptions}
+            value={newType}
+            onChange={handleTypeChange}
+            searchable
+            nothingFoundMessage={containerTypesQuery.isLoading ? t('masterData.loadingReferenceData') : t('masterData.noContainerTypes')}
+          />
           <TextInput
             label={<HeaderLabel label={t('shipments.sealNumber')} hint={t('glossary.seal')} />}
             placeholder={t('shipments.sealNumberPlaceholder')}

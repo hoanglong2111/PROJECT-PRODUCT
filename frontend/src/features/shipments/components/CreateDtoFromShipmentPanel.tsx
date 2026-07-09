@@ -3,6 +3,7 @@ import {
   Badge,
   Button,
   Checkbox,
+  Divider,
   Group,
   Loader,
   NumberInput,
@@ -12,10 +13,12 @@ import {
   Text,
   TextInput,
   Textarea,
+  ThemeIcon,
+  Tooltip,
 } from '@mantine/core';
-import { IconAlertTriangle, IconBox, IconPlus, IconTruck, IconX } from '@tabler/icons-react';
+import { IconAlertTriangle, IconBox, IconInfoCircle, IconPlus, IconTruck, IconX } from '@tabler/icons-react';
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import {
   containerTypeSelectOptions,
@@ -41,6 +44,20 @@ type ContainerRow = ShipmentContainerV1 & { _shipmentNumber: string };
 
 function formatSpecValue(value: number | null | undefined, suffix: string) {
   return value === null || value === undefined ? '-' : `${value.toLocaleString()} ${suffix}`;
+}
+
+function SectionHeading({ icon, title, caption }: { icon: ReactNode; title: string; caption?: string }) {
+  return (
+    <Group gap="xs" wrap="nowrap" align="flex-start">
+      <ThemeIcon variant="light" size="md" radius="md">
+        {icon}
+      </ThemeIcon>
+      <div>
+        <Text fw={700} size="sm">{title}</Text>
+        {caption ? <Text size="xs" c="dimmed">{caption}</Text> : null}
+      </div>
+    </Group>
+  );
 }
 
 export function CreateDtoFromShipmentPanel({
@@ -254,7 +271,8 @@ export function CreateDtoFromShipmentPanel({
       )}
 
       <div>
-        <Text fw={600} size="sm" mb={4}>{t('shipments.containers')}</Text>
+        <SectionHeading icon={<IconBox size={16} />} title={t('shipments.containers')} />
+        <Divider my="xs" />
         {containersLoading ? (
           <Group gap="xs"><Loader size="sm" /><Text size="sm" c="dimmed">{t('shipments.loadingContainers')}</Text></Group>
         ) : containerRows.length === 0 ? (
@@ -289,9 +307,13 @@ export function CreateDtoFromShipmentPanel({
           </Checkbox.Group>
         )}
 
-        <Paper withBorder p="sm" mt="sm" className="shipment-dto-container-composer">
-          <Stack gap="xs">
-            <Text size="xs" c="dimmed">{t('shipments.dtoAddContainerHint')}</Text>
+        <Paper withBorder p="md" mt="sm" radius="md" className="shipment-dto-container-composer">
+          <Stack gap="sm">
+            <SectionHeading
+              icon={<IconPlus size={16} />}
+              title={t('shipments.addContainer')}
+              caption={t('shipments.dtoAddContainerHint')}
+            />
             <div className="shipment-dto-container-form">
               {isConsolidation && (
                 <Select
@@ -310,22 +332,36 @@ export function CreateDtoFromShipmentPanel({
                 value={newContainerNo}
                 onChange={(event) => setNewContainerNo(event.currentTarget.value)}
               />
-              <Stack className="shipment-dto-field-type" gap={4}>
-                <Select
-                  label={t('shipments.containerType')}
-                  data={containerTypeOptions}
-                  value={newContainerType}
-                  onChange={handleContainerTypeChange}
-                  allowDeselect={false}
-                  searchable
-                  nothingFoundMessage={containerTypesQuery.isLoading ? t('masterData.loadingReferenceData') : t('masterData.noContainerTypes')}
-                />
-                {selectedContainerType ? (
-                  <Text size="xs" c="dimmed">
-                    Tare {formatSpecValue(selectedContainerType.tare_kg, 'kg')} | Max gross {formatSpecValue(selectedContainerType.gross_kg, 'kg')} | Capacity {formatSpecValue(selectedContainerType.capacity_cbm, 'CBM')}
-                  </Text>
-                ) : null}
-              </Stack>
+              <Select
+                className="shipment-dto-field-type"
+                label={
+                  <Group gap={4} wrap="nowrap">
+                    <span>{t('shipments.containerType')}</span>
+                    {selectedContainerType ? (
+                      <Tooltip
+                        multiline
+                        w={220}
+                        withArrow
+                        label={
+                          <Stack gap={2}>
+                            <Text size="xs">Tare: {formatSpecValue(selectedContainerType.tare_kg, 'kg')}</Text>
+                            <Text size="xs">Max gross: {formatSpecValue(selectedContainerType.gross_kg, 'kg')}</Text>
+                            <Text size="xs">Capacity: {formatSpecValue(selectedContainerType.capacity_cbm, 'CBM')}</Text>
+                          </Stack>
+                        }
+                      >
+                        <IconInfoCircle size={14} style={{ cursor: 'help' }} />
+                      </Tooltip>
+                    ) : null}
+                  </Group>
+                }
+                data={containerTypeOptions}
+                value={newContainerType}
+                onChange={handleContainerTypeChange}
+                allowDeselect={false}
+                searchable
+                nothingFoundMessage={containerTypesQuery.isLoading ? t('masterData.loadingReferenceData') : t('masterData.noContainerTypes')}
+              />
               <TextInput
                 className="shipment-dto-field-seal"
                 label={t('shipments.sealNumber')}
@@ -375,6 +411,11 @@ export function CreateDtoFromShipmentPanel({
             )}
           </Stack>
         </Paper>
+      </div>
+
+      <div>
+        <SectionHeading icon={<IconTruck size={16} />} title={t('shipments.dispatchDetails')} />
+        <Divider my="xs" />
       </div>
 
       <div className="shipment-dto-dispatch-grid">

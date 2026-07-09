@@ -65,6 +65,7 @@ export const STATUS_MAP: Record<string, StatusBadgeConfig> = {
   QUOTE_CONFIRMED: { color: 'blue' },
   QUOTE_PENDING: { color: 'orange' },
   QUOTED: { color: 'yellow' },
+  RECEIVED: { color: 'cyan' },
   RED_FIELD_INSPECTION: { color: 'red', variant: 'outline' },
   RED_VIOLATION_HANDLING: { color: 'red' },
   READY: { color: 'blue' },

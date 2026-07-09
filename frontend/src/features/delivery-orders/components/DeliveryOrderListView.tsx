@@ -1,7 +1,6 @@
 import {
   ActionIcon,
   Badge,
-  Button,
   Group,
   Loader,
   NumberFormatter,
@@ -17,9 +16,10 @@ import {
   TextInput,
   Tooltip,
 } from '@mantine/core';
-import { IconAlertTriangle, IconChecklist, IconEye, IconSearch, IconTruckDelivery, IconX } from '@tabler/icons-react';
+import { IconAlertTriangle, IconChecklist, IconEye, IconSearch, IconTruckDelivery } from '@tabler/icons-react';
 
 import type { BusinessFlowTag, DeliveryOrder } from '@shared/api/logistics';
+import { ClearFiltersButton } from '@shared/components/ClearFiltersButton';
 import { CopyValue } from '@shared/components/CopyValue';
 import { DelayBadge } from '@shared/components/DelayBadge';
 import { EmptyState } from '@shared/components/EmptyState';
@@ -168,15 +168,12 @@ export function DeliveryOrderListView({
                 label={t('deliveryOrders.filterRiskOnly')}
               />
             </div>
-            <Button
+            <ClearFiltersButton
               className="delivery-order-filter-clear"
-              variant={hasActiveFilters ? 'light' : 'subtle'}
-              leftSection={<IconX size={16} />}
+              hasActiveFilters={hasActiveFilters}
+              label={t('common.clear')}
               onClick={onClearFilters}
-              disabled={!hasActiveFilters}
-            >
-              {t('common.clear')}
-            </Button>
+            />
           </div>
         </Stack>
       </Paper>

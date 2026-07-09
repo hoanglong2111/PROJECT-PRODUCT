@@ -1,0 +1,33 @@
+export const en = {
+  'orderIntake.item': 'Item',
+  'orderIntake.itemDescription': 'Item description',
+  'orderIntake.hsCode': 'HS code',
+  'orderIntake.chooseItem': 'Choose item',
+  'orderIntake.itemNotSelected': 'Item not selected',
+  'orderIntake.grossKg': 'Gross kg',
+  'orderIntake.lineEta': 'Line ETA',
+  'orderIntake.taxPct': 'Tax %',
+  'orderIntake.discPct': 'Disc %',
+  'orderIntake.lineNote': 'Line note',
+  'orderIntake.lineAmount': 'Line amount (qty x unit price)',
+  'orderIntake.addLine': 'Add line',
+  'orderIntake.deleteLine': 'Delete line',
+  'orderIntake.editingLine': 'Editing line #{index}',
+};
+
+export const vi = {
+  'orderIntake.item': 'Mặt hàng',
+  'orderIntake.itemDescription': 'Mô tả mặt hàng',
+  'orderIntake.hsCode': 'Mã HS',
+  'orderIntake.chooseItem': 'Chọn mặt hàng',
+  'orderIntake.itemNotSelected': 'Chưa chọn mặt hàng',
+  'orderIntake.grossKg': 'Trọng lượng (kg)',
+  'orderIntake.lineEta': 'ETA dòng',
+  'orderIntake.taxPct': 'Thuế %',
+  'orderIntake.discPct': 'CK %',
+  'orderIntake.lineNote': 'Ghi chú dòng',
+  'orderIntake.lineAmount': 'Thành tiền (SL x đơn giá)',
+  'orderIntake.addLine': 'Thêm dòng',
+  'orderIntake.deleteLine': 'Xoá dòng',
+  'orderIntake.editingLine': 'Đang sửa dòng #{index}',
+};
