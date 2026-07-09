@@ -1,10 +1,11 @@
 import { Alert, Button, Group, NumberInput, Paper, Select, SimpleGrid, Stack, Text, Textarea, TextInput, Title } from '@mantine/core';
-import { IconAlertTriangle, IconClipboardList, IconDeviceFloppy, IconPackage, IconX } from '@tabler/icons-react';
+import { IconAlertTriangle, IconClipboardList, IconDeviceFloppy, IconFileInvoice, IconPackage, IconX } from '@tabler/icons-react';
 import { useMemo } from 'react';
 
-import type { QuotationRequestV1 } from '@shared/api/quotationRequests';
 import { AnchoredWorkflowRail, useAnchoredWorkflowSections, type AnchoredWorkflowStep } from '@shared/components/AnchoredWorkflow';
+import type { QuotationRequestV1 } from '@shared/api/quotationRequests';
 import { DateField } from '@shared/components/DateField';
+import { FeatureHeaderShell } from '@shared/components/FeatureHeaderShell';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { FormSection } from '@shared/components/order-intake';
 import { useI18n } from '@shared/i18n';
@@ -63,7 +64,54 @@ export function QuotationRequestForm({ onCancel, onCreated, source }: Props) {
         submit();
       }}
     >
-      <Stack gap="md">
+      <Stack gap="sm">
+        <FeatureHeaderShell backLabel={t('common.back')} onBack={onCancel}>
+          <Paper withBorder p="sm" className="feature-form-hero feature-hero-layout">
+            <Group gap="sm" align="flex-start" wrap="nowrap" className="feature-detail-heading feature-hero-identity">
+              <div className="feature-hero-icon" aria-hidden="true"><IconFileInvoice size={19} /></div>
+              <div className="feature-detail-copy">
+                <Text fw={700} size="lg">
+                  {t('quotationRequests.formTitle')}
+                </Text>
+                <Text c="dimmed" size="sm">
+                  {t('quotationRequests.formSubtitle')}
+                </Text>
+                {source ? (
+                  <Text c="dimmed" size="xs" mt={2}>
+                    {t('quotationRequests.copiedFrom', { rfqNo: source.rfq_no })}
+                  </Text>
+                ) : null}
+              </div>
+            </Group>
+
+            <dl className="feature-hero-facts">
+              <div className="feature-hero-fact">
+                <dt>{t('quotationRequests.field.supplier')}</dt>
+                <dd>{selectedSupplier?.supplier_name ?? '-'}</dd>
+              </div>
+              <div className="feature-hero-fact">
+                <dt>{t('quotationRequests.field.mode')} / {t('quotationRequests.field.incoterm')}</dt>
+                <dd>{[mode, incoterm].filter(Boolean).join(' / ') || '-'}</dd>
+              </div>
+              <div className="feature-hero-fact">
+                <dt>{t('quotationRequests.field.route')}</dt>
+                <dd>{[originPort, destinationPort].filter(Boolean).join(' → ') || '-'}</dd>
+              </div>
+            </dl>
+
+            <div className="feature-hero-actions">
+              <Button
+                type="submit"
+                loading={createMutation.isPending || masterData.isLoading}
+                disabled={!canSubmit}
+                leftSection={<IconDeviceFloppy size={16} />}
+              >
+                {t('common.save')}
+              </Button>
+            </div>
+          </Paper>
+        </FeatureHeaderShell>
+
         {createMutation.isError ? (
           <Alert color="red" icon={<IconAlertTriangle size={16} />} title={t('quotationRequests.createError')}>
             {(createMutation.error as Error).message}

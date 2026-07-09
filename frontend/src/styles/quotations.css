@@ -509,8 +509,8 @@
   background: color-mix(in srgb, var(--kbfe-surface-elevated) 92%, var(--kbfe-surface-subtle) 8%);
 }
 
-.rfq-form-hero-metric > svg,
-.rfq-summary-row > svg,
+.rfq-form-hero-metric>svg,
+.rfq-summary-row>svg,
 .rfq-total-icon {
   color: color-mix(in srgb, var(--kbfe-primary-color) 82%, var(--kbfe-text-primary));
 }
@@ -590,11 +590,9 @@
   min-height: 2.45rem;
   border-color: color-mix(in srgb, var(--kbfe-border-primary) 82%, transparent);
   background:
-    linear-gradient(
-      180deg,
+    linear-gradient(180deg,
       color-mix(in srgb, var(--kbfe-surface-elevated) 98%, #ffffff 2%),
-      color-mix(in srgb, var(--kbfe-surface-elevated) 92%, var(--kbfe-background-secondary) 8%)
-    );
+      color-mix(in srgb, var(--kbfe-surface-elevated) 92%, var(--kbfe-background-secondary) 8%));
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, #ffffff 34%, transparent),
     0 1px 2px color-mix(in srgb, var(--kbfe-shadow-color, #0f172a) 6%, transparent);
@@ -1107,7 +1105,7 @@
     align-items: stretch;
   }
 
-  .rfq-picker-toolbar > * {
+  .rfq-picker-toolbar>* {
     width: 100%;
   }
 
@@ -1127,7 +1125,7 @@
     flex-direction: column-reverse;
   }
 
-  .rfq-picker-footer > * {
+  .rfq-picker-footer>* {
     width: 100%;
   }
 
@@ -1585,11 +1583,9 @@
   min-height: 31rem;
   border-color: color-mix(in srgb, var(--kbfe-primary-color) 14%, var(--kbfe-border-primary));
   background:
-    linear-gradient(
-      180deg,
+    linear-gradient(180deg,
       color-mix(in srgb, var(--kbfe-surface-elevated) 99%, #ffffff 1%),
-      color-mix(in srgb, var(--kbfe-surface-elevated) 96%, var(--kbfe-surface-subtle) 4%)
-    );
+      color-mix(in srgb, var(--kbfe-surface-elevated) 96%, var(--kbfe-surface-subtle) 4%));
   box-shadow: var(--kbfe-shadow-sm);
 }
 
@@ -1629,7 +1625,7 @@
   padding: 0.375rem 0;
 }
 
-.rfq-compare-line + .rfq-compare-line {
+.rfq-compare-line+.rfq-compare-line {
   border-top: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 40%, transparent);
 }
 
@@ -1854,12 +1850,30 @@
       "quantity uom price currency remove";
   }
 
-  .rfq-fee-name { grid-area: fee; }
-  .rfq-fee-quantity { grid-area: quantity; }
-  .rfq-fee-uom { grid-area: uom; }
-  .rfq-fee-price { grid-area: price; }
-  .rfq-fee-currency { grid-area: currency; }
-  .rfq-fee-remove { grid-area: remove; align-self: center; }
+  .rfq-fee-name {
+    grid-area: fee;
+  }
+
+  .rfq-fee-quantity {
+    grid-area: quantity;
+  }
+
+  .rfq-fee-uom {
+    grid-area: uom;
+  }
+
+  .rfq-fee-price {
+    grid-area: price;
+  }
+
+  .rfq-fee-currency {
+    grid-area: currency;
+  }
+
+  .rfq-fee-remove {
+    grid-area: remove;
+    align-self: center;
+  }
 
   .rfq-fee-cell-label {
     display: block;
@@ -1990,18 +2004,55 @@
     align-items: start;
   }
 
-  .rfq-package-cell-type { grid-area: type; }
-  .rfq-package-cell-item { grid-area: item; }
-  .rfq-package-cell-size { grid-area: size; }
-  .rfq-package-cell-length { grid-area: length; }
-  .rfq-package-cell-width { grid-area: width; }
-  .rfq-package-cell-height { grid-area: height; }
-  .rfq-package-cell-qty { grid-area: qty; }
-  .rfq-package-cell-gross { grid-area: gross; }
-  .rfq-package-cell-cbm { grid-area: cbm; text-align: left; }
-  .rfq-package-cell-unit { grid-area: unit; }
-  .rfq-package-cell-price { grid-area: price; }
-  .rfq-package-remove { grid-area: remove; align-self: center; }
+  .rfq-package-cell-type {
+    grid-area: type;
+  }
+
+  .rfq-package-cell-item {
+    grid-area: item;
+  }
+
+  .rfq-package-cell-size {
+    grid-area: size;
+  }
+
+  .rfq-package-cell-length {
+    grid-area: length;
+  }
+
+  .rfq-package-cell-width {
+    grid-area: width;
+  }
+
+  .rfq-package-cell-height {
+    grid-area: height;
+  }
+
+  .rfq-package-cell-qty {
+    grid-area: qty;
+  }
+
+  .rfq-package-cell-gross {
+    grid-area: gross;
+  }
+
+  .rfq-package-cell-cbm {
+    grid-area: cbm;
+    text-align: left;
+  }
+
+  .rfq-package-cell-unit {
+    grid-area: unit;
+  }
+
+  .rfq-package-cell-price {
+    grid-area: price;
+  }
+
+  .rfq-package-remove {
+    grid-area: remove;
+    align-self: center;
+  }
 
   .rfq-package-cell-label {
     display: block;
@@ -2097,12 +2148,30 @@
     align-items: start;
   }
 
-  .rfq-container-line-cell-item { grid-area: item; }
-  .rfq-container-line-cell-qty { grid-area: qty; }
-  .rfq-container-line-cell-unit { grid-area: unit; }
-  .rfq-container-line-cell-price { grid-area: price; }
-  .rfq-container-line-cell-weight { grid-area: weight; }
-  .rfq-container-line-remove { grid-area: remove; align-self: center; }
+  .rfq-container-line-cell-item {
+    grid-area: item;
+  }
+
+  .rfq-container-line-cell-qty {
+    grid-area: qty;
+  }
+
+  .rfq-container-line-cell-unit {
+    grid-area: unit;
+  }
+
+  .rfq-container-line-cell-price {
+    grid-area: price;
+  }
+
+  .rfq-container-line-cell-weight {
+    grid-area: weight;
+  }
+
+  .rfq-container-line-remove {
+    grid-area: remove;
+    align-self: center;
+  }
 
   .rfq-package-cell-label {
     display: block;
@@ -2370,7 +2439,7 @@
   align-items: end;
 }
 
-.rfq-list-filter-row > * {
+.rfq-list-filter-row>* {
   min-width: 0;
 }
 
@@ -2407,11 +2476,9 @@
   padding: 0.625rem calc(0.75rem + 1px);
   border-bottom: 1px solid color-mix(in srgb, var(--kbfe-primary-color) 14%, var(--kbfe-border-primary));
   background:
-    linear-gradient(
-      180deg,
+    linear-gradient(180deg,
       color-mix(in srgb, var(--kbfe-primary-color) 12%, var(--kbfe-surface-elevated)),
-      color-mix(in srgb, var(--kbfe-surface-subtle) 76%, var(--kbfe-surface-elevated) 24%)
-    );
+      color-mix(in srgb, var(--kbfe-surface-subtle) 76%, var(--kbfe-surface-elevated) 24%));
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, var(--kbfe-surface-elevated) 78%, transparent),
     inset 0 -2px 0 color-mix(in srgb, var(--kbfe-primary-color) 13%, transparent);
@@ -2844,7 +2911,7 @@
     linear-gradient(180deg, color-mix(in srgb, var(--kbfe-surface-elevated) 94%, var(--kbfe-surface-subtle) 6%), var(--kbfe-surface-elevated));
 }
 
-.rfq-panel-head > * {
+.rfq-panel-head>* {
   min-width: 0;
 }
 
@@ -2997,11 +3064,9 @@
   border-top: 1px solid color-mix(in srgb, var(--kbfe-primary-color) 18%, var(--kbfe-border-primary));
   border-bottom: 1px solid color-mix(in srgb, var(--kbfe-primary-color) 16%, var(--kbfe-border-primary));
   background:
-    linear-gradient(
-      90deg,
+    linear-gradient(90deg,
       color-mix(in srgb, var(--kbfe-primary-color) 18%, transparent),
-      transparent 34%
-    ),
+      transparent 34%),
     color-mix(in srgb, var(--kbfe-primary-color) 8%, var(--kbfe-surface-elevated));
   box-shadow: inset 4px 0 0 color-mix(in srgb, var(--kbfe-primary-color) 78%, var(--kbfe-text-primary));
 }
@@ -3113,7 +3178,7 @@
   color: var(--kbfe-text-secondary, var(--kbfe-text-primary));
 }
 
-.rfq-lifecycle-step + .rfq-lifecycle-step {
+.rfq-lifecycle-step+.rfq-lifecycle-step {
   margin-top: 0.375rem;
   padding-top: 0.625rem;
   border-top: 1px dashed color-mix(in srgb, var(--kbfe-border-primary) 72%, transparent);
@@ -3184,7 +3249,7 @@
   min-width: 0;
 }
 
-.rfq-timeline-item > div {
+.rfq-timeline-item>div {
   min-width: 0;
 }
 
@@ -3333,7 +3398,7 @@
     grid-area: code;
   }
 
-  .rfq-list-row > .rfq-list-cell:nth-child(2) {
+  .rfq-list-row>.rfq-list-cell:nth-child(2) {
     grid-area: customer;
   }
 
@@ -3408,11 +3473,11 @@
     grid-area: item;
   }
 
-  .rfq-overview-item-row > .mantine-Text-root:nth-child(2) {
+  .rfq-overview-item-row>.mantine-Text-root:nth-child(2) {
     grid-area: qty;
   }
 
-  .rfq-overview-item-row > .mantine-Text-root:nth-child(3) {
+  .rfq-overview-item-row>.mantine-Text-root:nth-child(3) {
     grid-area: weight;
   }
 
@@ -3974,7 +4039,7 @@
   border-bottom: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 70%, transparent);
 }
 
-.rfq-request-detail .rfq-data-card-head > * {
+.rfq-request-detail .rfq-data-card-head>* {
   min-width: 0;
   overflow-wrap: anywhere;
 }
@@ -4019,7 +4084,7 @@
   background: color-mix(in srgb, var(--kbfe-surface-subtle) 58%, transparent);
 }
 
-.rfq-request-detail .rfq-data-card-line > * {
+.rfq-request-detail .rfq-data-card-line>* {
   min-width: 0;
 }
 
@@ -4108,14 +4173,14 @@
     align-items: stretch;
   }
 
-  .rfq-request-detail .rfq-action-panel > .rfq-panel-head {
+  .rfq-request-detail .rfq-action-panel>.rfq-panel-head {
     align-content: start;
     flex-direction: column;
     border-right: 1px solid var(--kbfe-border-primary);
     border-bottom: 0;
   }
 
-  .rfq-request-detail .rfq-action-panel > .rfq-lifecycle-steps {
+  .rfq-request-detail .rfq-action-panel>.rfq-lifecycle-steps {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     align-items: start;
     border-right: 1px solid var(--kbfe-border-primary);
@@ -4128,7 +4193,7 @@
     padding: 0.25rem 0.5rem;
   }
 
-  .rfq-request-detail .rfq-action-panel .rfq-lifecycle-step + .rfq-lifecycle-step {
+  .rfq-request-detail .rfq-action-panel .rfq-lifecycle-step+.rfq-lifecycle-step {
     margin-top: 0;
     border-top: 0;
     border-left: 1px dashed color-mix(in srgb, var(--kbfe-border-primary) 72%, transparent);
@@ -4219,13 +4284,13 @@
     display: block;
   }
 
-  .rfq-request-detail .rfq-action-panel > .rfq-panel-head {
+  .rfq-request-detail .rfq-action-panel>.rfq-panel-head {
     flex-direction: row;
     border-right: 0;
     border-bottom: 1px solid var(--kbfe-border-primary);
   }
 
-  .rfq-request-detail .rfq-action-panel > .rfq-lifecycle-steps {
+  .rfq-request-detail .rfq-action-panel>.rfq-lifecycle-steps {
     grid-template-columns: 1fr;
     border-right: 0;
     border-bottom: 1px solid var(--kbfe-border-primary);
@@ -4236,7 +4301,7 @@
     padding: 0.25rem 0;
   }
 
-  .rfq-request-detail .rfq-action-panel .rfq-lifecycle-step + .rfq-lifecycle-step {
+  .rfq-request-detail .rfq-action-panel .rfq-lifecycle-step+.rfq-lifecycle-step {
     margin-top: 0.375rem;
     padding-top: 0.625rem;
     border-top: 1px dashed color-mix(in srgb, var(--kbfe-border-primary) 72%, transparent);
@@ -4347,6 +4412,7 @@
 }
 
 @media (max-width: 34em) {
+
   .rfq-request-detail .rfq-detail-hero-main,
   .rfq-request-detail .rfq-panel-head,
   .rfq-request-detail .rfq-action-body {
@@ -4375,6 +4441,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .rfq-request-detail .rfq-detail-hero-actions .mantine-Button-root,
   .rfq-request-detail .rfq-data-card-action,
   .rfq-request-detail .rfq-action-body .mantine-Button-root {

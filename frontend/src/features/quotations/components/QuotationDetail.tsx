@@ -18,8 +18,8 @@ import {
 } from '@shared/api/quotations';
 import { queryKeys } from '@shared/api/queryKeys';
 import { AnchoredWorkflowRail, useAnchoredWorkflowSections, type AnchoredWorkflowStep } from '@shared/components/AnchoredWorkflow';
-import { CopyValue } from '@shared/components/CopyValue';
 import { BackActionButton } from '@shared/components/BackActionButton';
+import { CopyValue } from '@shared/components/CopyValue';
 import { DateTimeText } from '@shared/components/DateTimeText';
 import { FieldPair } from '@shared/components/FieldPair';
 import { StatusBadge } from '@shared/components/StatusBadge';
@@ -177,8 +177,8 @@ function QuotationOptionComparePanel({
   const moneyDelta = rateMissing
     ? null
     : compareNumericDelta(totals.customerPayTotal, otherTotals?.customerPayTotal ?? null, (abs) =>
-        formatMoney(abs, paymentCurrency),
-      );
+      formatMoney(abs, paymentCurrency),
+    );
   const vndDelta = rateMissing
     ? null
     : compareNumericDelta(totals.totalVnd, otherTotals?.totalVnd ?? null, (abs) => formatMoney(abs, 'VND'));
@@ -521,11 +521,13 @@ export function QuotationDetail({ onBack, quotation, onRevise, onInspectVersion 
         </div>
       </Paper>
 
-      {status === 'REJECTED' && quotation.reject_reason ? (
-        <Alert color="red" title={t('quotations.rejectReason')}>
-          {quotation.reject_reason}
-        </Alert>
-      ) : null}
+      {
+    status === 'REJECTED' && quotation.reject_reason ? (
+      <Alert color="red" title={t('quotations.rejectReason')}>
+        {quotation.reject_reason}
+      </Alert>
+    ) : null
+  }
 
       <div className="rfq-detail-layout quote-workflow-detail-layout">
         <div className="rfq-detail-main">
@@ -725,6 +727,6 @@ export function QuotationDetail({ onBack, quotation, onRevise, onInspectVersion 
           })}
         </SimpleGrid>
       </Modal>
-    </Stack>
+    </Stack >
   );
 }
