@@ -184,9 +184,9 @@
   align-items: stretch;
 }
 
-.quote-workflow-card-grid > .quote-workflow-section,
-.quote-workflow-card-grid > .quote-workflow-section > .purchase-order-form-section,
-.quote-workflow-card-grid > .quote-workflow-section > .purchase-order-form-section > .mantine-Stack-root {
+.quote-workflow-card-grid>.quote-workflow-section,
+.quote-workflow-card-grid>.quote-workflow-section>.purchase-order-form-section,
+.quote-workflow-card-grid>.quote-workflow-section>.purchase-order-form-section>.mantine-Stack-root {
   height: 100%;
 }
 
@@ -199,11 +199,11 @@
   scroll-margin-top: 1rem;
 }
 
-.quote-workflow-section > .purchase-order-form-section,
-.quote-workflow-section > .purchase-order-lines-panel,
+.quote-workflow-section>.purchase-order-form-section,
+.quote-workflow-section>.purchase-order-lines-panel,
 .quote-workflow-section.rfq-form-section,
-.quote-workflow-section > .rfq-breakdown-panel,
-.quote-workflow-section > .rfq-overview-panel {
+.quote-workflow-section>.rfq-breakdown-panel,
+.quote-workflow-section>.rfq-overview-panel {
   border-color: color-mix(in srgb, var(--kbfe-primary-color) 14%, var(--kbfe-border-primary)) !important;
   background: var(--kbfe-surface-elevated);
   box-shadow: var(--kbfe-shadow-xs);
