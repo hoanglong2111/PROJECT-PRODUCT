@@ -20,8 +20,6 @@
 }
 
 .purchase-orders-page-header,
-.purchase-orders-subheader,
-.purchase-order-edit-header,
 .purchase-order-detail-hero-inner,
 .purchase-order-detail-title-row,
 .purchase-order-po-lines-header,
@@ -49,8 +47,6 @@
 }
 
 .purchase-orders-primary-action .mantine-Button-label,
-.purchase-orders-back-action .mantine-Button-label,
-.purchase-orders-subheader .kbfe-back-action .mantine-Button-label,
 .purchase-order-action-button .mantine-Button-label,
 .lot-planning-action-button .mantine-Button-label {
   white-space: nowrap;
@@ -78,13 +74,7 @@
   background: color-mix(in srgb, var(--kbfe-surface-elevated) 94%, var(--kbfe-background-secondary) 6%);
 }
 
-.purchase-order-detail-hero {
-  position: relative;
-  background:
-    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--kbfe-primary-color) 10%, transparent), transparent 32%),
-    var(--kbfe-surface-elevated);
-}
-
+/* Surface comes from the shared hero wash recipe via .feature-detail-hero. */
 .purchase-order-detail-hero-inner {
   padding: 1rem;
 }

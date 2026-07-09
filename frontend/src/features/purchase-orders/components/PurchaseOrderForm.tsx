@@ -13,7 +13,7 @@ import {
   Textarea,
   TextInput,
 } from '@mantine/core';
-import { IconAlertTriangle, IconDeviceFloppy, IconLink, IconX } from '@tabler/icons-react';
+import { IconAlertTriangle, IconDeviceFloppy, IconLink, IconShoppingCart } from '@tabler/icons-react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 
@@ -26,6 +26,7 @@ import {
 } from '@shared/api/purchaseOrders';
 import type { QuotationV1 } from '@shared/api/quotations';
 import { fetchQuotationRequest } from '@shared/api/quotationRequests';
+import { BackActionButton } from '@shared/components/BackActionButton';
 import { queryKeys } from '@shared/api/queryKeys';
 import { DateTimeField } from '@shared/components/DateField';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
@@ -221,25 +222,28 @@ export function PurchaseOrderForm({
           </Alert>
         ) : null}
 
-        <Paper withBorder p="sm" className="purchase-order-form-hero">
+        <Paper withBorder p="sm" className="purchase-order-form-hero feature-form-hero">
+          <div className="feature-hero-nav">
+            <BackActionButton label={t('common.back')} onClick={onCancel} />
+          </div>
           <Group justify="space-between" align="flex-start" gap="md">
-            <Stack gap={4}>
-              <Group gap="xs">
-                <Text fw={700} size="lg">
-                  {mode === 'create' ? t('purchaseOrders.createPo') : t('purchaseOrders.poHeader')}
+            <Group gap="sm" align="flex-start" wrap="nowrap" className="feature-detail-heading">
+              <div className="feature-hero-icon" aria-hidden="true"><IconShoppingCart size={19} /></div>
+              <Stack gap={4} className="feature-detail-copy">
+                <Group gap="xs">
+                  <Text fw={700} size="lg">
+                    {mode === 'create' ? t('purchaseOrders.createPo') : t('purchaseOrders.poHeader')}
+                  </Text>
+                  <Badge variant="light" size="sm">
+                    {mode === 'create' ? t('purchaseOrders.badgeNewOrder') : t('purchaseOrders.badgeHeaderEdit')}
+                  </Badge>
+                </Group>
+                <Text size="sm" c="dimmed">
+                  {t('purchaseOrders.formHeroDescription')}
                 </Text>
-                <Badge variant="light" size="sm">
-                  {mode === 'create' ? t('purchaseOrders.badgeNewOrder') : t('purchaseOrders.badgeHeaderEdit')}
-                </Badge>
-              </Group>
-              <Text size="sm" c="dimmed">
-                {t('purchaseOrders.formHeroDescription')}
-              </Text>
-            </Stack>
+              </Stack>
+            </Group>
             <Group gap="xs" className="purchase-order-form-actions">
-              <Button type="button" variant="subtle" onClick={onCancel} leftSection={<IconX size={16} />}>
-                {t('common.cancel')}
-              </Button>
               <Button
                 type="submit"
                 loading={mutation.isPending}

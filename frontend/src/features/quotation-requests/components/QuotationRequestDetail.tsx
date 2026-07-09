@@ -1,5 +1,6 @@
 import { Stack } from '@mantine/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import {
@@ -10,9 +11,15 @@ import {
 import { queryKeys } from '@shared/api/queryKeys';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
 import { useI18n } from '@shared/i18n';
+import { getApiErrorMessage } from '@shared/lib/errors';
 
 import { rfqTotalWeight } from '../model/quotationRequestModel';
-import { QuotationRequestActionPanel, resolvePrimaryAction } from './RfqActionPanel';
+import {
+  QuotationRequestActionPanel,
+  QuotationRequestMobileActionBar,
+  resolvePrimaryAction,
+} from './RfqActionPanel';
+import { RfqCancelConfirmModal } from './RfqCancelConfirmModal';
 import { ContainersPanel } from './RfqContainersPanel';
 import { RfqDetailHero } from './RfqDetailHero';
 import { LINKED_QUOTATIONS_SECTION_ID, LinkedQuotationsPanel } from './RfqLinkedQuotationsPanel';
@@ -22,14 +29,15 @@ import { RfqQuickSummaryStrip } from './RfqQuickSummaryStrip';
 import { QuoteReadinessPanel } from './RfqQuoteReadinessPanel';
 
 type QuotationRequestDetailProps = {
-  requestId: string;
   onBack: () => void;
+  requestId: string;
 };
 
-export function QuotationRequestDetail({ requestId }: QuotationRequestDetailProps) {
+export function QuotationRequestDetail({ onBack, requestId }: QuotationRequestDetailProps) {
   const { statusLabel, t } = useI18n();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [cancelConfirmOpened, setCancelConfirmOpened] = useState(false);
 
   const requestQuery = useQuery({
     queryKey: queryKeys.quotationRequestDetail(requestId),
@@ -47,7 +55,10 @@ export function QuotationRequestDetail({ requestId }: QuotationRequestDetailProp
   });
   const cancelMutation = useMutation({
     mutationFn: () => cancelQuotationRequest(requestId),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate();
+      setCancelConfirmOpened(false);
+    },
   });
 
   if (requestQuery.isLoading) {
@@ -88,28 +99,37 @@ export function QuotationRequestDetail({ requestId }: QuotationRequestDetailProp
   });
 
   return (
-    <Stack gap="md" className="rfq-detail">
+    <Stack gap="md" className="rfq-detail rfq-request-detail">
       <RfqDetailHero
         request={request}
         t={t}
+        onBack={onBack}
         onCopy={() => navigate(`/quotation-requests?create=1&copyFrom=${request.id}`)}
       />
       <RfqQuickSummaryStrip request={request} t={t} totalWeight={totalWeight} />
 
       <div className="rfq-detail-layout">
-        <aside className="rfq-detail-side">
+        <aside className="rfq-detail-side" aria-label={t('quotationRequests.actionsLabel')}>
           <QuotationRequestActionPanel
             request={request}
             t={t}
             primaryAction={primaryAction}
+            actionError={
+              receiveMutation.isError
+                ? getApiErrorMessage(receiveMutation.error, t('quotationRequests.actionError'))
+                : undefined
+            }
             canCancel={canCancel}
             cancelLoading={cancelMutation.isPending}
-            onCancel={() => cancelMutation.mutate()}
+            onCancel={() => {
+              cancelMutation.reset();
+              setCancelConfirmOpened(true);
+            }}
           />
           <QuoteReadinessPanel request={request} t={t} totalWeight={totalWeight} />
         </aside>
 
-        <div className="rfq-detail-main">
+        <main className="rfq-detail-main">
           <RfqOverviewPanel request={request} t={t} totalWeight={totalWeight} />
           <PackagesPanel request={request} t={t} />
           <ContainersPanel request={request} t={t} />
@@ -119,8 +139,32 @@ export function QuotationRequestDetail({ requestId }: QuotationRequestDetailProp
             statusLabel={statusLabel}
             onView={(quotationId) => navigate(`/quotations?view=${quotationId}`)}
           />
-        </div>
+        </main>
       </div>
+
+      <QuotationRequestMobileActionBar
+        primaryAction={primaryAction}
+        ariaLabel={t('quotationRequests.mobileActionsLabel')}
+      />
+
+      <RfqCancelConfirmModal
+        opened={cancelConfirmOpened}
+        rfqNo={request.rfq_no}
+        error={
+          cancelMutation.isError
+            ? getApiErrorMessage(cancelMutation.error, t('quotationRequests.actionError'))
+            : undefined
+        }
+        loading={cancelMutation.isPending}
+        t={t}
+        onConfirm={() => cancelMutation.mutate()}
+        onCancel={() => {
+          if (!cancelMutation.isPending) {
+            setCancelConfirmOpened(false);
+            cancelMutation.reset();
+          }
+        }}
+      />
     </Stack>
   );
 }

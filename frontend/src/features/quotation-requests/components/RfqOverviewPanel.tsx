@@ -11,7 +11,7 @@ import { isAirMode, isFclMode, type TFn } from '../model/quotationRequestModel';
 function MetricTile({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="rfq-detail-metric">
-      <Text size="xs" c="dimmed" fw={600} tt="uppercase">{label}</Text>
+      <Text size="xs" c="dimmed" fw={600}>{label}</Text>
       <Text size="md" fw={700} className="tabular-nums">{value}</Text>
     </div>
   );
@@ -21,16 +21,16 @@ export function RfqOverviewPanel({ request, t, totalWeight }: { request: Quotati
   const lines = request.lines ?? [];
 
   return (
-    <Paper withBorder p={0} className="rfq-overview-panel">
+    <Paper component="section" withBorder p={0} className="rfq-overview-panel" aria-labelledby="rfq-overview-title">
       <div className="rfq-panel-head">
         <div>
-          <Title order={4}>{t('quotationRequests.section.commercial')}</Title>
+          <Title order={3} id="rfq-overview-title">{t('quotationRequests.detailOverview')}</Title>
           <Text size="xs" c="dimmed">{buildRfqRouteLabel(request)}</Text>
         </div>
       </div>
       <div className="rfq-overview-body">
-        <div className="rfq-overview-cargo">
-          <Text size="xs" c="dimmed" fw={700} tt="uppercase">{t('quotationRequests.cargoSummary')}</Text>
+        <section className="rfq-overview-cargo" aria-labelledby="rfq-cargo-title">
+          <Text id="rfq-cargo-title" size="sm" fw={700}>{t('quotationRequests.cargoAndItems')}</Text>
           <div className="rfq-detail-metric-grid">
             <MetricTile label={t('quotationRequests.field.weight')} value={totalWeight ? `${totalWeight} kg` : '-'} />
             <MetricTile label={t('quotationRequests.field.volume')} value={request.volume_cbm != null ? `${request.volume_cbm} cbm` : '-'} />
@@ -94,8 +94,11 @@ export function RfqOverviewPanel({ request, t, totalWeight }: { request: Quotati
               </div>
             )}
           </div>
-        </div>
-        <div className="rfq-overview-facts">
+        </section>
+        <section className="rfq-overview-facts" aria-labelledby="rfq-information-title">
+          <Text id="rfq-information-title" size="sm" fw={700} className="rfq-overview-facts-title">
+            {t('quotationRequests.requestInformation')}
+          </Text>
           <FieldPair className="rfq-fact" label={t('quotationRequests.field.customerRef')} value={request.customer_ref ?? '-'} />
           <FieldPair className="rfq-fact" label={t('quotationRequests.field.customerPoRef')} value={request.customer_po_ref ?? '-'} />
           <FieldPair
@@ -122,10 +125,11 @@ export function RfqOverviewPanel({ request, t, totalWeight }: { request: Quotati
             label={t('quotationRequests.field.updatedAt')}
             value={<DateTimeText value={request.update_at} showZone />}
           />
-        </div>
+        </section>
       </div>
       {request.note ? (
         <div className="rfq-detail-note">
+          <Text size="xs" c="dimmed" fw={600}>{t('quotationRequests.field.note')}</Text>
           <Text size="sm">{request.note}</Text>
         </div>
       ) : null}

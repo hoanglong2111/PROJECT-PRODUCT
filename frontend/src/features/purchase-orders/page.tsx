@@ -1,6 +1,6 @@
 import { Button, Stack } from '@mantine/core';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { IconPlus } from '@tabler/icons-react';
+import { IconPlus, IconShoppingCart } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
@@ -19,7 +19,6 @@ import { Can } from '@shared/auth/Can';
 import { useCan } from '@shared/auth/useCan';
 import { PageHeader } from '@shared/components/PageHeader';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
-import { WorkbenchHeader } from '@shared/components/WorkbenchHeader';
 import { useEntityParam } from '@shared/hooks/useEntityParam';
 import { useI18n } from '@shared/i18n';
 
@@ -202,6 +201,7 @@ export function PurchaseOrders() {
           className="purchase-orders-page-header"
           titleClassName="purchase-orders-page-title"
           actionsClassName="purchase-orders-page-actions"
+          icon={<IconShoppingCart size={20} />}
           title={t('purchaseOrders.title')}
           subtitle={t('purchaseOrders.subtitle')}
           actions={
@@ -220,9 +220,7 @@ export function PurchaseOrders() {
             </Can>
           }
         />
-      ) : (
-        <WorkbenchHeader className="purchase-orders-subheader" onBack={closeWorkbench} />
-      )}
+      ) : null}
 
       {workbench === 'create' ? (
         <PurchaseOrderForm

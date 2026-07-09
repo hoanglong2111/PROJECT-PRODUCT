@@ -153,21 +153,24 @@ export function DomesticTransportOrderDetail({
 
   return (
     <Stack gap="md" className="dto-detail-stack">
-      <Paper withBorder p="md" className="dto-detail-hero">
+      <Paper withBorder p="md" className="dto-detail-hero feature-detail-hero">
         <Stack gap="md">
           <Group justify="space-between" align="flex-start" className="dto-detail-title-row">
-            <div>
-              <Group gap="xs">
-                <Title order={3}>
-                  <CopyValue value={order.dto_no}>{order.dto_no}</CopyValue>
-                </Title>
-                <StatusBadge status={order.status} />
-                {isFetching ? <Loader size="xs" /> : null}
-              </Group>
-              <Text size="sm" c="dimmed">
-                {order.origin ?? '-'} {t('deliveryOrders.routeConnector')} {order.destination ?? '-'} / {order.warehouse ?? '-'}
-              </Text>
-            </div>
+            <Group gap="sm" align="flex-start" wrap="nowrap" className="feature-detail-heading">
+              <div className="feature-hero-icon" aria-hidden="true"><IconTruck size={19} /></div>
+              <div className="feature-detail-copy">
+                <Group gap="xs">
+                  <Title order={3}>
+                    <CopyValue value={order.dto_no}>{order.dto_no}</CopyValue>
+                  </Title>
+                  <StatusBadge status={order.status} />
+                  {isFetching ? <Loader size="xs" /> : null}
+                </Group>
+                <Text size="sm" c="dimmed">
+                  {order.origin ?? '-'} {t('deliveryOrders.routeConnector')} {order.destination ?? '-'} / {order.warehouse ?? '-'}
+                </Text>
+              </div>
+            </Group>
             <Group gap="xs" className="dto-detail-actions">
               {order.shipment ? <EntityLink compact id={order.shipment.shipment_no} type="shp" /> : null}
             </Group>

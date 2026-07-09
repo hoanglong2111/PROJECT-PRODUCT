@@ -247,31 +247,23 @@ export function DomesticTransportOrders() {
 
   return (
     <Stack gap="lg" className="dto-page">
-      <Paper withBorder p="lg" className="dto-page-hero">
-        <PageHeader
-          className="dto-page-header"
-          titleClassName="dto-title-block"
-          actionsClassName="dto-page-actions"
-          title={
-            <>
-              <Badge leftSection={<IconTruckDelivery size={14} />} variant="light" mb="xs">
-                {t('domesticTransportOrders.kicker')}
-              </Badge>
-              <span className="dto-page-title">{t('domesticTransportOrders.title')}</span>
-            </>
-          }
-          subtitle={t('domesticTransportOrders.subtitle')}
-          actions={
-            <Button
-              leftSection={<IconPlus size={16} />}
-              disabled={!selectedShipment || availableShipmentsQuery.isLoading}
-              onClick={() => setDtoModalOpen(true)}
-            >
-              {t('domesticTransportOrders.create')}
-            </Button>
-          }
-        />
-      </Paper>
+      <PageHeader
+        className="dto-page-header"
+        titleClassName="dto-title-block"
+        actionsClassName="dto-page-actions"
+        icon={<IconTruckDelivery size={20} />}
+        title={t('domesticTransportOrders.title')}
+        subtitle={t('domesticTransportOrders.subtitle')}
+        actions={
+          <Button
+            leftSection={<IconPlus size={16} />}
+            disabled={!selectedShipment || availableShipmentsQuery.isLoading}
+            onClick={() => setDtoModalOpen(true)}
+          >
+            {t('domesticTransportOrders.create')}
+          </Button>
+        }
+      />
 
       <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} className="dto-metric-grid dl-metrics-strip">
         <Metric className="dto-metric-card dto-metric-card-gray" valueClassName="dto-metric-value" label={t('domesticTransportOrders.metricTotal')} value={counts.total} color="gray" icon={<IconClipboardList size={22} />} />

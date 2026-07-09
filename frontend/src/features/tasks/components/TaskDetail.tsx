@@ -1,5 +1,5 @@
 import { Badge, Button, Group, Paper, Progress, SimpleGrid, Stack, Text, Title } from '@mantine/core';
-import { IconPencil } from '@tabler/icons-react';
+import { IconChecklist, IconPencil } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 
 import type { LogisticsTask } from '@shared/api/logistics';
@@ -29,18 +29,21 @@ export function TaskDetail({
   return (
     <Stack gap="md" className="task-detail-stack">
       <Paper withBorder p={0} className="task-detail-workbench">
-        <div className="task-detail-hero">
+        <div className="task-detail-hero feature-detail-hero">
           <Group justify="space-between" align="flex-start" gap="sm" className="task-detail-title-row">
-            <div className="task-detail-title-block">
-              <Group gap="xs" align="center" wrap="wrap">
-                <Title order={3}>{task.task_name}</Title>
-                <StatusBadge status={task.status} />
-              </Group>
-              <Group gap="xs" mt={6} wrap="wrap">
-                <EntityLink type="do" id={task.do_number} compact />
-                <EntityLink type="po" id={task.po_number} compact />
-              </Group>
-            </div>
+            <Group gap="sm" align="flex-start" wrap="nowrap" className="feature-detail-heading">
+              <div className="feature-hero-icon" aria-hidden="true"><IconChecklist size={19} /></div>
+              <div className="task-detail-title-block feature-detail-copy">
+                <Group gap="xs" align="center" wrap="wrap">
+                  <Title order={3}>{task.task_name}</Title>
+                  <StatusBadge status={task.status} />
+                </Group>
+                <Group gap="xs" mt={6} wrap="wrap">
+                  <EntityLink type="do" id={task.do_number} compact />
+                  <EntityLink type="po" id={task.po_number} compact />
+                </Group>
+              </div>
+            </Group>
             {onEdit ? (
               <Button size="xs" variant="light" leftSection={<IconPencil size={14} />} onClick={() => onEdit(task)}>
                 {t('common.edit')}

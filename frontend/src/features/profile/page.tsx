@@ -178,6 +178,7 @@ export function Profile() {
   return (
     <Stack gap="lg">
       <PageHeader
+        icon={<IconUserCircle size={20} />}
         title={t('profile.title')}
         subtitle={t('profile.description')}
         actions={

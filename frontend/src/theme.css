@@ -251,6 +251,20 @@ html {
   --kbfe-glass-surface: color-mix(in srgb, var(--kbfe-surface-elevated) 72%, transparent);
   --kbfe-decorative-spotlight: color-mix(in srgb, var(--kbfe-primary-color) 9%, transparent);
   --kbfe-decorative-vignette: transparent;
+
+  /* --- Ambient surface system ------------------------------------------------
+     One shared "ambient radial gradient wash" recipe drives every elevated
+     surface tier (hero / emphasis / soft / neutral). surface-system.css builds
+     the background from these variables via color-mix(); tiers only override the
+     ratios, never re-declare the gradient. `--kbfe-surface-accent` is the single
+     accent color per surface; data-surface-tone remaps it to a semantic token.
+     Defaults below = the `neutral` tier (no wash). */
+  --kbfe-surface-accent: var(--kbfe-primary-color);
+  --kbfe-surface-wash-strength: 0%;   /* radial wash opacity at the light source */
+  --kbfe-surface-base-tint: 0%;       /* accent mixed into the flat base fill */
+  --kbfe-surface-border-tint: 0%;     /* accent mixed into the border */
+  --kbfe-surface-shadow-tint: 0%;     /* accent mixed into the outer shadow */
+  --kbfe-surface-wash-reach: 40%;     /* radial fade-out distance (38–42%) */
   --kbfe-shadow-xs: var(--kbfe-shadow-sm);
   --kbfe-row-hover-background: color-mix(in srgb, var(--kbfe-primary-color) 6%, var(--kbfe-surface-elevated));
   --kbfe-row-selected-background: color-mix(in srgb, var(--kbfe-primary-color) 10%, var(--kbfe-surface-elevated));

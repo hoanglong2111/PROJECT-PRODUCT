@@ -25,13 +25,14 @@ export function QuoteReadinessPanel({
   totalWeight: number;
 }) {
   const items = rfqReadiness(request, totalWeight);
+  const orderedItems = [...items].sort((left, right) => Number(left.ok) - Number(right.ok));
   const missingCount = items.filter((item) => !item.ok).length;
   const hasResponse = rfqResponseQuotations(request.quotations).length > 0;
 
   return (
-    <Paper withBorder p={0} className="rfq-readiness-panel">
+    <Paper component="section" withBorder p={0} className="rfq-readiness-panel" aria-labelledby="rfq-readiness-title">
       <div className="rfq-panel-head">
-        <Text fw={700}>{t('quotationRequests.quoteReadiness')}</Text>
+        <Text id="rfq-readiness-title" fw={700}>{t('quotationRequests.quoteReadiness')}</Text>
         {missingCount === 0 ? (
           <Badge color="green" variant="light">{t('quotationRequests.readinessReady')}</Badge>
         ) : (
@@ -39,7 +40,7 @@ export function QuoteReadinessPanel({
         )}
       </div>
       <div className="rfq-readiness">
-        {items.map((item) => (
+        {orderedItems.map((item) => (
           <div className="rfq-readiness-row" data-ok={item.ok} key={item.key}>
             {item.ok ? (
               <IconCircleCheck size={16} className="rfq-readiness-icon" />

@@ -18,6 +18,7 @@ import type { ShipmentRecord } from '@shared/api/logistics';
 import type { ShipmentCostPayload, ShipmentDocumentPayload, ShipmentMilestoneCodeV1 } from '@shared/api/shipments';
 import { EntityLink } from '@entities/logistics';
 import { CopyValue } from '@shared/components/CopyValue';
+import { BackActionButton } from '@shared/components/BackActionButton';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { AdminOnly } from '@shared/auth/AdminOnly';
 
@@ -47,6 +48,7 @@ export function ShipmentDetailView({
   onMarkMilestone,
   onUpdateCost,
   onUpdateDocument,
+  onBack,
   shipment,
   t,
 }: {
@@ -59,25 +61,32 @@ export function ShipmentDetailView({
   onMarkMilestone: (milestoneCode: ShipmentMilestoneCodeV1, payload: { actualAt: string; notes?: string | null }) => void;
   onUpdateCost: (costId: string, payload: Partial<ShipmentCostPayload>) => void;
   onUpdateDocument: (documentId: string, payload: Partial<ShipmentDocumentPayload>) => void;
+  onBack: () => void;
   shipment: ShipmentRecord;
   t: (key: string, params?: Record<string, string | number>) => string;
 }) {
   return (
     <Stack gap="lg">
       {/* Identity card */}
-      <Paper withBorder p="md" className="workbench-section shipment-detail-identity">
+      <Paper withBorder p="md" className="workbench-section shipment-detail-identity feature-detail-hero">
+        <div className="feature-hero-nav">
+          <BackActionButton label={t('common.backToList')} onClick={onBack} />
+        </div>
         <Group justify="space-between" align="flex-start">
-          <div>
-            <Group gap="xs" mb={4} wrap="nowrap">
-              <Title order={3}>
-                <CopyValue value={shipment.shipment_number}>{shipment.shipment_number}</CopyValue>
-              </Title>
-              <StatusBadge status={shipment.status} />
-            </Group>
-            <Text c="dimmed" size="sm">
-              {shipment.carrier_name} · {shipment.vessel_voyage}
-            </Text>
-          </div>
+          <Group gap="sm" align="flex-start" wrap="nowrap" className="feature-detail-heading">
+            <div className="feature-hero-icon" aria-hidden="true"><IconShip size={19} /></div>
+            <div className="feature-detail-copy">
+              <Group gap="xs" mb={4} wrap="wrap">
+                <Title order={3}>
+                  <CopyValue value={shipment.shipment_number}>{shipment.shipment_number}</CopyValue>
+                </Title>
+                <StatusBadge status={shipment.status} />
+              </Group>
+              <Text c="dimmed" size="sm">
+                {shipment.carrier_name} · {shipment.vessel_voyage}
+              </Text>
+            </div>
+          </Group>
           <Group gap="xs">
             <EntityLink type="do" id={shipment.do_number} />
             <EntityLink type="po" id={shipment.po_number} />

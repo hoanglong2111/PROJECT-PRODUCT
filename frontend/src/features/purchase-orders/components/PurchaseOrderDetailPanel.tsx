@@ -1,5 +1,5 @@
 import { Alert, Badge, Button, Group, Loader, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core';
-import { IconAlertTriangle, IconCircleCheck, IconPencil, IconSend, IconX } from '@tabler/icons-react';
+import { IconAlertTriangle, IconCircleCheck, IconPencil, IconSend, IconShoppingCart } from '@tabler/icons-react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 
@@ -85,19 +85,6 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
   if (editOpen) {
     return (
       <Stack gap="lg" className="purchase-order-edit-workbench">
-        <Group justify="space-between" align="center" gap="md" className="dl-page-header purchase-order-edit-header">
-          <Group gap="xs" align="center" wrap="wrap">
-            <BackActionButton
-              label={t('common.back')}
-              onClick={() => setEditOpen(false)}
-            />
-            <Text c="dimmed" size="sm">/</Text>
-            <Text fw={700} size="sm">
-              {t('purchaseOrders.editPo')} {order.po_no}
-            </Text>
-          </Group>
-        </Group>
-
         <PurchaseOrderForm
           mode="edit"
           order={order}
@@ -113,29 +100,32 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
 
   return (
     <Stack gap="lg">
-      <Paper withBorder p={0} className="purchase-order-detail-hero">
+      <Paper withBorder p={0} className="purchase-order-detail-hero feature-detail-hero">
+        <div className="feature-hero-nav feature-hero-nav--inset">
+          <BackActionButton label={t('common.backToList')} onClick={onClose} />
+        </div>
         <Group justify="space-between" align="flex-start" className="purchase-order-detail-hero-inner">
-          <div className="purchase-order-detail-title">
-            <Group gap="xs" className="purchase-order-detail-title-row">
-              <Title order={3}>
-                <CopyValue value={order.po_no}>{order.po_no}</CopyValue>
-              </Title>
-              <StatusBadge status={order.status} />
-              <Badge size="sm" variant="light" className="purchase-order-nowrap-badge">
-                {order.po_type || 'STANDARD'}
-              </Badge>
-              <Badge size="sm" variant="light" color="blue" className="purchase-order-nowrap-badge">
-                <CopyValue value={order.contract_no ?? ''}>{t('purchaseOrders.contractPrefix')} {order.contract_no ?? '-'}</CopyValue>
-              </Badge>
-            </Group>
-            <Text c="dimmed" size="sm" mt={4}>
-              {order.supplier?.supplier_name ?? order.supplier_id}
-            </Text>
-          </div>
+          <Group gap="sm" align="flex-start" wrap="nowrap" className="feature-detail-heading">
+            <div className="feature-hero-icon" aria-hidden="true"><IconShoppingCart size={19} /></div>
+            <div className="purchase-order-detail-title feature-detail-copy">
+              <Group gap="xs" className="purchase-order-detail-title-row">
+                <Title order={3}>
+                  <CopyValue value={order.po_no}>{order.po_no}</CopyValue>
+                </Title>
+                <StatusBadge status={order.status} />
+                <Badge size="sm" variant="light" className="purchase-order-nowrap-badge">
+                  {order.po_type || 'STANDARD'}
+                </Badge>
+                <Badge size="sm" variant="light" color="blue" className="purchase-order-nowrap-badge">
+                  <CopyValue value={order.contract_no ?? ''}>{t('purchaseOrders.contractPrefix')} {order.contract_no ?? '-'}</CopyValue>
+                </Badge>
+              </Group>
+              <Text c="dimmed" size="sm" mt={4}>
+                {order.supplier?.supplier_name ?? order.supplier_id}
+              </Text>
+            </div>
+          </Group>
           <Group gap="xs" wrap="nowrap" className="purchase-order-detail-actions">
-            <Button className="purchase-order-action-button" variant="subtle" leftSection={<IconX size={16} />} onClick={onClose}>
-              {t('common.close')}
-            </Button>
             <Button
               className="purchase-order-action-button"
               variant="light"

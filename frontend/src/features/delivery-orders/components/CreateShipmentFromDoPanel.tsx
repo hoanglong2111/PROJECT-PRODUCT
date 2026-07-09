@@ -1,10 +1,11 @@
-import { Alert, Button, Group, Paper, Select, SimpleGrid, Stack, Text, TextInput } from '@mantine/core';
+import { Alert, Button, Group, Paper, Select, SimpleGrid, Stack, Text, TextInput, Title } from '@mantine/core';
 import { IconAlertTriangle, IconAnchor } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { DateTimeField } from '@shared/components/DateField';
+import { BackActionButton } from '@shared/components/BackActionButton';
 import type { DeliveryOrder } from '@shared/api/logistics';
 import { createShipment } from '@shared/api/logistics';
 import { fetchCarriers } from '@shared/api/forwarders';
@@ -125,8 +126,16 @@ export function CreateShipmentFromDoPanel({
   if (!opened) return null;
 
   return (
-    <Paper withBorder p="lg" className="delivery-order-shipment-create-panel">
+    <Paper withBorder p="lg" className="delivery-order-shipment-create-panel feature-form-hero">
       <Stack gap="md">
+        <div>
+          <div className="feature-hero-nav">
+            <BackActionButton label={t('common.back')} onClick={onClose} />
+          </div>
+          <Title order={3}>
+            {t('shipments.createFromDoTitle', { doNumber })}
+          </Title>
+        </div>
         <Text size="sm" c="dimmed">
           {t('shipments.createFromDoDescription', { poNumber: poNumber || t('shipments.fallbackPo') })}
         </Text>

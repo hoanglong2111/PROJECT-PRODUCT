@@ -18,6 +18,7 @@ import {
 } from '@shared/api/quotations';
 import { queryKeys } from '@shared/api/queryKeys';
 import { CopyValue } from '@shared/components/CopyValue';
+import { BackActionButton } from '@shared/components/BackActionButton';
 import { DateTimeText } from '@shared/components/DateTimeText';
 import { FieldPair } from '@shared/components/FieldPair';
 import { StatusBadge } from '@shared/components/StatusBadge';
@@ -51,6 +52,7 @@ function formatEventType(value?: string | null): string {
 }
 
 type QuotationDetailProps = {
+  onBack: () => void;
   quotation: QuotationV1;
   onRevise?: (q: QuotationV1) => void;
   onInspectVersion?: (q: QuotationV1) => void;
@@ -311,7 +313,7 @@ function QuotationOptionComparePanel({
   );
 }
 
-export function QuotationDetail({ quotation, onRevise, onInspectVersion }: QuotationDetailProps) {
+export function QuotationDetail({ onBack, quotation, onRevise, onInspectVersion }: QuotationDetailProps) {
   const { t, statusLabel } = useI18n();
   const queryClient = useQueryClient();
   const { rateToVndOrNull } = useExchangeRates();
@@ -438,11 +440,14 @@ export function QuotationDetail({ quotation, onRevise, onInspectVersion }: Quota
 
   return (
     <Stack gap="sm" className="rfq-detail">
-      <Paper withBorder p={0} className="rfq-detail-hero">
+      <Paper withBorder p={0} className="rfq-detail-hero feature-detail-hero">
         <div className="rfq-detail-hero-main">
+          <div className="feature-hero-nav">
+            <BackActionButton label={t('common.backToList')} onClick={onBack} />
+          </div>
           <Group justify="space-between" align="flex-start" gap="md" className="rfq-detail-hero-inner">
             <Group gap="sm" align="flex-start" wrap="nowrap" className="rfq-detail-title-row">
-              <div className="rfq-icon-box">
+              <div className="rfq-icon-box feature-hero-icon">
                 <IconFileInvoice size={18} />
               </div>
               <div className="rfq-detail-title-copy">

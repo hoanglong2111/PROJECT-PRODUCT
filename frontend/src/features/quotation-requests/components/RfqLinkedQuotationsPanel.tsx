@@ -6,6 +6,7 @@ import { formatDate } from '@shared/utils/date';
 import { formatMoney } from '@shared/utils/money';
 
 import { rfqHasDraftQuotation, rfqResponseQuotations, type TFn } from '../model/quotationRequestModel';
+import { RfqCardFact } from './RfqResponsiveData';
 
 export const LINKED_QUOTATIONS_SECTION_ID = 'rfq-linked-quotations';
 
@@ -22,6 +23,27 @@ export function LinkedQuotationsPanel({
 }) {
   const responseQuotations = rfqResponseQuotations(request.quotations);
   const hasDraftQuotation = rfqHasDraftQuotation(request.quotations);
+  const quotationViews = responseQuotations.map((quotation) => {
+    const recommendedOption = quotation.options?.find((option) => option.is_recommended)
+      ?? quotation.options?.find((option) => option.is_selected)
+      ?? null;
+
+    return {
+      id: quotation.id,
+      number: quotation.quotation_no,
+      createdDate: formatDate(quotation.create_at),
+      status: statusLabel(quotation.status),
+      total: formatMoney(quotation.grand_total_amount, quotation.currency_code),
+      mode: quotation.mode ?? '-',
+      incoterm: quotation.incoterm_code ?? '-',
+      carrier: recommendedOption?.carrier_name ?? recommendedOption?.carrier_code ?? '-',
+      schedule: recommendedOption
+        ? `${recommendedOption.transit_time_days ?? '-'}d / ETD ${formatDate(recommendedOption.etd)} / ETA ${formatDate(recommendedOption.eta)}`
+        : '-',
+      optionCount: quotation.options?.length ?? 0,
+      validUntil: formatDate(quotation.valid_until),
+    };
+  });
 
   const subtitle =
     responseQuotations.length > 0
@@ -31,15 +53,15 @@ export function LinkedQuotationsPanel({
         : t('quotationRequests.noLinkedQuotations');
 
   return (
-    <div id={LINKED_QUOTATIONS_SECTION_ID}>
-      <Paper withBorder p={0} className="dl-data-panel">
+    <section id={LINKED_QUOTATIONS_SECTION_ID} className="rfq-linked-quotations" aria-labelledby="rfq-quotations-title">
+      <Paper withBorder p={0} className="dl-data-panel rfq-request-data-panel">
         <div className="rfq-panel-head">
           <div>
-            <Text fw={800}>{t('quotationRequests.linkedQuotations')}</Text>
+            <Text id="rfq-quotations-title" fw={800}>{t('quotationRequests.linkedQuotations')}</Text>
             <Text size="xs" c="dimmed">{subtitle}</Text>
           </div>
         </div>
-        <Table.ScrollContainer className="rfq-table-scroll-container" minWidth={1040}>
+        <Table.ScrollContainer className="rfq-table-scroll-container rfq-responsive-table" minWidth={1040}>
           <Table highlightOnHover verticalSpacing="sm" className="rfq-detail-table">
             <Table.Thead>
               <Table.Tr>
@@ -55,7 +77,7 @@ export function LinkedQuotationsPanel({
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {responseQuotations.length === 0 ? (
+              {quotationViews.length === 0 ? (
                 <Table.Tr>
                   <Table.Td colSpan={9}>
                     <Text c="dimmed" size="sm">
@@ -64,39 +86,30 @@ export function LinkedQuotationsPanel({
                   </Table.Td>
                 </Table.Tr>
               ) : (
-                responseQuotations.map((quotation) => {
-                  const recommendedOption = quotation.options?.find((option) => option.is_recommended)
-                    ?? quotation.options?.find((option) => option.is_selected)
-                    ?? null;
-
-                  return (
+                quotationViews.map((quotation) => (
                     <Table.Tr key={quotation.id}>
                       <Table.Td>
-                        <Text fw={700} size="sm">{quotation.quotation_no}</Text>
+                        <Text fw={700} size="sm">{quotation.number}</Text>
                       </Table.Td>
-                      <Table.Td>{formatDate(quotation.create_at)}</Table.Td>
-                      <Table.Td>{statusLabel(quotation.status)}</Table.Td>
+                      <Table.Td>{quotation.createdDate}</Table.Td>
+                      <Table.Td>{quotation.status}</Table.Td>
                       <Table.Td className="tabular-nums">
-                        {formatMoney(quotation.grand_total_amount, quotation.currency_code)}
+                        {quotation.total}
                       </Table.Td>
                       <Table.Td>
-                        <Text size="sm">{quotation.mode ?? '-'}</Text>
-                        <Text size="xs" c="dimmed">{quotation.incoterm_code ?? '-'}</Text>
+                        <Text size="sm">{quotation.mode}</Text>
+                        <Text size="xs" c="dimmed">{quotation.incoterm}</Text>
                       </Table.Td>
                       <Table.Td>
                         <Text size="sm" fw={600}>
-                          {recommendedOption?.carrier_name ?? recommendedOption?.carrier_code ?? '-'}
+                          {quotation.carrier}
                         </Text>
-                        <Text size="xs" c="dimmed">
-                          {recommendedOption
-                            ? `${recommendedOption.transit_time_days ?? '-'}d / ETD ${formatDate(recommendedOption.etd)} / ETA ${formatDate(recommendedOption.eta)}`
-                            : '-'}
-                        </Text>
+                        <Text size="xs" c="dimmed">{quotation.schedule}</Text>
                       </Table.Td>
                       <Table.Td ta="right" className="tabular-nums">
-                        {quotation.options?.length ?? 0}
+                        {quotation.optionCount}
                       </Table.Td>
-                      <Table.Td>{formatDate(quotation.valid_until)}</Table.Td>
+                      <Table.Td>{quotation.validUntil}</Table.Td>
                       <Table.Td ta="right">
                         <Button
                           size="xs"
@@ -108,13 +121,69 @@ export function LinkedQuotationsPanel({
                         </Button>
                       </Table.Td>
                     </Table.Tr>
-                  );
-                })
+                ))
               )}
             </Table.Tbody>
           </Table>
         </Table.ScrollContainer>
+        <div className="rfq-responsive-cards">
+          {quotationViews.length === 0 ? (
+            <div className="rfq-data-card-empty">
+              <Text c="dimmed" size="sm">
+                {hasDraftQuotation ? t('quotationRequests.draftQuotationInProgress') : t('quotationRequests.noLinkedQuotations')}
+              </Text>
+            </div>
+          ) : (
+            quotationViews.map((quotation) => (
+              <article className="rfq-data-card" key={quotation.id}>
+                <div className="rfq-data-card-head">
+                  <div>
+                    <Text fw={800}>{quotation.number}</Text>
+                    <Text size="xs" c="dimmed">{quotation.status}</Text>
+                  </div>
+                  <Text size="sm" fw={700} className="tabular-nums">{quotation.total}</Text>
+                </div>
+                <div className="rfq-data-card-facts">
+                  <RfqCardFact
+                    label={t('quotationRequests.response.modeIncoterm')}
+                    value={<Text size="sm">{quotation.mode} / {quotation.incoterm}</Text>}
+                  />
+                  <RfqCardFact
+                    label={t('quotationRequests.response.createdDate')}
+                    value={<Text size="sm" className="tabular-nums">{quotation.createdDate}</Text>}
+                  />
+                  <RfqCardFact
+                    label={t('quotations.validUntil')}
+                    value={<Text size="sm" className="tabular-nums">{quotation.validUntil}</Text>}
+                  />
+                  <RfqCardFact
+                    label={t('quotationRequests.response.optionCount')}
+                    value={<Text size="sm" className="tabular-nums">{quotation.optionCount}</Text>}
+                  />
+                  <RfqCardFact
+                    label={t('quotationRequests.response.recommendedOption')}
+                    value={
+                      <>
+                        <Text size="sm" fw={700}>{quotation.carrier}</Text>
+                        <Text size="xs" c="dimmed">{quotation.schedule}</Text>
+                      </>
+                    }
+                    wide
+                  />
+                </div>
+                <Button
+                  className="rfq-data-card-action"
+                  variant="light"
+                  rightSection={<IconExternalLink size={14} />}
+                  onClick={() => onView(quotation.id)}
+                >
+                  {t('common.view')}
+                </Button>
+              </article>
+            ))
+          )}
+        </div>
       </Paper>
-    </div>
+    </section>
   );
 }

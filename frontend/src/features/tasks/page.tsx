@@ -126,6 +126,7 @@ export function Tasks() {
   return (
     <Stack gap="lg">
       <PageHeader
+        icon={<IconChecklist size={20} />}
         title={t('tasks.title')}
         subtitle={t('tasks.subtitle')}
         actions={

@@ -54,7 +54,7 @@ import { CreateShipmentFromDoPanel } from './CreateShipmentFromDoPanel';
 import { DocumentUploadPanel } from './DocumentUploadPanel';
 import { OperationalGateSummary } from './OperationalGateSummary';
 
-export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: DeliveryOrder; onClose: () => void }) {
+export function DeliveryOrderDetail({ deliveryOrder, onClose }: { deliveryOrder: DeliveryOrder; onClose: () => void }) {
   const queryClient = useQueryClient();
   const { departmentLabel, documentLabel, shippingMethodLabel, t, taskRoleLabel } = useI18n();
   const [createShipmentOpen, setCreateShipmentOpen] = useState(false);
@@ -123,19 +123,6 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
   if (createShipmentOpen) {
     return (
       <Stack gap="md">
-        <Group justify="space-between" align="center" gap="md" className="dl-page-header delivery-order-shipment-create-header">
-          <Group gap="xs" align="center" wrap="wrap">
-            <BackActionButton
-              label={t('common.back')}
-              onClick={() => setCreateShipmentOpen(false)}
-            />
-            <Text c="dimmed" size="sm">/</Text>
-            <Text fw={700} size="sm">
-              {t('shipments.createFromDoTitle', { doNumber: deliveryOrder.order_info.order_number })}
-            </Text>
-          </Group>
-        </Group>
-
         <CreateShipmentFromDoPanel
           deliveryOrder={deliveryOrder}
           opened
@@ -147,34 +134,40 @@ export function DeliveryOrderDetail({ deliveryOrder }: { deliveryOrder: Delivery
 
   return (
     <Stack gap="md">
-      <Paper withBorder p="md" className="delivery-order-detail-hero">
+      <Paper withBorder p="md" className="delivery-order-detail-hero feature-detail-hero">
+        <div className="feature-hero-nav">
+          <BackActionButton label={t('common.backToList')} onClick={onClose} />
+        </div>
         <div className="delivery-order-detail-hero-grid">
-          <Stack gap="sm" className="delivery-order-detail-main">
-            <Group gap="xs" align="center" wrap="wrap">
-              <Title order={3}>
-                <CopyValue value={deliveryOrder.order_info.order_number}>
-                  {deliveryOrder.order_info.order_number}
-                </CopyValue>
-              </Title>
-              <StatusBadge status={deliveryOrder.order_info.status} />
-              <FlowTagBadge tags={deliveryOrder.flow_tags} />
-            </Group>
-            <Text c="dimmed" size="sm" lineClamp={2}>
-              {sourcePoNumber} / {sourceLotNumber} - {deliveryOrder.product_details.item_name_requested}
-            </Text>
-            <Group gap="xs" wrap="wrap" className="delivery-order-detail-links">
-              <EntityLink type="po" id={sourcePoNumber} />
-              <Button
-                component={Link}
-                to={`/tasks?do=${deliveryOrder.order_info.order_number}`}
-                size="xs"
-                variant="light"
-                rightSection={<IconArrowRight size={14} />}
-              >
-                {t('deliveryOrders.viewClosureTasks')}
-              </Button>
-            </Group>
-          </Stack>
+          <Group gap="sm" align="flex-start" wrap="nowrap" className="delivery-order-detail-main feature-detail-heading">
+            <div className="feature-hero-icon" aria-hidden="true"><IconTruckDelivery size={19} /></div>
+            <Stack gap="sm" className="feature-detail-copy">
+              <Group gap="xs" align="center" wrap="wrap">
+                <Title order={3}>
+                  <CopyValue value={deliveryOrder.order_info.order_number}>
+                    {deliveryOrder.order_info.order_number}
+                  </CopyValue>
+                </Title>
+                <StatusBadge status={deliveryOrder.order_info.status} />
+                <FlowTagBadge tags={deliveryOrder.flow_tags} />
+              </Group>
+              <Text c="dimmed" size="sm" lineClamp={2}>
+                {sourcePoNumber} / {sourceLotNumber} - {deliveryOrder.product_details.item_name_requested}
+              </Text>
+              <Group gap="xs" wrap="wrap" className="delivery-order-detail-links">
+                <EntityLink type="po" id={sourcePoNumber} />
+                <Button
+                  component={Link}
+                  to={`/tasks?do=${deliveryOrder.order_info.order_number}`}
+                  size="xs"
+                  variant="light"
+                  rightSection={<IconArrowRight size={14} />}
+                >
+                  {t('deliveryOrders.viewClosureTasks')}
+                </Button>
+              </Group>
+            </Stack>
+          </Group>
 
           <Stack gap="sm" className="delivery-order-detail-action-panel">
             <Group justify="space-between" gap="sm" wrap="nowrap">
