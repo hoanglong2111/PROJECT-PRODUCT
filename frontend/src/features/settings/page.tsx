@@ -17,7 +17,18 @@ import {
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useDebouncedValue, useDisclosure } from '@mantine/hooks';
-import { IconBulb, IconPalette, IconPlus, IconSearch, IconSettings, IconShieldLock, IconUserCircle, IconUserPlus, IconUsers } from '@tabler/icons-react';
+import {
+  IconBulb,
+  IconDeviceMobile,
+  IconPalette,
+  IconPlus,
+  IconSearch,
+  IconSettings,
+  IconShieldLock,
+  IconUserCircle,
+  IconUserPlus,
+  IconUsers,
+} from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -66,6 +77,7 @@ export function Settings() {
     density,
     dimLevel,
     language,
+    mobileQuickActionsVisible,
     resetFineTune,
     resolvedColorScheme,
     setAppearanceMode,
@@ -75,6 +87,7 @@ export function Settings() {
     setDensity,
     setDimLevel,
     setLanguage,
+    setMobileQuickActionsVisible,
     setVisualTheme,
     visualTheme,
   } = useWorkspacePreferences();
@@ -252,6 +265,33 @@ export function Settings() {
                 onChange={setLanguage}
               />
             </SimpleGrid>
+
+            <Paper withBorder p="lg" className="dl-data-panel settings-mobile-shell-card">
+              <Group justify="space-between" align="flex-start" gap="md" wrap="wrap">
+                <Group gap="sm" align="flex-start" wrap="nowrap">
+                  <IconDeviceMobile size={22} />
+                  <div>
+                    <Text fw={700}>{t('settings.mobileShell')}</Text>
+                    <Text c="dimmed" size="sm">
+                      {t('settings.mobileShellDescription')}
+                    </Text>
+                  </div>
+                </Group>
+                <Badge color={mobileQuickActionsVisible ? 'teal' : 'gray'} variant="light">
+                  {mobileQuickActionsVisible
+                    ? t('settings.mobileQuickActionsVisible')
+                    : t('settings.mobileQuickActionsHidden')}
+                </Badge>
+              </Group>
+              <Button
+                disabled={mobileQuickActionsVisible}
+                mt="md"
+                onClick={() => setMobileQuickActionsVisible(true)}
+                variant={mobileQuickActionsVisible ? 'default' : 'filled'}
+              >
+                {t('settings.mobileQuickActionsRestore')}
+              </Button>
+            </Paper>
 
             <Paper withBorder p="lg" className="dl-data-panel">
               <SimpleGrid cols={{ base: 1, md: 2, xl: 5 }}>

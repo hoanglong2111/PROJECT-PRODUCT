@@ -17,6 +17,13 @@
   min-width: 0;
 }
 
+.settings-mobile-shell-card {
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--kbfe-primary-color) 8%, transparent), transparent 48%),
+    var(--kbfe-surface-elevated);
+}
+
 .settings-swatch-card {
   position: relative;
   display: flex;
@@ -129,3 +136,8 @@
   flex-grow: 1.5;
 }
 
+@media (max-width: 48em) {
+  .settings-mobile-shell-card .mantine-Button-root {
+    width: 100%;
+  }
+}

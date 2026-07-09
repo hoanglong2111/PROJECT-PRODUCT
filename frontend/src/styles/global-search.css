@@ -143,14 +143,34 @@ html[data-kbfe-visual-theme='high-contrast'] .global-search-dropdown {
 @media (max-width: 48em) {
   .global-search-shell {
     min-width: 0;
-    margin-inline: 0.25rem;
+    margin-inline: 0;
     flex: 1 1 auto;
+    width: 100%;
     max-width: none;
   }
 
   .global-search-input input {
     min-width: 0;
     width: 100%;
+    min-height: 2.75rem;
+    padding-inline-start: 2.45rem;
+    border: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 82%, transparent);
+    border-radius: var(--kbfe-radius-pill);
+    background: color-mix(in srgb, var(--kbfe-surface-elevated) 92%, var(--kbfe-surface-subtle) 8%);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 24%, transparent);
+  }
+
+  .global-search-input input:focus,
+  .global-search-input input:focus-within,
+  .global-search-input input:focus-visible {
+    border-color: color-mix(in srgb, var(--kbfe-primary-color) 54%, var(--kbfe-border-primary));
+    box-shadow:
+      0 0 0 3px color-mix(in srgb, var(--kbfe-primary-color) 12%, transparent),
+      inset 0 1px 0 color-mix(in srgb, #ffffff 24%, transparent);
+  }
+
+  .global-search-dropdown {
+    border-radius: var(--kbfe-radius-lg) !important;
   }
 }
 
