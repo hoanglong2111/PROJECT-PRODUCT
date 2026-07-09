@@ -24,13 +24,46 @@ export function RfqOverviewPanel({ request, t, totalWeight }: { request: Quotati
     <Paper component="section" withBorder p={0} className="rfq-overview-panel" aria-labelledby="rfq-overview-title">
       <div className="rfq-panel-head">
         <div>
-          <Title order={3} id="rfq-overview-title">{t('quotationRequests.detailOverview')}</Title>
+          <Title order={3} id="rfq-overview-title" className="rfq-panel-title-highlight">{t('quotationRequests.detailOverview')}</Title>
           <Text size="xs" c="dimmed">{buildRfqRouteLabel(request)}</Text>
         </div>
       </div>
       <div className="rfq-overview-body">
+        <section className="rfq-overview-facts" aria-labelledby="rfq-information-title">
+          <Text id="rfq-information-title" size="sm" fw={700} className="rfq-overview-facts-title rfq-section-title-accent">
+            {t('quotationRequests.requestInformation')}
+          </Text>
+          <div className="rfq-overview-facts-list">
+            <FieldPair className="rfq-fact" label={t('quotationRequests.field.customerRef')} value={request.customer_ref ?? '-'} />
+            <FieldPair className="rfq-fact" label={t('quotationRequests.field.customerPoRef')} value={request.customer_po_ref ?? '-'} />
+            <FieldPair
+              className="rfq-fact"
+              label={t('quotationRequests.field.customerContractRef')}
+              value={request.customer_contract_ref ?? '-'}
+            />
+            <FieldPair
+              className="rfq-fact"
+              label={t('quotationRequests.field.supplier')}
+              value={request.supplier ? `${request.supplier.supplier_code} - ${request.supplier.supplier_name}` : request.supplier_id ?? '-'}
+            />
+            <FieldPair className="rfq-fact" label={t('quotationRequests.field.mode')} value={request.mode ?? '-'} />
+            <FieldPair className="rfq-fact" label={t('quotationRequests.field.incoterm')} value={request.incoterm_code ?? '-'} />
+            <FieldPair className="rfq-fact" label={t('quotations.currency')} value={request.currency_code ?? '-'} />
+            <FieldPair className="rfq-fact" label={t('quotationRequests.field.readyDate')} value={formatDate(request.desired_cargo_ready_date)} />
+            <FieldPair
+              className="rfq-fact"
+              label={t('quotationRequests.field.createdAt')}
+              value={<DateTimeText value={request.create_at} showZone />}
+            />
+            <FieldPair
+              className="rfq-fact"
+              label={t('quotationRequests.field.updatedAt')}
+              value={<DateTimeText value={request.update_at} showZone />}
+            />
+          </div>
+        </section>
         <section className="rfq-overview-cargo" aria-labelledby="rfq-cargo-title">
-          <Text id="rfq-cargo-title" size="sm" fw={700}>{t('quotationRequests.cargoAndItems')}</Text>
+          <Text id="rfq-cargo-title" size="sm" fw={700} className="rfq-section-title-accent">{t('quotationRequests.cargoAndItems')}</Text>
           <div className="rfq-detail-metric-grid">
             <MetricTile label={t('quotationRequests.field.weight')} value={totalWeight ? `${totalWeight} kg` : '-'} />
             <MetricTile label={t('quotationRequests.field.volume')} value={request.volume_cbm != null ? `${request.volume_cbm} cbm` : '-'} />
@@ -94,37 +127,6 @@ export function RfqOverviewPanel({ request, t, totalWeight }: { request: Quotati
               </div>
             )}
           </div>
-        </section>
-        <section className="rfq-overview-facts" aria-labelledby="rfq-information-title">
-          <Text id="rfq-information-title" size="sm" fw={700} className="rfq-overview-facts-title">
-            {t('quotationRequests.requestInformation')}
-          </Text>
-          <FieldPair className="rfq-fact" label={t('quotationRequests.field.customerRef')} value={request.customer_ref ?? '-'} />
-          <FieldPair className="rfq-fact" label={t('quotationRequests.field.customerPoRef')} value={request.customer_po_ref ?? '-'} />
-          <FieldPair
-            className="rfq-fact"
-            label={t('quotationRequests.field.customerContractRef')}
-            value={request.customer_contract_ref ?? '-'}
-          />
-          <FieldPair
-            className="rfq-fact"
-            label={t('quotationRequests.field.supplier')}
-            value={request.supplier ? `${request.supplier.supplier_code} - ${request.supplier.supplier_name}` : request.supplier_id ?? '-'}
-          />
-          <FieldPair className="rfq-fact" label={t('quotationRequests.field.mode')} value={request.mode ?? '-'} />
-          <FieldPair className="rfq-fact" label={t('quotationRequests.field.incoterm')} value={request.incoterm_code ?? '-'} />
-          <FieldPair className="rfq-fact" label={t('quotations.currency')} value={request.currency_code ?? '-'} />
-          <FieldPair className="rfq-fact" label={t('quotationRequests.field.readyDate')} value={formatDate(request.desired_cargo_ready_date)} />
-          <FieldPair
-            className="rfq-fact"
-            label={t('quotationRequests.field.createdAt')}
-            value={<DateTimeText value={request.create_at} showZone />}
-          />
-          <FieldPair
-            className="rfq-fact"
-            label={t('quotationRequests.field.updatedAt')}
-            value={<DateTimeText value={request.update_at} showZone />}
-          />
         </section>
       </div>
       {request.note ? (

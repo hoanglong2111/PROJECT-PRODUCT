@@ -2640,7 +2640,7 @@
 
 .rfq-overview-body {
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(14rem, 0.72fr);
+  grid-template-columns: minmax(14rem, 0.72fr) minmax(0, 1.25fr);
   gap: 0.75rem;
   min-width: 0;
   padding: 0.75rem;
@@ -2656,6 +2656,30 @@
 
 .rfq-overview-facts .rfq-fact {
   background: color-mix(in srgb, var(--kbfe-surface-elevated) 92%, var(--kbfe-surface-subtle) 8%);
+}
+
+.rfq-overview-facts-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.rfq-panel-title-highlight,
+.rfq-section-title-accent {
+  position: relative;
+  padding-left: 0.7rem;
+  color: var(--kbfe-primary-color);
+}
+
+.rfq-panel-title-highlight::before,
+.rfq-section-title-accent::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.15em;
+  bottom: 0.15em;
+  width: 0.2rem;
+  border-radius: 999px;
+  background: var(--kbfe-primary-color);
 }
 
 .rfq-overview-cargo {
@@ -3792,7 +3816,7 @@
 }
 
 .rfq-request-detail .rfq-overview-body {
-  grid-template-columns: minmax(0, 1.25fr) minmax(15rem, 0.75fr);
+  grid-template-columns: minmax(15rem, 0.75fr) minmax(0, 1.25fr);
   gap: 1.25rem;
   padding: 1rem;
 }
@@ -3800,6 +3824,8 @@
 .rfq-request-detail .rfq-overview-cargo {
   padding: 0;
   border: 0;
+  border-left: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 78%, transparent);
+  padding-left: 1.25rem;
   background: transparent;
 }
 
@@ -3817,8 +3843,6 @@
 
 .rfq-request-detail .rfq-overview-facts {
   gap: 0;
-  padding-left: 1.25rem;
-  border-left: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 78%, transparent);
 }
 
 .rfq-request-detail .rfq-overview-facts-title {
