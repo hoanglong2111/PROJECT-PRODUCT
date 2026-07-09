@@ -1,8 +1,9 @@
-import { Paper, Stack, Text } from '@mantine/core';
+import { Stack } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
+import { FlowContextBanner } from '@shared/components/FlowContextBanner';
 import { PageHeader } from '@shared/components/PageHeader';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
 import { WorkbenchHeader } from '@shared/components/WorkbenchHeader';
@@ -10,6 +11,7 @@ import { fetchDeliveryOrders } from '@shared/api/logistics';
 import { queryKeys } from '@shared/api/queryKeys';
 import { useEntityParam } from '@shared/hooks/useEntityParam';
 import { useI18n } from '@shared/i18n';
+import { buildTabCounts } from '@shared/lib/tabCounts';
 
 import {
   deliveryOrderStatusTabs,
@@ -125,30 +127,11 @@ export function DeliveryOrders() {
 
   const tabCounts = useMemo(
     () =>
-      deliveryOrderTabItems.reduce<Record<DeliveryOrderTab, number>>(
-        (counts, tab) => {
-          if (tab.value === 'all') {
-            counts[tab.value] = deliveryOrders.length;
-            return counts;
-          }
-
-          const statusTab = tab.value as Exclude<DeliveryOrderTab, 'all'>;
-          counts[tab.value] = deliveryOrders.filter((deliveryOrder) =>
-            deliveryOrderStatusTabs[statusTab].includes(deliveryOrder.order_info.status),
-          ).length;
-          return counts;
-        },
-        {
-          all: 0,
-          completed: 0,
-          customsCleared: 0,
-          customsWaiting: 0,
-          delivering: 0,
-          handover: 0,
-          internationalTransit: 0,
-          issues: 0,
-          processing: 0,
-        },
+      buildTabCounts(
+        deliveryOrders,
+        deliveryOrderTabItems.map((tab) => tab.value),
+        deliveryOrderStatusTabs,
+        (deliveryOrder) => deliveryOrder.order_info.status,
       ),
     [deliveryOrders],
   );
@@ -207,11 +190,9 @@ export function DeliveryOrders() {
       )}
 
       {focusedDo || focusedPo ? (
-        <Paper withBorder p="md" className="flow-context">
-          <Text size="sm">
-            {t('deliveryOrders.context', { kind: focusedDo ? 'DO' : 'PO', id: focusedDo ?? focusedPo })}
-          </Text>
-        </Paper>
+        <FlowContextBanner
+          message={t('deliveryOrders.context', { kind: focusedDo ? 'DO' : 'PO', id: focusedDo ?? focusedPo })}
+        />
       ) : null}
 
       {selectedDeliveryOrder ? (

@@ -1,7 +1,6 @@
 import {
   ActionIcon,
   Badge,
-  Button,
   Group,
   Loader,
   NumberFormatter,
@@ -23,10 +22,10 @@ import {
   IconContainer,
   IconEye,
   IconSearch,
-  IconX,
 } from '@tabler/icons-react';
 
 import type { PurchaseOrderV1 } from '@shared/api/purchaseOrders';
+import { ClearFiltersButton } from '@shared/components/ClearFiltersButton';
 import { CopyValue } from '@shared/components/CopyValue';
 import { DateField } from '@shared/components/DateField';
 import { DateTimeText } from '@shared/components/DateTimeText';
@@ -194,15 +193,12 @@ export function PurchaseOrderListView({
               />
             </div>
             <Group className="purchase-order-filter-actions dl-filter-actions" gap="xs" wrap="nowrap">
-              <Button
+              <ClearFiltersButton
                 className="purchase-order-filter-clear"
-                variant={hasActiveFilters ? 'light' : 'subtle'}
-                leftSection={<IconX size={16} />}
+                hasActiveFilters={hasActiveFilters}
+                label={t('purchaseOrders.clearFilters')}
                 onClick={onClearFilters}
-                disabled={!hasActiveFilters}
-              >
-                {t('purchaseOrders.clearFilters')}
-              </Button>
+              />
             </Group>
           </div>
         </Stack>

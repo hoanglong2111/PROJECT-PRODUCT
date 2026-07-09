@@ -11,6 +11,7 @@ import { CopyValue } from '@shared/components/CopyValue';
 import { EmptyState } from '@shared/components/EmptyState';
 import { FilterSegment } from '@shared/components/FilterSegment';
 import { useI18n, type MessageKey } from '@shared/i18n';
+import { buildTabCounts } from '@shared/lib/tabCounts';
 import { formatDate } from '@shared/utils/date';
 
 import {
@@ -109,19 +110,11 @@ export function QuotationRequestListView({
 
   const tabCounts = useMemo(
     () =>
-      quotationRequestTabItems.reduce<Record<QuotationRequestTab, number>>(
-        (counts, tab) => {
-          if (tab.value === 'all') {
-            counts.all = sortedRequests.length;
-            return counts;
-          }
-          const tabValue = tab.value as Exclude<QuotationRequestTab, 'all'>;
-          counts[tabValue] = sortedRequests.filter((request) =>
-            quotationRequestStatusTabs[tabValue].includes(request.status),
-          ).length;
-          return counts;
-        },
-        { all: 0, submitted: 0, received: 0, quoted: 0, confirmed: 0, cancelled: 0 },
+      buildTabCounts(
+        sortedRequests,
+        quotationRequestTabItems.map((tab) => tab.value),
+        quotationRequestStatusTabs,
+        (request) => request.status,
       ),
     [sortedRequests],
   );
