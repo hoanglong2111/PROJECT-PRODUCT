@@ -3672,7 +3672,6 @@
   }
 }
 
-<<<<<<< Updated upstream
 /* Quotation request detail — scoped to avoid changing the quotation response detail. */
 
 .rfq-request-detail {
@@ -4042,8 +4041,6 @@
   }
 }
 
-=======
->>>>>>> Stashed changes
 @media (max-width: 78em) {
   .quote-workflow-card-grid--rfq-intake {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -4066,7 +4063,6 @@
 }
 
 @media (max-width: 62em) {
-<<<<<<< Updated upstream
   .rfq-request-detail .rfq-detail-layout,
   .quote-workflow-layout,
   .quote-workflow-layout--with-summary,
@@ -4144,8 +4140,6 @@
     grid-column: 1 / -1;
   }
 
-=======
->>>>>>> Stashed changes
   .quote-workflow-layout,
   .quote-workflow-layout--with-summary,
   .quote-workflow-detail-layout {
@@ -4174,7 +4168,6 @@
 }
 
 @media (max-width: 48em) {
-<<<<<<< Updated upstream
   .rfq-request-detail {
     padding-bottom: calc(5.25rem + env(safe-area-inset-bottom));
   }
@@ -4271,8 +4264,6 @@
 }
 
 @media (max-width: 48em) {
-=======
->>>>>>> Stashed changes
   .quote-workflow-hero,
   .quote-workflow-detail-hero {
     grid-template-columns: minmax(0, 1fr);
@@ -4330,7 +4321,6 @@
     height: 1.75rem;
   }
 }
-<<<<<<< Updated upstream
 
 @media (max-width: 34em) {
   .rfq-request-detail .rfq-detail-hero-main,
@@ -4367,5 +4357,3 @@
     transition: none;
   }
 }
-=======
->>>>>>> Stashed changes
