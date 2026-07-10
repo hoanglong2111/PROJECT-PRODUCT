@@ -24,6 +24,7 @@ type WorkspacePreferencesContextValue = {
   density: DensityPreference;
   dimLevel: number;
   language: WorkspaceLanguage;
+  mobileQuickActionsVisible: boolean;
   resetFineTune: () => void;
   resolvedColorScheme: ResolvedColorScheme;
   sidebarCollapsed: boolean;
@@ -34,6 +35,7 @@ type WorkspacePreferencesContextValue = {
   setDensity: (density: DensityPreference) => void;
   setDimLevel: (value: number) => void;
   setLanguage: (language: WorkspaceLanguage) => void;
+  setMobileQuickActionsVisible: (visible: boolean) => void;
   setVisualTheme: (visualTheme: VisualTheme) => void;
   toggleSidebar: () => void;
   visualTheme: VisualTheme;
@@ -44,6 +46,7 @@ const APPEARANCE_MODE_STORAGE_KEY = 'kbfe.preferences.appearance-mode';
 const VISUAL_THEME_STORAGE_KEY = 'kbfe.preferences.visual-theme';
 const DENSITY_STORAGE_KEY = 'kbfe.preferences.density';
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'kbfe.preferences.sidebar-collapsed';
+const MOBILE_QUICK_ACTIONS_VISIBLE_STORAGE_KEY = 'kbfe.preferences.mobile-quick-actions-visible';
 const COLOR_PRESET_STORAGE_KEY = 'kbfe.preferences.color-preset';
 const LEGACY_EVENT_THEME_STORAGE_KEY = 'kbfe.preferences.event-theme-legacy';
 const DIM_LEVEL_STORAGE_KEY = 'kbfe.preferences.dim-level';
@@ -120,6 +123,14 @@ function readStoredSidebarCollapsed(): boolean {
   return window.localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === 'true';
 }
 
+function readStoredMobileQuickActionsVisible(): boolean {
+  if (typeof window === 'undefined') {
+    return true;
+  }
+
+  return window.localStorage.getItem(MOBILE_QUICK_ACTIONS_VISIBLE_STORAGE_KEY) !== 'false';
+}
+
 const VALID_COLOR_PRESETS: ColorPresetId[] = [
   'teal', 'ocean', 'forest', 'sunset', 'midnight', 'lavender', 'rose', 'amber', 'slate',
 ];
@@ -164,6 +175,7 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
   const [visualTheme, setVisualThemeState] = useState<VisualTheme>(readStoredVisualTheme);
   const [density, setDensityState] = useState<DensityPreference>(readStoredDensity);
   const [sidebarCollapsed, setSidebarCollapsedState] = useState<boolean>(readStoredSidebarCollapsed);
+  const [mobileQuickActionsVisible, setMobileQuickActionsVisibleState] = useState<boolean>(readStoredMobileQuickActionsVisible);
   const [colorPreset, setColorPresetState] = useState<ColorPresetId>(readStoredColorPreset);
   // Contrast/color-intensity always start at full strength on every load/login —
   // they are session-only and never restored from a previous visit.
@@ -287,6 +299,13 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
     }
   };
 
+  const setMobileQuickActionsVisible = (visible: boolean) => {
+    setMobileQuickActionsVisibleState(visible);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(MOBILE_QUICK_ACTIONS_VISIBLE_STORAGE_KEY, String(visible));
+    }
+  };
+
   const setColorPreset = (nextPreset: ColorPresetId) => {
     setColorPresetState(nextPreset);
     if (typeof window !== 'undefined') {
@@ -331,6 +350,7 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
       density,
       dimLevel,
       language,
+      mobileQuickActionsVisible,
       resetFineTune,
       resolvedColorScheme,
       sidebarCollapsed,
@@ -341,6 +361,7 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
       setDensity,
       setDimLevel,
       setLanguage,
+      setMobileQuickActionsVisible,
       setVisualTheme,
       toggleSidebar,
       visualTheme,
@@ -353,6 +374,7 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
       density,
       dimLevel,
       language,
+      mobileQuickActionsVisible,
       resolvedColorScheme,
       sidebarCollapsed,
       visualTheme,
