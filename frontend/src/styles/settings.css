@@ -30,7 +30,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--kbfe-space-sm);
+  padding: 0.375rem;
   border-radius: var(--mantine-radius-md);
   border: 1px solid var(--kbfe-border-primary);
   background: var(--kbfe-surface-elevated);
@@ -40,7 +40,8 @@
     border-color 150ms cubic-bezier(0.2, 0.8, 0.2, 1),
     opacity 150ms ease,
     transform 150ms cubic-bezier(0.2, 0.8, 0.2, 1);
-  min-height: 84px;
+  min-width: 44px;
+  min-height: 44px;
 }
 
 .settings-swatch-card:hover {
@@ -53,6 +54,12 @@
   transform: scale(0.98);
 }
 
+.settings-swatch-card:focus-visible,
+.settings-tuner-option:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--kbfe-primary-color) 55%, transparent);
+  outline-offset: 2px;
+}
+
 .settings-swatch-card.is-active {
   border-color: var(--kbfe-primary-color);
   background: var(--kbfe-code-background);
@@ -62,8 +69,8 @@
 .settings-swatch-gradient {
   position: relative;
   display: flex;
-  width: 44px;
-  height: 22px;
+  width: 100%;
+  height: 30px;
   align-items: center;
   justify-content: center;
   overflow: hidden;
@@ -91,23 +98,84 @@
   background: color-mix(in srgb, var(--kbfe-surface-elevated) 70%, transparent);
 }
 
-.settings-swatch-label {
-  margin-top: var(--kbfe-space-xs);
-  font-size: var(--kbfe-font-size-xs);
-  font-weight: var(--kbfe-font-weight-semibold);
-  color: var(--kbfe-text-primary);
-  text-align: center;
-  max-width: 100%;
-  /* Preset/event names (e.g. "Đại dương", "Hổ phách") must stay readable — wrap
-     to a second line instead of truncating to a single letter + ellipsis. */
-  line-height: var(--kbfe-line-height-tight);
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  overflow: hidden;
-  overflow-wrap: anywhere;
+.settings-advanced-grid > * {
+  height: 100%;
 }
+
+.settings-tuner-selectors {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--kbfe-space-md);
+}
+
+.settings-tuner-control {
+  min-width: 0;
+  padding: var(--kbfe-space-xs) var(--kbfe-space-sm) var(--kbfe-space-sm);
+  border: 1px solid var(--kbfe-border-primary);
+  border-radius: var(--kbfe-radius-md);
+  background: color-mix(in srgb, var(--kbfe-primary-color) 2%, var(--kbfe-surface-elevated));
+}
+
+.settings-tuner-slider {
+  margin: var(--kbfe-space-sm) 0 0;
+  padding-inline: 0.375rem;
+}
+
+.settings-tuner-range-labels {
+  margin-top: 0.2rem;
+}
+
+.settings-preference-cards-grid > * {
+  height: 100%;
+}
+
+.settings-preset-section {
+  padding-top: var(--kbfe-space-md);
+  border-top: 1px solid var(--kbfe-border-primary);
+}
+
+.settings-preset-empty {
+  margin-top: var(--kbfe-space-sm);
+  padding: var(--kbfe-space-md);
+  text-align: center;
+  border: 1px dashed var(--kbfe-border-primary);
+  border-radius: var(--kbfe-radius-md);
+}
+
+.settings-preset-row {
+  padding: var(--kbfe-space-xs) var(--kbfe-space-sm);
+  border: 1px solid var(--kbfe-border-primary);
+  border-radius: var(--kbfe-radius-md);
+}
+
+.settings-preset-apply {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.settings-transparency-preview {
+  display: flex;
+  gap: var(--kbfe-space-sm);
+  min-height: 72px;
+  padding: var(--kbfe-space-sm);
+  overflow: hidden;
+  border: 1px solid var(--kbfe-border-primary);
+  border-radius: var(--kbfe-radius-md);
+  background: linear-gradient(125deg, var(--kbfe-primary-color), var(--kbfe-status-blue));
+}
+
+.settings-transparency-preview span {
+  flex: 1;
+  border: 1px solid color-mix(in srgb, #ffffff 35%, transparent);
+  border-radius: var(--kbfe-radius-sm);
+  background: color-mix(in srgb, var(--kbfe-surface-elevated) 72%, transparent);
+  backdrop-filter: blur(12px) saturate(1.1);
+}
+
+.settings-transparency-preview.is-low span { background: var(--kbfe-surface-elevated); backdrop-filter: none; }
+.settings-transparency-preview.is-high span { background: color-mix(in srgb, var(--kbfe-surface-elevated) 54%, transparent); backdrop-filter: blur(18px) saturate(1.25); }
+.settings-transparency-preview.is-ultra span { background: color-mix(in srgb, var(--kbfe-surface-elevated) 40%, transparent); backdrop-filter: blur(24px) saturate(1.4); }
 
 .settings-override-dim {
   opacity: 0.58;
@@ -270,7 +338,7 @@
   border: 1px solid var(--pv-border);
   border-radius: var(--kbfe-radius-md);
   background:
-    linear-gradient(125deg, color-mix(in srgb, var(--kbfe-primary-color) 8%, transparent), transparent 60%),
+    linear-gradient(125deg, color-mix(in srgb, var(--kbfe-primary-color) calc(8% * var(--kbfe-tuner-factor)), transparent), transparent 60%),
     var(--pv-surface);
 }
 
@@ -309,9 +377,9 @@
   gap: var(--kbfe-space-sm);
   padding: var(--kbfe-space-xs) var(--kbfe-space-sm);
   font-size: var(--kbfe-font-size-xs);
-  border: 1px solid color-mix(in srgb, var(--kbfe-primary-color) 40%, var(--pv-border));
+  border: 1px solid color-mix(in srgb, var(--kbfe-primary-color) calc(28% * var(--kbfe-tuner-factor)), var(--pv-border));
   border-radius: var(--kbfe-radius-md);
-  background: color-mix(in srgb, var(--kbfe-primary-color) 8%, var(--pv-surface));
+  background: color-mix(in srgb, var(--kbfe-primary-color) calc(8% * var(--kbfe-tuner-factor)), var(--pv-surface));
 }
 
 .settings-workspace-preview-next-label {

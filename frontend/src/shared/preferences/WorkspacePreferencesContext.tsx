@@ -11,8 +11,19 @@ import {
   type ExperienceProfile,
   type SurfaceTransparency,
 } from './experienceProfiles';
+import {
+  DEFAULT_FINE_TUNE_SETTINGS,
+  FINE_TUNE_PRESETS_STORAGE_KEY,
+  isFineTuneLevel,
+  readFineTunePresets,
+  validatePresetName,
+  type FineTuneLevel,
+  type FineTunePreset,
+  type FineTuneSettings,
+} from './fineTune';
 
 export type { AdaptivePresentation, ExperienceProfile, SurfaceTransparency };
+export type { FineTuneLevel, FineTunePreset, FineTuneSettings } from './fineTune';
 export type { ColorPresetId };
 export type WorkspaceLanguage = 'vi' | 'en';
 
@@ -25,14 +36,14 @@ export type AppearanceMode = 'light' | 'dark' | 'auto';
 export type ResolvedColorScheme = 'light' | 'dark';
 export type VisualTheme = 'standard' | 'high-contrast' | 'eye-comfort';
 export type DensityPreference = 'standard' | 'compact';
-
 type WorkspacePreferencesContextValue = {
   appearanceMode: AppearanceMode;
-  colorIntensity: number;
   colorPreset: ColorPresetId;
-  contrastLevel: number;
   density: DensityPreference;
-  dimLevel: number;
+  colorIntensityLevel: FineTuneLevel;
+  contrastLevel: FineTuneLevel;
+  dimLevel: FineTuneLevel;
+  fineTunePresets: FineTunePreset[];
   experienceProfile: ExperienceProfile;
   isProfileCustomized: boolean;
   language: WorkspaceLanguage;
@@ -46,11 +57,15 @@ type WorkspacePreferencesContextValue = {
   setAppearanceMode: (appearanceMode: AppearanceMode) => void;
   setExperienceProfile: (profile: ExperienceProfile) => void;
   setSurfaceTransparency: (transparency: SurfaceTransparency) => void;
-  setColorIntensity: (value: number) => void;
   setColorPreset: (preset: ColorPresetId) => void;
-  setContrastLevel: (value: number) => void;
   setDensity: (density: DensityPreference) => void;
-  setDimLevel: (value: number) => void;
+  setColorIntensityLevel: (level: FineTuneLevel) => void;
+  setContrastLevel: (level: FineTuneLevel) => void;
+  setDimLevel: (level: FineTuneLevel) => void;
+  saveFineTunePreset: (name: string) => void;
+  applyFineTunePreset: (id: string) => void;
+  renameFineTunePreset: (id: string, name: string) => void;
+  deleteFineTunePreset: (id: string) => void;
   setLanguage: (language: WorkspaceLanguage) => void;
   setMobileQuickActionsVisible: (visible: boolean) => void;
   setVisualTheme: (visualTheme: VisualTheme) => void;
@@ -65,16 +80,12 @@ const DENSITY_STORAGE_KEY = 'kbfe.preferences.density';
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'kbfe.preferences.sidebar-collapsed';
 const MOBILE_QUICK_ACTIONS_VISIBLE_STORAGE_KEY = 'kbfe.preferences.mobile-quick-actions-visible';
 const COLOR_PRESET_STORAGE_KEY = 'kbfe.preferences.color-preset';
-const LEGACY_EVENT_THEME_STORAGE_KEY = 'kbfe.preferences.event-theme-legacy';
+const FINE_TUNE_LEVEL_STORAGE_KEY = 'kbfe.preferences.fine-tune-level';
+const COLOR_INTENSITY_STORAGE_KEY = 'kbfe.preferences.color-intensity-level';
 const DIM_LEVEL_STORAGE_KEY = 'kbfe.preferences.dim-level';
+const CONTRAST_LEVEL_STORAGE_KEY = 'kbfe.preferences.contrast-level';
 const EXPERIENCE_PROFILE_STORAGE_KEY = 'kbfe.preferences.experience-profile';
 const SURFACE_TRANSPARENCY_STORAGE_KEY = 'kbfe.preferences.surface-transparency';
-
-const FINE_TUNE_DEFAULTS = {
-  colorIntensity: 100,
-  contrastLevel: 100,
-  dimLevel: 0,
-} as const;
 
 const THEME_TRANSITION_MS = 100;
 
@@ -151,7 +162,7 @@ function readStoredMobileQuickActionsVisible(): boolean {
 }
 
 const VALID_COLOR_PRESETS: ColorPresetId[] = [
-  'teal', 'ocean', 'forest', 'sunset', 'midnight', 'lavender', 'rose', 'amber', 'slate',
+  'teal', 'ocean', 'forest', 'sunset', 'midnight', 'lavender', 'rose', 'amber', 'slate', 'aurora',
 ];
 
 function readStoredColorPreset(): ColorPresetId {
@@ -185,36 +196,40 @@ function readStoredExperienceProfile(): ExperienceProfile {
 
 function readStoredSurfaceTransparency(profile: ExperienceProfile): SurfaceTransparency {
   if (typeof window === 'undefined') {
-    return 'full';
+    return 'medium';
   }
 
   const value = window.localStorage.getItem(SURFACE_TRANSPARENCY_STORAGE_KEY);
-  if (value === 'full' || value === 'reduced') {
-    return value;
-  }
+  if (value === 'full') return 'medium';
+  if (value === 'reduced') return 'low';
+  if (value === 'low' || value === 'medium' || value === 'high' || value === 'ultra') return value;
 
   return PROFILE_DEFAULTS[profile].transparency;
 }
 
-function readStoredFineTune(key: string, fallback: number): number {
+function readLevel(key: string, fallback: FineTuneLevel = 'medium'): FineTuneLevel {
   if (typeof window === 'undefined') {
-    return fallback;
+    return 'medium';
   }
-
-  const value = Number(window.localStorage.getItem(key));
-  if (Number.isNaN(value)) {
-    return fallback;
-  }
-
-  return Math.min(100, Math.max(0, value));
+  const value = window.localStorage.getItem(key);
+  return isFineTuneLevel(value) ? value : fallback;
 }
 
-if (typeof window !== 'undefined') {
-  // One-time cleanup of removed preferences (event theme, persisted fine-tune values).
-  window.localStorage.removeItem('kbfe.preferences.event-theme');
-  window.localStorage.removeItem(LEGACY_EVENT_THEME_STORAGE_KEY);
-  window.localStorage.removeItem('kbfe.preferences.color-intensity');
-  window.localStorage.removeItem('kbfe.preferences.contrast-level');
+export function readStoredFineTuneSettings(): FineTuneSettings {
+  if (typeof window === 'undefined') return DEFAULT_FINE_TUNE_SETTINGS;
+  const legacy = readLevel(FINE_TUNE_LEVEL_STORAGE_KEY);
+  if (!window.localStorage.getItem(COLOR_INTENSITY_STORAGE_KEY) && isFineTuneLevel(window.localStorage.getItem(FINE_TUNE_LEVEL_STORAGE_KEY))) {
+    window.localStorage.setItem(COLOR_INTENSITY_STORAGE_KEY, legacy);
+  }
+  const storedTransparency = window.localStorage.getItem(SURFACE_TRANSPARENCY_STORAGE_KEY);
+  if (storedTransparency === 'full') window.localStorage.setItem(SURFACE_TRANSPARENCY_STORAGE_KEY, 'medium');
+  if (storedTransparency === 'reduced') window.localStorage.setItem(SURFACE_TRANSPARENCY_STORAGE_KEY, 'low');
+  return {
+    colorIntensityLevel: readLevel(COLOR_INTENSITY_STORAGE_KEY, legacy),
+    dimLevel: readLevel(DIM_LEVEL_STORAGE_KEY),
+    contrastLevel: readLevel(CONTRAST_LEVEL_STORAGE_KEY),
+    transparencyLevel: readStoredSurfaceTransparency(readStoredExperienceProfile()),
+  };
 }
 
 export function WorkspacePreferencesProvider({ children }: { children: React.ReactNode }) {
@@ -226,16 +241,14 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
   const [mobileQuickActionsVisible, setMobileQuickActionsVisibleState] = useState<boolean>(readStoredMobileQuickActionsVisible);
   const [colorPreset, setColorPresetState] = useState<ColorPresetId>(readStoredColorPreset);
   const [experienceProfile, setExperienceProfileState] = useState<ExperienceProfile>(readStoredExperienceProfile);
-  const [surfaceTransparency, setSurfaceTransparencyState] = useState<SurfaceTransparency>(() =>
-    readStoredSurfaceTransparency(readStoredExperienceProfile()),
+  const initialFineTune = useMemo(() => readStoredFineTuneSettings(), []);
+  const [surfaceTransparency, setSurfaceTransparencyState] = useState(initialFineTune.transparencyLevel);
+  const [colorIntensityLevel, setColorIntensityLevelState] = useState(initialFineTune.colorIntensityLevel);
+  const [dimLevel, setDimLevelState] = useState(initialFineTune.dimLevel);
+  const [contrastLevel, setContrastLevelState] = useState(initialFineTune.contrastLevel);
+  const [fineTunePresets, setFineTunePresets] = useState<FineTunePreset[]>(() =>
+    readFineTunePresets(typeof window === 'undefined' ? undefined : window.localStorage),
   );
-  // Contrast/color-intensity always start at full strength on every load/login —
-  // they are session-only and never restored from a previous visit.
-  const [colorIntensity, setColorIntensityState] = useState<number>(FINE_TUNE_DEFAULTS.colorIntensity);
-  const [dimLevel, setDimLevelState] = useState<number>(() =>
-    readStoredFineTune(DIM_LEVEL_STORAGE_KEY, FINE_TUNE_DEFAULTS.dimLevel),
-  );
-  const [contrastLevel, setContrastLevelState] = useState<number>(FINE_TUNE_DEFAULTS.contrastLevel);
   const themeTransitionTimeoutRef = useRef<number | null>(null);
   const [resolvedColorScheme, setResolvedColorScheme] = useState<ResolvedColorScheme>(() => {
     const storedAppearanceMode = readStoredAppearanceMode();
@@ -293,17 +306,17 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
     document.documentElement.dataset.kbfeContentEmphasis = PROFILE_DEFAULTS[experienceProfile].presentation.contentEmphasis;
     document.documentElement.dataset.kbfeSecondaryContrast =
       PROFILE_DEFAULTS[experienceProfile].presentation.secondaryContrast;
-    document.documentElement.style.setProperty('--kbfe-user-intensity', String(colorIntensity / 100));
-    document.documentElement.style.setProperty('--kbfe-user-dim', String(dimLevel / 100));
-    document.documentElement.style.setProperty('--kbfe-user-contrast', String(contrastLevel / 100));
+    document.documentElement.dataset.kbfeColorIntensity = colorIntensityLevel;
+    document.documentElement.dataset.kbfeDimLevel = dimLevel;
+    document.documentElement.dataset.kbfeContrastLevel = contrastLevel;
   }, [
     appearanceMode,
-    colorIntensity,
     colorPreset,
-    contrastLevel,
     density,
-    dimLevel,
     experienceProfile,
+    colorIntensityLevel,
+    contrastLevel,
+    dimLevel,
     language,
     resolvedColorScheme,
     surfaceTransparency,
@@ -373,23 +386,16 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
     }
   };
 
-  const setColorIntensity = (nextValue: number) => {
-    const clamped = Math.min(100, Math.max(0, nextValue));
-    setColorIntensityState(clamped);
-  };
-
-  const setDimLevel = (nextValue: number) => {
-    const clamped = Math.min(100, Math.max(0, nextValue));
-    setDimLevelState(clamped);
+  const persistLevel = (key: string, level: FineTuneLevel, setter: (value: FineTuneLevel) => void) => {
+    startThemeTransition();
+    setter(level);
     if (typeof window !== 'undefined') {
-      window.localStorage.setItem(DIM_LEVEL_STORAGE_KEY, String(clamped));
+      window.localStorage.setItem(key, level);
     }
   };
-
-  const setContrastLevel = (nextValue: number) => {
-    const clamped = Math.min(100, Math.max(0, nextValue));
-    setContrastLevelState(clamped);
-  };
+  const setColorIntensityLevel = (level: FineTuneLevel) => persistLevel(COLOR_INTENSITY_STORAGE_KEY, level, setColorIntensityLevelState);
+  const setDimLevel = (level: FineTuneLevel) => persistLevel(DIM_LEVEL_STORAGE_KEY, level, setDimLevelState);
+  const setContrastLevel = (level: FineTuneLevel) => persistLevel(CONTRAST_LEVEL_STORAGE_KEY, level, setContrastLevelState);
 
   const setSurfaceTransparency = (nextTransparency: SurfaceTransparency) => {
     setSurfaceTransparencyState(nextTransparency);
@@ -423,10 +429,36 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
   };
 
   const resetFineTune = () => {
-    setColorIntensity(FINE_TUNE_DEFAULTS.colorIntensity);
-    setDimLevel(FINE_TUNE_DEFAULTS.dimLevel);
-    setContrastLevel(FINE_TUNE_DEFAULTS.contrastLevel);
+    setColorIntensityLevel('medium');
+    setDimLevel('medium');
+    setContrastLevel('medium');
+    setSurfaceTransparency('medium');
   };
+
+  const persistPresets = (next: FineTunePreset[]) => {
+    setFineTunePresets(next);
+    if (typeof window !== 'undefined') window.localStorage.setItem(FINE_TUNE_PRESETS_STORAGE_KEY, JSON.stringify(next));
+  };
+  const saveFineTunePreset = (name: string) => {
+    if (validatePresetName(name, fineTunePresets)) return;
+    persistPresets([...fineTunePresets, {
+      id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`,
+      name: name.trim(), colorIntensityLevel, dimLevel, contrastLevel, transparencyLevel: surfaceTransparency,
+    }]);
+  };
+  const applyFineTunePreset = (id: string) => {
+    const preset = fineTunePresets.find((item) => item.id === id);
+    if (!preset) return;
+    setColorIntensityLevel(preset.colorIntensityLevel);
+    setDimLevel(preset.dimLevel);
+    setContrastLevel(preset.contrastLevel);
+    setSurfaceTransparency(preset.transparencyLevel);
+  };
+  const renameFineTunePreset = (id: string, name: string) => {
+    if (validatePresetName(name, fineTunePresets, id)) return;
+    persistPresets(fineTunePresets.map((preset) => preset.id === id ? { ...preset, name: name.trim() } : preset));
+  };
+  const deleteFineTunePreset = (id: string) => persistPresets(fineTunePresets.filter((preset) => preset.id !== id));
 
   // Bind the money formatter's locale to the language synchronously (during render, not
   // in an effect) so children on the same render pass format money in the right locale.
@@ -435,12 +467,13 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
   const value = useMemo(
     () => ({
       appearanceMode,
-      colorIntensity,
       colorPreset,
-      contrastLevel,
       density,
-      dimLevel,
       experienceProfile,
+      colorIntensityLevel,
+      contrastLevel,
+      dimLevel,
+      fineTunePresets,
       isProfileCustomized: isProfileCustomized(experienceProfile, {
         density,
         transparency: surfaceTransparency,
@@ -457,11 +490,15 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
       setAppearanceMode,
       setExperienceProfile,
       setSurfaceTransparency,
-      setColorIntensity,
       setColorPreset,
-      setContrastLevel,
       setDensity,
+      setColorIntensityLevel,
+      setContrastLevel,
       setDimLevel,
+      saveFineTunePreset,
+      applyFineTunePreset,
+      renameFineTunePreset,
+      deleteFineTunePreset,
       setLanguage,
       setMobileQuickActionsVisible,
       setVisualTheme,
@@ -470,12 +507,13 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
     }),
     [
       appearanceMode,
-      colorIntensity,
       colorPreset,
-      contrastLevel,
       density,
-      dimLevel,
       experienceProfile,
+      colorIntensityLevel,
+      contrastLevel,
+      dimLevel,
+      fineTunePresets,
       language,
       mobileQuickActionsVisible,
       resolvedColorScheme,

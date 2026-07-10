@@ -25,7 +25,7 @@ describe('experience profiles', () => {
     expect(PROFILE_DEFAULTS['operational-focus']).toMatchObject({ density: 'compact', visualTheme: 'standard' });
     expect(PROFILE_DEFAULTS.overview).toMatchObject({ density: 'standard', visualTheme: 'standard' });
     expect(PROFILE_DEFAULTS['eye-comfort']).toMatchObject({ visualTheme: 'eye-comfort' });
-    expect(PROFILE_DEFAULTS.accessible).toMatchObject({ transparency: 'reduced', visualTheme: 'high-contrast' });
+    expect(PROFILE_DEFAULTS.accessible).toMatchObject({ transparency: 'low', visualTheme: 'high-contrast' });
   });
 
   it('validates profile ids', () => {
@@ -64,13 +64,13 @@ describe('experience profiles', () => {
 
     it('is customized when any advanced control diverges', () => {
       expect(
-        isProfileCustomized('overview', { density: 'compact', transparency: 'full', visualTheme: 'standard' }),
+        isProfileCustomized('overview', { density: 'compact', transparency: 'medium', visualTheme: 'standard' }),
       ).toBe(true);
       expect(
-        isProfileCustomized('overview', { density: 'standard', transparency: 'reduced', visualTheme: 'standard' }),
+        isProfileCustomized('overview', { density: 'standard', transparency: 'low', visualTheme: 'standard' }),
       ).toBe(true);
       expect(
-        isProfileCustomized('overview', { density: 'standard', transparency: 'full', visualTheme: 'eye-comfort' }),
+        isProfileCustomized('overview', { density: 'standard', transparency: 'medium', visualTheme: 'eye-comfort' }),
       ).toBe(true);
     });
   });

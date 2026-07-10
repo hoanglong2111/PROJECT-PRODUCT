@@ -12,7 +12,8 @@ export type ExperienceProfile =
   | 'eye-comfort'
   | 'accessible';
 
-export type SurfaceTransparency = 'full' | 'reduced';
+export type { SurfaceTransparency } from './fineTune';
+import type { SurfaceTransparency } from './fineTune';
 
 export type AdaptivePresentation = {
   chartEmphasis: 'overview' | 'exceptions';
@@ -38,25 +39,25 @@ export const PROFILE_DEFAULTS: Record<ExperienceProfile, ProfileDefaults> = {
   'operational-focus': {
     density: 'compact',
     presentation: { chartEmphasis: 'exceptions', contentEmphasis: 'execution', secondaryContrast: 'muted' },
-    transparency: 'full',
+    transparency: 'medium',
     visualTheme: 'standard',
   },
   overview: {
     density: 'standard',
     presentation: { chartEmphasis: 'overview', contentEmphasis: 'planning', secondaryContrast: 'normal' },
-    transparency: 'full',
+    transparency: 'medium',
     visualTheme: 'standard',
   },
   'eye-comfort': {
     density: 'standard',
     presentation: { chartEmphasis: 'overview', contentEmphasis: 'planning', secondaryContrast: 'normal' },
-    transparency: 'full',
+    transparency: 'medium',
     visualTheme: 'eye-comfort',
   },
   accessible: {
     density: 'standard',
     presentation: { chartEmphasis: 'overview', contentEmphasis: 'execution', secondaryContrast: 'normal' },
-    transparency: 'reduced',
+    transparency: 'low',
     visualTheme: 'high-contrast',
   },
 };

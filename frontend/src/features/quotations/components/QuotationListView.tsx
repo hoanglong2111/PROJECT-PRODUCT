@@ -66,7 +66,7 @@ export function QuotationListView({ filteredQuotations, onInspect, supplierOptio
   ]);
   return (
     <Stack gap="md" className="rfq-list">
-      <SimpleGrid cols={{ base: 1, sm: 3 }} className="rfq-metric-grid">
+      <SimpleGrid cols={{ base: 1, sm: 3 }} className="rfq-metric-grid dl-metrics-strip">
         <Metric
           className="rfq-metric-card"
           label={t('quotations.metricShown')}

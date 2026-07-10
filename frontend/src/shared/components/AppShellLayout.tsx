@@ -169,10 +169,8 @@ export function AppShellLayout() {
           </div>
 
           <div className="header-body">
-            <div className="header-search-track" data-rail={railMode ? 'true' : undefined}>
-              <div className="header-search-spacer" aria-hidden="true" />
+            <div className="header-search-track">
               <GlobalSearch />
-              <div className="header-search-spacer" aria-hidden="true" />
             </div>
 
             <Group className="header-actions" gap="xs" wrap="nowrap">

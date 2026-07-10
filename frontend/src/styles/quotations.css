@@ -445,10 +445,14 @@ html[data-kbfe-resolved-color-scheme='dark'] .rfq-list-panel {
 }
 
 .rfq-metric-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   min-width: 0;
+  /* Compact vertically, but retain the same horizontal inset and icon anchor
+     as the standard metric cards used elsewhere in the workspace. */
+  padding: var(--kbfe-space-sm) var(--kbfe-space-md) !important;
+}
+
+.rfq-metric-card > .mantine-Group-root {
+  width: 100%;
 }
 
 .rfq-form-hero,

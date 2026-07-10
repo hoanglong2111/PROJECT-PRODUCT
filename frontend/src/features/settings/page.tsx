@@ -45,11 +45,6 @@ import { PageHeader } from '@shared/components/PageHeader';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
 import { useI18n } from '@shared/i18n';
 import {
-  type AppearanceMode,
-  type ColorPresetId,
-  type DensityPreference,
-  type VisualTheme,
-  type WorkspaceLanguage,
   useWorkspacePreferences,
 } from '@shared/preferences/WorkspacePreferencesContext';
 import {
@@ -59,7 +54,6 @@ import {
   ExperienceProfilesCard,
   FineTuneCard,
   LanguageCard,
-  TransparencyCard,
   VisualThemeCard,
   WorkspacePreviewCard,
 } from './components';
@@ -73,12 +67,13 @@ export function Settings() {
   const { user } = useAuth();
   const {
     appearanceMode,
-    colorIntensity,
     colorPreset,
-    contrastLevel,
     density,
-    dimLevel,
     experienceProfile,
+    colorIntensityLevel,
+    contrastLevel,
+    dimLevel,
+    fineTunePresets,
     isProfileCustomized,
     language,
     mobileQuickActionsVisible,
@@ -89,11 +84,15 @@ export function Settings() {
     setAppearanceMode,
     setExperienceProfile,
     setSurfaceTransparency,
-    setColorIntensity,
     setColorPreset,
-    setContrastLevel,
     setDensity,
+    setColorIntensityLevel,
+    setContrastLevel,
     setDimLevel,
+    saveFineTunePreset,
+    applyFineTunePreset,
+    renameFineTunePreset,
+    deleteFineTunePreset,
     setLanguage,
     setMobileQuickActionsVisible,
     setVisualTheme,
@@ -253,23 +252,25 @@ export function Settings() {
               </Text>
             </div>
 
-            <FineTuneCard
-              colorIntensity={colorIntensity}
-              contrastLevel={contrastLevel}
-              dimLevel={dimLevel}
-              onChangeColorIntensity={setColorIntensity}
-              onChangeContrastLevel={setContrastLevel}
-              onChangeDimLevel={setDimLevel}
-              onReset={resetFineTune}
-              visualTheme={visualTheme}
-            />
+            <SimpleGrid cols={{ base: 1, md: 2 }} className="settings-advanced-grid">
+              <ColorPresetGrid colorPreset={colorPreset} onChange={setColorPreset} presets={fineTunePresets}
+                onApplyPreset={applyFineTunePreset} onDeletePreset={deleteFineTunePreset}
+                onRenamePreset={renameFineTunePreset} onSavePreset={saveFineTunePreset} />
+              <FineTuneCard
+                colorIntensityLevel={colorIntensityLevel}
+                contrastLevel={contrastLevel}
+                dimLevel={dimLevel}
+                onColorIntensityChange={setColorIntensityLevel}
+                onContrastChange={setContrastLevel}
+                onDimChange={setDimLevel}
+                onReset={resetFineTune}
+                onTransparencyChange={setSurfaceTransparency}
+                transparencyLevel={surfaceTransparency}
+                visualTheme={visualTheme}
+              />
+            </SimpleGrid>
 
-            <ColorPresetGrid
-              colorPreset={colorPreset}
-              onChange={setColorPreset}
-            />
-
-            <SimpleGrid cols={{ base: 1, md: 2, xl: 3 }}>
+            <SimpleGrid cols={{ base: 1, sm: 2, xl: 4 }} className="settings-preference-cards-grid">
               <AppearanceModeCard
                 appearanceMode={appearanceMode}
                 onChange={setAppearanceMode}
@@ -281,11 +282,6 @@ export function Settings() {
               <DensityCard
                 density={density}
                 onChange={setDensity}
-              />
-              <TransparencyCard
-                onChange={setSurfaceTransparency}
-                transparency={surfaceTransparency}
-                visualTheme={visualTheme}
               />
               <LanguageCard
                 language={language}
@@ -328,7 +324,7 @@ export function Settings() {
                 />
                 <Info
                   label={t('settings.currentTransparency')}
-                  value={surfaceTransparency === 'full' ? t('settings.transparencyFull') : t('settings.transparencyReduced')}
+                  value={t(`settings.transparencyLevels.${surfaceTransparency}`)}
                 />
                 <Info label={t('settings.currentAppearance')} value={appearanceModeLabel(appearanceMode)} />
                 <Info label={t('settings.currentResolvedMode')} value={appearanceModeLabel(resolvedColorScheme)} />

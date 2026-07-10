@@ -91,10 +91,10 @@
 .feature-detail-hero,
 .feature-form-hero,
 .rfq-detail-hero.feature-detail-hero .rfq-detail-hero-main {
-  --kbfe-surface-wash-strength: 20%;
-  --kbfe-surface-base-tint: 6%;
-  --kbfe-surface-border-tint: 16%;
-  --kbfe-surface-shadow-tint: 18%;
+  --kbfe-surface-wash-strength: calc(20% * var(--kbfe-tuner-surface-scale));
+  --kbfe-surface-base-tint: calc(6% * var(--kbfe-tuner-surface-scale));
+  --kbfe-surface-border-tint: calc(16% * var(--kbfe-tuner-surface-scale));
+  --kbfe-surface-shadow-tint: calc(18% * var(--kbfe-tuner-surface-scale));
   box-shadow:
     0 6px 16px -22px color-mix(in srgb, var(--kbfe-surface-accent) var(--kbfe-surface-shadow-tint), var(--kbfe-shadow-color, #0f172a)),
     var(--kbfe-glass-highlight, none);
@@ -105,8 +105,8 @@ html[data-kbfe-resolved-color-scheme='dark'] .dl-page-header,
 html[data-kbfe-resolved-color-scheme='dark'] .feature-detail-hero,
 html[data-kbfe-resolved-color-scheme='dark'] .feature-form-hero,
 html[data-kbfe-resolved-color-scheme='dark'] .rfq-detail-hero.feature-detail-hero .rfq-detail-hero-main {
-  --kbfe-surface-wash-strength: 12%;
-  --kbfe-surface-base-tint: 4%;
+  --kbfe-surface-wash-strength: calc(12% * var(--kbfe-tuner-surface-scale));
+  --kbfe-surface-base-tint: calc(4% * var(--kbfe-tuner-surface-scale));
 }
 
 /* Nested hero wash surfaces sit inside their own border, no extra shadow. */
@@ -115,29 +115,29 @@ html[data-kbfe-resolved-color-scheme='dark'] .rfq-detail-hero.feature-detail-her
 }
 
 .kbfe-surface-wash--emphasis {
-  --kbfe-surface-wash-strength: 14%;
-  --kbfe-surface-base-tint: 4%;
-  --kbfe-surface-border-tint: 14%;
-  --kbfe-surface-shadow-tint: 14%;
+  --kbfe-surface-wash-strength: calc(14% * var(--kbfe-tuner-surface-scale));
+  --kbfe-surface-base-tint: calc(4% * var(--kbfe-tuner-surface-scale));
+  --kbfe-surface-border-tint: calc(14% * var(--kbfe-tuner-surface-scale));
+  --kbfe-surface-shadow-tint: calc(14% * var(--kbfe-tuner-surface-scale));
   box-shadow: 0 4px 12px -22px
     color-mix(in srgb, var(--kbfe-surface-accent) var(--kbfe-surface-shadow-tint), var(--kbfe-shadow-color, #0f172a));
 }
 
 html[data-kbfe-resolved-color-scheme='dark'] .kbfe-surface-wash--emphasis {
-  --kbfe-surface-wash-strength: 8%;
-  --kbfe-surface-base-tint: 3%;
+  --kbfe-surface-wash-strength: calc(8% * var(--kbfe-tuner-surface-scale));
+  --kbfe-surface-base-tint: calc(3% * var(--kbfe-tuner-surface-scale));
 }
 
 .kbfe-surface-wash--soft {
-  --kbfe-surface-wash-strength: 8%;
-  --kbfe-surface-base-tint: 2%;
-  --kbfe-surface-border-tint: 8%;
+  --kbfe-surface-wash-strength: calc(8% * var(--kbfe-tuner-surface-scale));
+  --kbfe-surface-base-tint: calc(2% * var(--kbfe-tuner-surface-scale));
+  --kbfe-surface-border-tint: calc(8% * var(--kbfe-tuner-surface-scale));
   box-shadow: none;
 }
 
 html[data-kbfe-resolved-color-scheme='dark'] .kbfe-surface-wash--soft {
-  --kbfe-surface-wash-strength: 5%;
-  --kbfe-surface-base-tint: 1%;
+  --kbfe-surface-wash-strength: calc(5% * var(--kbfe-tuner-surface-scale));
+  --kbfe-surface-base-tint: calc(1% * var(--kbfe-tuner-surface-scale));
 }
 
 /* Optional left accent bar — HERO ONLY (emphasis/soft must not use it). */
