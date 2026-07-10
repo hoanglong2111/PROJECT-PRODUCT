@@ -6,6 +6,17 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Safe-area tokens — single source for notch/Dynamic Island/punch-hole insets.
+     Every consumer must read these vars instead of calling env() directly. */
+  --kbfe-safe-top: env(safe-area-inset-top, 0px);
+  --kbfe-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --kbfe-safe-left: env(safe-area-inset-left, 0px);
+  --kbfe-safe-right: env(safe-area-inset-right, 0px);
+
+  /* Mobile keyboard inset, kept in sync by useVisualViewport(); 0px when no
+     keyboard is open or on desktop. */
+  --kbfe-keyboard-inset: 0px;
 }
 
 * {
