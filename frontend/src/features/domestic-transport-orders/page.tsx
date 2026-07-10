@@ -1,5 +1,5 @@
-import { Alert, Badge, Button, Drawer, Group, Paper, Select, SimpleGrid, Stack, TextInput } from '@mantine/core';
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Button, Drawer, Group, Paper, Select, SimpleGrid, Stack, TextInput } from '@mantine/core';
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   IconCircleCheck,
   IconClipboardList,
@@ -12,11 +12,7 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 
 import {
-  fetchDomesticTransportOrder,
   fetchDomesticTransportOrders,
-  runDomesticTransportOrderAction,
-  updateDomesticTransportOrder,
-  type DomesticTransportOrderAction,
   type DomesticTransportOrderStatusV1,
 } from '@shared/api/domesticTransportOrders';
 import { fetchShipments, type ShipmentRecord } from '@shared/api/logistics';
@@ -31,17 +27,8 @@ import { useI18n } from '@shared/i18n';
 
 import { CreateDtoFromShipmentPanel } from '../shipments/components/CreateDtoFromShipmentPanel';
 
-import {
-  PAGE_SIZE,
-  fromDateTimeInput,
-  getErrorMessage,
-  initialForm,
-  optionalString,
-  statusValues,
-  toDateTimeInput,
-  type FormState,
-} from './model/domesticTransportOrderModel';
-import { DomesticTransportOrderDetail } from './components/DomesticTransportOrderDetail';
+import { PAGE_SIZE, statusValues } from './model/domesticTransportOrderModel';
+import { DtoDetailDrawer } from './components/DtoDetailDrawer';
 import { DtoListTable } from './components/DtoListTable';
 
 export function DomesticTransportOrders() {
@@ -55,7 +42,6 @@ export function DomesticTransportOrders() {
   const [selectedDtoId, setSelectedDtoId] = useState<string | null>(null);
   const [selectedShipmentId, setSelectedShipmentId] = useState<string | null>(null);
   const [dtoModalOpen, setDtoModalOpen] = useState(false);
-  const [form, setForm] = useState<FormState>(initialForm);
 
   useEffect(() => {
     setPage(1);
@@ -100,41 +86,6 @@ export function DomesticTransportOrders() {
   }, [orders, selectedDtoId]);
 
   const selectedSummary = orders.find((order) => order.id === selectedDtoId) ?? null;
-  const detailQuery = useQuery({
-    enabled: Boolean(selectedDtoId),
-    queryKey: selectedDtoId
-      ? queryKeys.domesticTransportOrderDetail(selectedDtoId)
-      : queryKeys.domesticTransportOrderDetail('idle'),
-    queryFn: () => fetchDomesticTransportOrder(selectedDtoId ?? ''),
-  });
-  const selectedOrder = detailQuery.data ?? selectedSummary;
-
-  useEffect(() => {
-    if (!selectedOrder) {
-      setForm(initialForm);
-      return;
-    }
-
-    setForm({
-      actualDeliveryAt: toDateTimeInput(selectedOrder.actual_delivery_at),
-      actualPickupAt: toDateTimeInput(selectedOrder.actual_pickup_at),
-      destination: selectedOrder.destination ?? '',
-      driverIdentityNo: selectedOrder.driver_identity_no ?? '',
-      driverName: selectedOrder.driver_name ?? '',
-      driverPhone: selectedOrder.driver_phone ?? '',
-      note: selectedOrder.note ?? '',
-      origin: selectedOrder.origin ?? '',
-      podDocumentRef: selectedOrder.pod_document_ref ?? '',
-      quoteAmount: selectedOrder.quote_amount != null ? String(selectedOrder.quote_amount) : '',
-      quoteCurrency: selectedOrder.quote_currency ?? '',
-      scheduledDeliveryAt: toDateTimeInput(selectedOrder.scheduled_delivery_at),
-      scheduledPickupAt: toDateTimeInput(selectedOrder.scheduled_pickup_at),
-      truckVendorId: selectedOrder.truck_vendor_id,
-      vehiclePlate: selectedOrder.vehicle_plate ?? '',
-      vehicleType: selectedOrder.vehicle_type ?? '',
-      warehouse: selectedOrder.warehouse ?? '',
-    });
-  }, [selectedOrder]);
 
   const availableShipmentsQuery = useQuery({
     queryKey: ['dto-create-eligible-shipments'],
@@ -171,47 +122,10 @@ export function DomesticTransportOrders() {
     [statusLabel, t],
   );
 
-  const refreshOrder = (id = selectedDtoId) => {
+  const refreshLists = () => {
     void queryClient.invalidateQueries({ queryKey: queryKeys.domesticTransportOrderLists });
     void queryClient.invalidateQueries({ queryKey: queryKeys.domesticTransportOrders });
-    if (id) {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.domesticTransportOrderDetail(id) });
-    }
   };
-
-  const updateMutation = useMutation({
-    mutationFn: () => {
-      if (!selectedOrder) throw new Error(t('domesticTransportOrders.selectDtoFirst'));
-      return updateDomesticTransportOrder(selectedOrder.id, {
-        actual_delivery_at: fromDateTimeInput(form.actualDeliveryAt),
-        actual_pickup_at: fromDateTimeInput(form.actualPickupAt),
-        destination: optionalString(form.destination),
-        driver_identity_no: optionalString(form.driverIdentityNo),
-        driver_name: optionalString(form.driverName),
-        driver_phone: optionalString(form.driverPhone),
-        note: optionalString(form.note),
-        origin: optionalString(form.origin),
-        pod_document_ref: optionalString(form.podDocumentRef),
-        quote_amount: form.quoteAmount.trim() ? Number(form.quoteAmount) : null,
-        quote_currency: optionalString(form.quoteCurrency),
-        scheduled_delivery_at: fromDateTimeInput(form.scheduledDeliveryAt),
-        scheduled_pickup_at: fromDateTimeInput(form.scheduledPickupAt),
-        truck_vendor_id: form.truckVendorId,
-        vehicle_plate: optionalString(form.vehiclePlate),
-        vehicle_type: optionalString(form.vehicleType),
-        warehouse: optionalString(form.warehouse),
-      });
-    },
-    onSuccess: (updated) => refreshOrder(updated.id),
-  });
-
-  const actionMutation = useMutation({
-    mutationFn: (action: DomesticTransportOrderAction) => {
-      if (!selectedOrder) throw new Error(t('domesticTransportOrders.selectDtoFirst'));
-      return runDomesticTransportOrderAction(selectedOrder.id, action);
-    },
-    onSuccess: (updated) => refreshOrder(updated.id),
-  });
 
   const counts = useMemo(
     () => ({
@@ -334,12 +248,6 @@ export function DomesticTransportOrders() {
         total={total}
       />
 
-      {updateMutation.isError || actionMutation.isError ? (
-        <Alert color="red" icon={<IconX size={18} />} className="dto-error-alert">
-          {getErrorMessage(updateMutation.error ?? actionMutation.error, t('domesticTransportOrders.requestFailed'))}
-        </Alert>
-      ) : null}
-
       <Drawer
         opened={dtoModalOpen}
         onClose={() => setDtoModalOpen(false)}
@@ -362,60 +270,22 @@ export function DomesticTransportOrders() {
           shipments={selectedShipment ? [selectedShipment] : []}
           onClose={() => setDtoModalOpen(false)}
           onCreated={() => {
-            refreshOrder();
+            refreshLists();
             void ordersQuery.refetch();
             setSelectedShipmentId(null);
           }}
         />
       </Drawer>
 
-      <Drawer
-        opened={!!selectedDtoId}
+      <DtoDetailDrawer
+        dtoId={selectedDtoId}
         onClose={() => {
           setSelectedDtoId(null);
           closeDtoParam();
         }}
-        position="right"
-        size="85rem"
-        title={
-          <Group gap="xs" align="center">
-            <ModalTitle
-              feature="dto"
-              title={selectedOrder?.dto_no ?? t('domesticTransportOrders.detailTitle')}
-              subtitle={selectedOrder?.shipment?.shipment_no ?? selectedOrder?.shipment_id}
-            />
-            {detailQuery.isFetching ? <Badge variant="light">{t('common.loading')}</Badge> : null}
-          </Group>
-        }
-      >
-        <Stack gap="lg" style={{ minHeight: '100%' }}>
-          {updateMutation.isError || actionMutation.isError ? (
-            <Alert color="red" icon={<IconX size={18} />} className="dto-error-alert">
-              {getErrorMessage(updateMutation.error ?? actionMutation.error, t('domesticTransportOrders.requestFailed'))}
-            </Alert>
-          ) : null}
-
-          {selectedOrder ? (
-            <DomesticTransportOrderDetail
-              actionPending={actionMutation.isPending}
-              form={form}
-              isFetching={detailQuery.isFetching}
-              onAction={(action) => actionMutation.mutate(action)}
-              onChange={setForm}
-              onSave={() => updateMutation.mutate()}
-              order={selectedOrder}
-              saving={updateMutation.isPending}
-              truckVendorOptions={truckVendorOptions}
-            />
-          ) : (
-            <PageLoading
-              title={t('domesticTransportOrders.detailTitle')}
-              description={t('domesticTransportOrders.loadingDescription')}
-              metricCount={3}
-            />
-          )}
-        </Stack>
-      </Drawer>
+        summary={selectedSummary}
+        truckVendorOptions={truckVendorOptions}
+      />
     </Stack>
   );
 }
