@@ -91,32 +91,12 @@ export function ColorPresetGrid({ colorPreset, onChange, presets, onApplyPreset,
           )}
         </div>
       </Stack>
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-=======
-      <Modal opened={dialog !== null} onClose={() => setDialog(null)} title={dialog?.mode === 'create' ? t('settings.savePresetTitle') : dialog?.mode === 'rename' ? t('settings.renamePresetTitle') : t('settings.deletePresetTitle')} centered>
-        {dialog?.mode === 'delete' ? <><Text size="sm">{t('settings.deletePresetConfirm', { name: dialog.preset.name })}</Text><Group justify="flex-end" mt="lg"><Button variant="default" onClick={() => setDialog(null)}>{t('common.cancel')}</Button><Button color="red" onClick={() => { onDeletePreset(dialog.preset.id); setDialog(null); }}>{t('common.delete')}</Button></Group></> : <>
-          <TextInput autoFocus label={t('settings.presetName')} value={name} maxLength={40} onChange={(event) => setName(event.currentTarget.value)} error={name.length > 0 && error ? t(`settings.presetNameError.${error}`) : undefined} />
-          <Group justify="flex-end" mt="lg"><Button variant="default" onClick={() => setDialog(null)}>{t('common.cancel')}</Button><Button disabled={error !== null} onClick={() => {
-            if (!dialog || error) return;
-            if (dialog.mode === 'create') {
-              onSavePreset(name);
-            } else {
-              onRenamePreset(dialog.preset.id, name);
-            }
-            setDialog(null);
-          }}>{t('common.save')}</Button></Group>
-        </>}
-      </Modal>
->>>>>>> Stashed changes
-=======
       <Modal opened={dialog !== null} onClose={() => setDialog(null)} title={dialog?.mode === 'create' ? t('settings.savePresetTitle') : dialog?.mode === 'rename' ? t('settings.renamePresetTitle') : t('settings.deletePresetTitle')} centered>
         {dialog?.mode === 'delete' ? <><Text size="sm">{t('settings.deletePresetConfirm', { name: dialog.preset.name })}</Text><Group justify="flex-end" mt="lg"><Button variant="default" onClick={() => setDialog(null)}>{t('common.cancel')}</Button><Button color="red" onClick={() => { onDeletePreset(dialog.preset.id); setDialog(null); }}>{t('common.delete')}</Button></Group></> : <>
           <TextInput autoFocus label={t('settings.presetName')} value={name} maxLength={40} onChange={(event) => setName(event.currentTarget.value)} error={name.length > 0 && error ? t(`settings.presetNameError.${error}`) : undefined} />
           <Group justify="flex-end" mt="lg"><Button variant="default" onClick={() => setDialog(null)}>{t('common.cancel')}</Button><Button disabled={error !== null} onClick={() => { if (!dialog || error) return; if (dialog.mode === 'create') { onSavePreset(name); } else { onRenamePreset(dialog.preset.id, name); } setDialog(null); }}>{t('common.save')}</Button></Group>
         </>}
       </Modal>
->>>>>>> main
     </Paper>
   );
 }

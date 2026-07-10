@@ -64,14 +64,10 @@ export function DeliveryOrders() {
       }
 
       if (focusedPo) {
-<<<<<<< HEAD
-        return deliveryOrder.sap_integration.po_number === focusedPo;
-=======
         return (
           deliveryOrder.source_po_number === focusedPo ||
           deliveryOrder.sap_integration.po_number === focusedPo
         );
->>>>>>> main
       }
 
       return false;
