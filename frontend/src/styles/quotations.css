@@ -407,7 +407,6 @@
 
 .rfq-form-panel,
 .rfq-detail-hero,
-.rfq-list-panel,
 .rfq-breakdown-panel,
 .rfq-action-panel,
 .rfq-readiness-panel,
@@ -417,6 +416,25 @@
   border-color: var(--kbfe-border-primary) !important;
   background: var(--kbfe-surface-elevated);
   box-shadow: var(--kbfe-shadow-xs);
+}
+
+/* List panel only (not form/breakdown/financial panels above) — safe to
+   wash because every .rfq-list-row inside sets its own opaque background,
+   same reasoning as .dl-data-panel. */
+.rfq-list-panel {
+  position: relative;
+  overflow: hidden;
+  border-color: var(--kbfe-border-primary) !important;
+  background:
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--kbfe-primary-color) 7%, transparent), transparent 42%),
+    var(--kbfe-surface-elevated);
+  box-shadow: var(--kbfe-shadow-xs);
+}
+
+html[data-kbfe-resolved-color-scheme='dark'] .rfq-list-panel {
+  background:
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--kbfe-primary-color) 4%, transparent), transparent 42%),
+    var(--kbfe-surface-elevated);
 }
 
 .rfq-list-filter-panel {

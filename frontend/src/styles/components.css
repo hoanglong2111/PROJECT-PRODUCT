@@ -986,13 +986,26 @@ html[data-kbfe-visual-theme='high-contrast'] .dl-page-header::after {
 
 /* Data Table Panels.
    background NOT !important for the same reason as .dl-filter-panel — let any
-   feature panel background win, else fall back to surface-elevated. */
+   feature panel background win, else fall back to surface-elevated.
+   The wash is safe here even though the panel wraps a table: every
+   .mantine-Table-td below sets its own opaque background (see rule further
+   down), so the gradient only ever shows through the header strip/padding
+   gaps — it never sits behind actual row data. */
 .dl-data-panel {
+  position: relative;
   border-color: var(--kbfe-border-primary) !important;
-  background: var(--kbfe-surface-elevated);
+  background:
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--kbfe-primary-color) 7%, transparent), transparent 42%),
+    var(--kbfe-surface-elevated);
   box-shadow: var(--kbfe-shadow-sm) !important;
   border-radius: var(--mantine-radius-md);
   overflow: hidden;
+}
+
+html[data-kbfe-resolved-color-scheme='dark'] .dl-data-panel {
+  background:
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--kbfe-primary-color) 4%, transparent), transparent 42%),
+    var(--kbfe-surface-elevated);
 }
 
 .dl-data-panel,
@@ -1005,7 +1018,15 @@ html[data-kbfe-visual-theme='high-contrast'] .dl-page-header::after {
 .dl-data-panel-header {
   border-bottom: 1px solid var(--kbfe-border-primary);
   padding: var(--kbfe-space-sm) var(--kbfe-space-md);
-  background: color-mix(in srgb, var(--kbfe-border-primary) 5%, transparent);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--kbfe-primary-color) 10%, transparent), transparent 70%),
+    color-mix(in srgb, var(--kbfe-border-primary) 5%, transparent);
+}
+
+html[data-kbfe-resolved-color-scheme='dark'] .dl-data-panel-header {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--kbfe-primary-color) 6%, transparent), transparent 70%),
+    color-mix(in srgb, var(--kbfe-border-primary) 5%, transparent);
 }
 
 .mantine-Table-th {
