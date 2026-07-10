@@ -247,8 +247,17 @@ html {
   /* Frosted chrome surface: translucent so the fixed background grid reads
      through the navbar/header. Pinned opaque in high-contrast mode below. Only
      the app chrome uses this; dense cards, menus, and modals keep the opaque
-     --kbfe-surface-elevated so they never show page content through them. */
+     --kbfe-surface-elevated so they never show page content through them.
+     Tier 1 = pinned chrome (header/navbar/bottom-nav). Tier 2 = floating chrome
+     (sheets/dropdowns) — a touch more opaque since it usually holds list text
+     that needs to stay easy to scan. Both degrade to opaque automatically in
+     high-contrast (below) and reduced-transparency (base.css). */
   --kbfe-glass-surface: color-mix(in srgb, var(--kbfe-surface-elevated) 72%, transparent);
+  --kbfe-glass-surface-2: color-mix(in srgb, var(--kbfe-surface-elevated) 84%, transparent);
+  --kbfe-glass-blur-1: 18px;
+  --kbfe-glass-blur-2: 24px;
+  --kbfe-glass-saturate: 1.15;
+  --kbfe-glass-highlight: inset 0 1px 0 color-mix(in srgb, #ffffff 26%, transparent);
   --kbfe-decorative-spotlight: color-mix(in srgb, var(--kbfe-primary-color) 9%, transparent);
   --kbfe-decorative-vignette: transparent;
 
@@ -361,6 +370,8 @@ html[data-kbfe-visual-theme='high-contrast'] {
   --kbfe-background-secondary: var(--kbfe-background-secondary-base);
   --kbfe-surface-elevated: var(--kbfe-surface-elevated-base);
   --kbfe-glass-surface: var(--kbfe-surface-elevated);
+  --kbfe-glass-surface-2: var(--kbfe-surface-elevated);
+  --kbfe-glass-highlight: none;
   --kbfe-hover-background: var(--kbfe-hover-background-base);
   --kbfe-text-primary: var(--kbfe-text-primary-base);
   --kbfe-text-secondary: var(--kbfe-text-secondary-base);

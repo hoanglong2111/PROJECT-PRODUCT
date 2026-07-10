@@ -10,7 +10,7 @@ export function NotFound() {
   const { t } = useI18n();
 
   return (
-    <Center style={{ minHeight: 'calc(100vh - 128px)', padding: '2rem 1rem' }}>
+    <Center style={{ minHeight: 'calc(100dvh - 128px)', padding: '2rem 1rem' }}>
       <Container size="md">
         <Paper
           withBorder

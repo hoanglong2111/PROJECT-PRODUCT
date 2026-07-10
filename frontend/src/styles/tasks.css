@@ -162,7 +162,7 @@
   gap: 1rem;
 }
 
-@media (max-width: 48em) {
+@media (max-width: 47.9375em) {
   .task-form-layout {
     grid-template-columns: 1fr;
     gap: 1.25rem;
@@ -325,7 +325,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-@media (max-width: 48em) {
+@media (max-width: 47.9375em) {
   .tasks-filter-toggles {
     align-self: stretch;
     justify-content: flex-start;

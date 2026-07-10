@@ -698,7 +698,7 @@
   }
 }
 
-@media (max-width: 48em) {
+@media (max-width: 47.9375em) {
 
   .shipment-detail-title {
     flex-direction: column;
