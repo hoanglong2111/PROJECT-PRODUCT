@@ -11,6 +11,7 @@ import { ModalTitle } from '@shared/components/ModalTitle';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { useI18n } from '@shared/i18n';
 import { formatDate } from '@shared/utils/date';
+import { formatNumber } from '@shared/utils/number';
 
 import { rfqStatusColor } from '../../quotation-requests/model/quotationRequestModel';
 
@@ -88,12 +89,11 @@ export function rfqMatchesSearch(request: QuotationRequestV1, search: string): b
     .includes(normalized);
 }
 
-const numberFormatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });
 function formatMetric(value: number | string | null | undefined): string | null {
   if (value === null || value === undefined || value === '') return null;
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed === 0) return null;
-  return numberFormatter.format(parsed);
+  return formatNumber(parsed, { maximumFractionDigits: 2 });
 }
 
 export type RfqQuotationPickerModalProps = {

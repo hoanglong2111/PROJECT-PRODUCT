@@ -3,7 +3,6 @@ import {
   Anchor,
   Button,
   Group,
-  Paper,
   SimpleGrid,
   Stack,
   Text,
@@ -39,6 +38,7 @@ import { useTradeMasterDataOptions } from '@shared/hooks/useTradeMasterDataOptio
 import { useI18n } from '@shared/i18n';
 import { QUOTATION_CHARGE_GROUPS } from '@shared/lib/quotationChargeGroups';
 import { formatMoney } from '@shared/utils/money';
+import { formatNumber } from '@shared/utils/number';
 
 import {
   addDraftChargeLine,
@@ -597,7 +597,7 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
             )}
             {referenceCurrency && referenceRate ? (
               <Text size="xs" c="dimmed" mt="xs" className="rfq-reference-rate">
-                {t('quotations.referenceRate')}: 1 {referenceCurrency} = {new Intl.NumberFormat(locale).format(referenceRate)} VND
+                {t('quotations.referenceRate')}: 1 {referenceCurrency} = {formatNumber(referenceRate, { locale })} VND
               </Text>
             ) : null}
           </div>

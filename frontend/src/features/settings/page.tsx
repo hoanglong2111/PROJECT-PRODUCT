@@ -1,54 +1,35 @@
 import {
   Alert,
-  Avatar,
   Badge,
   Button,
   Group,
-  Modal,
   Paper,
-  PasswordInput,
-  Select,
   SimpleGrid,
   Stack,
-  Table,
   Tabs,
   Text,
-  TextInput,
 } from '@mantine/core';
-import { useForm } from '@mantine/form';
-import { useDebouncedValue, useDisclosure } from '@mantine/hooks';
+import { useDisclosure } from '@mantine/hooks';
 import {
   IconBulb,
   IconDeviceMobile,
   IconPalette,
-  IconPlus,
-  IconSearch,
   IconSettings,
   IconShieldLock,
   IconUserCircle,
-  IconUserPlus,
   IconUsers,
 } from '@tabler/icons-react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
-import { createUser, fetchUsers, type CreateUserPayload } from '@shared/api/system';
+import { fetchUsers } from '@shared/api/system';
 import { queryKeys } from '@shared/api/queryKeys';
-import { APP_ROLES, type AppRole } from '@shared/auth/types';
 import { useAuth } from '@shared/auth/useAuth';
-import { EmptyState } from '@shared/components/EmptyState';
-import { ListPagination, useListPagination } from '@shared/components/ListPagination';
-import { ModalTitle } from '@shared/components/ModalTitle';
 import { PageHeader } from '@shared/components/PageHeader';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
 import { useI18n } from '@shared/i18n';
 import {
-  type AppearanceMode,
-  type ColorPresetId,
-  type DensityPreference,
-  type VisualTheme,
-  type WorkspaceLanguage,
   useWorkspacePreferences,
 } from '@shared/preferences/WorkspacePreferencesContext';
 import {
@@ -60,10 +41,8 @@ import {
   ThemePreview,
   VisualThemeCard,
 } from './components';
-
-type CreateUserForm = Omit<CreateUserPayload, 'avatarUrl'> & {
-  avatarUrl: string;
-};
+import { CreateUserModal } from './components/CreateUserModal';
+import { UserManagementPanel } from './components/UserManagementPanel';
 
 export function Settings() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -90,8 +69,7 @@ export function Settings() {
     setVisualTheme,
     visualTheme,
   } = useWorkspacePreferences();
-  const { appearanceModeLabel, densityLabel, departmentLabel, languageLabel, roleLabel, t, visualThemeLabel } = useI18n();
-  const queryClient = useQueryClient();
+  const { appearanceModeLabel, densityLabel, languageLabel, t, visualThemeLabel } = useI18n();
   const [message, setMessage] = useState<string | null>(null);
   const canManageUsers = true;
   const requestedSection = searchParams.get('section');
@@ -105,69 +83,8 @@ export function Settings() {
   });
   const users = usersQuery.data ?? [];
 
-  const [search, setSearch] = useState('');
-  const [debouncedSearch] = useDebouncedValue(search, 250);
-  const [roleFilter, setRoleFilter] = useState<AppRole | null>(null);
   const [createModalOpened, createModalHandlers] = useDisclosure(false);
 
-  const filteredUsers = useMemo(() => {
-    const query = debouncedSearch.trim().toLowerCase();
-    return users.filter((account) => {
-      const matchesQuery =
-        query.length === 0 ||
-        account.fullName.toLowerCase().includes(query) ||
-        account.email.toLowerCase().includes(query) ||
-        account.position.toLowerCase().includes(query);
-      const matchesRole = !roleFilter || account.role === roleFilter;
-      return matchesQuery && matchesRole;
-    });
-  }, [debouncedSearch, roleFilter, users]);
-
-  const hasActiveFilters = debouncedSearch.trim().length > 0 || roleFilter !== null;
-
-  const {
-    page,
-    pageCount,
-    pageEnd,
-    pageStart,
-    setPage,
-    visibleItems: visibleUsers,
-  } = useListPagination(filteredUsers, [debouncedSearch, roleFilter]);
-
-  const form = useForm<CreateUserForm>({
-    initialValues: {
-      avatarUrl: '',
-      department: '',
-      email: '',
-      fullName: '',
-      password: '',
-      position: '',
-      role: 'SALE_STAFF',
-    },
-    validate: {
-      department: (value) => (value.trim().length === 0 ? t('settings.departmentRequired') : null),
-      email: (value) => (/^\S+@\S+\.\S+$/.test(value.trim()) ? null : t('settings.emailInvalid')),
-      fullName: (value) => (value.trim().length === 0 ? t('settings.fullNameRequired') : null),
-      password: (value) => (value.length >= 6 ? null : t('settings.passwordMin')),
-      position: (value) => (value.trim().length === 0 ? t('settings.positionRequired') : null),
-      role: (value) => (APP_ROLES.includes(value) ? null : t('settings.roleInvalid')),
-    },
-  });
-
-  const createUserMutation = useMutation({
-    mutationFn: createUser,
-    onSuccess: async (createdUser) => {
-      setMessage(t('settings.createdAccount', { email: createdUser.email }));
-      form.reset();
-      createModalHandlers.close();
-      await queryClient.invalidateQueries({ queryKey: queryKeys.users });
-    },
-  });
-
-  const roleOptions = useMemo(
-    () => APP_ROLES.map((role) => ({ label: roleLabel(role), value: role })),
-    [roleLabel],
-  );
   useEffect(() => {
     if (!user || canManageUsers || requestedSection !== 'accounts') {
       return;
@@ -356,160 +273,19 @@ export function Settings() {
             ) : (
               <Stack gap="md">
                 {message ? <Alert color="teal">{message}</Alert> : null}
-                {createUserMutation.isError ? (
-                  <Alert color="red">{t('settings.createAccountError')}</Alert>
-                ) : null}
 
-                <Modal
-                  opened={createModalOpened}
+                <CreateUserModal
                   onClose={createModalHandlers.close}
-                  title={
-                    <ModalTitle
-                      feature="settings"
-                      icon={<IconUserPlus size={18} stroke={1.8} />}
-                      title={t('settings.createAccount')}
-                    />
-                  }
-                  size="lg"
-                >
-                  <form
-                    onSubmit={form.onSubmit((values) => {
-                      setMessage(null);
-                      createUserMutation.mutate({
-                        avatarUrl: values.avatarUrl.trim() || null,
-                        department: values.department.trim(),
-                        email: values.email.trim().toLowerCase(),
-                        fullName: values.fullName.trim(),
-                        password: values.password,
-                        position: values.position.trim(),
-                        role: values.role,
-                      });
-                    })}
-                  >
-                    <Stack gap="sm">
-                      <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
-                        <TextInput label={t('settings.fullName')} placeholder="Nguyen Van A" {...form.getInputProps('fullName')} />
-                        <TextInput label="Email" placeholder="user@kbfe.local" {...form.getInputProps('email')} />
-                        <PasswordInput label={t('common.password')} placeholder={t('settings.passwordMin')} {...form.getInputProps('password')} />
-                        <Select label={t('common.role')} data={roleOptions} {...form.getInputProps('role')} />
-                        <TextInput label={t('common.position')} placeholder="PIC Manager" {...form.getInputProps('position')} />
-                        <TextInput label={t('common.department')} placeholder="Purchasing" {...form.getInputProps('department')} />
-                      </SimpleGrid>
-                      <TextInput label={t('settings.avatarUrl')} placeholder="https://example.com/avatar.png" {...form.getInputProps('avatarUrl')} />
-                      <Button type="submit" loading={createUserMutation.isPending} fullWidth>
-                        {t('settings.createAccount')}
-                      </Button>
-                    </Stack>
-                  </form>
-                </Modal>
+                  onCreated={(email) => setMessage(t('settings.createdAccount', { email }))}
+                  onSubmitStart={() => setMessage(null)}
+                  opened={createModalOpened}
+                />
 
-                <Paper withBorder p="md" className="dl-data-panel settings-accounts-table-panel">
-                  <Group justify="space-between" mb="sm" className="dl-data-panel-header" wrap="wrap">
-                    <Group gap="sm">
-                      <Text fw={700}>{t('settings.accounts')}</Text>
-                      <Badge variant="light">
-                        {hasActiveFilters
-                          ? `${filteredUsers.length}/${users.length}`
-                          : t('common.users', { count: users.length })}
-                      </Badge>
-                    </Group>
-                    <Button leftSection={<IconPlus size={16} />} onClick={createModalHandlers.open}>
-                      {t('settings.createAccount')}
-                    </Button>
-                  </Group>
-
-                  <Group gap="sm" mb="md" wrap="wrap" className="dl-filter-panel">
-                    <TextInput
-                      className="kbfe-search-input"
-                      leftSection={<IconSearch size={16} />}
-                      placeholder={t('settings.searchAccounts')}
-                      value={search}
-                      onChange={(event) => setSearch(event.currentTarget.value)}
-                      style={{ flex: '1 1 16rem' }}
-                    />
-                    <Select
-                      placeholder={t('settings.filterByRole')}
-                      data={roleOptions}
-                      value={roleFilter}
-                      onChange={(value) => setRoleFilter(value as AppRole | null)}
-                      clearable
-                      style={{ flex: '0 1 14rem' }}
-                    />
-                  </Group>
-
-                  {users.length === 0 ? (
-                    <EmptyState
-                      title={t('settings.noAccountsYet')}
-                      description={t('settings.noAccountsYetDescription')}
-                      action={{ label: t('settings.createAccount'), onClick: createModalHandlers.open }}
-                    />
-                  ) : filteredUsers.length === 0 ? (
-                    <EmptyState
-                      title={t('settings.noAccountsFound')}
-                      description={t('settings.noAccountsFoundDescription')}
-                      action={{
-                        label: t('settings.clearFilters'),
-                        onClick: () => {
-                          setSearch('');
-                          setRoleFilter(null);
-                        },
-                      }}
-                    />
-                  ) : (
-                    <>
-                      <Table.ScrollContainer minWidth={780}>
-                        <Table highlightOnHover verticalSpacing="sm">
-                          <Table.Thead>
-                            <Table.Tr>
-                              <Table.Th>{t('common.account')}</Table.Th>
-                              <Table.Th>{t('common.role')}</Table.Th>
-                              <Table.Th>{t('common.department')}</Table.Th>
-                              <Table.Th>{t('common.position')}</Table.Th>
-                              <Table.Th>{t('common.email')}</Table.Th>
-                            </Table.Tr>
-                          </Table.Thead>
-                          <Table.Tbody>
-                            {visibleUsers.map((account) => (
-                              <Table.Tr
-                                className={highlightedAccount === account.id ? 'settings-account-row-highlight' : undefined}
-                                key={account.id}
-                              >
-                                <Table.Td>
-                                  <Group gap="sm" wrap="nowrap">
-                                    <Avatar src={account.avatarUrl} radius="xl" size={32}>
-                                      {account.fullName
-                                        .split(' ')
-                                        .filter(Boolean)
-                                        .slice(0, 2)
-                                        .map((word) => word[0])
-                                        .join('')
-                                        .toUpperCase()}
-                                    </Avatar>
-                                    <Text fw={600}>{account.fullName}</Text>
-                                  </Group>
-                                </Table.Td>
-                                <Table.Td>
-                                  <Badge variant="light">{roleLabel(account.role)}</Badge>
-                                </Table.Td>
-                                <Table.Td>{departmentLabel(account.department)}</Table.Td>
-                                <Table.Td>{account.position}</Table.Td>
-                                <Table.Td>{account.email}</Table.Td>
-                              </Table.Tr>
-                            ))}
-                          </Table.Tbody>
-                        </Table>
-                      </Table.ScrollContainer>
-                      <ListPagination
-                        page={page}
-                        pageCount={pageCount}
-                        pageEnd={pageEnd}
-                        pageStart={pageStart}
-                        setPage={setPage}
-                        total={filteredUsers.length}
-                      />
-                    </>
-                  )}
-                </Paper>
+                <UserManagementPanel
+                  highlightedAccount={highlightedAccount}
+                  onCreateClick={createModalHandlers.open}
+                  users={users}
+                />
               </Stack>
             )}
           </Tabs.Panel>

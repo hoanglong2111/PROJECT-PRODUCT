@@ -40,6 +40,7 @@ import type {
   DomesticTransportOrderV1,
 } from '@shared/api/domesticTransportOrders';
 import { CopyValue } from '@shared/components/CopyValue';
+import { DetailHero } from '@shared/components/DetailHero';
 import { EmptyState } from '@shared/components/EmptyState';
 import { EntityLink } from '@entities/logistics';
 import { DateTimeField } from '@shared/components/DateField';
@@ -153,7 +154,10 @@ export function DomesticTransportOrderDetail({
 
   return (
     <Stack gap="md" className="dto-detail-stack">
-      <Paper withBorder p="md" className="dto-detail-hero feature-detail-hero">
+      <DetailHero
+        className="dto-detail-hero"
+        paperProps={{ withBorder: true, p: 'md' }}
+      >
         <Stack gap="md">
           <Group justify="space-between" align="flex-start" className="dto-detail-title-row feature-hero-layout">
             <Group gap="sm" align="flex-start" wrap="nowrap" className="feature-detail-heading feature-hero-identity">
@@ -239,7 +243,7 @@ export function DomesticTransportOrderDetail({
             </div>
           </div>
         </Stack>
-      </Paper>
+      </DetailHero>
 
       <Tabs defaultValue="overview" keepMounted={false} className="dto-detail-tabs">
         <Tabs.List className="dto-detail-tabs-list">

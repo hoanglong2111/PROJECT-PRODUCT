@@ -1,8 +1,9 @@
-import { Badge, Button, Group, Paper, Text, Title } from '@mantine/core';
+import { Badge, Button, Group, Text, Title } from '@mantine/core';
 import { IconCopy, IconFileInvoice } from '@tabler/icons-react';
 
 import { buildRfqRouteLabel, type QuotationRequestV1 } from '@shared/api/quotationRequests';
 import { CopyValue } from '@shared/components/CopyValue';
+import { DetailHero } from '@shared/components/DetailHero';
 import { FeatureHeaderShell } from '@shared/components/FeatureHeaderShell';
 
 import { rfqStatusColor, type TFn } from '../model/quotationRequestModel';
@@ -20,8 +21,10 @@ export function RfqDetailHero({
 }) {
   return (
     <FeatureHeaderShell backLabel={t('common.backToList')} onBack={onBack}>
-      <Paper component="section" withBorder p={0} className="rfq-detail-hero feature-detail-hero" aria-labelledby="rfq-detail-title">
-        <div className="rfq-detail-hero-main feature-hero-layout">
+      <DetailHero
+        className="rfq-detail-hero"
+        paperProps={{ component: 'section', withBorder: true, p: 0, 'aria-labelledby': 'rfq-detail-title' }}
+        identity={(
           <Group gap="sm" align="flex-start" wrap="nowrap" className="rfq-detail-title-row feature-hero-identity">
             <div className="rfq-icon-box feature-hero-icon">
               <IconFileInvoice size={18} />
@@ -40,7 +43,8 @@ export function RfqDetailHero({
               </Text>
             </div>
           </Group>
-
+        )}
+        facts={(
           <dl className="feature-hero-facts">
             <div className="feature-hero-fact">
               <dt>{t('quotationRequests.field.customerRef')}</dt>
@@ -55,14 +59,13 @@ export function RfqDetailHero({
               <dd>{[request.mode, request.incoterm_code].filter(Boolean).join(' / ') || '-'}</dd>
             </div>
           </dl>
-
-          <Group gap="xs" className="rfq-detail-hero-actions feature-hero-actions" wrap="wrap">
-            <Button variant="light" leftSection={<IconCopy size={16} />} onClick={onCopy}>
-              {t('quotationRequests.copy')}
-            </Button>
-          </Group>
-        </div>
-      </Paper>
+        )}
+        actions={(
+          <Button variant="light" leftSection={<IconCopy size={16} />} onClick={onCopy}>
+            {t('quotationRequests.copy')}
+          </Button>
+        )}
+      />
     </FeatureHeaderShell>
   );
 }

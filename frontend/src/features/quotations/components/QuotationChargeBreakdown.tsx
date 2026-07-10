@@ -10,6 +10,7 @@ import {
   summarizeQuotationVndLines,
 } from '@shared/lib/quotationCharges';
 import { formatMoney, formatUnitPrice } from '@shared/utils/money';
+import { formatNumber } from '@shared/utils/number';
 
 export type QuotationChargeAdjustmentDraft = {
   charge_line_id: string;
@@ -320,7 +321,7 @@ export function QuotationChargeBreakdown({
                                   </Group>
                                 </Table.Td>
                                 <Table.Td ta="right" className="tabular-nums">
-                                  {Number.isFinite(quantity) ? new Intl.NumberFormat().format(quantity) : '-'}
+                                  {formatNumber(quantity)}
                                 </Table.Td>
                                 <Table.Td>{line.unit ?? '-'}</Table.Td>
                                 <Table.Td ta="right" className="tabular-nums">

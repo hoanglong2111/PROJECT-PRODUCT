@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
-import { FlowContextBanner } from '@shared/components/FlowContextBanner';
 import { PageHeader } from '@shared/components/PageHeader';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
 import { fetchDeliveryOrders } from '@shared/api/logistics';
@@ -59,7 +58,7 @@ export function DeliveryOrders() {
     if (deliveryOrders.length === 0) {
       return;
     }
-    const matchedOrder = deliveryOrders.find((deliveryOrder) => {
+    const matchedOrder = deliveryOrders.find((_deliveryOrder) => {
       return false;
     });
 
