@@ -552,21 +552,6 @@ export type UploadDeliveryOrderAttachmentResult = {
   deliveryOrder: DeliveryOrder;
 };
 
-const emptyDashboardStats: DashboardStats = {
-  totals: {
-    purchaseRequests: 0,
-    purchaseOrders: 0,
-    deliveryOrders: 0,
-    tasks: 0,
-    blockedTasks: 0,
-  },
-  businessFlowCounts: [],
-  deliveryOrderStatus: [],
-  taskStatus: [],
-  taskRoleProgress: [],
-  monthlyThroughput: [],
-};
-
 const uiOnlySuccess = { success: true } as const;
 
 function toNumber(value: unknown, fallback = 0) {
@@ -1225,47 +1210,6 @@ function mapV1Shipment(shipment: ShipmentV1): ShipmentRecordWithQuotation {
     load_type: shipment.load_type ?? inferLoadTypeFromMode(shipment.mode),
     status: shipment.status as ShipmentStatus,
     vessel_voyage: vesselParts.join(' / '),
-  };
-}
-
-function buildUiShipment(payload: {
-  shipmentNumber: string;
-  doNumber: string;
-  poNumber: string;
-  shippingMode: ShipmentModeV1;
-  loadType?: ShipmentLoadTypeV1 | null;
-  carrierName?: string | null;
-  vesselVoyage?: string | null;
-  originPort?: string | null;
-  destPort?: string | null;
-  etd?: string | null;
-  eta?: string | null;
-}): ShipmentRecord {
-  return {
-    id: uiId('shp'),
-    shipment_number: payload.shipmentNumber,
-    do_number: payload.doNumber,
-    po_number: payload.poNumber,
-    status: 'BOOKED',
-    shipping_mode: payload.shippingMode,
-    load_type: payload.loadType ?? null,
-    carrier_name: payload.carrierName || '',
-    vessel_voyage: payload.vesselVoyage || '',
-    origin_port: payload.originPort || '',
-    dest_port: payload.destPort || '',
-    etd: payload.etd || '',
-    eta: payload.eta || '',
-    atd: '',
-    ata: '',
-    bl_awb_no: '',
-    customs: {
-      stream: 'GREEN',
-      lane_status: '',
-    },
-    milestones: [],
-    documents: [],
-    costs: [],
-    po_tasks: [],
   };
 }
 

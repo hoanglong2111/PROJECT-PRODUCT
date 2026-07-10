@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { QuotationChargeLineV1, QuotationV1 } from '@shared/api/quotations';
-import type { Gd1CostType, ShipmentCost } from '@shared/model/logistics';
+import type { ShipmentCost } from '@shared/model/logistics';
 
 import { chargeTypeToCostBucket, quotedTotalVnd, shipmentMarginSummary } from '../marginModel';
 
