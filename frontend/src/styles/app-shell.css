@@ -42,7 +42,7 @@
     radial-gradient(circle at 22% 28%, var(--kbfe-liquid-tint-a), transparent 58%),
     radial-gradient(circle at 76% 68%, var(--kbfe-liquid-tint-b), transparent 58%);
   filter: blur(32px);
-  opacity: 0.85;
+  opacity: var(--kbfe-chrome-liquid-opacity);
   animation: kbfe-liquid-undulate var(--kbfe-liquid-duration) ease-in-out infinite;
   mix-blend-mode: overlay;
 }
@@ -50,7 +50,6 @@
 html[data-kbfe-resolved-color-scheme='dark'] .mantine-AppShell-header::before,
 html[data-kbfe-resolved-color-scheme='dark'] .mantine-AppShell-navbar::before {
   mix-blend-mode: soft-light;
-  opacity: 0.7;
 }
 
 /* High-contrast: chrome must stay fully opaque with no blur so the frosted

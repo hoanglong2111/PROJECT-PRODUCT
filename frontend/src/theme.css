@@ -271,6 +271,11 @@ html {
      competes with foreground text. */
   --kbfe-liquid-tint-a: color-mix(in srgb, var(--kbfe-primary-color) 55%, transparent);
   --kbfe-liquid-tint-b: color-mix(in srgb, var(--kbfe-status-blue) 42%, transparent);
+  --kbfe-chrome-liquid-opacity: 0.55;
+  --kbfe-filter-wash-strength: 8%;
+  --kbfe-filter-base-tint: 2%;
+  --kbfe-list-wash-strength: 9%;
+  --kbfe-list-row-background: color-mix(in srgb, var(--kbfe-primary-color) 4%, var(--kbfe-surface-elevated));
   --kbfe-liquid-duration: 18s;
   --kbfe-decorative-spotlight: color-mix(in srgb, var(--kbfe-primary-color) 9%, transparent);
   --kbfe-decorative-vignette: transparent;
@@ -304,8 +309,8 @@ html {
   --kbfe-surface-shadow-tint: 0%;     /* accent mixed into the outer shadow */
   --kbfe-surface-wash-reach: 40%;     /* radial fade-out distance (38–42%) */
   --kbfe-shadow-xs: var(--kbfe-shadow-sm);
-  --kbfe-row-hover-background: color-mix(in srgb, var(--kbfe-primary-color) 6%, var(--kbfe-surface-elevated));
-  --kbfe-row-selected-background: color-mix(in srgb, var(--kbfe-primary-color) 10%, var(--kbfe-surface-elevated));
+  --kbfe-row-hover-background: color-mix(in srgb, var(--kbfe-primary-color) 9%, var(--kbfe-surface-elevated));
+  --kbfe-row-selected-background: color-mix(in srgb, var(--kbfe-primary-color) 14%, var(--kbfe-surface-elevated));
   --kbfe-code-background: color-mix(in srgb, var(--kbfe-primary-color) 8%, var(--kbfe-surface-elevated));
   --kbfe-code-border: color-mix(in srgb, var(--kbfe-primary-color) 24%, var(--kbfe-border-primary));
   --kbfe-code-text: color-mix(in srgb, var(--kbfe-primary-color) 76%, var(--kbfe-text-primary));
@@ -395,6 +400,13 @@ html[data-kbfe-resolved-color-scheme='dark'] {
   --kbfe-presentation-risk-ring: 0 0 0 1.5px color-mix(in srgb, var(--kbfe-status-red) 60%, transparent);
   --kbfe-decorative-spotlight: color-mix(in srgb, var(--kbfe-primary-color) 12%, transparent);
   --kbfe-decorative-vignette: color-mix(in srgb, #000000 18%, transparent);
+  --kbfe-chrome-liquid-opacity: 0.42;
+  --kbfe-filter-wash-strength: 6%;
+  --kbfe-filter-base-tint: 1%;
+  --kbfe-list-wash-strength: 6%;
+  --kbfe-list-row-background: color-mix(in srgb, var(--kbfe-primary-color) 5%, var(--kbfe-surface-elevated));
+  --kbfe-row-hover-background: color-mix(in srgb, var(--kbfe-primary-color) 10%, var(--kbfe-surface-elevated));
+  --kbfe-row-selected-background: color-mix(in srgb, var(--kbfe-primary-color) 15%, var(--kbfe-surface-elevated));
   --kbfe-header-glass-blur: 10px;
   --kbfe-header-glass-saturate: 1.04;
   --kbfe-icon-background:
@@ -441,6 +453,11 @@ html[data-kbfe-visual-theme='high-contrast'] {
   --kbfe-glass-highlight: none;
   --kbfe-liquid-tint-a: transparent;
   --kbfe-liquid-tint-b: transparent;
+  --kbfe-chrome-liquid-opacity: 0;
+  --kbfe-filter-wash-strength: 0%;
+  --kbfe-filter-base-tint: 0%;
+  --kbfe-list-wash-strength: 0%;
+  --kbfe-list-row-background: var(--kbfe-surface-elevated);
   --kbfe-button-glow: none;
   --kbfe-hover-background: var(--kbfe-hover-background-base);
   --kbfe-text-primary: var(--kbfe-text-primary-base);

@@ -715,7 +715,7 @@
 
 .purchase-order-list-table th,
 .purchase-order-list-table td {
-  background: var(--kbfe-surface-elevated);
+  background: var(--kbfe-list-row-background);
 }
 
 .purchase-order-list-table td,
