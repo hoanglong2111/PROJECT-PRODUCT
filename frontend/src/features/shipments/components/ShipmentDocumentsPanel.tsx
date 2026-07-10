@@ -6,20 +6,20 @@ import type { ShipmentRecord } from '@shared/api/logistics';
 import type { ShipmentDocumentPayload } from '@shared/api/shipments';
 import { DateTimeText } from '@shared/components/DateTimeText';
 import { DocumentCard, DocumentStatusBadge } from '@shared/components/documents';
+import { useI18n } from '@shared/i18n';
 
 export function ShipmentDocumentsPanel({
   isSaving,
   onCreateDocument,
   onUpdateDocument,
   shipment,
-  t,
 }: {
   isSaving: boolean;
   onCreateDocument: (payload: ShipmentDocumentPayload) => void;
   onUpdateDocument: (documentId: string, payload: Partial<ShipmentDocumentPayload>) => void;
   shipment: ShipmentRecord;
-  t: (key: string, params?: Record<string, string | number>) => string;
 }) {
+  const { t } = useI18n();
   const [rejectingDocId, setRejectingDocId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [newDocumentType, setNewDocumentType] = useState<ShipmentDocumentPayload['document_type']>('BILL_OF_LADING');

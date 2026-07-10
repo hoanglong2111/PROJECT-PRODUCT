@@ -19,6 +19,7 @@ import { CopyValue } from '@shared/components/CopyValue';
 import { DetailHero } from '@shared/components/DetailHero';
 import { FeatureHeaderShell } from '@shared/components/FeatureHeaderShell';
 import { StatusBadge } from '@shared/components/StatusBadge';
+import { useI18n } from '@shared/i18n';
 
 import { ShipmentCarrierDoPanel } from './ShipmentCarrierDoPanel';
 import { ShipmentContainersPanel } from './ShipmentContainersPanel';
@@ -42,7 +43,6 @@ export function ShipmentDetailView({
   onUpdateDocument,
   onBack,
   shipment,
-  t,
 }: {
   isCostSaving: boolean;
   isDocumentSaving: boolean;
@@ -55,8 +55,8 @@ export function ShipmentDetailView({
   onUpdateDocument: (documentId: string, payload: Partial<ShipmentDocumentPayload>) => void;
   onBack: () => void;
   shipment: ShipmentRecord;
-  t: (key: string, params?: Record<string, string | number>) => string;
 }) {
+  const { t } = useI18n();
   return (
     <Stack gap="lg">
       {/* Identity card */}
@@ -147,7 +147,6 @@ export function ShipmentDetailView({
             shipment={shipment}
             isSaving={isMilestoneSaving}
             onMarkDone={onMarkMilestone}
-            t={t}
           />
         </Tabs.Panel>
 
@@ -157,7 +156,6 @@ export function ShipmentDetailView({
             isSaving={isDocumentSaving}
             onCreateDocument={onCreateDocument}
             onUpdateDocument={onUpdateDocument}
-            t={t}
           />
         </Tabs.Panel>
 
@@ -176,7 +174,6 @@ export function ShipmentDetailView({
             onCreateCost={onCreateCost}
             onUpdateCost={onUpdateCost}
             onDeleteCost={onDeleteCost}
-            t={t}
           />
         </Tabs.Panel>
 

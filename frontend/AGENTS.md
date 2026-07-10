@@ -145,6 +145,40 @@ Run `npm run check:boundaries`. The rules:
 
 This enforces the one-way layering `app → features → entities → shared` automatically, so it does not rely on convention alone.
 
+## Component Decomposition — when to split (apply WHILE coding, not after)
+
+These rules exist because the 2026-07 refactor had to undo both extremes: god-files
+(a 1900-line api module, 577-line pages) and fake extractions (5-line pass-through
+components that just render `{children}`). Every agent must apply them as it writes:
+
+- **`page.tsx` is a thin orchestrator** — route params, query wiring, workbench/layout
+  switching only. The moment a page accumulates a form (>3 field states), a cluster of
+  mutations, or an inline panel, move it out *in the same change*:
+  form/panel → `components/`, mutation cluster → `hooks/use<Domain>Mutations.ts`,
+  filtering/derived counts → pure selectors in `model/`.
+- **Split triggers** (any one is enough):
+  - a component file passes ~400 lines (an ESLint `max-lines` warning fires at 600 as
+    the hard tripwire — never ship code that adds that warning);
+  - one component holds ≥2 of: data fetching, a form/state machine, more than one
+    screen section of JSX;
+  - a `Tabs.Panel` body grows past ~80 lines → per-tab component
+    (see `delivery-orders/components/DeliveryOrder*Tab.tsx`);
+  - a second exported component appears in a file → one exported unit per file.
+- **An extracted component OWNS its logic**: its `useForm`/`useState`/mutations move
+  with it, and it calls `useI18n()` itself. **Never** create a pass-through wrapper
+  that renders `{children}` while the real code stays in the parent — that is worse
+  than not splitting (it lies about the structure).
+- **Never pass `t`/label helpers down as props** — children call `useI18n()`.
+- When extracting JSX, **preserve global CSS classes exactly** (`feature-hero-*`,
+  `metric-card`, `dl-*`) — the Liquid Glass layer keys effects off them.
+- **Do NOT split** files that are long but single-purpose: i18n message maps,
+  per-domain `shared/api` modules (typed DTOs + endpoint fns), pure `model/` selector
+  files, column-definition factories (`referenceColumns.tsx`).
+- Before building a new UI pattern, check `src/shared/components/` and
+  `@entities/logistics` first (`Metric`, `FilterToolbar`, `DetailHero`, `FieldPair`,
+  `StatusBadge`/`statusColorVar`, `formatNumber`/`formatMoney`) — the refactor exists
+  because these were re-implemented locally instead of reused.
+
 ## UI Engineering Rules
 
 - Prefer Mantine components and existing shared components before adding new primitives.

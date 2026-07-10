@@ -6,6 +6,7 @@ import { DateTimeField } from '@shared/components/DateField';
 import { DateTimeText } from '@shared/components/DateTimeText';
 import type { ShipmentRecord } from '@shared/api/logistics';
 import type { ShipmentMilestoneCodeV1 } from '@shared/api/shipments';
+import { useI18n } from '@shared/i18n';
 
 const MILESTONE_SEQUENCE: ShipmentMilestoneCodeV1[] = [
   'BOOKING_CONFIRMED',
@@ -71,13 +72,12 @@ export function ShipmentMilestonesPanel({
   isSaving,
   onMarkDone,
   shipment,
-  t,
 }: {
   isSaving: boolean;
   onMarkDone: (milestoneCode: ShipmentMilestoneCodeV1, payload: { actualAt: string; notes?: string | null }) => void;
   shipment: ShipmentRecord;
-  t: (key: string, params?: Record<string, string | number>) => string;
 }) {
+  const { t } = useI18n();
   const [editingMilestoneId, setEditingMilestoneId] = useState<string | null>(null);
   const [milestoneDate, setMilestoneDate] = useState('');
   const [milestoneNote, setMilestoneNote] = useState('');

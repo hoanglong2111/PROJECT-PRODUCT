@@ -200,7 +200,6 @@ export function Shipments() {
           onDeleteCost={(costId) => {
             deleteCostMutation.mutate(costId);
           }}
-          t={t}
         />
       ) : null}
 
