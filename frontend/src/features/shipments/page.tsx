@@ -1,53 +1,24 @@
-import {
-  Button,
-  Group,
-  Paper,
-  Select,
-  SimpleGrid,
-  Stack,
-  Text,
-  TextInput,
-  Title,
-} from '@mantine/core';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Button, SimpleGrid, Stack } from '@mantine/core';
+import { useQuery } from '@tanstack/react-query';
 import { IconAnchor, IconCheck, IconClock, IconPlus, IconShield, IconShip } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 
-import { DateField } from '@shared/components/DateField';
-import { FeatureHeaderShell } from '@shared/components/FeatureHeaderShell';
-import { FieldPair } from '@shared/components/FieldPair';
 import { Metric } from '@shared/components/Metric';
 import { PageHeader } from '@shared/components/PageHeader';
 import { PageError, PageLoading } from '@shared/components/PageFeedback';
-import { fetchShipments, createShipment } from '@shared/api/logistics';
-import { fetchDeliveryOrdersV1 } from '@shared/api/deliveryOrders';
-import {
-  createShipmentCost,
-  createShipmentDocument,
-  deleteShipmentCost,
-  markShipmentMilestoneDone,
-  updateShipmentCost,
-  updateShipmentDocument,
-  type ShipmentCostPayload,
-  type ShipmentDocumentPayload,
-  type ShipmentLoadTypeV1,
-  type ShipmentMilestoneCodeV1,
-  type ShipmentModeV1,
-} from '@shared/api/shipments';
+import { fetchShipments } from '@shared/api/logistics';
 import { queryKeys } from '@shared/api/queryKeys';
 import { useEntityParam } from '@shared/hooks/useEntityParam';
 import { useI18n } from '@shared/i18n';
 
 import {
-  customsStatuses,
-  inTransitStatuses,
-  inferShipmentModeFromDeliveryOrder,
-  isDeliveryOrderShipmentEligible,
-  loadTypeForMode,
-  shipmentModeOptions,
+  computeShipmentTabCounts,
+  filterShipments,
   type ShipmentWorkbench,
 } from './model/shipmentModel';
 import { useShipmentsUiStore } from './model/shipmentsUiStore';
+import { useShipmentMutations } from './hooks/useShipmentMutations';
+import { CreateShipmentPanel } from './components/CreateShipmentPanel';
 import { ShipmentDetailView } from './components/ShipmentDetailView';
 import { ShipmentListView } from './components/ShipmentListView';
 
@@ -64,61 +35,21 @@ export function Shipments() {
   const etdFrom = useShipmentsUiStore((s) => s.etdFrom);
   const etdTo = useShipmentsUiStore((s) => s.etdTo);
 
-  // Create form states
-  const [newShpNumber, setNewShpNumber] = useState('');
-  const [newDeliveryOrderId, setNewDeliveryOrderId] = useState('');
-  const [newDoNumber, setNewDoNumber] = useState('');
-  const [newPoNumber, setNewPoNumber] = useState('');
-  const [newMode, setNewMode] = useState<ShipmentModeV1>('SEA');
-  const [newLoadType, setNewLoadType] = useState<ShipmentLoadTypeV1 | null>('FCL');
-  const [newCarrier, setNewCarrier] = useState('');
-  const [newVoyage, setNewVoyage] = useState('');
-  const [newVoyageNo, setNewVoyageNo] = useState('');
-  const [newBlAwbNo, setNewBlAwbNo] = useState('');
-  const [newOriginPort, setNewOriginPort] = useState('');
-  const [newDestPort, setNewDestPort] = useState('');
-  const [newEtd, setNewEtd] = useState('');
-  const [newEta, setNewEta] = useState('');
-
-  const queryClient = useQueryClient();
-
   const shipmentsQuery = useQuery({
     queryKey: queryKeys.shipments,
     queryFn: fetchShipments,
   });
   const shipments = shipmentsQuery.data ?? [];
   const isFetching = shipmentsQuery.isFetching;
-  // Reversed flow: quotation no longer gates the DO, so eligible DOs are not one status.
-  // Fetch broadly and filter client-side with the shared reversed-flow predicate (matches the
-  // backend gate + the DO detail "Create Shipment" button).
-  const availableDeliveryOrdersQuery = useQuery({
-    enabled: workbench === 'create',
-    queryKey: queryKeys.deliveryOrdersList({ page: 1, limit: 100 }),
-    queryFn: () => fetchDeliveryOrdersV1({ page: 1, limit: 100 }),
-  });
-  const availableDeliveryOrders = (availableDeliveryOrdersQuery.data?.data ?? []).filter(
-    isDeliveryOrderShipmentEligible,
-  );
-  const deliveryOrderOptions = availableDeliveryOrders.map((deliveryOrder) => ({
-    label: [
-      deliveryOrder.do_no,
-      deliveryOrder.purchase_order?.po_no,
-      deliveryOrder.transport_mode?.mode_name,
-    ].filter(Boolean).join(' · '),
-    value: deliveryOrder.id,
-  }));
-  const translatedShipmentModeOptions = shipmentModeOptions.map((option) => ({
-    label: t(option.labelKey),
-    value: option.value,
-  }));
-  const loadTypeOptions = useMemo(
-    () =>
-      loadTypeForMode(newMode).map((option) => ({
-        label: t(option.labelKey),
-        value: option.value,
-      })),
-    [newMode, t],
-  );
+
+  const {
+    createCostMutation,
+    createDocumentMutation,
+    deleteCostMutation,
+    milestoneMutation,
+    updateCostMutation,
+    updateDocumentMutation,
+  } = useShipmentMutations();
 
   useEffect(() => {
     if (!focusedShp) {
@@ -146,54 +77,12 @@ export function Shipments() {
     [shipments],
   );
 
-  const filteredShipments = useMemo(() => {
-    const query = search.toLowerCase().trim();
-    return shipments.filter((shp) => {
-      const statusMatches =
-        activeTab === 'all' ||
-        (activeTab === 'in_transit' && inTransitStatuses.has(shp.status)) ||
-        (activeTab === 'customs' && customsStatuses.has(shp.status)) ||
-        (activeTab === 'delivered' && shp.status === 'DELIVERED');
-
-      const matchesMode = modeFilter === 'all' || shp.shipping_mode === modeFilter;
-      const matchesCarrier = !carrierFilter || shp.carrier_name === carrierFilter;
-      const matchesChannel =
-        channelFilter === 'all' || (shp.customs.lane_status !== '' && shp.customs.stream === channelFilter);
-      const matchesEtdFrom = !etdFrom || (shp.etd !== '' && shp.etd >= etdFrom);
-      const matchesEtdTo = !etdTo || (shp.etd !== '' && shp.etd <= etdTo);
-
-      const matchesSearch = [
-        shp.shipment_number,
-        shp.do_number,
-        shp.po_number,
-        shp.carrier_name,
-        shp.vessel_voyage,
-      ]
-        .join(' ')
-        .toLowerCase()
-        .includes(query);
-
-      return (
-        statusMatches &&
-        matchesMode &&
-        matchesCarrier &&
-        matchesChannel &&
-        matchesEtdFrom &&
-        matchesEtdTo &&
-        matchesSearch
-      );
-    });
-  }, [shipments, activeTab, search, modeFilter, carrierFilter, channelFilter, etdFrom, etdTo]);
-
-  const tabCounts = useMemo(
-    () => ({
-      all: shipments.length,
-      in_transit: shipments.filter((s) => inTransitStatuses.has(s.status)).length,
-      customs: shipments.filter((s) => customsStatuses.has(s.status)).length,
-      delivered: shipments.filter((s) => s.status === 'DELIVERED').length,
-    }),
-    [shipments]
+  const filteredShipments = useMemo(
+    () => filterShipments(shipments, { activeTab, carrierFilter, channelFilter, etdFrom, etdTo, modeFilter, search }),
+    [shipments, activeTab, search, modeFilter, carrierFilter, channelFilter, etdFrom, etdTo],
   );
+
+  const tabCounts = useMemo(() => computeShipmentTabCounts(shipments), [shipments]);
 
   const selectedShipment =
     selectedShpId === null
@@ -201,133 +90,6 @@ export function Shipments() {
       : filteredShipments.find((s) => s.id === selectedShpId) ??
       shipments.find((s) => s.id === selectedShpId) ??
       null;
-
-  const createMutation = useMutation({
-    mutationFn: createShipment,
-    onSuccess: (newShipment) => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
-      setNewShpNumber('');
-      setNewDeliveryOrderId('');
-      setNewDoNumber('');
-      setNewPoNumber('');
-      setNewMode('SEA');
-      setNewLoadType('FCL');
-      setNewCarrier('');
-      setNewVoyage('');
-      setNewVoyageNo('');
-      setNewBlAwbNo('');
-      setNewOriginPort('');
-      setNewDestPort('');
-      setNewEtd('');
-      setNewEta('');
-      setSelectedShpId(newShipment.id);
-      setWorkbench('detail');
-      openShpParam(newShipment.shipment_number, { clear: ['pr', 'po', 'do', 'task'] });
-    },
-  });
-
-  const milestoneMutation = useMutation({
-    mutationFn: ({
-      actualAt,
-      milestoneCode,
-      notes,
-      shipmentId,
-    }: {
-      actualAt: string;
-      milestoneCode: ShipmentMilestoneCodeV1;
-      notes?: string | null;
-      shipmentId: string;
-    }) => markShipmentMilestoneDone(shipmentId, milestoneCode, { actual_at: actualAt, notes }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.shipmentLists });
-    },
-  });
-
-  const updateDocumentMutation = useMutation({
-    mutationFn: ({ documentId, payload }: { documentId: string; payload: Partial<ShipmentDocumentPayload> }) =>
-      updateShipmentDocument(documentId, payload),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
-    },
-  });
-
-  const createDocumentMutation = useMutation({
-    mutationFn: ({ payload, shipmentId }: { payload: ShipmentDocumentPayload; shipmentId: string }) =>
-      createShipmentDocument(shipmentId, payload),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
-    },
-  });
-
-  const createCostMutation = useMutation({
-    mutationFn: ({ payload, shipmentId }: { payload: ShipmentCostPayload; shipmentId: string }) =>
-      createShipmentCost(shipmentId, payload),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
-    },
-  });
-
-  const updateCostMutation = useMutation({
-    mutationFn: ({ costId, payload }: { costId: string; payload: Partial<ShipmentCostPayload> }) =>
-      updateShipmentCost(costId, payload),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
-    },
-  });
-
-  const deleteCostMutation = useMutation({
-    mutationFn: (costId: string) => deleteShipmentCost(costId),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.shipments });
-    },
-  });
-
-  const handleDeliveryOrderChange = (value: string | null) => {
-    const deliveryOrderId = value ?? '';
-    const deliveryOrder = availableDeliveryOrders.find((item) => item.id === deliveryOrderId);
-    setNewDeliveryOrderId(deliveryOrderId);
-    setNewDoNumber(deliveryOrder?.do_no ?? deliveryOrder?.delivery_order_no ?? '');
-    setNewPoNumber(deliveryOrder?.purchase_order?.po_no ?? '');
-    const inferredMode = deliveryOrder ? inferShipmentModeFromDeliveryOrder(deliveryOrder) : 'SEA';
-    setNewMode(inferredMode);
-    setNewLoadType(loadTypeForMode(inferredMode)[0]?.value ?? null);
-    setNewOriginPort(deliveryOrder?.origin_address ?? '');
-    setNewDestPort(deliveryOrder?.destination_address ?? '');
-    setNewEtd(deliveryOrder?.planned_etd?.slice(0, 10) ?? '');
-    setNewEta(deliveryOrder?.planned_eta?.slice(0, 10) ?? '');
-  };
-
-  const handleModeChange = (value: string | null) => {
-    const nextMode = (value as ShipmentModeV1 | null) ?? 'SEA';
-    const nextLoadTypes = loadTypeForMode(nextMode);
-    setNewMode(nextMode);
-    setNewLoadType((current) => (
-      current && nextLoadTypes.some((option) => option.value === current)
-        ? current
-        : nextLoadTypes[0]?.value ?? null
-    ));
-  };
-
-  const handleCreateShipment = () => {
-    if (!newDeliveryOrderId) return;
-    createMutation.mutate({
-      blAwbNo: newBlAwbNo || undefined,
-      deliveryOrderId: newDeliveryOrderId,
-      destPort: newDestPort || undefined,
-      eta: newEta || undefined,
-      etd: newEtd || undefined,
-      shipmentNumber: newShpNumber || undefined,
-      doNumber: newDoNumber,
-      poNumber: newPoNumber,
-      shippingMode: newMode,
-      loadType: newLoadType,
-      carrierName: newCarrier || undefined,
-      originPort: newOriginPort || undefined,
-      vesselVoyage: newVoyage || undefined,
-      voyageNo: newVoyageNo || undefined,
-    });
-  };
 
   const closeWorkbench = () => {
     setWorkbench('list');
@@ -398,131 +160,14 @@ export function Shipments() {
       ) : null}
 
       {workbench === 'create' ? (
-        <Stack gap="sm">
-          <FeatureHeaderShell backLabel={t('common.back')} onBack={closeWorkbench}>
-            <Group justify="space-between" align="flex-start" gap="sm" className="shipment-create-command feature-form-hero feature-hero-layout">
-              <div className="feature-hero-identity">
-                <Title order={3}>{t('shipments.create')}</Title>
-                <Text size="sm" c="dimmed">
-                  {t('shipments.createHint')}
-                </Text>
-              </div>
-              <Group gap="xs" className="feature-hero-actions">
-                <Button
-                  onClick={handleCreateShipment}
-                  leftSection={<IconPlus size={16} />}
-                  disabled={!newDeliveryOrderId}
-                  loading={createMutation.isPending}
-                >
-                  {t('shipments.create')}
-                </Button>
-              </Group>
-            </Group>
-          </FeatureHeaderShell>
-
-          <Paper withBorder p="sm" className="shipment-create-panel">
-            <Stack gap="sm">
-            <div className="shipment-create-layout">
-              <div className="shipment-create-source">
-                <Select
-                  label={t('shipments.linkedDo')}
-                  placeholder={t('shipments.selectConfirmedDo')}
-                  data={deliveryOrderOptions}
-                  value={newDeliveryOrderId || null}
-                  onChange={handleDeliveryOrderChange}
-                  searchable
-                  nothingFoundMessage={
-                    availableDeliveryOrdersQuery.isLoading
-                      ? t('shipments.loadingDeliveryOrders')
-                      : t('shipments.noConfirmedDo')
-                  }
-                  required
-                />
-                <div className="shipment-create-facts">
-                  <FieldPair className="shipment-create-fact" label={t('shipments.linkedDo')} value={newDoNumber || '-'} />
-                  <FieldPair className="shipment-create-fact" label={t('shipments.linkedPo')} value={newPoNumber || t('shipments.poNumberPlaceholder')} />
-                  <FieldPair
-                    className="shipment-create-fact"
-                    label={t('shipments.shipmentMode')}
-                    value={translatedShipmentModeOptions.find((option) => option.value === newMode)?.label ?? newMode}
-                  />
-                </div>
-              </div>
-
-              <div className="shipment-create-fields">
-                <SimpleGrid cols={{ base: 1, sm: 2, xl: 4 }} spacing="sm">
-                  <TextInput
-                    label={t('shipments.shipmentNumber')}
-                    placeholder={t('shipments.autoGeneratedIfBlank')}
-                    value={newShpNumber}
-                    onChange={(e) => setNewShpNumber(e.currentTarget.value)}
-                  />
-                  <Select
-                    label={t('shipments.shipmentMode')}
-                    data={translatedShipmentModeOptions}
-                    value={newMode}
-                    onChange={handleModeChange}
-                  />
-                  {loadTypeOptions.length > 0 ? (
-                    <Select
-                      label={t('shipments.loadType')}
-                      data={loadTypeOptions}
-                      value={newLoadType}
-                      onChange={(value) => setNewLoadType(value as ShipmentLoadTypeV1 | null)}
-                    />
-                  ) : null}
-                  <TextInput
-                    label={t('shipments.carrier')}
-                    placeholder={t('shipments.carrierPlaceholder')}
-                    value={newCarrier}
-                    onChange={(e) => setNewCarrier(e.currentTarget.value)}
-                  />
-                  <TextInput
-                    label={t('shipments.blAwb')}
-                    placeholder={t('shipments.blAwbPlaceholder')}
-                    value={newBlAwbNo}
-                    onChange={(e) => setNewBlAwbNo(e.currentTarget.value)}
-                  />
-                  <TextInput
-                    label={t('shipments.vessel')}
-                    placeholder={t('shipments.vessel')}
-                    value={newVoyage}
-                    onChange={(e) => setNewVoyage(e.currentTarget.value)}
-                  />
-                  <TextInput
-                    label={t('shipments.voyageNumber')}
-                    placeholder={t('shipments.voyageNumberPlaceholder')}
-                    value={newVoyageNo}
-                    onChange={(e) => setNewVoyageNo(e.currentTarget.value)}
-                  />
-                  <TextInput
-                    label="POL"
-                    placeholder={t('shipments.portOfLoading')}
-                    value={newOriginPort}
-                    onChange={(e) => setNewOriginPort(e.currentTarget.value)}
-                  />
-                  <TextInput
-                    label={t('shipments.portOfDischarge')}
-                    placeholder={t('shipments.portOfDischarge')}
-                    value={newDestPort}
-                    onChange={(e) => setNewDestPort(e.currentTarget.value)}
-                  />
-                  <DateField
-                    label={t('shipments.etd')}
-                    value={newEtd}
-                    onChange={(value) => setNewEtd(value ?? '')}
-                  />
-                  <DateField
-                    label={t('shipments.eta')}
-                    value={newEta}
-                    onChange={(value) => setNewEta(value ?? '')}
-                  />
-                </SimpleGrid>
-              </div>
-            </div>
-            </Stack>
-          </Paper>
-        </Stack>
+        <CreateShipmentPanel
+          onClose={closeWorkbench}
+          onCreated={(newShipment) => {
+            setSelectedShpId(newShipment.id);
+            setWorkbench('detail');
+            openShpParam(newShipment.shipment_number, { clear: ['pr', 'po', 'do', 'task'] });
+          }}
+        />
       ) : null}
 
       {workbench === 'detail' && selectedShipment ? (

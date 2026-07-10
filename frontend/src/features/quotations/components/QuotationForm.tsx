@@ -16,11 +16,11 @@ import {
   IconRoute,
   IconWallet,
 } from '@tabler/icons-react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
-import { fetchChargeCodes, type ChargeCode } from '@shared/api/chargeCodes';
+import type { ChargeCode } from '@shared/api/chargeCodes';
 import { AnchoredWorkflowRail, useAnchoredWorkflowSections, type AnchoredWorkflowStep } from '@shared/components/AnchoredWorkflow';
 import { DateField } from '@shared/components/DateField';
 import {
@@ -31,7 +31,6 @@ import {
 } from '@shared/api/quotations';
 import { createQuotationFromRequest, type QuotationRequestV1 } from '@shared/api/quotationRequests';
 import { queryKeys } from '@shared/api/queryKeys';
-import { fetchUoms } from '@shared/api/uoms';
 import { FeatureHeaderShell } from '@shared/components/FeatureHeaderShell';
 import { useExchangeRates } from '@shared/hooks/useExchangeRates';
 import { useTradeMasterDataOptions } from '@shared/hooks/useTradeMasterDataOptions';
@@ -40,6 +39,7 @@ import { QUOTATION_CHARGE_GROUPS } from '@shared/lib/quotationChargeGroups';
 import { formatMoney } from '@shared/utils/money';
 import { formatNumber } from '@shared/utils/number';
 
+import { useQuotationFormData } from '../hooks/useQuotationFormData';
 import {
   addDraftChargeLine,
   removeDraftChargeLineAt,
@@ -131,16 +131,8 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
   const [paymentCurrency, setPaymentCurrency] = useState<string>('VND');
   const optionRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  const chargeCodesQuery = useQuery({
-    queryKey: queryKeys.chargeCodes({ page: 1, limit: 200, is_active: true }),
-    queryFn: () => fetchChargeCodes({ page: 1, limit: 200, is_active: true }),
-  });
+  const { chargeCodesQuery, uomsQuery } = useQuotationFormData();
   const chargeCodes = chargeCodesQuery.data?.data ?? EMPTY_CHARGE_CODES;
-
-  const uomsQuery = useQuery({
-    queryKey: queryKeys.uoms({ limit: 200, is_active: true }),
-    queryFn: () => fetchUoms({ limit: 200, is_active: true }),
-  });
   const uoms = uomsQuery.data?.data ?? [];
 
   const chargeCodeOptions = useMemo(() => {
