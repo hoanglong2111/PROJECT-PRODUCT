@@ -38,7 +38,7 @@ export function ConfirmModal({
       classNames={{
         body: 'md-form-modal-body',
         close: 'md-form-modal-close',
-        content: 'md-form-modal',
+        content: 'md-form-modal md-confirm-modal',
         header: 'md-form-modal-header',
         title: 'md-form-modal-title',
       }}

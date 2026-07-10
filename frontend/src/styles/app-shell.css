@@ -533,8 +533,11 @@ body.mobile-more-open {
   width: min(17rem, calc(100vw - 1.25rem));
   border: 1px solid color-mix(in srgb, var(--kbfe-primary-color) 24%, var(--kbfe-border-primary)) !important;
   border-radius: var(--kbfe-radius-md) !important;
-  background: var(--kbfe-surface-elevated) !important;
-  box-shadow: 0 20px 48px -30px color-mix(in srgb, var(--kbfe-text-primary) 55%, transparent) !important;
+  background: var(--kbfe-glass-surface-2) !important;
+  backdrop-filter: blur(var(--kbfe-glass-blur-2)) saturate(var(--kbfe-glass-saturate)) !important;
+  box-shadow:
+    0 20px 48px -30px color-mix(in srgb, var(--kbfe-text-primary) 55%, transparent),
+    var(--kbfe-glass-highlight) !important;
 }
 
 .mobile-quick-actions-grid {
@@ -829,9 +832,16 @@ body.mobile-more-open {
     height: 3rem;
     border: 1px solid color-mix(in srgb, var(--kbfe-primary-color) 56%, var(--kbfe-border-primary));
     border-radius: var(--kbfe-radius-pill);
-    background: var(--kbfe-primary-color) !important;
+    /* Tinted glass, not full transparency: this FAB's icon relies on
+       --kbfe-primary-contrast for legibility against whatever's behind it,
+       so it stays strongly colored (88%) and only picks up a soft blur +
+       highlight rather than the lighter floating-chrome fill. */
+    background: color-mix(in srgb, var(--kbfe-primary-color) 88%, transparent) !important;
+    backdrop-filter: blur(var(--kbfe-glass-blur-1)) saturate(var(--kbfe-glass-saturate));
     color: var(--kbfe-primary-contrast) !important;
-    box-shadow: 0 16px 30px -22px color-mix(in srgb, var(--kbfe-primary-color) 78%, rgba(0, 0, 0, 0.32));
+    box-shadow:
+      0 16px 30px -22px color-mix(in srgb, var(--kbfe-primary-color) 78%, rgba(0, 0, 0, 0.32)),
+      var(--kbfe-glass-highlight);
     touch-action: none;
   }
 
@@ -971,6 +981,11 @@ html[data-kbfe-density='compact'] .mantine-AppShell-main {
 html[data-kbfe-visual-theme='high-contrast'] .mobile-bottom-more-backdrop {
   background: rgba(0, 0, 0, 0.72);
   backdrop-filter: none;
+}
+
+html[data-kbfe-visual-theme='high-contrast'] .mobile-quick-actions-button {
+  background: var(--kbfe-primary-color) !important;
+  backdrop-filter: none !important;
 }
 
 html[data-kbfe-visual-theme='high-contrast'] .mobile-bottom-nav,
