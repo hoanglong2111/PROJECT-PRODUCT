@@ -145,22 +145,27 @@ html[data-kbfe-visual-theme='high-contrast'] .mantine-HoverCard-dropdown {
   z-index: 1;
   content: "";
   pointer-events: none;
-  background: linear-gradient(
-    125deg,
-    color-mix(in srgb, #ffffff 26%, transparent) 0%,
-    color-mix(in srgb, #ffffff 8%, transparent) 20%,
-    transparent 44%
-  );
+  background:
+    linear-gradient(
+      125deg,
+      color-mix(in srgb, #ffffff 26%, transparent) 0%,
+      color-mix(in srgb, #ffffff 8%, transparent) 20%,
+      transparent 44%
+    ),
+    radial-gradient(circle at 82% 18%, var(--kbfe-liquid-tint-b), transparent 50%);
   mix-blend-mode: overlay;
+  animation: kbfe-liquid-undulate var(--kbfe-liquid-duration) ease-in-out infinite;
 }
 
 html[data-kbfe-resolved-color-scheme='dark'] .metric-card::after {
-  background: linear-gradient(
-    125deg,
-    color-mix(in srgb, #ffffff 16%, transparent) 0%,
-    color-mix(in srgb, #ffffff 5%, transparent) 20%,
-    transparent 44%
-  );
+  background:
+    linear-gradient(
+      125deg,
+      color-mix(in srgb, #ffffff 16%, transparent) 0%,
+      color-mix(in srgb, #ffffff 5%, transparent) 20%,
+      transparent 44%
+    ),
+    radial-gradient(circle at 82% 18%, var(--kbfe-liquid-tint-b), transparent 50%);
   mix-blend-mode: soft-light;
 }
 

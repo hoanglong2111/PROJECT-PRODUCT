@@ -31,6 +31,8 @@
     --kbfe-glass-surface: var(--kbfe-surface-elevated);
     --kbfe-glass-surface-2: var(--kbfe-surface-elevated);
     --kbfe-glass-highlight: none;
+    --kbfe-liquid-tint-a: transparent;
+    --kbfe-liquid-tint-b: transparent;
   }
 }
 
@@ -42,6 +44,8 @@
     --kbfe-glass-surface: var(--kbfe-surface-elevated);
     --kbfe-glass-surface-2: var(--kbfe-surface-elevated);
     --kbfe-glass-highlight: none;
+    --kbfe-liquid-tint-a: transparent;
+    --kbfe-liquid-tint-b: transparent;
   }
 }
 
@@ -287,6 +291,58 @@ html[data-kbfe-resolved-color-scheme='light'] .mantine-NavLink-root[data-active]
 html[data-kbfe-visual-theme='high-contrast'] body::before,
 html[data-kbfe-visual-theme='high-contrast'] body::after {
   display: none;
+}
+
+/* Liquid surface — two soft color blobs (--kbfe-liquid-tint-a/b) that slowly
+   drift and rescale, so a glass surface reads as translucent water catching
+   light from two hues rather than a single flat frost. Opt-in via class on
+   the biggest chrome surfaces only (header/nav/hero) — kept off smaller
+   popovers/cards so the app doesn't turn into a field of moving gradients.
+   Composited transform only (no background-position animation) to stay
+   cheap to paint. */
+.kbfe-liquid-surface {
+  position: relative;
+  isolation: isolate;
+}
+
+.kbfe-liquid-surface::before {
+  position: absolute;
+  inset: -25%;
+  z-index: 0;
+  content: "";
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 22% 28%, var(--kbfe-liquid-tint-a), transparent 58%),
+    radial-gradient(circle at 76% 68%, var(--kbfe-liquid-tint-b), transparent 58%);
+  filter: blur(32px);
+  opacity: 0.85;
+  animation: kbfe-liquid-undulate var(--kbfe-liquid-duration) ease-in-out infinite;
+  mix-blend-mode: overlay;
+  will-change: transform;
+}
+
+html[data-kbfe-resolved-color-scheme='dark'] .kbfe-liquid-surface::before {
+  mix-blend-mode: soft-light;
+  opacity: 0.7;
+}
+
+html[data-kbfe-visual-theme='high-contrast'] .kbfe-liquid-surface::before {
+  display: none;
+}
+
+@keyframes kbfe-liquid-undulate {
+  0% {
+    transform: translate3d(-4%, -3%, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(3%, 4%, 0) scale(1.06);
+  }
+  66% {
+    transform: translate3d(-3%, 3%, 0) scale(0.97);
+  }
+  100% {
+    transform: translate3d(-4%, -3%, 0) scale(1);
+  }
 }
 
 .skip-link:focus {

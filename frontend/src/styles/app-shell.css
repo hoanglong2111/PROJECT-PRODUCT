@@ -1,6 +1,8 @@
 /* app-shell.css — split from src/styles.css. Global classes; do not rename. See AGENTS.md "Styling". */
 
 .mantine-AppShell-header {
+  isolation: isolate;
+  overflow: hidden;
   border-bottom-color: var(--kbfe-border-primary);
   background: var(--kbfe-glass-surface);
   box-shadow:
@@ -12,6 +14,8 @@
 .mantine-AppShell-navbar {
   display: flex;
   flex-direction: column;
+  isolation: isolate;
+  overflow: hidden;
   border-right-color: var(--kbfe-border-primary);
   background: var(--kbfe-glass-surface);
   box-shadow:
@@ -21,12 +25,45 @@
   transition: width 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
+/* Liquid tint — two soft color blobs drifting slowly behind the chrome
+   content (z-index:-1, contained by isolation:isolate above so it never
+   escapes to sit above brand/search/nav text). See base.css for the
+   .kbfe-liquid-surface reference implementation and reduced-motion/
+   reduced-transparency/high-contrast fallbacks (tokens resolve to
+   transparent there, so no extra override is needed here). */
+.mantine-AppShell-header::before,
+.mantine-AppShell-navbar::before {
+  position: absolute;
+  inset: -25%;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 22% 28%, var(--kbfe-liquid-tint-a), transparent 58%),
+    radial-gradient(circle at 76% 68%, var(--kbfe-liquid-tint-b), transparent 58%);
+  filter: blur(32px);
+  opacity: 0.85;
+  animation: kbfe-liquid-undulate var(--kbfe-liquid-duration) ease-in-out infinite;
+  mix-blend-mode: overlay;
+}
+
+html[data-kbfe-resolved-color-scheme='dark'] .mantine-AppShell-header::before,
+html[data-kbfe-resolved-color-scheme='dark'] .mantine-AppShell-navbar::before {
+  mix-blend-mode: soft-light;
+  opacity: 0.7;
+}
+
 /* High-contrast: chrome must stay fully opaque with no blur so the frosted
    effect can never reduce legibility. */
 html[data-kbfe-visual-theme='high-contrast'] .mantine-AppShell-header,
 html[data-kbfe-visual-theme='high-contrast'] .mantine-AppShell-navbar {
   background: var(--kbfe-surface-elevated);
   backdrop-filter: none;
+}
+
+html[data-kbfe-visual-theme='high-contrast'] .mantine-AppShell-header::before,
+html[data-kbfe-visual-theme='high-contrast'] .mantine-AppShell-navbar::before {
+  display: none;
 }
 
 .app-shell-nav {
@@ -670,6 +707,8 @@ body.mobile-more-open {
     left: 0;
     z-index: var(--kbfe-z-mobile-bar);
     display: block;
+    isolation: isolate;
+    overflow: hidden;
     padding: 0.45rem max(0.75rem, env(safe-area-inset-right)) max(0.45rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left));
     border-top: 1px solid var(--kbfe-border-primary);
     background: var(--kbfe-glass-surface);
@@ -677,6 +716,30 @@ body.mobile-more-open {
       0 -16px 36px -30px color-mix(in srgb, var(--kbfe-text-primary) 64%, transparent),
       var(--kbfe-glass-highlight);
     backdrop-filter: blur(var(--kbfe-glass-blur-1)) saturate(var(--kbfe-glass-saturate));
+  }
+
+  .mobile-bottom-nav::before {
+    position: absolute;
+    inset: -40% -10%;
+    z-index: -1;
+    content: "";
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 15% 30%, var(--kbfe-liquid-tint-a), transparent 58%),
+      radial-gradient(circle at 85% 60%, var(--kbfe-liquid-tint-b), transparent 58%);
+    filter: blur(28px);
+    opacity: 0.85;
+    animation: kbfe-liquid-undulate var(--kbfe-liquid-duration) ease-in-out infinite;
+    mix-blend-mode: overlay;
+  }
+
+  html[data-kbfe-resolved-color-scheme='dark'] .mobile-bottom-nav::before {
+    mix-blend-mode: soft-light;
+    opacity: 0.7;
+  }
+
+  html[data-kbfe-visual-theme='high-contrast'] .mobile-bottom-nav::before {
+    display: none;
   }
 
   html.mobile-more-open .mobile-bottom-nav {

@@ -82,23 +82,28 @@ html[data-kbfe-visual-theme='high-contrast'] .feature-form-hero::after {
   z-index: 2;
   content: "";
   pointer-events: none;
-  background: linear-gradient(
-    125deg,
-    color-mix(in srgb, #ffffff 34%, transparent) 0%,
-    color-mix(in srgb, #ffffff 12%, transparent) 20%,
-    transparent 46%
-  );
+  background:
+    linear-gradient(
+      125deg,
+      color-mix(in srgb, #ffffff 34%, transparent) 0%,
+      color-mix(in srgb, #ffffff 12%, transparent) 20%,
+      transparent 46%
+    ),
+    radial-gradient(circle at 85% 15%, var(--kbfe-liquid-tint-b), transparent 52%);
   mix-blend-mode: overlay;
+  animation: kbfe-liquid-undulate var(--kbfe-liquid-duration) ease-in-out infinite;
 }
 
 html[data-kbfe-resolved-color-scheme='dark'] .feature-detail-hero::before,
 html[data-kbfe-resolved-color-scheme='dark'] .feature-form-hero::before {
-  background: linear-gradient(
-    125deg,
-    color-mix(in srgb, #ffffff 20%, transparent) 0%,
-    color-mix(in srgb, #ffffff 7%, transparent) 20%,
-    transparent 46%
-  );
+  background:
+    linear-gradient(
+      125deg,
+      color-mix(in srgb, #ffffff 20%, transparent) 0%,
+      color-mix(in srgb, #ffffff 7%, transparent) 20%,
+      transparent 46%
+    ),
+    radial-gradient(circle at 85% 15%, var(--kbfe-liquid-tint-b), transparent 52%);
   mix-blend-mode: soft-light;
 }
 
