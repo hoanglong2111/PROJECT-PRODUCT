@@ -136,7 +136,7 @@
   flex-grow: 1.5;
 }
 
-@media (max-width: 48em) {
+@media (max-width: 47.9375em) {
   .settings-mobile-shell-card .mantine-Button-root {
     width: 100%;
   }

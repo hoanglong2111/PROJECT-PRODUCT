@@ -202,7 +202,7 @@ html[data-kbfe-visual-theme='high-contrast'] .mantine-AppShell-navbar {
   flex-grow: 1;
 }
 
-@media (max-width: 48em) {
+@media (max-width: 47.9375em) {
   .header-search-spacer {
     display: none;
   }
@@ -592,7 +592,7 @@ body.mobile-more-open {
   height: 1.95rem;
 }
 
-@media (max-width: 48em) {
+@media (max-width: 47.9375em) {
 
   .mantine-AppShell-main {
     padding-bottom: calc(6.75rem + env(safe-area-inset-bottom)) !important;

@@ -140,7 +140,7 @@ html[data-kbfe-visual-theme='high-contrast'] .global-search-dropdown {
   background: var(--kbfe-surface-elevated) !important;
 }
 
-@media (max-width: 48em) {
+@media (max-width: 47.9375em) {
   .global-search-shell {
     min-width: 0;
     margin-inline: 0;

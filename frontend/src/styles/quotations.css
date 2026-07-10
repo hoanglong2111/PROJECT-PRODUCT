@@ -1100,7 +1100,7 @@
   color: var(--kbfe-text-secondary);
 }
 
-@media (max-width: 48em) {
+@media (max-width: 47.9375em) {
   .rfq-picker-toolbar {
     align-items: stretch;
   }
@@ -1754,7 +1754,7 @@
   margin-top: 0.25rem;
 }
 
-@media (max-width: 48em) {
+@media (max-width: 47.9375em) {
   .rfq-compare-card-head {
     flex-direction: column;
     align-items: stretch;
@@ -3427,7 +3427,7 @@
   }
 }
 
-@media (max-width: 48em) {
+@media (max-width: 47.9375em) {
 
   .rfq-form-hero-inner,
   .rfq-detail-hero-inner,
@@ -4256,7 +4256,7 @@
   }
 }
 
-@media (max-width: 48em) {
+@media (max-width: 47.9375em) {
   .rfq-request-detail {
     padding-bottom: calc(5.25rem + env(safe-area-inset-bottom));
   }

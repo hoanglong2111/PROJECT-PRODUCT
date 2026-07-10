@@ -260,7 +260,7 @@ html[data-kbfe-density='compact'] .feature-form-hero .mantine-Title-root {
   }
 }
 
-@media (max-width: 48em) {
+@media (max-width: 47.9375em) {
   .feature-header-sidecar .kbfe-back-action {
     min-height: 2.75rem;
     padding-inline: 0.5rem 0.75rem;

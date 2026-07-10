@@ -134,7 +134,7 @@
 
 /* Mobile: trim wash reach slightly but keep the same color ratios (no
    saturation bump to compensate for the smaller area). */
-@media (max-width: 48em) {
+@media (max-width: 47.9375em) {
   .kbfe-surface-wash {
     --kbfe-surface-wash-reach: 34%;
   }
