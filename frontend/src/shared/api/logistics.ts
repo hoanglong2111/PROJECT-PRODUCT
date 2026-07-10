@@ -8,7 +8,6 @@
   DocumentReview,
   DriveDossier,
   DriveDossierStatus,
-  EfmsControl,
   EfmsContainer,
   EfmsHouseBill,
   EfmsTransportRecord,
@@ -34,9 +33,7 @@
   TaskRole,
   TaskStatus,
   UserRef,
-  Gd1ApprovalStep,
   Gd1PoStageTask,
-  Gd1TaskStatus,
   Gd1ShipmentMilestone,
   Gd1ShipmentCost,
   Gd1PoStatus,
@@ -51,14 +48,9 @@
 import {
   fetchDeliveryOrdersV1,
   updateDeliveryOrderV1,
-  type DeliveryOrderLotV1,
-  type DeliveryOrderLineV1,
-  type DeliveryOrderV1,
 } from './deliveryOrders';
 import {
   fetchPurchaseOrders as fetchPurchaseOrdersV1,
-  type PurchaseOrderLineV1,
-  type PurchaseOrderV1,
 } from './purchaseOrders';
 import {
   cancelQuotation,
@@ -68,11 +60,6 @@ import {
   markQuotationFinal,
   rejectQuotation,
   submitQuotationToKbi,
-  type QuotationChargeLineV1,
-  type QuotationChargeTypeV1,
-  type QuotationStatusV1,
-  type QuotationTypeV1,
-  type QuotationV1,
 } from './quotations';
 import {
   createShipmentFromDeliveryOrder,
@@ -82,19 +69,16 @@ import {
   markShipmentMilestoneDone,
   updateShipmentV1,
   type CreateShipmentFromDeliveryOrderPayload,
-  type ShipmentCostV1,
-  type ShipmentDocumentStatusV1,
-  type ShipmentDocumentV1,
   type ShipmentLoadTypeV1,
   type ShipmentMilestoneCodeV1,
-  type ShipmentMilestoneV1,
   type ShipmentModeV1,
-  type ShipmentV1,
 } from './shipments';
-import { fetchCurrencies, fetchSuppliers } from './tradeMasterData';
 import { apiClient } from './axiosConfig';
 import { parseContract, deliveryOrderScreenListSchema, shipmentRecordListSchema } from './contracts';
 
+import { addDaysIso, buildQuotationChargeLines, buildUiDeliveryOrder, buildUiPurchaseOrder, buildUiQuotation, deliveryOrderNo, gd1StatusToTaskScreen, inferQuotationTypeFromChargeLines, mapTaskScreenToLogisticsTask, mapTaskScreenToPoStageTask, mapV1DeliveryOrder, mapV1PurchaseOrder, mapV1Quotation, mapV1Shipment, resolveCurrencyId, resolveDeliveryOrderId, resolveShipmentId, resolveSupplierId, transportModeIdFromShippingMethod, uiId } from './mappers/logisticsMappers';
+import type { CreateDeliveryOrderPayload, CreatePurchaseOrderPayload, CreateQuotationPayload, TaskScreenItem, TaskScreenStage } from './mappers/logisticsMappers';
+export type { CreateDeliveryOrderPayload, CreatePurchaseOrderPayload, CreateQuotationPayload, QuotationChargeLineInput, TaskScreenItem, TaskScreenStage } from './mappers/logisticsMappers';
 export type {
   BusinessFlowTag,
   AdvanceSettlement,
@@ -105,7 +89,6 @@ export type {
   DocumentReview,
   DriveDossier,
   DriveDossierStatus,
-  EfmsControl,
   EfmsContainer,
   EfmsHouseBill,
   EfmsTransportRecord,
@@ -131,7 +114,6 @@ export type {
   TaskRole,
   TaskStatus,
   UserRef,
-  Gd1ApprovalStep,
   Gd1PoStageTask,
   Gd1ShipmentMilestone,
   Gd1ShipmentCost,
@@ -151,40 +133,6 @@ type ApiResponse<T> = {
   meta?: Record<string, unknown>;
 };
 
-export type CreatePurchaseOrderPayload = {
-  currency: string;
-  expectedEta?: string | null;
-  expectedEtd?: string | null;
-  incoterm?: string;
-  orderDate?: string;
-  paymentTerm?: string;
-  poNumber: string;
-  poType?: string;
-  sourceLines?: Array<{
-    classificationCode?: string;
-    coNote?: string;
-    declarationType?: string;
-    dutyRate?: number;
-    hsCode?: string;
-    itemCode?: string;
-    itemGroup?: string;
-    itemName?: string;
-    quantity?: number;
-    sourceReference?: string;
-    tariffCode?: string;
-    taxNote?: string;
-    unit?: string;
-    vatRate?: number;
-    lotNumber?: string;
-    itemId?: string;
-    expectedEta?: string | null;
-    unitPrice?: number;
-  }>;
-  supplierCode: string;
-  supplierName: string;
-  totalAmount: number;
-  warehouseCode: string;
-};
 
 export type UpdatePurchaseOrderLotAllocationPayload = {
   lots: Array<{
@@ -199,35 +147,6 @@ export type UpdatePurchaseOrderLotAllocationPayload = {
   }>;
 };
 
-export type CreateDeliveryOrderPayload = {
-  documentsList?: string[];
-  etaPlanned?: string | null;
-  etdPlanned?: string | null;
-  incoterms?: string;
-  itemCode?: string;
-  itemName?: string;
-  notes?: string;
-  plannedEntryDate?: string | null;
-  poNumber?: string;
-  portOfDeparture?: string;
-  portOfDestination?: string;
-  purchaseContractNumber?: string;
-  quantity?: number;
-  requestCode?: string;
-  shippingLine?: string | null;
-  shippingMethod?: DeliveryOrder['logistics_shipping']['shipping_method'];
-  supplierCode?: string | null;
-  supplierName?: string | null;
-  trackingNumber?: string | null;
-  unit?: string;
-  warehouseCode?: string;
-  warehouseDeadline?: string;
-  sourceLines?: Array<{
-    poNumber: string;
-    poLineId: string;
-    quantity: number;
-  }>;
-};
 
 export type UpdateDeliveryOrderPayload = {
   actualEntryDate?: string | null;
@@ -295,50 +214,7 @@ export type CreateTaskPayload = {
   notes?: string;
 };
 
-export type TaskScreenStage =
-  | 'SUPPLIER_CONFIRMATION'
-  | 'LOT_PLANNING'
-  | 'INTERNAL_DO'
-  | 'QUOTATION'
-  | 'SHIPMENT'
-  | 'CUSTOMS'
-  | 'CARRIER_DO'
-  | 'DTO';
 
-export type TaskScreenItem = {
-  id: string;
-  task_no: string;
-  task_name: string;
-  ref_type: 'PURCHASE_ORDER' | string;
-  ref_id: string;
-  ref_no: string;
-  stage: TaskScreenStage;
-  role: TaskRole;
-  assignee: {
-    id?: string;
-    user_id?: string;
-    name: string;
-    department: string | null;
-  };
-  status: TaskStatus;
-  priority: Priority;
-  due_at: string | null;
-  completed_at: string | null;
-  progress: number;
-  blocked_reason: string | null;
-  note?: string | null;
-  description?: string | null;
-  task_template_id?: string | null;
-  milestone_code?: string | null;
-  department?: string | null;
-  sla_hours?: number | null;
-  sla_text?: string | null;
-  related_documents?: string | null;
-  template_group_code?: string | null;
-  template_group_name?: string | null;
-  create_at?: string;
-  update_at?: string;
-};
 
 export type TaskListScreenDto = {
   items: TaskScreenItem[];
@@ -401,25 +277,7 @@ export type LogisticsAttachment = {
   uploadedBy: string | null;
 };
 
-export type QuotationChargeLineInput = {
-  charge_type: string;
-  description: string;
-  unit?: string;
-  quantity?: number;
-  unit_price: number;
-};
 
-export type CreateQuotationPayload = {
-  requestCode: string;
-  shippingMode: ShippingMode;
-  quoteAmount?: number | null;
-  currency?: string | null;
-  /**
-   * Itemized Incoterms-aware charge lines. When provided, these are persisted
-   * verbatim and the legacy flat freight/local/customs fields are ignored.
-   */
-  chargeLines?: QuotationChargeLineInput[];
-};
 
 export type CreateShipmentPayload = {
   shipmentNumber?: string;
@@ -554,6 +412,7 @@ export type UploadDeliveryOrderAttachmentResult = {
 
 const uiOnlySuccess = { success: true } as const;
 
+<<<<<<< HEAD
 function toNumber(value: unknown, fallback = 0) {
   const next = Number(value);
   return Number.isFinite(next) ? next : fallback;
@@ -1310,6 +1169,8 @@ function buildUiDeliveryOrder(payload: CreateDeliveryOrderPayload): DeliveryOrde
   };
 }
 
+=======
+>>>>>>> main
 export async function fetchQuotation(payload: CreateQuotationPayload) {
   return buildUiQuotation(payload);
 }
@@ -1598,20 +1459,6 @@ export async function updateDeliveryOrder(orderNumber: string, payload: UpdateDe
   return mapV1DeliveryOrder(updated);
 }
 
-export async function fetchEfmsControl(_orderNumber: string) {
-  return {
-    advanceSettlements: [],
-    charges: [],
-    containers: [],
-    customs: null,
-    documentReviews: [],
-    financeNotes: [],
-    houseBills: [],
-    latestDriveDossier: null,
-    transport: null,
-  } satisfies EfmsControl;
-}
-
 export async function createAdvanceSettlement(_orderNumber: string, payload: CreateAdvanceSettlementPayload) {
   return { ...payload, id: uiId('advance') } as AdvanceSettlement;
 }
@@ -1651,10 +1498,6 @@ export async function confirmFinalBl(reviewId: string, payload: ConfirmFinalBlPa
   return { id: reviewId, ...payload } as DocumentReview;
 }
 
-export async function fetchCharges(_orderNumber: string) {
-  return [] as FinanceCharge[];
-}
-
 export async function createCharge(orderNumber: string, payload: CreateChargePayload) {
   return { id: uiId('charge'), deliveryOrderId: orderNumber, ...payload } as FinanceCharge;
 }
@@ -1673,10 +1516,6 @@ export async function issueFinanceNote(orderNumber: string, payload: IssueFinanc
 
 export async function sendFinanceNoteToAccounting(noteId: string) {
   return { id: noteId } as FinanceNote;
-}
-
-export async function fetchCustoms(_orderNumber: string) {
-  return null as CustomsDeclaration | null;
 }
 
 export async function updateCustoms(orderNumber: string, payload: UpdateCustomsPayload) {
@@ -1810,24 +1649,6 @@ export async function updateShipmentMilestone(
 
 export async function fetchShipmentCosts(_orderNumber: string) {
   return [] as Gd1ShipmentCost[];
-}
-
-export async function addShipmentCost(
-  _orderNumber: string,
-  payload: {
-    costType: string;
-    amount: number;
-    currencyCode: string;
-    exchangeRate: number;
-    allocMethod: string;
-    invoiceRef?: string | null;
-  },
-) {
-  return { id: uiId('cost'), ...payload } as unknown as Gd1ShipmentCost;
-}
-
-export async function deleteShipmentCost(_costId: string) {
-  return uiOnlySuccess;
 }
 
 export async function updatePoStageTask(taskId: string, payload: { status: string; note?: string }) {

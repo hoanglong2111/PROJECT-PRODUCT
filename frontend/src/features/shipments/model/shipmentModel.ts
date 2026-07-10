@@ -179,3 +179,62 @@ export function summarizeCustomsLines(lines: CustomsDeclarationLineV1[]): Custom
   }
   return { totalValue, totalDuty, totalVat, taxTotal: totalDuty + totalVat };
 }
+
+export type ShipmentListFilters = {
+  activeTab: 'all' | 'in_transit' | 'customs' | 'delivered';
+  carrierFilter: string | null;
+  channelFilter: string;
+  etdFrom: string | null;
+  etdTo: string | null;
+  modeFilter: string;
+  search: string;
+};
+
+export function filterShipments(shipments: ShipmentRecord[], filters: ShipmentListFilters): ShipmentRecord[] {
+  const { activeTab, carrierFilter, channelFilter, etdFrom, etdTo, modeFilter, search } = filters;
+  const query = search.toLowerCase().trim();
+  return shipments.filter((shp) => {
+    const statusMatches =
+      activeTab === 'all' ||
+      (activeTab === 'in_transit' && inTransitStatuses.has(shp.status)) ||
+      (activeTab === 'customs' && customsStatuses.has(shp.status)) ||
+      (activeTab === 'delivered' && shp.status === 'DELIVERED');
+
+    const matchesMode = modeFilter === 'all' || shp.shipping_mode === modeFilter;
+    const matchesCarrier = !carrierFilter || shp.carrier_name === carrierFilter;
+    const matchesChannel =
+      channelFilter === 'all' || (shp.customs.lane_status !== '' && shp.customs.stream === channelFilter);
+    const matchesEtdFrom = !etdFrom || (shp.etd !== '' && shp.etd >= etdFrom);
+    const matchesEtdTo = !etdTo || (shp.etd !== '' && shp.etd <= etdTo);
+
+    const matchesSearch = [
+      shp.shipment_number,
+      shp.do_number,
+      shp.po_number,
+      shp.carrier_name,
+      shp.vessel_voyage,
+    ]
+      .join(' ')
+      .toLowerCase()
+      .includes(query);
+
+    return (
+      statusMatches &&
+      matchesMode &&
+      matchesCarrier &&
+      matchesChannel &&
+      matchesEtdFrom &&
+      matchesEtdTo &&
+      matchesSearch
+    );
+  });
+}
+
+export function computeShipmentTabCounts(shipments: ShipmentRecord[]) {
+  return {
+    all: shipments.length,
+    in_transit: shipments.filter((s) => inTransitStatuses.has(s.status)).length,
+    customs: shipments.filter((s) => customsStatuses.has(s.status)).length,
+    delivered: shipments.filter((s) => s.status === 'DELIVERED').length,
+  };
+}

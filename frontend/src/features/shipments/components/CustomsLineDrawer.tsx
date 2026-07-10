@@ -11,6 +11,7 @@ import { queryKeys } from '@shared/api/queryKeys';
 import { fetchShipmentLines } from '@shared/api/shipments';
 import { ModalTitle } from '@shared/components/ModalTitle';
 import { useI18n } from '@shared/i18n';
+import { formatNumber as formatSharedNumber } from '@shared/utils/number';
 
 import { customsLineTax } from '../model/shipmentModel';
 
@@ -54,7 +55,7 @@ export function CustomsLineDrawer({
     queryFn: () => fetchShipmentLines(shipmentId),
   });
   const shipmentLineOptions = (shipmentLinesQuery.data ?? []).map((sl) => ({
-    label: [sl.item_description ?? sl.item_id ?? sl.id, `${Number(sl.qty).toLocaleString()} ${sl.unit ?? ''}`.trim()]
+    label: [sl.item_description ?? sl.item_id ?? sl.id, `${formatSharedNumber(sl.qty)} ${sl.unit ?? ''}`.trim()]
       .filter(Boolean)
       .join(' · '),
     value: sl.id,

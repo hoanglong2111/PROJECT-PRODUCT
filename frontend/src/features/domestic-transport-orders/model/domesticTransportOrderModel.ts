@@ -1,6 +1,8 @@
 import type { DomesticTransportOrderStatusV1 } from '@shared/api/domesticTransportOrders';
 import { formatMoney } from '@shared/utils/money';
 
+export { formatNumber } from '@shared/utils/number';
+
 export type FormState = {
   actualDeliveryAt: string;
   actualPickupAt: string;
@@ -75,12 +77,6 @@ export function fromDateTimeInput(value: string) {
 }
 
 export { formatDateTime } from '@shared/utils/date';
-
-export function formatNumber(value: unknown) {
-  const number = Number(value);
-  if (!Number.isFinite(number)) return '-';
-  return number.toLocaleString();
-}
 
 export function formatDtoMoney(amount: unknown, currencyCode: string | null | undefined) {
   const number = Number(amount);

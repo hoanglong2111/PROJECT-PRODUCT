@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 
 import type { LogisticsTask } from '@shared/api/logistics';
 import { StatusBadge } from '@shared/components/StatusBadge';
+import { DetailHero } from '@shared/components/DetailHero';
 import { useI18n } from '@shared/i18n';
 import { EntityLink, UpdateTaskProgressForm } from '@entities/logistics';
 import { departmentLabel, milestoneLabel, templateSlaLabel } from '../model/tasksModel';
@@ -29,7 +30,11 @@ export function TaskDetail({
   return (
     <Stack gap="md" className="task-detail-stack">
       <Paper withBorder p={0} className="task-detail-workbench">
-        <div className="task-detail-hero feature-detail-hero feature-hero-layout">
+        <DetailHero
+          className="task-detail-hero"
+          collapseLayout
+          withPaper={false}
+        >
           <Group justify="space-between" align="flex-start" gap="sm" className="task-detail-title-row feature-hero-identity">
             <Group gap="sm" align="flex-start" wrap="nowrap" className="feature-detail-heading">
               <div className="feature-hero-icon" aria-hidden="true"><IconChecklist size={19} /></div>
@@ -58,7 +63,7 @@ export function TaskDetail({
             </Group>
             <Progress value={task.progress} color={task.progress === 100 ? 'teal' : 'blue'} />
           </div>
-        </div>
+        </DetailHero>
 
         <SimpleGrid cols={{ base: 1, sm: 2 }} spacing={0} className="task-detail-facts">
           {detailFacts.map((fact) => (

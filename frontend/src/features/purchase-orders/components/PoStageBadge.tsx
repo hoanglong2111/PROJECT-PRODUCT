@@ -3,6 +3,7 @@ import { Badge, Stack, Text } from '@mantine/core';
 
 import type { PurchaseOrderV1 } from '@shared/api/purchaseOrders';
 import { getStatusBadgeConfig } from '@shared/components/StatusBadge';
+import { STATUS_COLOR_VARS } from '@shared/components/statusColors';
 import { useI18n } from '@shared/i18n';
 
 import { PO_STAGES, type PoStageKey } from '../model/poStageConfig';
@@ -13,17 +14,6 @@ import { resolvePoStage } from '../model/purchaseOrderModel';
 const PIPELINE_STAGES: PoStageKey[] = PO_STAGES.map((stage) => stage.key).filter(
   (key) => key !== 'CANCELLED',
 );
-
-const statusColorTokens: Record<string, string> = {
-  blue: 'var(--kbfe-status-blue)',
-  cyan: 'var(--kbfe-status-cyan)',
-  gray: 'var(--kbfe-status-gray)',
-  green: 'var(--kbfe-status-teal)',
-  orange: 'var(--kbfe-status-orange)',
-  red: 'var(--kbfe-status-red)',
-  teal: 'var(--kbfe-status-teal)',
-  yellow: 'var(--kbfe-status-yellow)',
-};
 
 export function PoStageBadge({ order }: { order: PurchaseOrderV1 }) {
   const { statusLabel } = useI18n();
@@ -37,7 +27,7 @@ export function PoStageBadge({ order }: { order: PurchaseOrderV1 }) {
   const currentIndex = PIPELINE_STAGES.indexOf(stageKey);
   // Drives the done/current segment fill via CSS. Delay is shown in its own
   // dedicated column, so the stepper stays purely about pipeline position.
-  const stageColorVar = { '--stage-color': statusColorTokens[config.color] ?? 'var(--kbfe-primary-color)' } as CSSProperties;
+  const stageColorVar = { '--stage-color': STATUS_COLOR_VARS[config.color] } as CSSProperties;
 
   // TODO(real-data): when a PO carries multiple shipments, wrap this in a
   // HoverCard listing each shipment's milestone; the bar keeps showing the

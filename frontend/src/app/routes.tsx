@@ -1,13 +1,8 @@
 import { lazy, type ComponentType, type ReactElement } from 'react';
 import { Route, Routes } from 'react-router-dom';
 
-import type { Capability } from '@shared/auth/capabilities';
-import { FdsAdminRoute, FdsDemoRoute } from '@shared/auth/FdsAdminRoute';
 import { RequireAuth } from '@shared/auth/RequireAuth';
-import { RequireCapability } from '@shared/auth/RequireCapability';
 import { AppShellLayout } from '@shared/components/AppShellLayout';
-
-import { routeCapabilities } from './routeRoles';
 
 type RouteConfig = {
   element: ReactElement;
@@ -36,25 +31,20 @@ const Unauthorized = lazyFeature(() => import('@features/unauthorized/page'), 'U
 const publicRoutes: RouteConfig[] = [
   { path: '/login', element: <Login /> },
   { path: '/unauthorized', element: <Unauthorized /> },
-  { path: '/fds-admin', element: <FdsAdminRoute /> },
-  { path: '/fds-demo', element: <FdsDemoRoute /> },
 ];
 
 const workspaceRoutes: RouteConfig[] = [
-  { index: true, element: withCapability(<Dashboard />, routeCapabilities.dashboard) },
-  { path: 'quotation-requests', element: withCapability(<QuotationRequests />, routeCapabilities.quotationRequests) },
-  { path: 'quotations', element: withCapability(<Quotations />, routeCapabilities.quotations) },
-  { path: 'purchase-orders', element: withCapability(<PurchaseOrders />, routeCapabilities.purchaseOrders) },
-  { path: 'delivery-orders', element: withCapability(<DeliveryOrders />, routeCapabilities.deliveryOrders) },
-  { path: 'shipments', element: withCapability(<Shipments />, routeCapabilities.shipments) },
-  {
-    path: 'domestic-transport-orders',
-    element: withCapability(<DomesticTransportOrders />, routeCapabilities.domesticTransportOrders),
-  },
-  { path: 'master-data', element: withCapability(<MasterData />, routeCapabilities.masterData) },
-  { path: 'tasks', element: withCapability(<Tasks />, routeCapabilities.tasks) },
+  { index: true, element: <Dashboard /> },
+  { path: 'quotation-requests', element: <QuotationRequests /> },
+  { path: 'quotations', element: <Quotations /> },
+  { path: 'purchase-orders', element: <PurchaseOrders /> },
+  { path: 'delivery-orders', element: <DeliveryOrders /> },
+  { path: 'shipments', element: <Shipments /> },
+  { path: 'domestic-transport-orders', element: <DomesticTransportOrders /> },
+  { path: 'master-data', element: <MasterData /> },
+  { path: 'tasks', element: <Tasks /> },
   { path: 'profile', element: <Profile /> },
-  { path: 'settings', element: withCapability(<Settings />, routeCapabilities.settings) },
+  { path: 'settings', element: <Settings /> },
   { path: '*', element: <NotFound /> },
 ];
 
@@ -89,8 +79,4 @@ function renderRoute(route: RouteConfig) {
   }
 
   return <Route key={route.path} path={route.path} element={route.element} />;
-}
-
-function withCapability(element: ReactElement, capability: Capability) {
-  return <RequireCapability capability={capability}>{element}</RequireCapability>;
 }

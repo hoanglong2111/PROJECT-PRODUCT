@@ -9,7 +9,7 @@ import {
 } from '@shared/api/quotationRequests';
 import { CopyValue } from '@shared/components/CopyValue';
 import { EmptyState } from '@shared/components/EmptyState';
-import { FilterSegment } from '@shared/components/FilterSegment';
+import { FilterToolbar } from '@shared/components/FilterToolbar';
 import { Metric } from '@shared/components/Metric';
 import { useI18n, type MessageKey } from '@shared/i18n';
 import { buildTabCounts } from '@shared/lib/tabCounts';
@@ -35,14 +35,6 @@ type QuotationRequestListViewProps = {
   onInspect: (id: string) => void;
 };
 
-const tabColors: Record<QuotationRequestTab, string> = {
-  all: 'gray',
-  submitted: 'blue',
-  received: 'cyan',
-  quoted: 'orange',
-  confirmed: 'green',
-  cancelled: 'gray',
-};
 
 const NEXT_ACTION_KEY: Record<QuotationRequestStatusV1, MessageKey> = {
   SUBMITTED: 'quotationRequests.next.SUBMITTED',
@@ -81,7 +73,6 @@ function CargoCell({ request, t }: { request: QuotationRequestV1; t: TFn }) {
     </div>
   );
 }
-
 function ResponsesCell({ request, t }: { request: QuotationRequestV1; t: TFn }) {
   const responseCount = rfqResponseQuotations(request.quotations).length;
   if (responseCount > 0) {
@@ -92,7 +83,6 @@ function ResponsesCell({ request, t }: { request: QuotationRequestV1; t: TFn }) 
   }
   return <Text size="sm" c="dimmed">{t('quotationRequests.noResponse')}</Text>;
 }
-
 export function QuotationRequestListView({
   activeTab,
   isLoading = false,
@@ -148,49 +138,40 @@ export function QuotationRequestListView({
 
   return (
     <Stack gap="md" className="rfq-list">
-      <SimpleGrid cols={{ base: 1, sm: 3 }} className="rfq-metric-grid">
+      <SimpleGrid cols={{ base: 1, sm: 3 }} className="rfq-metric-grid dl-metrics-strip">
         <Metric className="rfq-metric-card" label={t('quotationRequests.metricShown')} value={filteredRequests.length} color="blue" icon={<IconFileText size={22} />} />
         <Metric className="rfq-metric-card" label={t('quotationRequests.metricSubmitted')} value={tabCounts.submitted} color="cyan" icon={<IconSend size={22} />} />
         <Metric className="rfq-metric-card" label={t('quotationRequests.metricQuoted')} value={tabCounts.quoted} color="orange" icon={<IconTags size={22} />} />
       </SimpleGrid>
 
-      <Paper withBorder p="md" className="rfq-list-filter-panel dl-filter-panel">
-        <div className="dl-filter-head">
-          <div className="dl-filter-head__control">
-            <FilterSegment
-              ariaLabel={t('common.status')}
-              value={activeTab}
-              onChange={(value) => onTabChange(value as QuotationRequestTab)}
-              options={quotationRequestTabItems.map((tab) => ({
-                value: tab.value,
-                label: t(tab.labelKey),
-                count: tabCounts[tab.value],
-                color: tabColors[tab.value],
-              }))}
-            />
-          </div>
-          <div className="dl-filter-result">
-            <Switch
-              size="sm"
-              checked={needsActionOnly}
-              onChange={(event) => setNeedsActionOnly(event.currentTarget.checked)}
-              label={t('quotationRequests.filterNeedsAction')}
-            />
-            <Text size="sm" c="dimmed">
-              {t('common.shown', { count: filteredRequests.length })}
-            </Text>
-          </div>
-        </div>
-
+      <FilterToolbar
+        activeTab={activeTab}
+        className="rfq-list-filter-panel"
+        isFetching={isLoading}
+        onTabChange={(value) => onTabChange(value as QuotationRequestTab)}
+        headerActions={(
+          <Switch
+            size="sm"
+            checked={needsActionOnly}
+            onChange={(event) => setNeedsActionOnly(event.currentTarget.checked)}
+            label={t('quotationRequests.filterNeedsAction')}
+          />
+        )}
+        shown={filteredRequests.length}
+        tabs={quotationRequestTabItems.map((tab) => ({
+          value: tab.value,
+          label: t(tab.labelKey),
+          count: tabCounts[tab.value],
+        }))}
+      >
         <TextInput
-          mt="md"
           leftSection={<IconSearch size={16} />}
           label={t('common.search')}
           placeholder={t('quotationRequests.searchPlaceholder')}
           value={search}
           onChange={(event) => setSearch(event.currentTarget.value)}
         />
-      </Paper>
+      </FilterToolbar>
 
       <Paper withBorder p={0} className="dl-data-panel">
         {filteredRequests.length === 0 ? (

@@ -21,6 +21,10 @@ const DEFAULT_UNIT_PRICE_MAX_DIGITS = 6;
 // driven and locale-independent; only grouping/decimal separators depend on this.
 let activeLocale = DEFAULT_LOCALE;
 
+export function getMoneyLocale() {
+  return activeLocale;
+}
+
 export function setMoneyLocale(locale: string | null | undefined) {
   activeLocale = locale?.trim() || DEFAULT_LOCALE;
 }

@@ -45,4 +45,14 @@ export default tseslint.config(
       'jsx-a11y/no-autofocus': 'warn',
     },
   },
+  {
+    // Decomposition tripwire (see AGENTS.md "Component Decomposition"): a feature
+    // component/page passing 600 real lines is a god-file — split it, don't ship the
+    // warning. Column-definition factories are exempt (long but single-purpose).
+    files: ['src/features/**/*.tsx', 'src/shared/components/**/*.tsx', 'src/entities/**/*.tsx'],
+    ignores: ['src/features/master-data/components/referenceColumns.tsx'],
+    rules: {
+      'max-lines': ['warn', { max: 600, skipBlankLines: true, skipComments: true }],
+    },
+  },
 );

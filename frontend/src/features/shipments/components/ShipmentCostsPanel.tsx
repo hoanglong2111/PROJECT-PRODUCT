@@ -53,16 +53,14 @@ export function ShipmentCostsPanel({
   onDeleteCost,
   onUpdateCost,
   shipment,
-  t,
 }: {
   isSaving: boolean;
   onCreateCost: (payload: ShipmentCostPayload) => void;
   onDeleteCost: (costId: string) => void;
   onUpdateCost: (costId: string, payload: Partial<ShipmentCostPayload>) => void;
   shipment: ShipmentRecord;
-  t: (key: string, params?: Record<string, string | number>) => string;
 }) {
-  const { numberSeparators } = useI18n();
+  const { numberSeparators, t } = useI18n();
   const { currencyOptions } = useTradeMasterDataOptions();
   const costs = shipment.costs;
   const total = landedCostTotal(costs);

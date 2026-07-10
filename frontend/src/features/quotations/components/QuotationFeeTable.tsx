@@ -7,6 +7,7 @@ import type { Uom } from '@shared/api/uoms';
 import { useI18n } from '@shared/i18n';
 import { computeQuotationLineVnd } from '@shared/lib/quotationCharges';
 import { formatMoney } from '@shared/utils/money';
+import { formatNumber } from '@shared/utils/number';
 
 import type { QuotationDraftChargeLineState as ChargeLineState } from '../model/quotationDraftLines';
 import { CurrencySelect } from './CurrencySelect';
@@ -44,14 +45,13 @@ export function QuotationFeeTable({
   rows,
   uoms,
 }: Props) {
-  const { language, t } = useI18n();
+  const { t } = useI18n();
   const uomOptions = uoms.map((uom) => ({
     label: `${uom.uom_code} - ${uom.uom_name_en}`,
     value: uom.uom_code,
   }));
   const gridClassName = 'rfq-fee-grid';
   const inputClassName = ['rfq-fee-inputs', removable ? 'has-remove' : ''].filter(Boolean).join(' ');
-  const numberFormatter = new Intl.NumberFormat(language === 'vi' ? 'vi-VN' : 'en-US');
   const missingRateValue = (code: string | null) => (
     <Tooltip label={code ? t('quotations.missingRate', { code }) : t('quotations.missingRate', { code: '-' })}>
       <Text component="span" size="sm" c="yellow.7" fw={700} className="rfq-missing-rate">
@@ -188,7 +188,7 @@ export function QuotationFeeTable({
               <div className="rfq-fee-derived-item rfq-fee-exchange tabular-nums">
                 <span className="rfq-fee-cell-label">{t('quotations.exchangeRate')}</span>
                 <Text size="sm" c={showVndBreakdown ? undefined : 'dimmed'}>
-                  {showVndBreakdown && vndBreakdown.exchangeRate ? numberFormatter.format(vndBreakdown.exchangeRate) : missingRate}
+                  {showVndBreakdown && vndBreakdown.exchangeRate ? formatNumber(vndBreakdown.exchangeRate) : missingRate}
                 </Text>
               </div>
 

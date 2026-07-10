@@ -6,6 +6,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import type { PurchaseOrderLineV1 } from '@shared/api/purchaseOrders';
 import { useI18n } from '@shared/i18n';
 import { currencyDecimalScale, formatMoney as formatMoneyValue } from '@shared/utils/money';
+import { formatCompact, formatNumber } from '@shared/utils/number';
 
 import { dateOnly, formatWeightKg, getPoLineLotState, getPoLineReceiptState, toNumber } from '../model/purchaseOrderModel';
 
@@ -347,8 +348,7 @@ function formatMoney(value: number | string | null | undefined, currencyCode: st
 // Keep the dense columns narrow: numbers under 10k stay fully readable with
 // thousand separators; larger numbers compact to 12.5K / 1.2M (full value on hover).
 function compactNumber(value: number) {
-  if (Math.abs(value) < 10_000) return value.toLocaleString();
-  return new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(value);
+  return formatCompact(value);
 }
 
 // Currency-aware compact display for the dense amount column (the ISO code lives in the
@@ -357,7 +357,7 @@ function compactNumber(value: number) {
 function compactMoney(value: number, currencyCode: string, locale: string) {
   const digits = currencyDecimalScale(currencyCode, locale);
   if (Math.abs(value) < 10_000) {
-    return new Intl.NumberFormat(locale, { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value);
+    return formatNumber(value, { locale, minimumFractionDigits: digits, maximumFractionDigits: digits });
   }
-  return new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(value);
+  return formatCompact(value, { locale, compactMaximumFractionDigits: 1 });
 }

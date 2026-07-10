@@ -127,7 +127,7 @@ html[data-kbfe-visual-theme='high-contrast'] .mantine-HoverCard-dropdown {
 .metric-card {
   position: relative;
   background:
-    linear-gradient(125deg, color-mix(in srgb, var(--kbfe-primary-color) 10%, transparent), transparent 60%),
+    linear-gradient(125deg, color-mix(in srgb, var(--kbfe-primary-color) calc(10% * var(--kbfe-tuner-surface-scale)), transparent), transparent 60%),
     var(--kbfe-surface-elevated);
   border-color: var(--kbfe-border-primary);
   overflow: hidden;
@@ -135,7 +135,7 @@ html[data-kbfe-visual-theme='high-contrast'] .mantine-HoverCard-dropdown {
 
 html[data-kbfe-resolved-color-scheme='dark'] .metric-card {
   background:
-    linear-gradient(125deg, color-mix(in srgb, var(--kbfe-primary-color) 7%, transparent), transparent 60%),
+    linear-gradient(125deg, color-mix(in srgb, var(--kbfe-primary-color) calc(7% * var(--kbfe-tuner-surface-scale)), transparent), transparent 60%),
     var(--kbfe-surface-elevated);
 }
 
@@ -145,7 +145,7 @@ html[data-kbfe-resolved-color-scheme='dark'] .metric-card {
   height: 1px;
   content: "";
   pointer-events: none;
-  background: color-mix(in srgb, var(--kbfe-primary-color) 18%, transparent);
+  background: color-mix(in srgb, var(--kbfe-primary-color) calc(18% * var(--kbfe-tuner-surface-scale)), transparent);
 }
 
 /* Specular gloss — same top-left light-source idea as the feature heroes,
@@ -185,7 +185,7 @@ html[data-kbfe-visual-theme='high-contrast'] .metric-card::after {
 }
 
 .metric-card:hover {
-  border-color: color-mix(in srgb, var(--kbfe-primary-color) 24%, var(--kbfe-border-primary)) !important;
+  border-color: color-mix(in srgb, var(--kbfe-primary-color) calc(24% * var(--kbfe-tuner-surface-scale)), var(--kbfe-border-primary)) !important;
 }
 
 .metric-label {

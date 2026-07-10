@@ -2,7 +2,6 @@ import {
   ActionIcon,
   Badge,
   Group,
-  Loader,
   NumberFormatter,
   Paper,
   Progress,
@@ -23,7 +22,7 @@ import { ClearFiltersButton } from '@shared/components/ClearFiltersButton';
 import { CopyValue } from '@shared/components/CopyValue';
 import { DelayBadge } from '@shared/components/DelayBadge';
 import { EmptyState } from '@shared/components/EmptyState';
-import { FilterSegment } from '@shared/components/FilterSegment';
+import { FilterToolbar } from '@shared/components/FilterToolbar';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { ListPagination, useListPagination } from '@shared/components/ListPagination';
 import { Metric } from '@shared/components/Metric';
@@ -108,29 +107,14 @@ export function DeliveryOrderListView({
         />
       </SimpleGrid>
 
-      <Paper withBorder p="md" className="dl-filter-panel">
-        <Stack gap="sm">
-          <div className="dl-filter-head">
-            <div className="dl-filter-head__control">
-              <FilterSegment
-                ariaLabel={t('common.status')}
-                value={activeTab}
-                onChange={(value) => onTabChange(value as DeliveryOrderTab)}
-                options={deliveryOrderTabItems.map((tab) => ({
-                  value: tab.value,
-                  label: t(tab.labelKey),
-                  count: tabCounts[tab.value],
-                }))}
-              />
-            </div>
-            <div className="dl-filter-result">
-              {isFetching ? <Loader size="sm" /> : null}
-              <Text size="sm" c="dimmed">
-                {t('common.shown', { count: filteredDeliveryOrders.length })}
-              </Text>
-            </div>
-          </div>
-
+      <FilterToolbar
+        activeTab={activeTab}
+        className="delivery-order-filter-panel"
+        isFetching={isFetching}
+        onTabChange={(value) => onTabChange(value as DeliveryOrderTab)}
+        shown={filteredDeliveryOrders.length}
+        tabs={deliveryOrderTabItems.map((tab) => ({ value: tab.value, label: t(tab.labelKey), count: tabCounts[tab.value] }))}
+      >
           <div className="delivery-order-filter-shell dl-filter-row">
             <TextInput
               className="delivery-order-filter-search dl-filter-search kbfe-search-input"
@@ -175,8 +159,7 @@ export function DeliveryOrderListView({
               onClick={onClearFilters}
             />
           </div>
-        </Stack>
-      </Paper>
+      </FilterToolbar>
 
       <Paper withBorder p={0} className="dl-data-panel">
         <ScrollArea className="data-table-scroll" type="always" offsetScrollbars scrollbarSize={8}>

@@ -173,7 +173,7 @@ export function createInitialPoDraft(order?: PurchaseOrderV1): PoFormDraft {
     notes: order?.notes ?? '',
     quotation_id: order?.quotation_id ?? '',
     lines: order?.lines?.length
-      ? order.lines.map((line, index) => ({
+      ? order.lines.map((line) => ({
         clientId: line.id,
         line_no: line.line_no,
         item_id: line.item_id,

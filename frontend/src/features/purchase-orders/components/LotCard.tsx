@@ -4,6 +4,7 @@ import { useState, type DragEvent } from 'react';
 
 import type { PoLot, PoLotLine } from '@shared/api/purchaseOrders';
 import { useI18n } from '@shared/i18n';
+import { formatNumber } from '@shared/utils/number';
 
 import { dateOnly, formatWeightKg, lockedLotStatuses, toNumber } from '../model/purchaseOrderModel';
 
@@ -46,7 +47,7 @@ export function LotCard({
   const canDelete = canManage && !isLocked && lines.length === 0;
   const totalQty = lines.reduce((total, line) => total + toNumber(line.qty_lotted), 0);
   const units = Array.from(new Set(lines.map((line) => line.unit).filter(Boolean)));
-  const totalQtyLabel = lines.length ? `${totalQty.toLocaleString()} ${units.length === 1 ? units[0] : t('purchaseOrders.unitsFallback')}` : '-';
+  const totalQtyLabel = lines.length ? `${formatNumber(totalQty)} ${units.length === 1 ? units[0] : t('purchaseOrders.unitsFallback')}` : '-';
 
   return (
     <Paper

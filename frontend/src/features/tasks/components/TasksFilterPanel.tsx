@@ -1,9 +1,9 @@
-import { Button, Group, Loader, Paper, Select, SimpleGrid, Stack, Text, TextInput } from '@mantine/core';
+import { Button, Group, Select, SimpleGrid, TextInput } from '@mantine/core';
 import { IconSearch, IconX } from '@tabler/icons-react';
 
 import type { LogisticsTask, Priority, TaskRole, TaskStatus } from '@shared/api/logistics';
 import { MILESTONE_CODES } from '@shared/api/taskTemplates';
-import { FilterSegment } from '@shared/components/FilterSegment';
+import { FilterToolbar } from '@shared/components/FilterToolbar';
 import { useI18n } from '@shared/i18n';
 
 import { useTasksUiStore } from '../model/tasksUiStore';
@@ -77,39 +77,25 @@ export function TasksFilterPanel({
   }, {});
 
   return (
-    <Paper withBorder p="md" className="tasks-filter-panel dl-filter-panel">
-      <Stack gap="md">
-        <div className="dl-filter-head">
-          <div className="dl-filter-head__control">
-            <FilterSegment
-              ariaLabel={t('common.status')}
-              value={statusFilter}
-              onChange={(value) => setStatusFilter(value as TaskStatus | 'all')}
-              options={statusOptions.map((option) => ({
-                value: option.value,
-                label: option.label,
-                count: statusCounts[option.value],
-                color: option.value === 'BLOCKED' ? 'red' : option.value === 'COMPLETED' ? 'teal' : undefined,
-              }))}
-            />
-          </div>
-          <div className="dl-filter-result">
-            {isFetching ? <Loader size="sm" /> : null}
-            <Text className="tasks-filter-count" size="sm" c="dimmed">
-              {t('common.shown', { count: filteredCount })}
-            </Text>
-            <Button
-              variant={hasActiveFilters ? 'light' : 'subtle'}
-              size="compact-sm"
-              leftSection={<IconX size={16} />}
-              onClick={clearFilters}
-              disabled={!hasActiveFilters}
-            >
-              {t('common.clear')}
-            </Button>
-          </div>
-        </div>
-
+    <FilterToolbar
+      activeTab={statusFilter}
+      className="tasks-filter-panel"
+      isFetching={isFetching}
+      onTabChange={(value) => setStatusFilter(value as TaskStatus | 'all')}
+      headerActions={(
+        <Button
+          variant={hasActiveFilters ? 'light' : 'subtle'}
+          size="compact-sm"
+          leftSection={<IconX size={16} />}
+          onClick={clearFilters}
+          disabled={!hasActiveFilters}
+        >
+          {t('common.clear')}
+        </Button>
+      )}
+      shown={filteredCount}
+      tabs={statusOptions.map((option) => ({ value: option.value, label: option.label, count: statusCounts[option.value] }))}
+    >
         <SimpleGrid className="tasks-filter-secondary" cols={{ base: 1, sm: 2, lg: 4 }}>
           <TextInput
             className="tasks-filter-search dl-filter-search kbfe-search-input"
@@ -150,7 +136,6 @@ export function TasksFilterPanel({
             {t('tasks.filterOverdueOnly')}
           </Button>
         </Group>
-      </Stack>
-    </Paper>
+    </FilterToolbar>
   );
 }

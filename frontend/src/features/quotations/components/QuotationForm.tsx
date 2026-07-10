@@ -3,7 +3,6 @@ import {
   Anchor,
   Button,
   Group,
-  Paper,
   SimpleGrid,
   Stack,
   Text,
@@ -17,43 +16,35 @@ import {
   IconRoute,
   IconWallet,
 } from '@tabler/icons-react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
-import { fetchChargeCodes, type ChargeCode } from '@shared/api/chargeCodes';
+import type { ChargeCode } from '@shared/api/chargeCodes';
 import { AnchoredWorkflowRail, useAnchoredWorkflowSections, type AnchoredWorkflowStep } from '@shared/components/AnchoredWorkflow';
 import { DateField } from '@shared/components/DateField';
 import {
   createQuotationOption,
   createQuotationVersion,
-  type QuotationChargeGroup,
   type QuotationV1,
 } from '@shared/api/quotations';
 import { createQuotationFromRequest, type QuotationRequestV1 } from '@shared/api/quotationRequests';
 import { queryKeys } from '@shared/api/queryKeys';
-import { fetchUoms } from '@shared/api/uoms';
 import { FeatureHeaderShell } from '@shared/components/FeatureHeaderShell';
 import { useExchangeRates } from '@shared/hooks/useExchangeRates';
 import { useTradeMasterDataOptions } from '@shared/hooks/useTradeMasterDataOptions';
 import { useI18n } from '@shared/i18n';
 import { QUOTATION_CHARGE_GROUPS } from '@shared/lib/quotationChargeGroups';
 import { formatMoney } from '@shared/utils/money';
+import { formatNumber } from '@shared/utils/number';
 
-import {
-  addDraftChargeLine,
-  removeDraftChargeLineAt,
-  emptyDraftGroups,
-  seedDraftGroupsForOption,
-  updateDraftChargeLineAt,
-  type QuotationDraftChargeLineState,
-} from '../model/quotationDraftLines';
+import { useQuotationDraftOptions } from '../hooks/useQuotationDraftOptions';
+import { useQuotationFormData } from '../hooks/useQuotationFormData';
 import {
   buildQuotationChargeLinePayloads,
   computeOptionCustomerPayAmount,
   computeOptionMoneyTotals,
   type DraftBuildContext,
-  type DraftQuotationOption,
 } from '../model/quotationOptionDraft';
 import { toShippingMode } from '../model/quotationModel';
 import { CurrencySelect } from './CurrencySelect';
@@ -108,39 +99,10 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
 
   const [validUntil, setValidUntil] = useState(sourceQuotation?.valid_until?.slice(0, 10) ?? '');
 
-  const [draftOptions, setDraftOptions] = useState<DraftQuotationOption[]>(
-    (sourceQuotation?.options ?? []).map((option) => ({
-      id: option.id,
-      option_no: option.option_no,
-      carrier_code: option.carrier_code,
-      carrier_name: option.carrier_name,
-      mode: option.mode ?? sourceQuotation?.mode ?? null,
-      vessel_or_flight: option.vessel_or_flight,
-      voyage_flight_no: option.voyage_flight_no,
-      etd: option.etd,
-      eta: option.eta,
-      transit_time_days: option.transit_time_days,
-      risk_warning: option.risk_warning,
-      headline_amount: Number(option.headline_amount ?? 0),
-      is_recommended: option.is_recommended,
-      is_selected: option.is_selected,
-      groupLines: seedDraftGroupsForOption(sourceQuotation, option.option_no),
-    })),
-  );
-  const [collapsedOptionIds, setCollapsedOptionIds] = useState<Set<string>>(new Set());
   const [paymentCurrency, setPaymentCurrency] = useState<string>('VND');
-  const optionRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  const chargeCodesQuery = useQuery({
-    queryKey: queryKeys.chargeCodes({ page: 1, limit: 200, is_active: true }),
-    queryFn: () => fetchChargeCodes({ page: 1, limit: 200, is_active: true }),
-  });
+  const { chargeCodesQuery, uomsQuery } = useQuotationFormData();
   const chargeCodes = chargeCodesQuery.data?.data ?? EMPTY_CHARGE_CODES;
-
-  const uomsQuery = useQuery({
-    queryKey: queryKeys.uoms({ limit: 200, is_active: true }),
-    queryFn: () => fetchUoms({ limit: 200, is_active: true }),
-  });
   const uoms = uomsQuery.data?.data ?? [];
 
   const chargeCodeOptions = useMemo(() => {
@@ -155,6 +117,20 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
     return chargeCodes.find((chargeCode) => chargeCode.charge_code === code) ?? null;
   }, [chargeCodes]);
 
+  const {
+    addDraftOption,
+    addOptionLine,
+    collapsedOptionIds,
+    draftOptions,
+    optionRefs,
+    removeDraftOption,
+    removeOptionLine,
+    setRecommendedOption,
+    toggleOptionCollapsed,
+    updateOption,
+    updateOptionLine,
+  } = useQuotationDraftOptions(sourceQuotation, (chargeCode) => findChargeCode(chargeCode)?.default_uom);
+
   const buildCtx = useMemo<DraftBuildContext>(
     () => ({
       shippingMode,
@@ -164,87 +140,6 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
     }),
     [shippingMode, language, findChargeCode, rateToVndOrNull],
   );
-
-  function updateOption(id: string, patch: Partial<DraftQuotationOption>) {
-    setDraftOptions((current) => current.map((option) => (option.id === id ? { ...option, ...patch } : option)));
-  }
-
-  function setRecommendedOption(id: string) {
-    setDraftOptions((current) => current.map((option) => ({ ...option, is_recommended: option.id === id })));
-  }
-
-  function addOptionLine(id: string, group: QuotationChargeGroup) {
-    setDraftOptions((current) =>
-      current.map((option) => (
-        option.id === id
-          ? { ...option, groupLines: addDraftChargeLine(option.groupLines, group) }
-          : option
-      )),
-    );
-  }
-
-  function updateOptionLine(
-    id: string,
-    group: QuotationChargeGroup,
-    rowIndex: number,
-    patch: Partial<QuotationDraftChargeLineState>,
-  ) {
-    setDraftOptions((current) =>
-      current.map((option) => (
-        option.id === id
-          ? {
-            ...option,
-            groupLines: updateDraftChargeLineAt(
-              option.groupLines,
-              group,
-              rowIndex,
-              patch,
-              (chargeCode) => findChargeCode(chargeCode)?.default_uom,
-            ),
-          }
-          : option
-      )),
-    );
-  }
-
-  function removeOptionLine(id: string, group: QuotationChargeGroup, rowIndex: number) {
-    setDraftOptions((current) =>
-      current.map((option) => (
-        option.id === id
-          ? { ...option, groupLines: removeDraftChargeLineAt(option.groupLines, group, rowIndex) }
-          : option
-      )),
-    );
-  }
-
-  function toggleOptionCollapsed(id: string) {
-    setCollapsedOptionIds((current) => {
-      const next = new Set(current);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  }
-
-  function scrollOptionIntoView(id: string) {
-    window.setTimeout(() => {
-      window.requestAnimationFrame(() => {
-        const target = optionRefs.current[id];
-        if (!target) return;
-
-        const rect = target.getBoundingClientRect();
-        const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-        const viewportPadding = 24;
-        const isOutOfView = rect.top < viewportPadding || rect.bottom > viewportHeight - viewportPadding;
-        if (isOutOfView) {
-          target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-      });
-    }, 180);
-  }
 
   const validationLines = useMemo(
     () => draftOptions.flatMap((option) => QUOTATION_CHARGE_GROUPS.flatMap((group) => option.groupLines[group.value])),
@@ -283,48 +178,6 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
   const workflowSectionIds = useMemo(() => workflowSteps.map((step) => step.id), [workflowSteps]);
   const { activeSectionId, scrollToSection } = useAnchoredWorkflowSections(workflowSectionIds);
 
-  function addDraftOption() {
-    const nextId = `draft-option-${Date.now()}`;
-    setCollapsedOptionIds(new Set(draftOptions.map((option) => option.id)));
-    setDraftOptions((current) => [
-      ...current,
-      {
-        id: nextId,
-        option_no: current.length + 1,
-        carrier_code: null,
-        carrier_name: null,
-        mode: header.mode,
-        vessel_or_flight: null,
-        voyage_flight_no: null,
-        etd: null,
-        eta: null,
-        transit_time_days: null,
-        risk_warning: null,
-        headline_amount: null,
-        is_recommended: current.length === 0,
-        is_selected: false,
-        groupLines: emptyDraftGroups(),
-      },
-    ]);
-    scrollOptionIntoView(nextId);
-  }
-
-  function removeDraftOption(optionId: string) {
-    setCollapsedOptionIds((current) => {
-      const next = new Set(current);
-      next.delete(optionId);
-      return next;
-    });
-    setDraftOptions((current) => {
-      const remaining = current
-        .filter((item) => item.id !== optionId)
-        .map((item, index) => ({ ...item, option_no: index + 1 }));
-      if (remaining.length > 0 && !remaining.some((option) => option.is_recommended)) {
-        return remaining.map((option, index) => ({ ...option, is_recommended: index === 0 }));
-      }
-      return remaining;
-    });
-  }
 
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -477,7 +330,7 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
               </Alert>
             ) : null}
             <Group justify="flex-end" mt="md">
-              <Button variant="light" leftSection={<IconPlus size={14} />} onClick={addDraftOption}>
+              <Button variant="light" leftSection={<IconPlus size={14} />} onClick={() => addDraftOption(header.mode)}>
                 {t('quotations.addOption')}
               </Button>
             </Group>
@@ -597,7 +450,7 @@ export function QuotationForm({ onCancel, onCreated, rfq, sourceQuotation }: Quo
             )}
             {referenceCurrency && referenceRate ? (
               <Text size="xs" c="dimmed" mt="xs" className="rfq-reference-rate">
-                {t('quotations.referenceRate')}: 1 {referenceCurrency} = {new Intl.NumberFormat(locale).format(referenceRate)} VND
+                {t('quotations.referenceRate')}: 1 {referenceCurrency} = {formatNumber(referenceRate, { locale })} VND
               </Text>
             ) : null}
           </div>

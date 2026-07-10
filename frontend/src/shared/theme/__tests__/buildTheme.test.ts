@@ -49,13 +49,19 @@ describe('buildTheme', () => {
     expect(theme.primaryColor).toBe('gray');
   });
 
-  it('all 9 color presets produce valid themes', () => {
+  it('all color presets produce valid themes', () => {
     const presetIds = Object.keys(colorPresets) as Array<keyof typeof colorPresets>;
     for (const presetId of presetIds) {
       const theme = buildTheme(presetId);
       expect(theme).toBeDefined();
       expect(theme.primaryColor).toBe(colorPresets[presetId].primaryColor);
     }
+  });
+
+  it('builds the Aurora Cyan palette for both schemes', () => {
+    expect(buildTheme('aurora').primaryColor).toBe('cyan');
+    expect(getEffectivePalette('aurora', 'light')[0]).toBe('#ecfeff');
+    expect(getEffectivePalette('aurora', 'dark')[0]).toBe('#164e63');
   });
 
   it('falls back safely for invalid preset IDs', () => {

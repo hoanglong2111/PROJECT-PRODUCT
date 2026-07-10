@@ -10,6 +10,7 @@ import {
 } from '@shared/api/purchaseOrders';
 import { queryKeys } from '@shared/api/queryKeys';
 import { CopyValue } from '@shared/components/CopyValue';
+import { DetailHero } from '@shared/components/DetailHero';
 import { FeatureHeaderShell } from '@shared/components/FeatureHeaderShell';
 import { FieldPair } from '@shared/components/FieldPair';
 import { PageError } from '@shared/components/PageFeedback';
@@ -101,7 +102,10 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
   return (
     <Stack gap="lg">
       <FeatureHeaderShell backLabel={t('common.backToList')} onBack={onClose}>
-        <Paper withBorder p={0} className="purchase-order-detail-hero feature-detail-hero">
+        <DetailHero
+          className="purchase-order-detail-hero"
+          paperProps={{ withBorder: true, p: 0 }}
+        >
           <div className="purchase-order-detail-hero-inner feature-hero-layout">
             <Group gap="sm" align="flex-start" wrap="nowrap" className="feature-detail-heading feature-hero-identity">
             <div className="feature-hero-icon" aria-hidden="true"><IconShoppingCart size={19} /></div>
@@ -175,7 +179,7 @@ export function PurchaseOrderDetailPanel({ canManage, id, onClose }: { canManage
               {t('purchaseOrders.confirmAfterSend')}
             </Text>
           ) : null}
-        </Paper>
+        </DetailHero>
       </FeatureHeaderShell>
 
       <PurchaseOrderDetailInfo order={order} lines={lines} />

@@ -7,6 +7,9 @@ import { useI18n } from '@shared/i18n';
 export function FilterToolbar<T extends string>({
   activeTab,
   children,
+  className,
+  headerControl,
+  headerActions,
   isFetching,
   onTabChange,
   shown,
@@ -14,6 +17,9 @@ export function FilterToolbar<T extends string>({
 }: {
   activeTab: T;
   children: ReactNode;
+  className?: string;
+  headerControl?: ReactNode;
+  headerActions?: ReactNode;
   isFetching?: boolean;
   onTabChange: (tab: T) => void;
   shown: number;
@@ -22,19 +28,22 @@ export function FilterToolbar<T extends string>({
   const { t } = useI18n();
 
   return (
-    <Paper withBorder p="md" className="dl-filter-panel">
+    <Paper withBorder p="md" className={['dl-filter-panel', className].filter(Boolean).join(' ')}>
       <Stack gap="sm">
         <div className="dl-filter-head">
           <div className="dl-filter-head__control">
-            <FilterSegment
-              ariaLabel={t('common.status')}
-              fill
-              value={activeTab}
-              onChange={(value) => onTabChange(value as T)}
-              options={tabs.map((tab) => ({ value: tab.value, label: tab.label, count: tab.count }))}
-            />
+            {headerControl ?? (
+              <FilterSegment
+                ariaLabel={t('common.status')}
+                fill
+                value={activeTab}
+                onChange={(value) => onTabChange(value as T)}
+                options={tabs.map((tab) => ({ value: tab.value, label: tab.label, count: tab.count }))}
+              />
+            )}
           </div>
           <div className="dl-filter-result">
+            {headerActions}
             {isFetching ? <Loader size="sm" /> : null}
             <Text size="sm" c="dimmed">
               {t('common.shown', { count: shown })}
