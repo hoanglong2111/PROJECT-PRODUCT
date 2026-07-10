@@ -36,10 +36,11 @@ import {
   AppearanceModeCard,
   ColorPresetGrid,
   DensityCard,
+  ExperienceProfilesCard,
   FineTuneCard,
   LanguageCard,
-  ThemePreview,
   VisualThemeCard,
+  WorkspacePreviewCard,
 } from './components';
 import { CreateUserModal } from './components/CreateUserModal';
 import { UserManagementPanel } from './components/UserManagementPanel';
@@ -49,21 +50,32 @@ export function Settings() {
   const { user } = useAuth();
   const {
     appearanceMode,
-    colorIntensity,
     colorPreset,
-    contrastLevel,
     density,
+    experienceProfile,
+    colorIntensityLevel,
+    contrastLevel,
     dimLevel,
+    fineTunePresets,
+    isProfileCustomized,
     language,
     mobileQuickActionsVisible,
     resetFineTune,
+    resetToProfileDefaults,
     resolvedColorScheme,
+    surfaceTransparency,
     setAppearanceMode,
-    setColorIntensity,
+    setExperienceProfile,
+    setSurfaceTransparency,
     setColorPreset,
-    setContrastLevel,
     setDensity,
+    setColorIntensityLevel,
+    setContrastLevel,
     setDimLevel,
+    saveFineTunePreset,
+    applyFineTunePreset,
+    renameFineTunePreset,
+    deleteFineTunePreset,
     setLanguage,
     setMobileQuickActionsVisible,
     setVisualTheme,
@@ -145,25 +157,41 @@ export function Settings() {
 
         <Tabs.Panel value="preferences" pt="lg">
           <Stack gap="lg">
-            <ThemePreview />
+            <WorkspacePreviewCard />
 
-            <FineTuneCard
-              colorIntensity={colorIntensity}
-              contrastLevel={contrastLevel}
-              dimLevel={dimLevel}
-              onChangeColorIntensity={setColorIntensity}
-              onChangeContrastLevel={setContrastLevel}
-              onChangeDimLevel={setDimLevel}
-              onReset={resetFineTune}
-              visualTheme={visualTheme}
+            <ExperienceProfilesCard
+              experienceProfile={experienceProfile}
+              isCustomized={isProfileCustomized}
+              onChange={setExperienceProfile}
+              onReset={resetToProfileDefaults}
             />
 
-            <ColorPresetGrid
-              colorPreset={colorPreset}
-              onChange={setColorPreset}
-            />
+            <div>
+              <Text fw={700}>{t('settings.advanced')}</Text>
+              <Text c="dimmed" size="sm">
+                {t('settings.advancedDescription')}
+              </Text>
+            </div>
 
-            <SimpleGrid cols={{ base: 1, md: 2, xl: 4 }}>
+            <SimpleGrid cols={{ base: 1, md: 2 }} className="settings-advanced-grid">
+              <ColorPresetGrid colorPreset={colorPreset} onChange={setColorPreset} presets={fineTunePresets}
+                onApplyPreset={applyFineTunePreset} onDeletePreset={deleteFineTunePreset}
+                onRenamePreset={renameFineTunePreset} onSavePreset={saveFineTunePreset} />
+              <FineTuneCard
+                colorIntensityLevel={colorIntensityLevel}
+                contrastLevel={contrastLevel}
+                dimLevel={dimLevel}
+                onColorIntensityChange={setColorIntensityLevel}
+                onContrastChange={setContrastLevel}
+                onDimChange={setDimLevel}
+                onReset={resetFineTune}
+                onTransparencyChange={setSurfaceTransparency}
+                transparencyLevel={surfaceTransparency}
+                visualTheme={visualTheme}
+              />
+            </SimpleGrid>
+
+            <SimpleGrid cols={{ base: 1, sm: 2, xl: 4 }} className="settings-preference-cards-grid">
               <AppearanceModeCard
                 appearanceMode={appearanceMode}
                 onChange={setAppearanceMode}
@@ -210,7 +238,15 @@ export function Settings() {
             </Paper>
 
             <Paper withBorder p="lg" className="dl-data-panel">
-              <SimpleGrid cols={{ base: 1, md: 2, xl: 5 }}>
+              <SimpleGrid cols={{ base: 1, md: 2, xl: 4 }}>
+                <Info
+                  label={t('settings.currentProfile')}
+                  value={`${t(`settings.profileOption.${experienceProfile}`)}${isProfileCustomized ? ` — ${t('settings.profileCustomized')}` : ''}`}
+                />
+                <Info
+                  label={t('settings.currentTransparency')}
+                  value={t(`settings.transparencyLevels.${surfaceTransparency}`)}
+                />
                 <Info label={t('settings.currentAppearance')} value={appearanceModeLabel(appearanceMode)} />
                 <Info label={t('settings.currentResolvedMode')} value={appearanceModeLabel(resolvedColorScheme)} />
                 <Info

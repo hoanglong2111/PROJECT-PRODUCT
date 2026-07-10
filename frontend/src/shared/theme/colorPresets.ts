@@ -7,7 +7,8 @@ export type ColorPresetId =
   | 'lavender'
   | 'rose'
   | 'amber'
-  | 'slate';
+  | 'slate'
+  | 'aurora';
 
 export type ColorPreset = {
   id: ColorPresetId;
@@ -287,6 +288,14 @@ export const colorPresets: Record<ColorPresetId, ColorPreset> = {
         '#edf2f7',
         '#f7fafc',
       ],
+    },
+  },
+  aurora: {
+    id: 'aurora',
+    primaryColor: 'cyan',
+    colors: {
+      light: ['#ecfeff', '#cffafe', '#a5f3fc', '#67e8f9', '#22d3ee', '#06b6d4', '#0891b2', '#0e7490', '#155e75', '#164e63'],
+      dark: ['#164e63', '#155e75', '#0e7490', '#0891b2', '#06b6d4', '#22d3ee', '#67e8f9', '#a5f3fc', '#cffafe', '#ecfeff'],
     },
   },
 };

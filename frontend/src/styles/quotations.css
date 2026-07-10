@@ -407,7 +407,6 @@
 
 .rfq-form-panel,
 .rfq-detail-hero,
-.rfq-list-panel,
 .rfq-breakdown-panel,
 .rfq-action-panel,
 .rfq-readiness-panel,
@@ -419,6 +418,25 @@
   box-shadow: var(--kbfe-shadow-xs);
 }
 
+/* List panel only (not form/breakdown/financial panels above) — safe to
+   wash because every .rfq-list-row inside sets its own opaque background,
+   same reasoning as .dl-data-panel. */
+.rfq-list-panel {
+  position: relative;
+  overflow: hidden;
+  border-color: var(--kbfe-border-primary) !important;
+  background:
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--kbfe-primary-color) 7%, transparent), transparent 42%),
+    var(--kbfe-surface-elevated);
+  box-shadow: var(--kbfe-shadow-xs);
+}
+
+html[data-kbfe-resolved-color-scheme='dark'] .rfq-list-panel {
+  background:
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--kbfe-primary-color) 4%, transparent), transparent 42%),
+    var(--kbfe-surface-elevated);
+}
+
 .rfq-list-filter-panel {
   overflow: hidden;
   border-color: var(--kbfe-border-primary) !important;
@@ -427,10 +445,14 @@
 }
 
 .rfq-metric-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   min-width: 0;
+  /* Compact vertically, but retain the same horizontal inset and icon anchor
+     as the standard metric cards used elsewhere in the workspace. */
+  padding: var(--kbfe-space-sm) var(--kbfe-space-md) !important;
+}
+
+.rfq-metric-card > .mantine-Group-root {
+  width: 100%;
 }
 
 .rfq-form-hero,
@@ -2503,7 +2525,7 @@
 .rfq-list-row {
   padding: 0.75rem calc(0.75rem + 1px);
   border-bottom: 0.5px solid color-mix(in srgb, var(--kbfe-border-primary) 72%, transparent);
-  background: var(--kbfe-surface-elevated);
+  background: var(--kbfe-list-row-background);
   transition:
     background-color 160ms ease;
 }
@@ -2749,9 +2771,16 @@
   background: var(--kbfe-primary-color);
 }
 
+/* Flex column (not grid) so .rfq-overview-items below can use the
+   min-height:0 + flex:1 pattern: it fills whatever height the grid row
+   ends up with (driven by .rfq-overview-facts' natural content, since
+   this branch is shrinkable and contributes ~0 to the row's auto-height
+   computation), and only its own item-list scrolls if it doesn't fit —
+   no scroll at all when the item list is shorter than the facts column. */
 .rfq-overview-cargo {
-  display: grid;
-  align-content: start;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   gap: 0.625rem;
   min-width: 0;
   padding: 0.75rem;
@@ -2762,11 +2791,15 @@
 }
 
 .rfq-overview-cargo .rfq-detail-metric-grid {
+  flex: 0 0 auto;
   grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
 }
 
 .rfq-overview-items {
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
   gap: 0.625rem;
   min-width: 0;
   padding-top: 0.625rem;
@@ -2775,6 +2808,7 @@
 
 .rfq-overview-items-head {
   display: flex;
+  flex: 0 0 auto;
   gap: 0.75rem;
   align-items: baseline;
   justify-content: space-between;
@@ -2783,12 +2817,29 @@
 
 .rfq-overview-item-list {
   display: grid;
+  align-content: start;
+  flex: 1 1 auto;
   gap: 0.375rem;
-  max-height: 16rem;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 0.25rem;
   scrollbar-width: thin;
+}
+
+/* Two-column layout only (both overview grids collapse to 1 column at
+   max-width: 62em): the item list must contribute ZERO intrinsic height,
+   otherwise the auto grid row is maximized to the cargo column's
+   max-content and both columns just grow equally tall — min-height: 0
+   alone does not stop that. height: 0 kills the intrinsic contribution;
+   flex-grow then stretches the list into whatever space remains under
+   the row height set by .rfq-overview-facts' natural content, and it
+   scrolls only when the items don't fit in that space. */
+@media (min-width: 62.0625em) {
+  .rfq-overview-item-list {
+    flex: 1 1 0;
+    height: 0;
+  }
 }
 
 .rfq-overview-item-row {
@@ -3884,7 +3935,9 @@
 }
 
 .rfq-request-detail .rfq-overview-body {
-  grid-template-columns: minmax(0, 1.25fr) minmax(15rem, 0.75fr);
+  /* Facts column (1st in DOM order: Thông tin yêu cầu) narrower than the
+     base rule so Hàng hóa và mặt hàng gets more room on the detail page. */
+  grid-template-columns: minmax(12rem, 1.25fr) minmax(0, 1.42fr);
   gap: 1rem;
   padding: 0.75rem;
 }

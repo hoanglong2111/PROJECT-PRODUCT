@@ -138,10 +138,10 @@ export function QuotationRequestListView({
 
   return (
     <Stack gap="md" className="rfq-list">
-      <SimpleGrid cols={{ base: 1, sm: 3 }} className="rfq-metric-grid">
-        <Metric label={t('quotationRequests.metricShown')} value={filteredRequests.length} color="blue" icon={<IconFileText size={22} />} />
-        <Metric label={t('quotationRequests.metricSubmitted')} value={tabCounts.submitted} color="cyan" icon={<IconSend size={22} />} />
-        <Metric label={t('quotationRequests.metricQuoted')} value={tabCounts.quoted} color="orange" icon={<IconTags size={22} />} />
+      <SimpleGrid cols={{ base: 1, sm: 3 }} className="rfq-metric-grid dl-metrics-strip">
+        <Metric className="rfq-metric-card" label={t('quotationRequests.metricShown')} value={filteredRequests.length} color="blue" icon={<IconFileText size={22} />} />
+        <Metric className="rfq-metric-card" label={t('quotationRequests.metricSubmitted')} value={tabCounts.submitted} color="cyan" icon={<IconSend size={22} />} />
+        <Metric className="rfq-metric-card" label={t('quotationRequests.metricQuoted')} value={tabCounts.quoted} color="orange" icon={<IconTags size={22} />} />
       </SimpleGrid>
 
       <FilterToolbar
@@ -254,4 +254,3 @@ export function QuotationRequestListView({
     </Stack>
   );
 }
-

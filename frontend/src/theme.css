@@ -219,27 +219,29 @@ html {
   --kbfe-z-skip-link: 60;
   --kbfe-z-scroll-nav: 200;
 
-  /* --- Visual fine-tune derivation layer ---------------------------------
-     Sliders in Settings write --kbfe-user-intensity/-dim/-contrast (0..1) as
-     inline styles on <html>. We derive the final theme tokens here from the
-     per-theme "-base" values above, instead of using CSS filter (which would
-     break position:fixed inside the AppShell header). High-contrast mode pins
-     these back to their raw base values further below so accessibility is
-     never degraded by the sliders. */
-  --kbfe-dim-pct: calc(var(--kbfe-user-dim, 0) * 22%);
-  --kbfe-background-primary: color-mix(in srgb, var(--kbfe-background-primary-base), #000 var(--kbfe-dim-pct));
-  --kbfe-background-secondary: color-mix(in srgb, var(--kbfe-background-secondary-base), #000 var(--kbfe-dim-pct));
-  --kbfe-surface-elevated: color-mix(in srgb, var(--kbfe-surface-elevated-base), #000 var(--kbfe-dim-pct));
-  --kbfe-hover-background: color-mix(in srgb, var(--kbfe-hover-background-base), #000 var(--kbfe-dim-pct));
-
-  --kbfe-soften-pct: calc((1 - var(--kbfe-user-contrast, 1)) * 40%);
-  --kbfe-text-primary: color-mix(in srgb, var(--kbfe-text-primary-base), var(--kbfe-background-primary-base) var(--kbfe-soften-pct));
-  --kbfe-text-secondary: color-mix(in srgb, var(--kbfe-text-secondary-base), var(--kbfe-background-primary-base) var(--kbfe-soften-pct));
-  --kbfe-border-primary: color-mix(in srgb, var(--kbfe-border-primary-base), var(--kbfe-background-primary-base) var(--kbfe-soften-pct));
-  --kbfe-border-strong: color-mix(in srgb, var(--kbfe-border-strong-base), var(--kbfe-background-primary-base) var(--kbfe-soften-pct));
-
-  --kbfe-desat-pct: calc((1 - var(--kbfe-user-intensity, 1)) * 55%);
-  --kbfe-primary-color: color-mix(in srgb, var(--kbfe-primary-color-base), var(--kbfe-text-secondary-base) var(--kbfe-desat-pct));
+  /* Fine Tuner changes accent presence only. Text, semantic status colors and
+     filled-control contrast deliberately remain independent. */
+  --kbfe-tuner-factor: 1;
+  --kbfe-tuner-surface-scale: 1;
+  --kbfe-tuner-hover-strength: 9%;
+  --kbfe-tuner-selected-strength: 14%;
+  --kbfe-tuner-filter-strength: 8%;
+  --kbfe-tuner-list-strength: 9%;
+  --kbfe-tuner-spotlight-strength: 9%;
+  --kbfe-tuner-chart-strength: 10%;
+  --kbfe-tuner-border-strength: 5%;
+  --kbfe-tuner-liquid-a-strength: 29%;
+  --kbfe-tuner-liquid-b-strength: 22%;
+  --kbfe-tuner-chrome-opacity: 0.42;
+  --kbfe-background-primary: var(--kbfe-background-primary-base);
+  --kbfe-background-secondary: var(--kbfe-background-secondary-base);
+  --kbfe-surface-elevated: var(--kbfe-surface-elevated-base);
+  --kbfe-hover-background: color-mix(in srgb, var(--kbfe-primary-color-base) var(--kbfe-tuner-border-strength), var(--kbfe-hover-background-base));
+  --kbfe-text-primary: var(--kbfe-text-primary-base);
+  --kbfe-text-secondary: var(--kbfe-text-secondary-base);
+  --kbfe-border-primary: var(--kbfe-border-primary-base);
+  --kbfe-border-strong: color-mix(in srgb, var(--kbfe-primary-color-base) var(--kbfe-tuner-border-strength), var(--kbfe-border-strong-base));
+  --kbfe-primary-color: var(--kbfe-primary-color-base);
 
   /* Subtle surface + shadow tokens, derived from the theme-aware base vars. */
   --kbfe-surface-subtle: color-mix(in srgb, var(--kbfe-surface-elevated) 92%, var(--kbfe-border-primary) 8%);
@@ -254,6 +256,11 @@ html {
      high-contrast (below) and reduced-transparency (base.css). */
   --kbfe-glass-surface: color-mix(in srgb, var(--kbfe-surface-elevated) 72%, transparent);
   --kbfe-glass-surface-2: color-mix(in srgb, var(--kbfe-surface-elevated) 84%, transparent);
+  /* The header is a thinner bridge into the page canvas, while the sidebar
+     stays on the stronger pinned-chrome recipe for navigation legibility. */
+  --kbfe-header-glass-surface: color-mix(in srgb, var(--kbfe-surface-elevated) 66%, transparent);
+  --kbfe-header-glass-blur: 12px;
+  --kbfe-header-glass-saturate: 1.08;
   --kbfe-glass-blur-1: 18px;
   --kbfe-glass-blur-2: 24px;
   --kbfe-glass-saturate: 1.15;
@@ -264,11 +271,31 @@ html {
      single-color frost. Used by .kbfe-liquid-surface (base.css) on the
      largest chrome surfaces; kept subtle (blur + low opacity) so it never
      competes with foreground text. */
-  --kbfe-liquid-tint-a: color-mix(in srgb, var(--kbfe-primary-color) 55%, transparent);
-  --kbfe-liquid-tint-b: color-mix(in srgb, var(--kbfe-status-blue) 42%, transparent);
+  --kbfe-liquid-tint-a: color-mix(in srgb, var(--kbfe-primary-color) var(--kbfe-tuner-liquid-a-strength), transparent);
+  --kbfe-liquid-tint-b: color-mix(in srgb, var(--kbfe-status-blue) var(--kbfe-tuner-liquid-b-strength), transparent);
+  --kbfe-chrome-liquid-opacity: var(--kbfe-tuner-chrome-opacity);
+  --kbfe-filter-wash-strength: var(--kbfe-tuner-filter-strength);
+  --kbfe-filter-base-tint: calc(2% * var(--kbfe-tuner-surface-scale));
+  --kbfe-list-wash-strength: var(--kbfe-tuner-list-strength);
+  --kbfe-list-row-background: color-mix(in srgb, var(--kbfe-primary-color) calc(4% * var(--kbfe-tuner-surface-scale)), var(--kbfe-surface-elevated));
   --kbfe-liquid-duration: 18s;
-  --kbfe-decorative-spotlight: color-mix(in srgb, var(--kbfe-primary-color) 9%, transparent);
+  --kbfe-decorative-spotlight: color-mix(in srgb, var(--kbfe-primary-color) var(--kbfe-tuner-spotlight-strength), transparent);
   --kbfe-decorative-vignette: transparent;
+
+  /* --- Adaptive presentation layer ---------------------------------------
+     Light and Dark share the same data, permissions and flows but carry a
+     different visual hierarchy. These tokens are the ONLY place where that
+     difference lives — feature CSS consumes them and never hardcodes
+     per-scheme emphasis. Defaults below are the LIGHT hierarchy (overview /
+     planning: stronger section separation, everything equally readable);
+     the dark block overrides them toward execution (completed items recede,
+     current/next action and risk get local contrast). */
+  --kbfe-presentation-completed-prominence: 1;      /* opacity of done/receded items */
+  --kbfe-presentation-section-separation: var(--kbfe-border-primary); /* group boundary color */
+  --kbfe-presentation-group-background: color-mix(in srgb, var(--kbfe-primary-color) 4%, var(--kbfe-surface-elevated));
+  --kbfe-presentation-focus-ring: 0 0 0 1px color-mix(in srgb, var(--kbfe-primary-color) 35%, transparent);
+  --kbfe-presentation-risk-ring: 0 0 0 1px color-mix(in srgb, var(--kbfe-status-red) 40%, transparent);
+  --kbfe-presentation-secondary-text: var(--kbfe-text-secondary);
 
   /* --- Ambient surface system ------------------------------------------------
      One shared "ambient radial gradient wash" recipe drives every elevated
@@ -284,8 +311,8 @@ html {
   --kbfe-surface-shadow-tint: 0%;     /* accent mixed into the outer shadow */
   --kbfe-surface-wash-reach: 40%;     /* radial fade-out distance (38–42%) */
   --kbfe-shadow-xs: var(--kbfe-shadow-sm);
-  --kbfe-row-hover-background: color-mix(in srgb, var(--kbfe-primary-color) 6%, var(--kbfe-surface-elevated));
-  --kbfe-row-selected-background: color-mix(in srgb, var(--kbfe-primary-color) 10%, var(--kbfe-surface-elevated));
+  --kbfe-row-hover-background: color-mix(in srgb, var(--kbfe-primary-color) var(--kbfe-tuner-hover-strength), var(--kbfe-surface-elevated));
+  --kbfe-row-selected-background: color-mix(in srgb, var(--kbfe-primary-color) var(--kbfe-tuner-selected-strength), var(--kbfe-surface-elevated));
   --kbfe-code-background: color-mix(in srgb, var(--kbfe-primary-color) 8%, var(--kbfe-surface-elevated));
   --kbfe-code-border: color-mix(in srgb, var(--kbfe-primary-color) 24%, var(--kbfe-border-primary));
   --kbfe-code-text: color-mix(in srgb, var(--kbfe-primary-color) 76%, var(--kbfe-text-primary));
@@ -295,19 +322,19 @@ html {
   --kbfe-scrollbar-thumb: color-mix(in srgb, var(--kbfe-primary-color) 45%, transparent);
   --kbfe-scrollbar-thumb-hover: color-mix(in srgb, var(--kbfe-primary-color) 70%, transparent);
   --kbfe-scrollbar-track: transparent;
-  --kbfe-chart-grid: color-mix(in srgb, var(--kbfe-border-primary) 52%, transparent);
-  --kbfe-status-blue: color-mix(in srgb, color-mix(in srgb, var(--mantine-color-blue-6), var(--kbfe-text-secondary-base) var(--kbfe-desat-pct)) 72%, var(--kbfe-text-primary));
-  --kbfe-status-blue-bg: color-mix(in srgb, color-mix(in srgb, var(--mantine-color-blue-6), var(--kbfe-text-secondary-base) var(--kbfe-desat-pct)) calc(10% * var(--kbfe-user-intensity, 1)), var(--kbfe-surface-elevated));
-  --kbfe-status-orange: color-mix(in srgb, color-mix(in srgb, var(--mantine-color-orange-7), var(--kbfe-text-secondary-base) var(--kbfe-desat-pct)) 72%, var(--kbfe-text-primary));
-  --kbfe-status-orange-bg: color-mix(in srgb, color-mix(in srgb, var(--mantine-color-orange-6), var(--kbfe-text-secondary-base) var(--kbfe-desat-pct)) calc(10% * var(--kbfe-user-intensity, 1)), var(--kbfe-surface-elevated));
-  --kbfe-status-teal: color-mix(in srgb, color-mix(in srgb, var(--mantine-color-teal-6), var(--kbfe-text-secondary-base) var(--kbfe-desat-pct)) 72%, var(--kbfe-text-primary));
-  --kbfe-status-teal-bg: color-mix(in srgb, color-mix(in srgb, var(--mantine-color-teal-6), var(--kbfe-text-secondary-base) var(--kbfe-desat-pct)) calc(10% * var(--kbfe-user-intensity, 1)), var(--kbfe-surface-elevated));
-  --kbfe-status-yellow: color-mix(in srgb, color-mix(in srgb, var(--mantine-color-yellow-7), var(--kbfe-text-secondary-base) var(--kbfe-desat-pct)) 74%, var(--kbfe-text-primary));
-  --kbfe-status-yellow-bg: color-mix(in srgb, color-mix(in srgb, var(--mantine-color-yellow-5), var(--kbfe-text-secondary-base) var(--kbfe-desat-pct)) calc(12% * var(--kbfe-user-intensity, 1)), var(--kbfe-surface-elevated));
-  --kbfe-status-red: color-mix(in srgb, color-mix(in srgb, var(--mantine-color-red-6), var(--kbfe-text-secondary-base) var(--kbfe-desat-pct)) 74%, var(--kbfe-text-primary));
-  --kbfe-status-red-bg: color-mix(in srgb, color-mix(in srgb, var(--mantine-color-red-6), var(--kbfe-text-secondary-base) var(--kbfe-desat-pct)) calc(10% * var(--kbfe-user-intensity, 1)), var(--kbfe-surface-elevated));
-  --kbfe-status-cyan: color-mix(in srgb, color-mix(in srgb, var(--mantine-color-cyan-7), var(--kbfe-text-secondary-base) var(--kbfe-desat-pct)) 72%, var(--kbfe-text-primary));
-  --kbfe-status-cyan-bg: color-mix(in srgb, color-mix(in srgb, var(--mantine-color-cyan-6), var(--kbfe-text-secondary-base) var(--kbfe-desat-pct)) calc(10% * var(--kbfe-user-intensity, 1)), var(--kbfe-surface-elevated));
+  --kbfe-chart-grid: color-mix(in srgb, var(--kbfe-primary-color) var(--kbfe-tuner-chart-strength), var(--kbfe-border-primary));
+  --kbfe-status-blue: color-mix(in srgb, var(--mantine-color-blue-6) 72%, var(--kbfe-text-primary));
+  --kbfe-status-blue-bg: color-mix(in srgb, var(--mantine-color-blue-6) 10%, var(--kbfe-surface-elevated));
+  --kbfe-status-orange: color-mix(in srgb, var(--mantine-color-orange-7) 72%, var(--kbfe-text-primary));
+  --kbfe-status-orange-bg: color-mix(in srgb, var(--mantine-color-orange-6) 10%, var(--kbfe-surface-elevated));
+  --kbfe-status-teal: color-mix(in srgb, var(--mantine-color-teal-6) 72%, var(--kbfe-text-primary));
+  --kbfe-status-teal-bg: color-mix(in srgb, var(--mantine-color-teal-6) 10%, var(--kbfe-surface-elevated));
+  --kbfe-status-yellow: color-mix(in srgb, var(--mantine-color-yellow-7) 74%, var(--kbfe-text-primary));
+  --kbfe-status-yellow-bg: color-mix(in srgb, var(--mantine-color-yellow-5) 12%, var(--kbfe-surface-elevated));
+  --kbfe-status-red: color-mix(in srgb, var(--mantine-color-red-6) 74%, var(--kbfe-text-primary));
+  --kbfe-status-red-bg: color-mix(in srgb, var(--mantine-color-red-6) 10%, var(--kbfe-surface-elevated));
+  --kbfe-status-cyan: color-mix(in srgb, var(--mantine-color-cyan-7) 72%, var(--kbfe-text-primary));
+  --kbfe-status-cyan-bg: color-mix(in srgb, var(--mantine-color-cyan-6) 10%, var(--kbfe-surface-elevated));
   --kbfe-status-gray: color-mix(in srgb, var(--mantine-color-gray-7) 80%, var(--kbfe-text-primary));
   --kbfe-status-gray-bg: color-mix(in srgb, var(--mantine-color-gray-6) 10%, var(--kbfe-surface-elevated));
 
@@ -366,8 +393,53 @@ html[data-kbfe-visual-theme='eye-comfort'] {
 }
 
 html[data-kbfe-resolved-color-scheme='dark'] {
+  /* Dark hierarchy: reduce ambient noise, raise local contrast around the
+     next action / current milestone / risk. Completed work recedes but must
+     stay readable (never below ~0.7). */
+  --kbfe-presentation-completed-prominence: 0.72;
+  --kbfe-presentation-group-background: color-mix(in srgb, var(--kbfe-primary-color) 2%, var(--kbfe-surface-elevated));
+  --kbfe-presentation-focus-ring: 0 0 0 1.5px color-mix(in srgb, var(--kbfe-primary-color) 55%, transparent);
+  --kbfe-presentation-risk-ring: 0 0 0 1.5px color-mix(in srgb, var(--kbfe-status-red) 60%, transparent);
   --kbfe-decorative-spotlight: color-mix(in srgb, var(--kbfe-primary-color) 12%, transparent);
   --kbfe-decorative-vignette: color-mix(in srgb, #000000 18%, transparent);
+  --kbfe-chrome-liquid-opacity: 0.42;
+  --kbfe-filter-wash-strength: 6%;
+  --kbfe-filter-base-tint: 1%;
+  --kbfe-list-wash-strength: 6%;
+  --kbfe-list-row-background: color-mix(in srgb, var(--kbfe-primary-color) 5%, var(--kbfe-surface-elevated));
+  --kbfe-row-hover-background: color-mix(in srgb, var(--kbfe-primary-color) 10%, var(--kbfe-surface-elevated));
+  --kbfe-row-selected-background: color-mix(in srgb, var(--kbfe-primary-color) 15%, var(--kbfe-surface-elevated));
+  --kbfe-header-glass-blur: 10px;
+  --kbfe-header-glass-saturate: 1.04;
+  --kbfe-icon-background:
+    radial-gradient(120% 140% at 22% -10%, color-mix(in srgb, #ffffff 14%, transparent), transparent 62%),
+    color-mix(in srgb, var(--kbfe-primary-color) 9%, var(--kbfe-surface-elevated));
+  --kbfe-button-glow: radial-gradient(120% 160% at 20% -10%, color-mix(in srgb, #ffffff 14%, transparent), transparent 55%);
+}
+
+/* Light mode runs the ambient glow noticeably stronger than dark — flat
+   colors are more visible/complained-about against the brighter light
+   surfaces. Dark mode (above) keeps a subtler version since dark surfaces
+   already carry more inherent contrast. */
+html[data-kbfe-resolved-color-scheme='light'] {
+  --kbfe-liquid-tint-a: color-mix(in srgb, var(--kbfe-primary-color) 70%, transparent);
+  --kbfe-liquid-tint-b: color-mix(in srgb, var(--kbfe-status-blue) 56%, transparent);
+  /* Light mode's page background is near-white, so glass chrome (header/nav/
+     sheets) had nothing colorful behind it to blur — the effect was reading
+     as invisible even though the same blur/tint recipe as dark mode was
+     applied. This is the fix: a stronger, second-hue ambient environment
+     behind the content (consumed by body::after in base.css), entirely
+     static gradients — no backdrop-filter, no animation, near-zero cost —
+     so the existing glass now has something to actually show through. */
+  --kbfe-decorative-spotlight: color-mix(in srgb, var(--kbfe-primary-color) 16%, transparent);
+  --kbfe-decorative-vignette: color-mix(in srgb, var(--kbfe-status-blue) 12%, transparent);
+  /* Icon chip background is a token, not a class — this single override
+     turns every consumer (.metric-icon and friends, components.css) from a
+     flat tint into a glossy gradient chip with zero per-consumer changes. */
+  --kbfe-icon-background:
+    radial-gradient(120% 140% at 22% -10%, color-mix(in srgb, #ffffff 40%, transparent), transparent 62%),
+    color-mix(in srgb, var(--kbfe-primary-color) 16%, var(--kbfe-surface-elevated));
+  --kbfe-button-glow: radial-gradient(120% 160% at 20% -10%, color-mix(in srgb, #ffffff 32%, transparent), transparent 55%);
 }
 
 /* Accessibility guard: the fine-tune sliders (intensity/dim/contrast) must
@@ -383,6 +455,12 @@ html[data-kbfe-visual-theme='high-contrast'] {
   --kbfe-glass-highlight: none;
   --kbfe-liquid-tint-a: transparent;
   --kbfe-liquid-tint-b: transparent;
+  --kbfe-chrome-liquid-opacity: 0;
+  --kbfe-filter-wash-strength: 0%;
+  --kbfe-filter-base-tint: 0%;
+  --kbfe-list-wash-strength: 0%;
+  --kbfe-list-row-background: var(--kbfe-surface-elevated);
+  --kbfe-button-glow: none;
   --kbfe-hover-background: var(--kbfe-hover-background-base);
   --kbfe-text-primary: var(--kbfe-text-primary-base);
   --kbfe-text-secondary: var(--kbfe-text-secondary-base);
@@ -414,6 +492,166 @@ html[data-kbfe-visual-theme='high-contrast'] {
   --kbfe-status-cyan-bg: var(--kbfe-surface-elevated);
   --kbfe-status-gray: var(--kbfe-text-primary);
   --kbfe-status-gray-bg: var(--kbfe-surface-elevated);
+}
+
+/* Six deliberately distinct accent-presence recipes. These variables affect
+   non-text presentation only, so even Max/Ultra can feel substantially more
+   vivid without weakening body-copy or filled-button contrast. */
+html[data-kbfe-color-intensity='light'] {
+  --kbfe-tuner-factor: 0.65;
+  --kbfe-tuner-surface-scale: 0.45;
+  --kbfe-tuner-hover-strength: 4%;
+  --kbfe-tuner-selected-strength: 7%;
+  --kbfe-tuner-filter-strength: 3%;
+  --kbfe-tuner-list-strength: 4%;
+  --kbfe-tuner-spotlight-strength: 3%;
+  --kbfe-tuner-chart-strength: 4%;
+  --kbfe-tuner-border-strength: 2%;
+  --kbfe-tuner-liquid-a-strength: 16%;
+  --kbfe-tuner-liquid-b-strength: 10%;
+  --kbfe-tuner-chrome-opacity: 0.25;
+}
+
+html[data-kbfe-color-intensity='high'] {
+  --kbfe-tuner-factor: 1.3;
+  --kbfe-tuner-surface-scale: 1.45;
+  --kbfe-tuner-hover-strength: 15%;
+  --kbfe-tuner-selected-strength: 23%;
+  --kbfe-tuner-filter-strength: 14%;
+  --kbfe-tuner-list-strength: 16%;
+  --kbfe-tuner-spotlight-strength: 15%;
+  --kbfe-tuner-chart-strength: 18%;
+  --kbfe-tuner-border-strength: 10%;
+  --kbfe-tuner-liquid-a-strength: 42%;
+  --kbfe-tuner-liquid-b-strength: 32%;
+  --kbfe-tuner-chrome-opacity: 0.62;
+}
+
+html[data-kbfe-color-intensity='extra-high'] {
+  --kbfe-tuner-factor: 1.7;
+  --kbfe-tuner-surface-scale: 1.9;
+  --kbfe-tuner-hover-strength: 22%;
+  --kbfe-tuner-selected-strength: 34%;
+  --kbfe-tuner-filter-strength: 20%;
+  --kbfe-tuner-list-strength: 23%;
+  --kbfe-tuner-spotlight-strength: 22%;
+  --kbfe-tuner-chart-strength: 26%;
+  --kbfe-tuner-border-strength: 16%;
+  --kbfe-tuner-liquid-a-strength: 55%;
+  --kbfe-tuner-liquid-b-strength: 44%;
+  --kbfe-tuner-chrome-opacity: 0.78;
+}
+
+html[data-kbfe-color-intensity='max'] {
+  --kbfe-tuner-factor: 2.15;
+  --kbfe-tuner-surface-scale: 2.35;
+  --kbfe-tuner-hover-strength: 30%;
+  --kbfe-tuner-selected-strength: 46%;
+  --kbfe-tuner-filter-strength: 28%;
+  --kbfe-tuner-list-strength: 32%;
+  --kbfe-tuner-spotlight-strength: 30%;
+  --kbfe-tuner-chart-strength: 36%;
+  --kbfe-tuner-border-strength: 24%;
+  --kbfe-tuner-liquid-a-strength: 70%;
+  --kbfe-tuner-liquid-b-strength: 58%;
+  --kbfe-tuner-chrome-opacity: 0.9;
+}
+
+html[data-kbfe-color-intensity='ultra'] {
+  --kbfe-tuner-factor: 2.65;
+  --kbfe-tuner-surface-scale: 2.8;
+  --kbfe-tuner-hover-strength: 38%;
+  --kbfe-tuner-selected-strength: 58%;
+  --kbfe-tuner-filter-strength: 36%;
+  --kbfe-tuner-list-strength: 42%;
+  --kbfe-tuner-spotlight-strength: 40%;
+  --kbfe-tuner-chart-strength: 48%;
+  --kbfe-tuner-border-strength: 32%;
+  --kbfe-tuner-liquid-a-strength: 82%;
+  --kbfe-tuner-liquid-b-strength: 70%;
+  --kbfe-tuner-chrome-opacity: 1;
+}
+
+/* Accessibility guard for the presentation layer: high contrast never fades
+   anything and never replaces borders with tinted rings. */
+html[data-kbfe-visual-theme='high-contrast'],
+html[data-kbfe-visual-theme='high-contrast'][data-kbfe-resolved-color-scheme='dark'] {
+  --kbfe-presentation-completed-prominence: 1;
+  --kbfe-presentation-group-background: var(--kbfe-surface-elevated);
+  --kbfe-presentation-focus-ring: 0 0 0 2px var(--kbfe-border-strong);
+  --kbfe-presentation-risk-ring: 0 0 0 2px var(--kbfe-risk-border);
+}
+
+/* User preference "reduced transparency" (Settings → Advanced): identical
+   degradation path as the OS-level prefers-reduced-transparency fallback in
+   base.css — glass goes opaque, blur/saturate collapse to no-ops, liquid
+   tints disappear. */
+html[data-kbfe-transparency='low'] {
+  --kbfe-header-glass-blur: 0px;
+  --kbfe-header-glass-saturate: 1;
+  --kbfe-header-glass-surface: var(--kbfe-surface-elevated);
+  --kbfe-glass-blur-1: 0px;
+  --kbfe-glass-blur-2: 0px;
+  --kbfe-glass-saturate: 1;
+  --kbfe-glass-surface: var(--kbfe-surface-elevated);
+  --kbfe-glass-surface-2: var(--kbfe-surface-elevated);
+  --kbfe-glass-highlight: none;
+  --kbfe-liquid-tint-a: transparent;
+  --kbfe-liquid-tint-b: transparent;
+  --kbfe-decorative-spotlight: transparent;
+  --kbfe-decorative-vignette: transparent;
+}
+
+html[data-kbfe-transparency='high']:not([data-kbfe-visual-theme='high-contrast']) {
+  --kbfe-header-glass-surface: color-mix(in srgb, var(--kbfe-surface-elevated) 52%, transparent);
+  --kbfe-glass-surface: color-mix(in srgb, var(--kbfe-surface-elevated) 58%, transparent);
+  --kbfe-glass-surface-2: color-mix(in srgb, var(--kbfe-surface-elevated) 72%, transparent);
+  --kbfe-header-glass-blur: 16px;
+  --kbfe-glass-blur-1: 24px;
+  --kbfe-glass-blur-2: 30px;
+  --kbfe-glass-saturate: 1.28;
+}
+
+html[data-kbfe-transparency='ultra']:not([data-kbfe-visual-theme='high-contrast']) {
+  --kbfe-header-glass-surface: color-mix(in srgb, var(--kbfe-surface-elevated) 42%, transparent);
+  --kbfe-glass-surface: color-mix(in srgb, var(--kbfe-surface-elevated) 48%, transparent);
+  --kbfe-glass-surface-2: color-mix(in srgb, var(--kbfe-surface-elevated) 66%, transparent);
+  --kbfe-header-glass-blur: 20px;
+  --kbfe-glass-blur-1: 30px;
+  --kbfe-glass-blur-2: 36px;
+  --kbfe-glass-saturate: 1.4;
+}
+
+/* Dimness only moves neutral backgrounds/surfaces. Mode-specific limits keep
+   light mode from becoming muddy and dark mode from crushing shadow detail. */
+html[data-kbfe-dim-level='light'] { --kbfe-background-primary: color-mix(in srgb, var(--kbfe-background-primary-base) 94%, #ffffff); }
+html[data-kbfe-dim-level='high'] { --kbfe-background-primary: color-mix(in srgb, var(--kbfe-background-primary-base) 94%, #000000); --kbfe-surface-elevated: color-mix(in srgb, var(--kbfe-surface-elevated-base) 96%, #000000); }
+html[data-kbfe-dim-level='extra-high'] { --kbfe-background-primary: color-mix(in srgb, var(--kbfe-background-primary-base) 88%, #000000); --kbfe-surface-elevated: color-mix(in srgb, var(--kbfe-surface-elevated-base) 92%, #000000); }
+html[data-kbfe-dim-level='max'] { --kbfe-background-primary: color-mix(in srgb, var(--kbfe-background-primary-base) 82%, #000000); --kbfe-surface-elevated: color-mix(in srgb, var(--kbfe-surface-elevated-base) 88%, #000000); }
+html[data-kbfe-dim-level='ultra'] { --kbfe-background-primary: color-mix(in srgb, var(--kbfe-background-primary-base) 76%, #000000); --kbfe-surface-elevated: color-mix(in srgb, var(--kbfe-surface-elevated-base) 84%, #000000); }
+html[data-kbfe-resolved-color-scheme='dark'][data-kbfe-dim-level='max'] { --kbfe-background-primary: color-mix(in srgb, var(--kbfe-background-primary-base) 92%, #000000); }
+html[data-kbfe-resolved-color-scheme='dark'][data-kbfe-dim-level='ultra'] { --kbfe-background-primary: color-mix(in srgb, var(--kbfe-background-primary-base) 88%, #000000); }
+
+/* Contrast changes hierarchy without mutating semantic colors or focus rings. */
+html[data-kbfe-contrast-level='light'] { --kbfe-border-primary: color-mix(in srgb, var(--kbfe-border-primary-base) 70%, var(--kbfe-surface-elevated)); --kbfe-text-secondary: color-mix(in srgb, var(--kbfe-text-secondary-base) 88%, var(--kbfe-text-primary-base)); }
+html[data-kbfe-contrast-level='high'] { --kbfe-border-primary: color-mix(in srgb, var(--kbfe-border-primary-base) 82%, var(--kbfe-text-primary-base)); --kbfe-border-strong: color-mix(in srgb, var(--kbfe-border-strong-base) 72%, var(--kbfe-text-primary-base)); }
+html[data-kbfe-contrast-level='extra-high'] { --kbfe-border-primary: color-mix(in srgb, var(--kbfe-border-primary-base) 70%, var(--kbfe-text-primary-base)); --kbfe-border-strong: color-mix(in srgb, var(--kbfe-border-strong-base) 58%, var(--kbfe-text-primary-base)); }
+html[data-kbfe-contrast-level='max'] { --kbfe-border-primary: color-mix(in srgb, var(--kbfe-border-primary-base) 58%, var(--kbfe-text-primary-base)); --kbfe-border-strong: color-mix(in srgb, var(--kbfe-border-strong-base) 44%, var(--kbfe-text-primary-base)); }
+html[data-kbfe-contrast-level='ultra'] { --kbfe-border-primary: color-mix(in srgb, var(--kbfe-border-primary-base) 46%, var(--kbfe-text-primary-base)); --kbfe-border-strong: color-mix(in srgb, var(--kbfe-border-strong-base) 30%, var(--kbfe-text-primary-base)); }
+
+html[data-kbfe-visual-theme='high-contrast'] {
+  --kbfe-background-primary: var(--kbfe-background-primary-base);
+  --kbfe-surface-elevated: var(--kbfe-surface-elevated-base);
+  --kbfe-text-secondary: var(--kbfe-text-secondary-base);
+  --kbfe-border-primary: var(--kbfe-border-primary-base);
+  --kbfe-border-strong: var(--kbfe-border-strong-base);
+}
+
+/* Muted secondary content (Operational Focus profile): supporting copy steps
+   back so actions/risk stand out. Still ≥4.5:1 — the mix stays close to the
+   normal secondary color and high-contrast pins text tokens elsewhere. */
+html[data-kbfe-secondary-contrast='muted']:not([data-kbfe-visual-theme='high-contrast']) {
+  --kbfe-presentation-secondary-text: color-mix(in srgb, var(--kbfe-text-secondary) 88%, var(--kbfe-background-primary-base));
 }
 
 html[data-kbfe-density='compact'] {
@@ -531,4 +769,14 @@ html[data-kbfe-color-preset='slate'][data-kbfe-resolved-color-scheme='light'] {
 html[data-kbfe-color-preset='slate'][data-kbfe-resolved-color-scheme='dark'] {
   --kbfe-primary-color-base: #a0aec0;
   --kbfe-primary-contrast: #171923;
+}
+
+html[data-kbfe-color-preset='aurora']:not([data-kbfe-resolved-color-scheme='dark']),
+html[data-kbfe-color-preset='aurora'][data-kbfe-resolved-color-scheme='light'] {
+  --kbfe-primary-color-base: #0891b2;
+  --kbfe-primary-contrast: #ffffff;
+}
+html[data-kbfe-color-preset='aurora'][data-kbfe-resolved-color-scheme='dark'] {
+  --kbfe-primary-color-base: #22d3ee;
+  --kbfe-primary-contrast: #164e63;
 }
