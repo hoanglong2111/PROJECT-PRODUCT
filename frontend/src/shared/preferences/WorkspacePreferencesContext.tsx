@@ -2,7 +2,17 @@
 import type { ColorPresetId } from '@shared/theme/colorPresets';
 import { defaultColorPresetId } from '@shared/theme/colorPresets';
 import { setMoneyLocale } from '@shared/utils/money';
+import {
+  PROFILE_DEFAULTS,
+  inferProfileFromLegacyPreferences,
+  isExperienceProfile,
+  isProfileCustomized,
+  type AdaptivePresentation,
+  type ExperienceProfile,
+  type SurfaceTransparency,
+} from './experienceProfiles';
 
+export type { AdaptivePresentation, ExperienceProfile, SurfaceTransparency };
 export type { ColorPresetId };
 export type WorkspaceLanguage = 'vi' | 'en';
 
@@ -23,12 +33,19 @@ type WorkspacePreferencesContextValue = {
   contrastLevel: number;
   density: DensityPreference;
   dimLevel: number;
+  experienceProfile: ExperienceProfile;
+  isProfileCustomized: boolean;
   language: WorkspaceLanguage;
   mobileQuickActionsVisible: boolean;
+  presentation: AdaptivePresentation;
   resetFineTune: () => void;
+  resetToProfileDefaults: () => void;
   resolvedColorScheme: ResolvedColorScheme;
   sidebarCollapsed: boolean;
+  surfaceTransparency: SurfaceTransparency;
   setAppearanceMode: (appearanceMode: AppearanceMode) => void;
+  setExperienceProfile: (profile: ExperienceProfile) => void;
+  setSurfaceTransparency: (transparency: SurfaceTransparency) => void;
   setColorIntensity: (value: number) => void;
   setColorPreset: (preset: ColorPresetId) => void;
   setContrastLevel: (value: number) => void;
@@ -50,6 +67,8 @@ const MOBILE_QUICK_ACTIONS_VISIBLE_STORAGE_KEY = 'kbfe.preferences.mobile-quick-
 const COLOR_PRESET_STORAGE_KEY = 'kbfe.preferences.color-preset';
 const LEGACY_EVENT_THEME_STORAGE_KEY = 'kbfe.preferences.event-theme-legacy';
 const DIM_LEVEL_STORAGE_KEY = 'kbfe.preferences.dim-level';
+const EXPERIENCE_PROFILE_STORAGE_KEY = 'kbfe.preferences.experience-profile';
+const SURFACE_TRANSPARENCY_STORAGE_KEY = 'kbfe.preferences.surface-transparency';
 
 const FINE_TUNE_DEFAULTS = {
   colorIntensity: 100,
@@ -148,6 +167,35 @@ function readStoredColorPreset(): ColorPresetId {
   return defaultColorPresetId;
 }
 
+/* Stored profile wins; on first run after the upgrade we infer the closest
+   profile from the legacy visual-theme/density keys instead of resetting
+   anything the user already picked. */
+function readStoredExperienceProfile(): ExperienceProfile {
+  if (typeof window === 'undefined') {
+    return 'overview';
+  }
+
+  const value = window.localStorage.getItem(EXPERIENCE_PROFILE_STORAGE_KEY);
+  if (isExperienceProfile(value)) {
+    return value;
+  }
+
+  return inferProfileFromLegacyPreferences(readStoredVisualTheme(), readStoredDensity());
+}
+
+function readStoredSurfaceTransparency(profile: ExperienceProfile): SurfaceTransparency {
+  if (typeof window === 'undefined') {
+    return 'full';
+  }
+
+  const value = window.localStorage.getItem(SURFACE_TRANSPARENCY_STORAGE_KEY);
+  if (value === 'full' || value === 'reduced') {
+    return value;
+  }
+
+  return PROFILE_DEFAULTS[profile].transparency;
+}
+
 function readStoredFineTune(key: string, fallback: number): number {
   if (typeof window === 'undefined') {
     return fallback;
@@ -177,6 +225,10 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
   const [sidebarCollapsed, setSidebarCollapsedState] = useState<boolean>(readStoredSidebarCollapsed);
   const [mobileQuickActionsVisible, setMobileQuickActionsVisibleState] = useState<boolean>(readStoredMobileQuickActionsVisible);
   const [colorPreset, setColorPresetState] = useState<ColorPresetId>(readStoredColorPreset);
+  const [experienceProfile, setExperienceProfileState] = useState<ExperienceProfile>(readStoredExperienceProfile);
+  const [surfaceTransparency, setSurfaceTransparencyState] = useState<SurfaceTransparency>(() =>
+    readStoredSurfaceTransparency(readStoredExperienceProfile()),
+  );
   // Contrast/color-intensity always start at full strength on every load/login —
   // they are session-only and never restored from a previous visit.
   const [colorIntensity, setColorIntensityState] = useState<number>(FINE_TUNE_DEFAULTS.colorIntensity);
@@ -235,6 +287,12 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
     document.documentElement.dataset.kbfeResolvedColorScheme = resolvedColorScheme;
     document.documentElement.dataset.kbfeVisualTheme = visualTheme;
     document.documentElement.dataset.kbfeColorPreset = colorPreset;
+    document.documentElement.dataset.kbfeProfile = experienceProfile;
+    document.documentElement.dataset.kbfeTransparency = surfaceTransparency;
+    document.documentElement.dataset.kbfeChartEmphasis = PROFILE_DEFAULTS[experienceProfile].presentation.chartEmphasis;
+    document.documentElement.dataset.kbfeContentEmphasis = PROFILE_DEFAULTS[experienceProfile].presentation.contentEmphasis;
+    document.documentElement.dataset.kbfeSecondaryContrast =
+      PROFILE_DEFAULTS[experienceProfile].presentation.secondaryContrast;
     document.documentElement.style.setProperty('--kbfe-user-intensity', String(colorIntensity / 100));
     document.documentElement.style.setProperty('--kbfe-user-dim', String(dimLevel / 100));
     document.documentElement.style.setProperty('--kbfe-user-contrast', String(contrastLevel / 100));
@@ -245,8 +303,10 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
     contrastLevel,
     density,
     dimLevel,
+    experienceProfile,
     language,
     resolvedColorScheme,
+    surfaceTransparency,
     visualTheme,
   ]);
 
@@ -331,6 +391,37 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
     setContrastLevelState(clamped);
   };
 
+  const setSurfaceTransparency = (nextTransparency: SurfaceTransparency) => {
+    setSurfaceTransparencyState(nextTransparency);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(SURFACE_TRANSPARENCY_STORAGE_KEY, nextTransparency);
+    }
+  };
+
+  /* Selecting a profile applies its DEFAULTS to the advanced controls (which
+     each persist through their own setter). Appearance mode and color preset
+     are independent of the profile and stay untouched. */
+  const applyProfileDefaults = (profile: ExperienceProfile) => {
+    const defaults = PROFILE_DEFAULTS[profile];
+    setVisualTheme(defaults.visualTheme);
+    setDensity(defaults.density);
+    setSurfaceTransparency(defaults.transparency);
+  };
+
+  const setExperienceProfile = (nextProfile: ExperienceProfile) => {
+    startThemeTransition();
+    setExperienceProfileState(nextProfile);
+    applyProfileDefaults(nextProfile);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(EXPERIENCE_PROFILE_STORAGE_KEY, nextProfile);
+    }
+  };
+
+  const resetToProfileDefaults = () => {
+    startThemeTransition();
+    applyProfileDefaults(experienceProfile);
+  };
+
   const resetFineTune = () => {
     setColorIntensity(FINE_TUNE_DEFAULTS.colorIntensity);
     setDimLevel(FINE_TUNE_DEFAULTS.dimLevel);
@@ -349,12 +440,23 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
       contrastLevel,
       density,
       dimLevel,
+      experienceProfile,
+      isProfileCustomized: isProfileCustomized(experienceProfile, {
+        density,
+        transparency: surfaceTransparency,
+        visualTheme,
+      }),
       language,
       mobileQuickActionsVisible,
+      presentation: PROFILE_DEFAULTS[experienceProfile].presentation,
       resetFineTune,
+      resetToProfileDefaults,
       resolvedColorScheme,
       sidebarCollapsed,
+      surfaceTransparency,
       setAppearanceMode,
+      setExperienceProfile,
+      setSurfaceTransparency,
       setColorIntensity,
       setColorPreset,
       setContrastLevel,
@@ -373,10 +475,12 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
       contrastLevel,
       density,
       dimLevel,
+      experienceProfile,
       language,
       mobileQuickActionsVisible,
       resolvedColorScheme,
       sidebarCollapsed,
+      surfaceTransparency,
       visualTheme,
     ],
   );

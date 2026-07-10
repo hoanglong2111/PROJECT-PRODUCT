@@ -270,6 +270,21 @@ html {
   --kbfe-decorative-spotlight: color-mix(in srgb, var(--kbfe-primary-color) 9%, transparent);
   --kbfe-decorative-vignette: transparent;
 
+  /* --- Adaptive presentation layer ---------------------------------------
+     Light and Dark share the same data, permissions and flows but carry a
+     different visual hierarchy. These tokens are the ONLY place where that
+     difference lives — feature CSS consumes them and never hardcodes
+     per-scheme emphasis. Defaults below are the LIGHT hierarchy (overview /
+     planning: stronger section separation, everything equally readable);
+     the dark block overrides them toward execution (completed items recede,
+     current/next action and risk get local contrast). */
+  --kbfe-presentation-completed-prominence: 1;      /* opacity of done/receded items */
+  --kbfe-presentation-section-separation: var(--kbfe-border-primary); /* group boundary color */
+  --kbfe-presentation-group-background: color-mix(in srgb, var(--kbfe-primary-color) 4%, var(--kbfe-surface-elevated));
+  --kbfe-presentation-focus-ring: 0 0 0 1px color-mix(in srgb, var(--kbfe-primary-color) 35%, transparent);
+  --kbfe-presentation-risk-ring: 0 0 0 1px color-mix(in srgb, var(--kbfe-status-red) 40%, transparent);
+  --kbfe-presentation-secondary-text: var(--kbfe-text-secondary);
+
   /* --- Ambient surface system ------------------------------------------------
      One shared "ambient radial gradient wash" recipe drives every elevated
      surface tier (hero / emphasis / soft / neutral). surface-system.css builds
@@ -366,6 +381,13 @@ html[data-kbfe-visual-theme='eye-comfort'] {
 }
 
 html[data-kbfe-resolved-color-scheme='dark'] {
+  /* Dark hierarchy: reduce ambient noise, raise local contrast around the
+     next action / current milestone / risk. Completed work recedes but must
+     stay readable (never below ~0.7). */
+  --kbfe-presentation-completed-prominence: 0.72;
+  --kbfe-presentation-group-background: color-mix(in srgb, var(--kbfe-primary-color) 2%, var(--kbfe-surface-elevated));
+  --kbfe-presentation-focus-ring: 0 0 0 1.5px color-mix(in srgb, var(--kbfe-primary-color) 55%, transparent);
+  --kbfe-presentation-risk-ring: 0 0 0 1.5px color-mix(in srgb, var(--kbfe-status-red) 60%, transparent);
   --kbfe-decorative-spotlight: color-mix(in srgb, var(--kbfe-primary-color) 12%, transparent);
   --kbfe-decorative-vignette: color-mix(in srgb, #000000 18%, transparent);
   --kbfe-icon-background:
@@ -444,6 +466,40 @@ html[data-kbfe-visual-theme='high-contrast'] {
   --kbfe-status-cyan-bg: var(--kbfe-surface-elevated);
   --kbfe-status-gray: var(--kbfe-text-primary);
   --kbfe-status-gray-bg: var(--kbfe-surface-elevated);
+}
+
+/* Accessibility guard for the presentation layer: high contrast never fades
+   anything and never replaces borders with tinted rings. */
+html[data-kbfe-visual-theme='high-contrast'],
+html[data-kbfe-visual-theme='high-contrast'][data-kbfe-resolved-color-scheme='dark'] {
+  --kbfe-presentation-completed-prominence: 1;
+  --kbfe-presentation-group-background: var(--kbfe-surface-elevated);
+  --kbfe-presentation-focus-ring: 0 0 0 2px var(--kbfe-border-strong);
+  --kbfe-presentation-risk-ring: 0 0 0 2px var(--kbfe-risk-border);
+}
+
+/* User preference "reduced transparency" (Settings → Advanced): identical
+   degradation path as the OS-level prefers-reduced-transparency fallback in
+   base.css — glass goes opaque, blur/saturate collapse to no-ops, liquid
+   tints disappear. */
+html[data-kbfe-transparency='reduced'] {
+  --kbfe-glass-blur-1: 0px;
+  --kbfe-glass-blur-2: 0px;
+  --kbfe-glass-saturate: 1;
+  --kbfe-glass-surface: var(--kbfe-surface-elevated);
+  --kbfe-glass-surface-2: var(--kbfe-surface-elevated);
+  --kbfe-glass-highlight: none;
+  --kbfe-liquid-tint-a: transparent;
+  --kbfe-liquid-tint-b: transparent;
+  --kbfe-decorative-spotlight: transparent;
+  --kbfe-decorative-vignette: transparent;
+}
+
+/* Muted secondary content (Operational Focus profile): supporting copy steps
+   back so actions/risk stand out. Still ≥4.5:1 — the mix stays close to the
+   normal secondary color and high-contrast pins text tokens elsewhere. */
+html[data-kbfe-secondary-contrast='muted']:not([data-kbfe-visual-theme='high-contrast']) {
+  --kbfe-presentation-secondary-text: color-mix(in srgb, var(--kbfe-text-secondary) 88%, var(--kbfe-background-primary-base));
 }
 
 html[data-kbfe-density='compact'] {

@@ -56,10 +56,12 @@ import {
   AppearanceModeCard,
   ColorPresetGrid,
   DensityCard,
+  ExperienceProfilesCard,
   FineTuneCard,
   LanguageCard,
-  ThemePreview,
+  TransparencyCard,
   VisualThemeCard,
+  WorkspacePreviewCard,
 } from './components';
 
 type CreateUserForm = Omit<CreateUserPayload, 'avatarUrl'> & {
@@ -76,11 +78,17 @@ export function Settings() {
     contrastLevel,
     density,
     dimLevel,
+    experienceProfile,
+    isProfileCustomized,
     language,
     mobileQuickActionsVisible,
     resetFineTune,
+    resetToProfileDefaults,
     resolvedColorScheme,
+    surfaceTransparency,
     setAppearanceMode,
+    setExperienceProfile,
+    setSurfaceTransparency,
     setColorIntensity,
     setColorPreset,
     setContrastLevel,
@@ -229,7 +237,21 @@ export function Settings() {
 
         <Tabs.Panel value="preferences" pt="lg">
           <Stack gap="lg">
-            <ThemePreview />
+            <WorkspacePreviewCard />
+
+            <ExperienceProfilesCard
+              experienceProfile={experienceProfile}
+              isCustomized={isProfileCustomized}
+              onChange={setExperienceProfile}
+              onReset={resetToProfileDefaults}
+            />
+
+            <div>
+              <Text fw={700}>{t('settings.advanced')}</Text>
+              <Text c="dimmed" size="sm">
+                {t('settings.advancedDescription')}
+              </Text>
+            </div>
 
             <FineTuneCard
               colorIntensity={colorIntensity}
@@ -247,7 +269,7 @@ export function Settings() {
               onChange={setColorPreset}
             />
 
-            <SimpleGrid cols={{ base: 1, md: 2, xl: 4 }}>
+            <SimpleGrid cols={{ base: 1, md: 2, xl: 3 }}>
               <AppearanceModeCard
                 appearanceMode={appearanceMode}
                 onChange={setAppearanceMode}
@@ -259,6 +281,11 @@ export function Settings() {
               <DensityCard
                 density={density}
                 onChange={setDensity}
+              />
+              <TransparencyCard
+                onChange={setSurfaceTransparency}
+                transparency={surfaceTransparency}
+                visualTheme={visualTheme}
               />
               <LanguageCard
                 language={language}
@@ -294,7 +321,15 @@ export function Settings() {
             </Paper>
 
             <Paper withBorder p="lg" className="dl-data-panel">
-              <SimpleGrid cols={{ base: 1, md: 2, xl: 5 }}>
+              <SimpleGrid cols={{ base: 1, md: 2, xl: 4 }}>
+                <Info
+                  label={t('settings.currentProfile')}
+                  value={`${t(`settings.profileOption.${experienceProfile}`)}${isProfileCustomized ? ` — ${t('settings.profileCustomized')}` : ''}`}
+                />
+                <Info
+                  label={t('settings.currentTransparency')}
+                  value={surfaceTransparency === 'full' ? t('settings.transparencyFull') : t('settings.transparencyReduced')}
+                />
                 <Info label={t('settings.currentAppearance')} value={appearanceModeLabel(appearanceMode)} />
                 <Info label={t('settings.currentResolvedMode')} value={appearanceModeLabel(resolvedColorScheme)} />
                 <Info

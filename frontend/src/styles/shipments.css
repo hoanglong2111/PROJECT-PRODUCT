@@ -630,6 +630,31 @@
   border-color: color-mix(in srgb, var(--kbfe-status-blue) 40%, var(--kbfe-border-primary));
   background: var(--kbfe-status-blue-bg);
 }
+
+/* --- Adaptive presentation pilot (Shipment) --------------------------------
+   Light and Dark show the SAME milestones, documents and actions; only the
+   hierarchy differs, and only through the --kbfe-presentation-* tokens from
+   theme.css. Light (defaults): everything equally scannable, groups separated.
+   Dark: completed work recedes (opacity stays ≥0.72, readable), while the
+   current milestone, next action, and active phase pick up a local-contrast
+   ring. High contrast pins all of these back to full prominence. */
+.shipment-milestone-rail-step.is-completed,
+.shipment-milestone-row.is-completed .shipment-milestone-content {
+  opacity: var(--kbfe-presentation-completed-prominence);
+}
+
+.shipment-milestone-row.is-current .shipment-milestone-content,
+.shipment-phase-row.is-active {
+  box-shadow: var(--kbfe-presentation-focus-ring);
+}
+
+.shipment-milestone-next-card {
+  box-shadow: var(--kbfe-presentation-focus-ring);
+}
+
+.shipment-milestones-hero {
+  background: var(--kbfe-presentation-group-background);
+}
 @media (max-width: 62em) {
 
   .shipment-detail-layout {
