@@ -242,6 +242,17 @@ html {
   box-shadow: 0 8px 18px -16px color-mix(in srgb, var(--kbfe-primary-color) 42%, transparent);
 }
 
+/* Filled buttons/action-icons get a soft top-left glow layered over the flat
+   fill instead of a single flat color, via Mantine's own --button-bg /
+   --ai-bg extension points — no fight with Mantine's own background rule. */
+[data-mantine-color-scheme] .mantine-Button-root[data-variant='filled'] {
+  --button-bg: var(--kbfe-button-glow), var(--mantine-primary-color-filled);
+}
+
+[data-mantine-color-scheme] .mantine-ActionIcon-root[data-variant='filled'] {
+  --ai-bg: var(--kbfe-button-glow), var(--mantine-primary-color-filled);
+}
+
 .mantine-Button-root:active:not(:disabled),
 .mantine-ActionIcon-root:active:not(:disabled),
 .mantine-NavLink-root:active {
