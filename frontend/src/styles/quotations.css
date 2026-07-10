@@ -2816,7 +2816,13 @@ html[data-kbfe-resolved-color-scheme='dark'] .rfq-list-panel {
   align-content: start;
   flex: 1 1 auto;
   gap: 0.375rem;
-  min-height: 4rem;
+  /* min-height: 0 (not a fixed floor like 4rem) — this is what makes the
+     row's auto-height computation ignore item-list's own content and
+     defer to .rfq-overview-facts' natural height instead. Any positive
+     floor here would let a long item list grow the row past facts'
+     height, breaking the "facts is the hard ceiling, cargo just scrolls
+     inside it" contract. */
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 0.25rem;
@@ -3918,7 +3924,7 @@ html[data-kbfe-resolved-color-scheme='dark'] .rfq-list-panel {
 .rfq-request-detail .rfq-overview-body {
   /* Facts column (1st in DOM order: Thông tin yêu cầu) narrower than the
      base rule so Hàng hóa và mặt hàng gets more room on the detail page. */
-  grid-template-columns: minmax(12rem, 0.58fr) minmax(0, 1.42fr);
+  grid-template-columns: minmax(12rem, 1.25fr) minmax(0, 1.42fr);
   gap: 1rem;
   padding: 0.75rem;
 }
