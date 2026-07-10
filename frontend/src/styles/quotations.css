@@ -2767,9 +2767,16 @@ html[data-kbfe-resolved-color-scheme='dark'] .rfq-list-panel {
   background: var(--kbfe-primary-color);
 }
 
+/* Flex column (not grid) so .rfq-overview-items below can use the
+   min-height:0 + flex:1 pattern: it fills whatever height the grid row
+   ends up with (driven by .rfq-overview-facts' natural content, since
+   this branch is shrinkable and contributes ~0 to the row's auto-height
+   computation), and only its own item-list scrolls if it doesn't fit —
+   no scroll at all when the item list is shorter than the facts column. */
 .rfq-overview-cargo {
-  display: grid;
-  align-content: start;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   gap: 0.625rem;
   min-width: 0;
   padding: 0.75rem;
@@ -2780,11 +2787,15 @@ html[data-kbfe-resolved-color-scheme='dark'] .rfq-list-panel {
 }
 
 .rfq-overview-cargo .rfq-detail-metric-grid {
+  flex: 0 0 auto;
   grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
 }
 
 .rfq-overview-items {
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
   gap: 0.625rem;
   min-width: 0;
   padding-top: 0.625rem;
@@ -2793,6 +2804,7 @@ html[data-kbfe-resolved-color-scheme='dark'] .rfq-list-panel {
 
 .rfq-overview-items-head {
   display: flex;
+  flex: 0 0 auto;
   gap: 0.75rem;
   align-items: baseline;
   justify-content: space-between;
@@ -2801,8 +2813,10 @@ html[data-kbfe-resolved-color-scheme='dark'] .rfq-list-panel {
 
 .rfq-overview-item-list {
   display: grid;
+  align-content: start;
+  flex: 1 1 auto;
   gap: 0.375rem;
-  max-height: 16rem;
+  min-height: 4rem;
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 0.25rem;
@@ -3902,7 +3916,9 @@ html[data-kbfe-resolved-color-scheme='dark'] .rfq-list-panel {
 }
 
 .rfq-request-detail .rfq-overview-body {
-  grid-template-columns: minmax(0, 1.25fr) minmax(15rem, 0.75fr);
+  /* Facts column (1st in DOM order: Thông tin yêu cầu) narrower than the
+     base rule so Hàng hóa và mặt hàng gets more room on the detail page. */
+  grid-template-columns: minmax(12rem, 0.58fr) minmax(0, 1.42fr);
   gap: 1rem;
   padding: 0.75rem;
 }
