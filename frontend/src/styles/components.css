@@ -117,13 +117,26 @@ html[data-kbfe-visual-theme='high-contrast'] .mantine-HoverCard-dropdown {
 }
 
 /* Token-driven card chrome. Depth stays restrained, but a faint top edge and
-   tinted shadow keep dashboards from reading as flat default cards. */
+   tinted shadow keep dashboards from reading as flat default cards.
+   Dashboards render up to ~8 of these concurrently — unlike the singular
+   chrome surfaces (header/sidebar/sheets), a blurred+animated treatment here
+   multiplies GPU cost per card on screen for no visible gain (metric cards
+   never sit over moving content). So this is a STATIC gradient wash, same
+   opaque recipe as .dl-data-panel-header, not real glass: no backdrop-filter,
+   no animation. */
 .metric-card {
   position: relative;
-  background: var(--kbfe-glass-surface-2);
+  background:
+    linear-gradient(125deg, color-mix(in srgb, var(--kbfe-primary-color) 10%, transparent), transparent 60%),
+    var(--kbfe-surface-elevated);
   border-color: var(--kbfe-border-primary);
   overflow: hidden;
-  backdrop-filter: blur(var(--kbfe-glass-blur-1)) saturate(var(--kbfe-glass-saturate));
+}
+
+html[data-kbfe-resolved-color-scheme='dark'] .metric-card {
+  background:
+    linear-gradient(125deg, color-mix(in srgb, var(--kbfe-primary-color) 7%, transparent), transparent 60%),
+    var(--kbfe-surface-elevated);
 }
 
 .metric-card::before {
@@ -135,43 +148,36 @@ html[data-kbfe-visual-theme='high-contrast'] .mantine-HoverCard-dropdown {
   background: color-mix(in srgb, var(--kbfe-primary-color) 18%, transparent);
 }
 
-/* Specular gloss sweep, same recipe as the feature heroes — top-left light
-   source, overlay/soft-light blend so the label/value underneath stays
-   legible. Metric cards are summary tiles (no table/form inside), so this
-   is the same "chrome, not data" tier as the hero surfaces. */
+/* Specular gloss — same top-left light-source idea as the feature heroes,
+   but a static gradient (no animation, no liquid tint) since it repeats
+   per-card across the dashboard grid. */
 .metric-card::after {
   position: absolute;
   inset: 0;
   z-index: 1;
   content: "";
   pointer-events: none;
-  background:
-    linear-gradient(
-      125deg,
-      color-mix(in srgb, #ffffff 26%, transparent) 0%,
-      color-mix(in srgb, #ffffff 8%, transparent) 20%,
-      transparent 44%
-    ),
-    radial-gradient(circle at 82% 18%, var(--kbfe-liquid-tint-b), transparent 50%);
+  background: linear-gradient(
+    125deg,
+    color-mix(in srgb, #ffffff 22%, transparent) 0%,
+    color-mix(in srgb, #ffffff 6%, transparent) 20%,
+    transparent 44%
+  );
   mix-blend-mode: overlay;
-  animation: kbfe-liquid-undulate var(--kbfe-liquid-duration) ease-in-out infinite;
 }
 
 html[data-kbfe-resolved-color-scheme='dark'] .metric-card::after {
-  background:
-    linear-gradient(
-      125deg,
-      color-mix(in srgb, #ffffff 16%, transparent) 0%,
-      color-mix(in srgb, #ffffff 5%, transparent) 20%,
-      transparent 44%
-    ),
-    radial-gradient(circle at 82% 18%, var(--kbfe-liquid-tint-b), transparent 50%);
+  background: linear-gradient(
+    125deg,
+    color-mix(in srgb, #ffffff 13%, transparent) 0%,
+    color-mix(in srgb, #ffffff 4%, transparent) 20%,
+    transparent 44%
+  );
   mix-blend-mode: soft-light;
 }
 
 html[data-kbfe-visual-theme='high-contrast'] .metric-card {
   background: var(--kbfe-surface-elevated) !important;
-  backdrop-filter: none !important;
 }
 
 html[data-kbfe-visual-theme='high-contrast'] .metric-card::after {
