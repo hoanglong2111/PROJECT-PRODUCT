@@ -58,7 +58,18 @@ export function DeliveryOrders() {
     if (deliveryOrders.length === 0) {
       return;
     }
-    const matchedOrder = deliveryOrders.find((_deliveryOrder) => {
+    const matchedOrder = deliveryOrders.find((deliveryOrder) => {
+      if (focusedDo) {
+        return deliveryOrder.order_info.order_number === focusedDo;
+      }
+
+      if (focusedPo) {
+        return (
+          deliveryOrder.source_po_number === focusedPo ||
+          deliveryOrder.sap_integration.po_number === focusedPo
+        );
+      }
+
       return false;
     });
 
