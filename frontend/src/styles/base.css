@@ -23,6 +23,28 @@
   box-sizing: border-box;
 }
 
+/* Respect the OS "reduce transparency" preference the same way we already
+   respect reduced-motion: pin every glass-surface consumer back to a fully
+   opaque fill globally, without having to touch each chrome component. */
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --kbfe-glass-surface: var(--kbfe-surface-elevated);
+    --kbfe-glass-surface-2: var(--kbfe-surface-elevated);
+    --kbfe-glass-highlight: none;
+  }
+}
+
+/* Browsers without backdrop-filter support get the same opaque fallback —
+   a translucent-but-unblurred surface reads as a rendering bug, not a
+   degraded glass effect. */
+@supports not (backdrop-filter: blur(1px)) {
+  :root {
+    --kbfe-glass-surface: var(--kbfe-surface-elevated);
+    --kbfe-glass-surface-2: var(--kbfe-surface-elevated);
+    --kbfe-glass-highlight: none;
+  }
+}
+
 /* Avoid the ~300ms tap delay and double-tap-zoom on touch devices for
    interactive controls, without opting out of pinch-zoom for the page. */
 button,
