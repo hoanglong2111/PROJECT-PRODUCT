@@ -2816,17 +2816,26 @@ html[data-kbfe-resolved-color-scheme='dark'] .rfq-list-panel {
   align-content: start;
   flex: 1 1 auto;
   gap: 0.375rem;
-  /* min-height: 0 (not a fixed floor like 4rem) — this is what makes the
-     row's auto-height computation ignore item-list's own content and
-     defer to .rfq-overview-facts' natural height instead. Any positive
-     floor here would let a long item list grow the row past facts'
-     height, breaking the "facts is the hard ceiling, cargo just scrolls
-     inside it" contract. */
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 0.25rem;
   scrollbar-width: thin;
+}
+
+/* Two-column layout only (both overview grids collapse to 1 column at
+   max-width: 62em): the item list must contribute ZERO intrinsic height,
+   otherwise the auto grid row is maximized to the cargo column's
+   max-content and both columns just grow equally tall — min-height: 0
+   alone does not stop that. height: 0 kills the intrinsic contribution;
+   flex-grow then stretches the list into whatever space remains under
+   the row height set by .rfq-overview-facts' natural content, and it
+   scrolls only when the items don't fit in that space. */
+@media (min-width: 62.0625em) {
+  .rfq-overview-item-list {
+    flex: 1 1 0;
+    height: 0;
+  }
 }
 
 .rfq-overview-item-row {
