@@ -28,6 +28,7 @@
    opaque fill globally, without having to touch each chrome component. */
 @media (prefers-reduced-transparency: reduce) {
   :root {
+    --kbfe-header-glass-surface: var(--kbfe-surface-elevated);
     --kbfe-glass-surface: var(--kbfe-surface-elevated);
     --kbfe-glass-surface-2: var(--kbfe-surface-elevated);
     --kbfe-glass-highlight: none;
@@ -41,6 +42,7 @@
    degraded glass effect. */
 @supports not (backdrop-filter: blur(1px)) {
   :root {
+    --kbfe-header-glass-surface: var(--kbfe-surface-elevated);
     --kbfe-glass-surface: var(--kbfe-surface-elevated);
     --kbfe-glass-surface-2: var(--kbfe-surface-elevated);
     --kbfe-glass-highlight: none;

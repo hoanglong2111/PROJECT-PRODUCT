@@ -254,6 +254,11 @@ html {
      high-contrast (below) and reduced-transparency (base.css). */
   --kbfe-glass-surface: color-mix(in srgb, var(--kbfe-surface-elevated) 72%, transparent);
   --kbfe-glass-surface-2: color-mix(in srgb, var(--kbfe-surface-elevated) 84%, transparent);
+  /* The header is a thinner bridge into the page canvas, while the sidebar
+     stays on the stronger pinned-chrome recipe for navigation legibility. */
+  --kbfe-header-glass-surface: color-mix(in srgb, var(--kbfe-surface-elevated) 66%, transparent);
+  --kbfe-header-glass-blur: 12px;
+  --kbfe-header-glass-saturate: 1.08;
   --kbfe-glass-blur-1: 18px;
   --kbfe-glass-blur-2: 24px;
   --kbfe-glass-saturate: 1.15;
@@ -390,6 +395,8 @@ html[data-kbfe-resolved-color-scheme='dark'] {
   --kbfe-presentation-risk-ring: 0 0 0 1.5px color-mix(in srgb, var(--kbfe-status-red) 60%, transparent);
   --kbfe-decorative-spotlight: color-mix(in srgb, var(--kbfe-primary-color) 12%, transparent);
   --kbfe-decorative-vignette: color-mix(in srgb, #000000 18%, transparent);
+  --kbfe-header-glass-blur: 10px;
+  --kbfe-header-glass-saturate: 1.04;
   --kbfe-icon-background:
     radial-gradient(120% 140% at 22% -10%, color-mix(in srgb, #ffffff 14%, transparent), transparent 62%),
     color-mix(in srgb, var(--kbfe-primary-color) 9%, var(--kbfe-surface-elevated));
@@ -483,6 +490,9 @@ html[data-kbfe-visual-theme='high-contrast'][data-kbfe-resolved-color-scheme='da
    base.css — glass goes opaque, blur/saturate collapse to no-ops, liquid
    tints disappear. */
 html[data-kbfe-transparency='reduced'] {
+  --kbfe-header-glass-blur: 0px;
+  --kbfe-header-glass-saturate: 1;
+  --kbfe-header-glass-surface: var(--kbfe-surface-elevated);
   --kbfe-glass-blur-1: 0px;
   --kbfe-glass-blur-2: 0px;
   --kbfe-glass-saturate: 1;

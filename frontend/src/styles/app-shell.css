@@ -4,11 +4,11 @@
   isolation: isolate;
   overflow: hidden;
   border-bottom-color: var(--kbfe-border-primary);
-  background: var(--kbfe-glass-surface);
+  background: var(--kbfe-header-glass-surface);
   box-shadow:
     0 1px 0 color-mix(in srgb, var(--kbfe-background-secondary) 78%, transparent),
     var(--kbfe-glass-highlight);
-  backdrop-filter: blur(var(--kbfe-glass-blur-1)) saturate(var(--kbfe-glass-saturate));
+  backdrop-filter: blur(var(--kbfe-header-glass-blur)) saturate(var(--kbfe-header-glass-saturate));
 }
 
 .mantine-AppShell-navbar {
@@ -92,8 +92,45 @@ html[data-kbfe-visual-theme='high-contrast'] .mantine-AppShell-navbar::before {
 }
 
 .app-shell-nav .mantine-NavLink-root:hover {
-  border-color: color-mix(in srgb, var(--kbfe-primary-color) 18%, var(--kbfe-border-primary));
-  background: color-mix(in srgb, var(--kbfe-primary-color) 5%, var(--kbfe-surface-elevated));
+  border-color: color-mix(in srgb, var(--kbfe-primary-color) 34%, var(--kbfe-border-primary));
+  background:
+    linear-gradient(100deg, color-mix(in srgb, var(--kbfe-primary-color) 14%, transparent), transparent 78%),
+    color-mix(in srgb, var(--kbfe-primary-color) 7%, var(--kbfe-surface-elevated));
+  color: color-mix(in srgb, var(--kbfe-primary-color) 68%, var(--kbfe-text-primary));
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--kbfe-primary-color) 48%, transparent);
+}
+
+.app-shell-nav .mantine-NavLink-root:hover .mantine-NavLink-section {
+  color: var(--kbfe-primary-color);
+}
+
+.app-shell-nav .mantine-NavLink-root[data-active] {
+  border-color: color-mix(in srgb, var(--kbfe-primary-color) 42%, var(--kbfe-border-primary));
+  background:
+    linear-gradient(100deg, color-mix(in srgb, var(--kbfe-primary-color) 18%, transparent), transparent 82%),
+    color-mix(in srgb, var(--kbfe-primary-color) 10%, var(--kbfe-surface-elevated)) !important;
+  color: color-mix(in srgb, var(--kbfe-primary-color) 70%, var(--kbfe-text-primary)) !important;
+  box-shadow: none;
+}
+
+html[data-kbfe-resolved-color-scheme='dark'] .app-shell-nav .mantine-NavLink-root:hover {
+  border-color: color-mix(in srgb, var(--kbfe-primary-color) 40%, var(--kbfe-border-primary));
+  background:
+    linear-gradient(100deg, color-mix(in srgb, var(--kbfe-primary-color) 12%, transparent), transparent 78%),
+    color-mix(in srgb, var(--kbfe-primary-color) 8%, var(--kbfe-surface-elevated));
+}
+
+html[data-kbfe-resolved-color-scheme] .app-shell-nav .mantine-NavLink-root[data-active] {
+  background-color: transparent !important;
+  color: color-mix(in srgb, var(--kbfe-primary-color) 70%, var(--kbfe-text-primary)) !important;
+}
+
+html[data-kbfe-visual-theme='high-contrast'] .app-shell-nav .mantine-NavLink-root:hover,
+html[data-kbfe-visual-theme='high-contrast'] .app-shell-nav .mantine-NavLink-root[data-active] {
+  border-color: var(--kbfe-border-strong);
+  background: var(--kbfe-hover-background) !important;
+  color: var(--kbfe-text-primary) !important;
+  box-shadow: none;
 }
 
 .mantine-AppShell-navbar[data-rail='true'] {

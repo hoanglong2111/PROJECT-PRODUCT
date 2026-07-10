@@ -1,6 +1,5 @@
-import { ActionIcon, Badge, Button, Group, Paper, Select, SimpleGrid, Stack, Text, TextInput, Title, Tooltip } from '@mantine/core';
+import { ActionIcon, Badge, Button, Group, Paper, Select, SimpleGrid, Stack, Text, TextInput, Tooltip } from '@mantine/core';
 import { IconCalendarPlus, IconCalendarStats, IconClock, IconEye, IconFileInvoice, IconSearch, IconX } from '@tabler/icons-react';
-import type { ReactNode } from 'react';
 
 import type { QuotationV1 } from '@shared/api/quotations';
 import { CopyValue } from '@shared/components/CopyValue';
@@ -8,6 +7,7 @@ import { DateField } from '@shared/components/DateField';
 import { EmptyState } from '@shared/components/EmptyState';
 import { FilterSegment } from '@shared/components/FilterSegment';
 import { ListPagination, useListPagination } from '@shared/components/ListPagination';
+import { Metric } from '@shared/components/Metric';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { useExchangeRates } from '@shared/hooks/useExchangeRates';
 import { useI18n } from '@shared/i18n';
@@ -68,18 +68,21 @@ export function QuotationListView({ filteredQuotations, onInspect, supplierOptio
     <Stack gap="md" className="rfq-list">
       <SimpleGrid cols={{ base: 1, sm: 3 }} className="rfq-metric-grid">
         <Metric
+          className="rfq-metric-card"
           label={t('quotations.metricShown')}
           value={new Intl.NumberFormat('en-US').format(filteredQuotations.length)}
           color="blue"
           icon={<IconFileInvoice size={22} />}
         />
         <Metric
+          className="rfq-metric-card"
           label={t('quotations.metricPending')}
           value={new Intl.NumberFormat('en-US').format(tabCounts.pending)}
           color="yellow"
           icon={<IconClock size={22} />}
         />
         <Metric
+          className="rfq-metric-card"
           label={t('quotations.metricRejected')}
           value={new Intl.NumberFormat('en-US').format(tabCounts.rejected)}
           color="red"
@@ -308,47 +311,5 @@ export function QuotationListView({ filteredQuotations, onInspect, supplierOptio
         </div>
       </Paper>
     </Stack>
-  );
-}
-
-const metricStatusColorTokens = {
-  blue: 'var(--kbfe-status-blue)',
-  green: 'var(--kbfe-status-teal)',
-  red: 'var(--kbfe-status-red)',
-  yellow: 'var(--kbfe-status-yellow)',
-} as const;
-
-function Metric({
-  color,
-  icon,
-  label,
-  value,
-}: {
-  color: 'blue' | 'green' | 'red' | 'yellow';
-  icon: ReactNode;
-  label: string;
-  value: string;
-}) {
-  return (
-    <Paper
-      withBorder
-      p="md"
-      className="metric-card rfq-metric-card kbfe-surface-wash kbfe-surface-wash--emphasis"
-      data-surface-tone={color}
-    >
-      <div>
-        <Text className="metric-label" size="xs" fw={700} tt="uppercase" mb={4}>
-          {label}
-        </Text>
-        <Title
-          order={1}
-          fw={800}
-          style={{ lineHeight: 1.1, color: metricStatusColorTokens[color] }}
-        >
-          {value}
-        </Title>
-      </div>
-      <span className={`metric-icon metric-icon-${color}`}>{icon}</span>
-    </Paper>
   );
 }

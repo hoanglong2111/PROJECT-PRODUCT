@@ -1,6 +1,6 @@
-import { ActionIcon, Badge, Paper, SimpleGrid, Stack, Switch, Table, Text, TextInput, Title, Tooltip } from '@mantine/core';
+import { ActionIcon, Badge, Paper, SimpleGrid, Stack, Switch, Table, Text, TextInput, Tooltip } from '@mantine/core';
 import { IconEye, IconFileText, IconSearch, IconSend, IconTags } from '@tabler/icons-react';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState } from 'react';
 
 import {
   buildRfqRouteLabel,
@@ -10,6 +10,7 @@ import {
 import { CopyValue } from '@shared/components/CopyValue';
 import { EmptyState } from '@shared/components/EmptyState';
 import { FilterSegment } from '@shared/components/FilterSegment';
+import { Metric } from '@shared/components/Metric';
 import { useI18n, type MessageKey } from '@shared/i18n';
 import { buildTabCounts } from '@shared/lib/tabCounts';
 import { formatDate } from '@shared/utils/date';
@@ -148,9 +149,9 @@ export function QuotationRequestListView({
   return (
     <Stack gap="md" className="rfq-list">
       <SimpleGrid cols={{ base: 1, sm: 3 }} className="rfq-metric-grid">
-        <Metric label={t('quotationRequests.metricShown')} value={filteredRequests.length} color="blue" icon={<IconFileText size={22} />} />
-        <Metric label={t('quotationRequests.metricSubmitted')} value={tabCounts.submitted} color="cyan" icon={<IconSend size={22} />} />
-        <Metric label={t('quotationRequests.metricQuoted')} value={tabCounts.quoted} color="orange" icon={<IconTags size={22} />} />
+        <Metric className="rfq-metric-card" label={t('quotationRequests.metricShown')} value={filteredRequests.length} color="blue" icon={<IconFileText size={22} />} />
+        <Metric className="rfq-metric-card" label={t('quotationRequests.metricSubmitted')} value={tabCounts.submitted} color="cyan" icon={<IconSend size={22} />} />
+        <Metric className="rfq-metric-card" label={t('quotationRequests.metricQuoted')} value={tabCounts.quoted} color="orange" icon={<IconTags size={22} />} />
       </SimpleGrid>
 
       <Paper withBorder p="md" className="rfq-list-filter-panel dl-filter-panel">
@@ -270,26 +271,5 @@ export function QuotationRequestListView({
         )}
       </Paper>
     </Stack>
-  );
-}
-
-function Metric({ color, icon, label, value }: { color: 'blue' | 'cyan' | 'orange'; icon: ReactNode; label: string; value: number }) {
-  return (
-    <Paper
-      withBorder
-      p="md"
-      className="metric-card rfq-metric-card kbfe-surface-wash kbfe-surface-wash--emphasis"
-      data-surface-tone={color}
-    >
-      <div>
-        <Text className="metric-label" size="xs" fw={700} tt="uppercase" mb={4}>
-          {label}
-        </Text>
-        <Title order={1} fw={800} style={{ lineHeight: 1.1 }}>
-          {new Intl.NumberFormat().format(value)}
-        </Title>
-      </div>
-      <span className={`metric-icon metric-icon-${color}`}>{icon}</span>
-    </Paper>
   );
 }

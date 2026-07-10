@@ -568,15 +568,21 @@ table td,
    Refer to AGENTS.md "Styling" for the complete details.
    ========================================================================== */
 
-/* Filter panel/shell — uniform FLAT chrome for ALL filter panels.
-   No gradient wash: a clean elevated surface + border + subtle shadow only.
-   background is !important so it overrides the divergent per-page washes
-   (tasks/dto) → every filter card is identical. Token-based → adapts to themes. */
+/* Filter panel/shell — one static Liquid surface for every feature filter.
+   It uses theme-aware ambient colour and specular light, but deliberately no
+   backdrop-filter: controls stay crisp and repeated operational screens do not
+   pay a scrolling/GPU cost. `!important` replaces divergent feature washes. */
 .dl-filter-panel {
   position: relative;
-  border-color: color-mix(in srgb, var(--kbfe-border-primary) 88%, var(--kbfe-primary-color) 12%) !important;
-  background: color-mix(in srgb, var(--kbfe-surface-elevated) 97%, var(--kbfe-background-secondary) 3%) !important;
-  box-shadow: var(--kbfe-shadow-sm) !important;
+  isolation: isolate;
+  border-color: color-mix(in srgb, var(--kbfe-border-primary) 74%, var(--kbfe-primary-color) 26%) !important;
+  background:
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--kbfe-primary-color) 13%, transparent), transparent 46%),
+    linear-gradient(135deg, color-mix(in srgb, #ffffff 8%, transparent), transparent 42%),
+    color-mix(in srgb, var(--kbfe-surface-elevated) 96%, var(--kbfe-primary-color) 4%) !important;
+  box-shadow:
+    0 8px 24px -22px color-mix(in srgb, var(--kbfe-primary-color) 34%, var(--kbfe-text-primary)),
+    var(--kbfe-glass-highlight) !important;
   overflow: hidden;
 }
 
@@ -587,7 +593,24 @@ table td,
   content: "";
   pointer-events: none;
   background: color-mix(in srgb, var(--kbfe-primary-color) 18%, transparent);
-  opacity: 0.7;
+  opacity: 0.9;
+}
+
+html[data-kbfe-resolved-color-scheme='dark'] .dl-filter-panel {
+  border-color: color-mix(in srgb, var(--kbfe-border-primary) 70%, var(--kbfe-primary-color) 30%) !important;
+  background:
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--kbfe-primary-color) 9%, transparent), transparent 44%),
+    linear-gradient(135deg, color-mix(in srgb, #ffffff 3%, transparent), transparent 38%),
+    color-mix(in srgb, var(--kbfe-surface-elevated) 98%, var(--kbfe-primary-color) 2%) !important;
+  box-shadow:
+    0 12px 30px -24px color-mix(in srgb, var(--kbfe-primary-color) 28%, #000000),
+    var(--kbfe-glass-highlight) !important;
+}
+
+html[data-kbfe-visual-theme='high-contrast'] .dl-filter-panel {
+  border-color: var(--kbfe-border-strong) !important;
+  background: var(--kbfe-surface-elevated) !important;
+  box-shadow: none !important;
 }
 
 html[data-kbfe-visual-theme='high-contrast'] .dl-filter-panel::before {
