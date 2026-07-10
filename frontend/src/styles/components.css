@@ -78,12 +78,29 @@
   background: var(--kbfe-surface-elevated);
 }
 
-[data-mantine-color-scheme] .mantine-Popover-dropdown,
-[data-mantine-color-scheme] .mantine-Menu-dropdown,
-[data-mantine-color-scheme] .mantine-Combobox-dropdown,
-[data-mantine-color-scheme] .mantine-HoverCard-dropdown {
+/* Combobox stays opaque — it's the options list for a form Select/picker,
+   same "form controls stay solid" rule as tables and inputs. Popover/Menu/
+   HoverCard are contextual chrome (actions, tooltips), not data entry, so
+   they get the floating glass tier. */
+[data-mantine-color-scheme] .mantine-Combobox-dropdown {
   background: var(--kbfe-surface-elevated);
   border-color: var(--kbfe-border-primary);
+}
+
+[data-mantine-color-scheme] .mantine-Popover-dropdown,
+[data-mantine-color-scheme] .mantine-Menu-dropdown,
+[data-mantine-color-scheme] .mantine-HoverCard-dropdown {
+  background: var(--kbfe-glass-surface-2);
+  border-color: var(--kbfe-border-primary);
+  backdrop-filter: blur(var(--kbfe-glass-blur-2)) saturate(var(--kbfe-glass-saturate));
+  box-shadow: var(--kbfe-glass-highlight);
+}
+
+html[data-kbfe-visual-theme='high-contrast'] .mantine-Popover-dropdown,
+html[data-kbfe-visual-theme='high-contrast'] .mantine-Menu-dropdown,
+html[data-kbfe-visual-theme='high-contrast'] .mantine-HoverCard-dropdown {
+  background: var(--kbfe-surface-elevated) !important;
+  backdrop-filter: none !important;
 }
 
 [data-mantine-color-scheme] .mantine-Combobox-option:hover,
@@ -103,9 +120,10 @@
    tinted shadow keep dashboards from reading as flat default cards. */
 .metric-card {
   position: relative;
-  background: var(--kbfe-surface-elevated);
+  background: var(--kbfe-glass-surface-2);
   border-color: var(--kbfe-border-primary);
   overflow: hidden;
+  backdrop-filter: blur(var(--kbfe-glass-blur-1)) saturate(var(--kbfe-glass-saturate));
 }
 
 .metric-card::before {
@@ -115,6 +133,49 @@
   content: "";
   pointer-events: none;
   background: color-mix(in srgb, var(--kbfe-primary-color) 18%, transparent);
+}
+
+/* Specular gloss sweep, same recipe as the feature heroes — top-left light
+   source, overlay/soft-light blend so the label/value underneath stays
+   legible. Metric cards are summary tiles (no table/form inside), so this
+   is the same "chrome, not data" tier as the hero surfaces. */
+.metric-card::after {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  content: "";
+  pointer-events: none;
+  background:
+    linear-gradient(
+      125deg,
+      color-mix(in srgb, #ffffff 26%, transparent) 0%,
+      color-mix(in srgb, #ffffff 8%, transparent) 20%,
+      transparent 44%
+    ),
+    radial-gradient(circle at 82% 18%, var(--kbfe-liquid-tint-b), transparent 50%);
+  mix-blend-mode: overlay;
+  animation: kbfe-liquid-undulate var(--kbfe-liquid-duration) ease-in-out infinite;
+}
+
+html[data-kbfe-resolved-color-scheme='dark'] .metric-card::after {
+  background:
+    linear-gradient(
+      125deg,
+      color-mix(in srgb, #ffffff 16%, transparent) 0%,
+      color-mix(in srgb, #ffffff 5%, transparent) 20%,
+      transparent 44%
+    ),
+    radial-gradient(circle at 82% 18%, var(--kbfe-liquid-tint-b), transparent 50%);
+  mix-blend-mode: soft-light;
+}
+
+html[data-kbfe-visual-theme='high-contrast'] .metric-card {
+  background: var(--kbfe-surface-elevated) !important;
+  backdrop-filter: none !important;
+}
+
+html[data-kbfe-visual-theme='high-contrast'] .metric-card::after {
+  display: none;
 }
 
 .metric-card:hover {
@@ -261,13 +322,22 @@
 .page-state-panel {
   max-width: 56rem;
   border-color: var(--kbfe-border-primary) !important;
-  background: color-mix(in srgb, var(--kbfe-surface-elevated) 96%, var(--kbfe-background-secondary) 4%);
-  box-shadow: var(--kbfe-shadow-sm);
+  background: var(--kbfe-glass-surface-2);
+  backdrop-filter: blur(var(--kbfe-glass-blur-1)) saturate(var(--kbfe-glass-saturate));
+  box-shadow: var(--kbfe-shadow-sm), var(--kbfe-glass-highlight);
 }
 
+html[data-kbfe-visual-theme='high-contrast'] .page-state-panel {
+  background: var(--kbfe-surface-elevated) !important;
+  backdrop-filter: none !important;
+}
+
+/* Error state stays fully opaque and semantically red — an alert surface
+   must read as unambiguous, not glassy. */
 .page-state-panel-error {
   border-color: var(--kbfe-risk-border);
   background: var(--kbfe-risk-background);
+  backdrop-filter: none;
 }
 
 .page-loading-layout {
@@ -300,6 +370,20 @@
 .empty-state--standalone {
   border: 1px solid var(--kbfe-border-primary);
   border-radius: var(--kbfe-radius-lg);
+}
+
+/* Glass only for the standalone card variant (scoped via the compound
+   selector) — other .kbfe-surface-wash--soft consumers (readiness/info
+   panels elsewhere) are out of scope and keep their opaque wash. */
+.empty-state--standalone.kbfe-surface-wash {
+  background: var(--kbfe-glass-surface-2);
+  backdrop-filter: blur(var(--kbfe-glass-blur-1)) saturate(var(--kbfe-glass-saturate));
+  box-shadow: var(--kbfe-glass-highlight);
+}
+
+html[data-kbfe-visual-theme='high-contrast'] .empty-state--standalone.kbfe-surface-wash {
+  background: var(--kbfe-surface-elevated) !important;
+  backdrop-filter: none !important;
 }
 
 .empty-state .mantine-ThemeIcon-root {
@@ -1264,6 +1348,21 @@ tr:hover .copy-on-hover,
   background: var(--kbfe-surface-elevated);
   box-shadow: var(--kbfe-shadow-md) !important;
   overflow: hidden;
+}
+
+/* ConfirmModal only (via the .md-confirm-modal marker class) — a short
+   confirm/cancel dialog, not a data-entry form, so it gets the floating
+   glass tier. MasterDataFormModal shares .md-form-modal but has real input
+   fields and must stay opaque. */
+.md-form-modal.md-confirm-modal {
+  background: var(--kbfe-glass-surface-2);
+  backdrop-filter: blur(var(--kbfe-glass-blur-2)) saturate(var(--kbfe-glass-saturate));
+  box-shadow: var(--kbfe-shadow-md), var(--kbfe-glass-highlight) !important;
+}
+
+html[data-kbfe-visual-theme='high-contrast'] .md-form-modal.md-confirm-modal {
+  background: var(--kbfe-surface-elevated) !important;
+  backdrop-filter: none !important;
 }
 
 .md-form-modal-header {

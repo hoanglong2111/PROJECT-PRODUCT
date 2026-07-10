@@ -258,6 +258,15 @@ html {
   --kbfe-glass-blur-2: 24px;
   --kbfe-glass-saturate: 1.15;
   --kbfe-glass-highlight: inset 0 1px 0 color-mix(in srgb, #ffffff 26%, transparent);
+
+  /* Liquid tint pair — two hues (primary + a cool secondary) so the glass
+     reads as translucent water catching color from two sources, not a flat
+     single-color frost. Used by .kbfe-liquid-surface (base.css) on the
+     largest chrome surfaces; kept subtle (blur + low opacity) so it never
+     competes with foreground text. */
+  --kbfe-liquid-tint-a: color-mix(in srgb, var(--kbfe-primary-color) 55%, transparent);
+  --kbfe-liquid-tint-b: color-mix(in srgb, var(--kbfe-status-blue) 42%, transparent);
+  --kbfe-liquid-duration: 18s;
   --kbfe-decorative-spotlight: color-mix(in srgb, var(--kbfe-primary-color) 9%, transparent);
   --kbfe-decorative-vignette: transparent;
 
@@ -372,6 +381,8 @@ html[data-kbfe-visual-theme='high-contrast'] {
   --kbfe-glass-surface: var(--kbfe-surface-elevated);
   --kbfe-glass-surface-2: var(--kbfe-surface-elevated);
   --kbfe-glass-highlight: none;
+  --kbfe-liquid-tint-a: transparent;
+  --kbfe-liquid-tint-b: transparent;
   --kbfe-hover-background: var(--kbfe-hover-background-base);
   --kbfe-text-primary: var(--kbfe-text-primary-base);
   --kbfe-text-secondary: var(--kbfe-text-secondary-base);
