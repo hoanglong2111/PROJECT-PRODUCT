@@ -557,18 +557,6 @@ export type LogisticsTask = {
 // GD1 CANONICAL TYPEDEF LAYER
 // ============================================================================
 
-export type Gd1Priority = 'NORMAL' | 'HIGH' | 'URGENT';
-
-export type Gd1PrStatus =
-  | 'DRAFT'
-  | 'SUBMITTED'
-  | 'PARTIALLY_APPROVED'
-  | 'APPROVED'
-  | 'REJECTED'
-  | 'CONVERTED'
-  | 'CLOSED'
-  | 'CANCELLED';
-
 export type Gd1PoStatus =
   | 'DRAFT'
   | 'SENT'
@@ -580,25 +568,8 @@ export type Gd1PoStatus =
   | 'CLOSED'
   | 'CANCELLED';
 
-export type Gd1PoLineStatus = 'OPEN' | 'PARTIALLY_SHIPPED' | 'SHIPPED' | 'RECEIVED' | 'CLOSED' | 'CANCELLED';
-
 export type Gd1PoType = 'SEA' | 'AIR' | 'DOMESTIC';
-export type Gd1TemplatePoType = 'SEA' | 'AIR' | 'DOMESTIC' | 'ALL';
 export type Gd1ShipmentMode = 'SEA' | 'AIR' | 'ROAD' | 'RAIL' | 'MULTIMODAL' | 'TRUCKING' | 'OTHER';
-
-export type Gd1ShipmentStatus =
-  | 'BOOKING_PENDING'
-  | 'BOOKING_CONFIRMED'
-  | 'CARGO_READY'
-  | 'PICKED_UP'
-  | 'BL_ISSUED'
-  | 'GATE_IN_POL'
-  | 'IN_TRANSIT'
-  | 'CUSTOMS_DRAFT'
-  | 'ARRIVED'
-  | 'CUSTOMS_CLEARED'
-  | 'DELIVERED'
-  | 'CANCELLED';
 
 export type Gd1CustomsStream = 'GREEN' | 'YELLOW' | 'RED';
 
@@ -634,105 +605,6 @@ export type Gd1AllocMethod = 'BY_VALUE' | 'BY_WEIGHT' | 'BY_QTY';
 
 export type Gd1TaskStatus = 'PENDING' | 'IN_PROGRESS' | 'DONE' | 'BLOCKED' | 'CANCELLED';
 
-export type Gd1AssigneeRole = 'BUYER' | 'LOGISTICS' | 'FINANCE' | 'CUSTOMS_BROKER';
-export type Gd1ApproverRole = 'DEPARTMENT_MANAGER' | 'DIVISION_DIRECTOR' | 'CEO' | 'CFO';
-export type Gd1ApprovalAppliesTo = 'PR' | 'PO' | 'BOTH';
-
-export interface Gd1PurchaseRequest {
-  id: string;
-  tenant_id: string;
-  pr_no: string;
-  title: string;
-  requester_id: string | null;
-  department_id: string | null;
-  priority: Gd1Priority;
-  status: Gd1PrStatus;
-  required_date: string;
-  total_amount: number;
-  currency_code: string;
-  notes: string | null;
-  submitted_at: string | null;
-  approved_at: string | null;
-  created_at: string;
-  updated_at: string;
-  created_by: string | null;
-  updated_by: string | null;
-  version: number;
-  deleted_at: string | null;
-}
-
-export interface Gd1PurchaseRequestLine {
-  id: string;
-  tenant_id: string;
-  purchase_request_id: string;
-  item_id: string;
-  line_no: number;
-  qty_requested: number;
-  qty_converted: number;
-  unit: string;
-  target_price: number | null;
-  currency_code: string;
-  required_date: string;
-  preferred_supplier_id: string | null;
-  note: string | null;
-}
-
-export interface Gd1ApprovalMatrixConfig {
-  id: string;
-  tenant_id: string;
-  applies_to: Gd1ApprovalAppliesTo;
-  department_id: string | null;
-  min_amount: number;
-  max_amount: number | null;
-  currency_code: string;
-  step_order: number;
-  approver_role: Gd1ApproverRole;
-  approver_user_id: string | null;
-  escalation_timeout_hours: number;
-  is_active: boolean;
-}
-
-export interface Gd1PurchaseOrder {
-  id: string;
-  tenant_id: string;
-  po_no: string;
-  revision: number;
-  supplier_id: string;
-  po_type: Gd1PoType;
-  incoterm: string;
-  payment_term: string;
-  currency_code: string;
-  exchange_rate: number;
-  status: Gd1PoStatus;
-  expected_etd: string | null;
-  expected_eta: string | null;
-  confirmed_by_supplier_at: string | null;
-  supplier_ref_no: string | null;
-  tolerance_over_pct: number;
-  tolerance_under_pct: number;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Gd1PurchaseOrderLine {
-  id: string;
-  tenant_id: string;
-  purchase_order_id: string;
-  purchase_request_line_id: string | null;
-  item_id: string;
-  line_no: number;
-  status: Gd1PoLineStatus;
-  qty_ordered: number;
-  qty_shipped: number;
-  qty_received: number;
-  unit_price: number;
-  tax_rate: number;
-  discount_pct: number;
-  landed_cost_alloc: number;
-  expected_eta_line: string | null;
-}
-
 export interface Gd1ShipmentMilestone {
   id: string;
   tenant_id: string | null;
@@ -760,19 +632,6 @@ export interface Gd1ShipmentCost {
   invoice_ref: string | null;
 }
 
-export interface Gd1PoTaskTemplate {
-  id: string;
-  tenant_id: string | null;
-  po_type: Gd1TemplatePoType;
-  po_stage: Gd1PoStatus;
-  task_name: string;
-  default_assignee_role: Gd1AssigneeRole;
-  sla_hours: number;
-  linked_milestone: Gd1MilestoneCode | null;
-  is_active: boolean;
-  sort_order: number;
-}
-
 export interface Gd1PoStageTask {
   id: string;
   tenant_id: string | null;
@@ -791,21 +650,6 @@ export interface Gd1PoStageTask {
   completed_by: string | null;
   linked_shipment_milestone: Gd1MilestoneCode | null;
   note: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Gd1ApprovalStep {
-  id: string;
-  tenant_id: string | null;
-  entity_type: string;
-  entity_id: string;
-  step_order: number;
-  approver_role: string;
-  approver_id: string | null;
-  status: 'PENDING' | 'WAITING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
-  note: string | null;
-  decision_at: string | null;
   created_at: string;
   updated_at: string;
 }

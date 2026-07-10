@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react';
 import { Group, ScrollArea, Stack, UnstyledButton } from '@mantine/core';
 
 import { getStatusBadgeConfig } from '@shared/components/StatusBadge';
+import { statusColorVar } from '@shared/components/statusColors';
 import { useI18n } from '@shared/i18n';
 
 import { PO_STAGES, STAGE_BY_STATUS, type PoStageKey } from '../model/poStageConfig';
@@ -15,19 +16,8 @@ type PoStageFilterProps = {
   totalCount: number;
 };
 
-const statusColorTokens: Record<string, string> = {
-  blue: 'var(--kbfe-status-blue)',
-  cyan: 'var(--kbfe-status-cyan)',
-  gray: 'var(--kbfe-status-gray)',
-  green: 'var(--kbfe-status-teal)',
-  orange: 'var(--kbfe-status-orange)',
-  red: 'var(--kbfe-status-red)',
-  teal: 'var(--kbfe-status-teal)',
-  yellow: 'var(--kbfe-status-yellow)',
-};
-
 function colorVar(color: string): CSSProperties {
-  return { '--chip-color': statusColorTokens[color] ?? 'var(--kbfe-primary-color)' } as CSSProperties;
+  return { '--chip-color': statusColorVar(color) } as CSSProperties;
 }
 
 function activeStageOf(value: string): PoStageKey | null {

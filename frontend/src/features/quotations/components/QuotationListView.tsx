@@ -1,13 +1,13 @@
-import { ActionIcon, Badge, Button, Group, Paper, Select, SimpleGrid, Stack, Text, TextInput, Title, Tooltip } from '@mantine/core';
+import { ActionIcon, Badge, Button, Group, Paper, Select, SimpleGrid, Stack, Text, TextInput, Tooltip } from '@mantine/core';
 import { IconCalendarPlus, IconCalendarStats, IconClock, IconEye, IconFileInvoice, IconSearch, IconX } from '@tabler/icons-react';
-import type { ReactNode } from 'react';
 
 import type { QuotationV1 } from '@shared/api/quotations';
 import { CopyValue } from '@shared/components/CopyValue';
 import { DateField } from '@shared/components/DateField';
 import { EmptyState } from '@shared/components/EmptyState';
-import { FilterSegment } from '@shared/components/FilterSegment';
+import { FilterToolbar } from '@shared/components/FilterToolbar';
 import { ListPagination, useListPagination } from '@shared/components/ListPagination';
+import { Metric } from '@shared/components/Metric';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { useExchangeRates } from '@shared/hooks/useExchangeRates';
 import { useI18n } from '@shared/i18n';
@@ -26,13 +26,6 @@ type QuotationListViewProps = {
   onInspect: (quotation: QuotationV1) => void;
 };
 
-const quotationTabColors: Record<QuotationTab, string> = {
-  all: 'gray',
-  draft: 'gray',
-  pending: 'yellow',
-  confirmed: 'teal',
-  rejected: 'red',
-};
 
 export function QuotationListView({ filteredQuotations, onInspect, supplierOptions, tabCounts }: QuotationListViewProps) {
   const { t } = useI18n();
@@ -69,47 +62,36 @@ export function QuotationListView({ filteredQuotations, onInspect, supplierOptio
       <SimpleGrid cols={{ base: 1, sm: 3 }} className="rfq-metric-grid">
         <Metric
           label={t('quotations.metricShown')}
-          value={new Intl.NumberFormat('en-US').format(filteredQuotations.length)}
+          value={filteredQuotations.length}
           color="blue"
           icon={<IconFileInvoice size={22} />}
         />
         <Metric
           label={t('quotations.metricPending')}
-          value={new Intl.NumberFormat('en-US').format(tabCounts.pending)}
+          value={tabCounts.pending}
           color="yellow"
           icon={<IconClock size={22} />}
         />
         <Metric
           label={t('quotations.metricRejected')}
-          value={new Intl.NumberFormat('en-US').format(tabCounts.rejected)}
+          value={tabCounts.rejected}
           color="red"
           icon={<IconX size={22} />}
         />
       </SimpleGrid>
 
-      <Paper withBorder p="md" className="rfq-list-filter-panel dl-filter-panel">
+      <FilterToolbar
+        activeTab={activeTab}
+        className="rfq-list-filter-panel"
+        onTabChange={(value) => setActiveTab(value as QuotationTab)}
+        shown={filteredQuotations.length}
+        tabs={quotationTabItems.map((tab) => ({
+          value: tab.value,
+          label: t(tab.labelKey),
+          count: tabCounts[tab.value],
+        }))}
+      >
         <div className="rfq-list-toolbar">
-          <div className="dl-filter-head">
-            <div className="dl-filter-head__control">
-              <FilterSegment
-                ariaLabel={t('quotations.status')}
-                value={activeTab}
-                onChange={(value) => setActiveTab(value as QuotationTab)}
-                options={quotationTabItems.map((tab) => ({
-                  value: tab.value,
-                  label: t(tab.labelKey),
-                  count: tabCounts[tab.value],
-                  color: quotationTabColors[tab.value],
-                }))}
-              />
-            </div>
-            <div className="dl-filter-result">
-              <Text size="sm" c="dimmed">
-                {t('common.shown', { count: filteredQuotations.length })}
-              </Text>
-            </div>
-          </div>
-
           <div className="rfq-list-filter-row dl-filter-row">
             <TextInput
               leftSection={<IconSearch size={16} />}
@@ -170,7 +152,7 @@ export function QuotationListView({ filteredQuotations, onInspect, supplierOptio
             </Group>
           </div>
         </div>
-      </Paper>
+      </FilterToolbar>
 
       <Paper withBorder p={0} className="rfq-list-panel dl-data-panel">
         <div className="rfq-list-body">
@@ -308,47 +290,5 @@ export function QuotationListView({ filteredQuotations, onInspect, supplierOptio
         </div>
       </Paper>
     </Stack>
-  );
-}
-
-const metricStatusColorTokens = {
-  blue: 'var(--kbfe-status-blue)',
-  green: 'var(--kbfe-status-teal)',
-  red: 'var(--kbfe-status-red)',
-  yellow: 'var(--kbfe-status-yellow)',
-} as const;
-
-function Metric({
-  color,
-  icon,
-  label,
-  value,
-}: {
-  color: 'blue' | 'green' | 'red' | 'yellow';
-  icon: ReactNode;
-  label: string;
-  value: string;
-}) {
-  return (
-    <Paper
-      withBorder
-      p="md"
-      className="metric-card rfq-metric-card kbfe-surface-wash kbfe-surface-wash--emphasis"
-      data-surface-tone={color}
-    >
-      <div>
-        <Text className="metric-label" size="xs" fw={700} tt="uppercase" mb={4}>
-          {label}
-        </Text>
-        <Title
-          order={1}
-          fw={800}
-          style={{ lineHeight: 1.1, color: metricStatusColorTokens[color] }}
-        >
-          {value}
-        </Title>
-      </div>
-      <span className={`metric-icon metric-icon-${color}`}>{icon}</span>
-    </Paper>
   );
 }

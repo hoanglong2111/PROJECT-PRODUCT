@@ -2,7 +2,6 @@ import {
   ActionIcon,
   Badge,
   Group,
-  Loader,
   NumberFormatter,
   Paper,
   ScrollArea,
@@ -33,11 +32,12 @@ import { EmptyState } from '@shared/components/EmptyState';
 import { HeaderLabel } from '@shared/components/HeaderLabel';
 import { ListPagination } from '@shared/components/ListPagination';
 import { Metric } from '@shared/components/Metric';
+import { FilterToolbar } from '@shared/components/FilterToolbar';
 import { useI18n } from '@shared/i18n';
 
 import {
   PAGE_SIZE,
-  dateOnly,
+
   getDelayedDays,
   totalPoAmount,
 } from '../model/purchaseOrderModel';
@@ -132,26 +132,24 @@ export function PurchaseOrderListView({
         />
       </SimpleGrid>
 
-      <Paper withBorder p="md" className="purchase-order-filter-panel dl-filter-panel">
-        <Stack gap="md">
-          <Stack gap={6}>
-            <div className="dl-filter-head">
-              <div className="dl-filter-head__control">
-                <PoStageFilter
-                  value={statusFilter}
-                  onChange={onStatusFilterChange}
-                  stageCounts={stageCounts}
-                  subStageCounts={subStageCounts}
-                  totalCount={total}
-                />
-              </div>
-              <div className="dl-filter-result">
-                {isFetching ? <Loader size="sm" /> : null}
-                <Text size="sm" c="dimmed">
-                  {t('common.shown', { count: total })}
-                </Text>
-              </div>
-            </div>
+      <FilterToolbar
+        activeTab={statusFilter}
+        className="purchase-order-filter-panel"
+        headerControl={(
+          <PoStageFilter
+            value={statusFilter}
+            onChange={onStatusFilterChange}
+            stageCounts={stageCounts}
+            subStageCounts={subStageCounts}
+            totalCount={total}
+          />
+        )}
+        isFetching={isFetching}
+        onTabChange={(value) => onStatusFilterChange(value as typeof statusFilter)}
+        shown={total}
+        tabs={[]}
+      >
+          <Stack gap="md">
             {isClientSideStatusFilter ? (
               <Text size="xs" c="dimmed">
                 {t('purchaseOrders.stageFilterPageOnly')}
@@ -201,8 +199,7 @@ export function PurchaseOrderListView({
               />
             </Group>
           </div>
-        </Stack>
-      </Paper>
+      </FilterToolbar>
 
       <Paper withBorder p={0} className="purchase-order-list-panel dl-data-panel">
         {purchaseOrders.length === 0 ? (

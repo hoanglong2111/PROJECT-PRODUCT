@@ -8,7 +8,6 @@
   DocumentReview,
   DriveDossier,
   DriveDossierStatus,
-  EfmsControl,
   EfmsContainer,
   EfmsHouseBill,
   EfmsTransportRecord,
@@ -34,7 +33,6 @@
   TaskRole,
   TaskStatus,
   UserRef,
-  Gd1ApprovalStep,
   Gd1PoStageTask,
   Gd1TaskStatus,
   Gd1ShipmentMilestone,
@@ -105,7 +103,6 @@ export type {
   DocumentReview,
   DriveDossier,
   DriveDossierStatus,
-  EfmsControl,
   EfmsContainer,
   EfmsHouseBill,
   EfmsTransportRecord,
@@ -131,7 +128,6 @@ export type {
   TaskRole,
   TaskStatus,
   UserRef,
-  Gd1ApprovalStep,
   Gd1PoStageTask,
   Gd1ShipmentMilestone,
   Gd1ShipmentCost,
@@ -550,21 +546,6 @@ export type UpdateAdvanceSettlementStatusPayload = {
 export type UploadDeliveryOrderAttachmentResult = {
   attachment: LogisticsAttachment;
   deliveryOrder: DeliveryOrder;
-};
-
-const emptyDashboardStats: DashboardStats = {
-  totals: {
-    purchaseRequests: 0,
-    purchaseOrders: 0,
-    deliveryOrders: 0,
-    tasks: 0,
-    blockedTasks: 0,
-  },
-  businessFlowCounts: [],
-  deliveryOrderStatus: [],
-  taskStatus: [],
-  taskRoleProgress: [],
-  monthlyThroughput: [],
 };
 
 const uiOnlySuccess = { success: true } as const;
@@ -1228,47 +1209,6 @@ function mapV1Shipment(shipment: ShipmentV1): ShipmentRecordWithQuotation {
   };
 }
 
-function buildUiShipment(payload: {
-  shipmentNumber: string;
-  doNumber: string;
-  poNumber: string;
-  shippingMode: ShipmentModeV1;
-  loadType?: ShipmentLoadTypeV1 | null;
-  carrierName?: string | null;
-  vesselVoyage?: string | null;
-  originPort?: string | null;
-  destPort?: string | null;
-  etd?: string | null;
-  eta?: string | null;
-}): ShipmentRecord {
-  return {
-    id: uiId('shp'),
-    shipment_number: payload.shipmentNumber,
-    do_number: payload.doNumber,
-    po_number: payload.poNumber,
-    status: 'BOOKED',
-    shipping_mode: payload.shippingMode,
-    load_type: payload.loadType ?? null,
-    carrier_name: payload.carrierName || '',
-    vessel_voyage: payload.vesselVoyage || '',
-    origin_port: payload.originPort || '',
-    dest_port: payload.destPort || '',
-    etd: payload.etd || '',
-    eta: payload.eta || '',
-    atd: '',
-    ata: '',
-    bl_awb_no: '',
-    customs: {
-      stream: 'GREEN',
-      lane_status: '',
-    },
-    milestones: [],
-    documents: [],
-    costs: [],
-    po_tasks: [],
-  };
-}
-
 function buildUiPurchaseOrder(payload: CreatePurchaseOrderPayload): PurchaseOrder {
   return {
     id: uiId('po'),
@@ -1654,20 +1594,6 @@ export async function updateDeliveryOrder(orderNumber: string, payload: UpdateDe
   return mapV1DeliveryOrder(updated);
 }
 
-export async function fetchEfmsControl(_orderNumber: string) {
-  return {
-    advanceSettlements: [],
-    charges: [],
-    containers: [],
-    customs: null,
-    documentReviews: [],
-    financeNotes: [],
-    houseBills: [],
-    latestDriveDossier: null,
-    transport: null,
-  } satisfies EfmsControl;
-}
-
 export async function createAdvanceSettlement(_orderNumber: string, payload: CreateAdvanceSettlementPayload) {
   return { ...payload, id: uiId('advance') } as AdvanceSettlement;
 }
@@ -1707,10 +1633,6 @@ export async function confirmFinalBl(reviewId: string, payload: ConfirmFinalBlPa
   return { id: reviewId, ...payload } as DocumentReview;
 }
 
-export async function fetchCharges(_orderNumber: string) {
-  return [] as FinanceCharge[];
-}
-
 export async function createCharge(orderNumber: string, payload: CreateChargePayload) {
   return { id: uiId('charge'), deliveryOrderId: orderNumber, ...payload } as FinanceCharge;
 }
@@ -1729,10 +1651,6 @@ export async function issueFinanceNote(orderNumber: string, payload: IssueFinanc
 
 export async function sendFinanceNoteToAccounting(noteId: string) {
   return { id: noteId } as FinanceNote;
-}
-
-export async function fetchCustoms(_orderNumber: string) {
-  return null as CustomsDeclaration | null;
 }
 
 export async function updateCustoms(orderNumber: string, payload: UpdateCustomsPayload) {
@@ -1866,24 +1784,6 @@ export async function updateShipmentMilestone(
 
 export async function fetchShipmentCosts(_orderNumber: string) {
   return [] as Gd1ShipmentCost[];
-}
-
-export async function addShipmentCost(
-  _orderNumber: string,
-  payload: {
-    costType: string;
-    amount: number;
-    currencyCode: string;
-    exchangeRate: number;
-    allocMethod: string;
-    invoiceRef?: string | null;
-  },
-) {
-  return { id: uiId('cost'), ...payload } as unknown as Gd1ShipmentCost;
-}
-
-export async function deleteShipmentCost(_costId: string) {
-  return uiOnlySuccess;
 }
 
 export async function updatePoStageTask(taskId: string, payload: { status: string; note?: string }) {
