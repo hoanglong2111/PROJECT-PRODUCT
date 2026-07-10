@@ -23,6 +23,17 @@
   box-sizing: border-box;
 }
 
+/* Avoid the ~300ms tap delay and double-tap-zoom on touch devices for
+   interactive controls, without opting out of pinch-zoom for the page. */
+button,
+a,
+[role='button'],
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
 body {
   position: relative;
   min-width: 320px;
