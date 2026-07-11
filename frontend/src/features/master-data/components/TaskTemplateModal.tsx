@@ -9,6 +9,7 @@ import {
   MILESTONE_CODES,
   createTaskTemplate,
   updateTaskTemplate,
+  type DepartmentCode,
   type TaskTemplate,
 } from '@shared/api/taskTemplates';
 import { queryKeys } from '@shared/api/queryKeys';
@@ -84,8 +85,8 @@ export function TaskTemplateModal({
       slaHours: editing.sla_hours === null ? '' : String(editing.sla_hours),
       slaText: editing.sla_text ?? '',
       department: editing.department,
-      assigneeCode: editing.assignee_role ?? '',
-      relatedDocuments: editing.required_documents,
+      assigneeCode: editing.assignee_code ?? '',
+      relatedDocuments: editing.related_documents,
       note: editing.note ?? '',
       sortOrder: String(editing.sort_order),
     });
@@ -132,9 +133,9 @@ export function TaskTemplateModal({
         milestone_code: form.values.milestoneCode,
         sla_hours: slaHoursNumber ?? null,
         sla_text: optionalString(form.values.slaText) ?? null,
-        department: form.values.department,
-        assignee_role: optionalString(form.values.assigneeCode) ?? null,
-        required_documents: optionalString(form.values.relatedDocuments) ?? '',
+        department: form.values.department as DepartmentCode,
+        assignee_code: optionalString(form.values.assigneeCode) ?? null,
+        related_documents: optionalString(form.values.relatedDocuments) ?? '',
         note: optionalString(form.values.note) ?? null,
         sort_order: sortOrderNumber ?? 0,
       };

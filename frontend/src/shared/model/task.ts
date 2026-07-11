@@ -3,26 +3,23 @@ import type { Gd1MilestoneCode } from './shipment';
 
 export type TaskStatus = 'TODO' | 'PENDING' | 'IN_PROGRESS' | 'WAITING' | 'BLOCKED' | 'COMPLETED' | 'CANCELLED';
 
-export type TaskRole =
-  | 'BUYER'
-  | 'LOGISTICS_PLANNER'
-  | 'PIC_MANAGER'
-  | 'PORT_OFFICER'
-  | 'CUSTOMS_OFFICER'
-  | 'WAREHOUSE_STAFF'
-  | 'PIC Manager'
-  | 'Sale Staff'
-  | 'Port Officer'
-  | 'Customs Officer'
-  | 'Finance Officer'
-  | 'Warehouse Staff';
+export type DepartmentCode =
+  | 'FDS_SALES'
+  | 'KBI_PURCHASING'
+  | 'FDS_OPS'
+  | 'FDS_OPS_CUSTOMS'
+  | 'FDS_ACCOUNTING'
+  | 'KBI_WAREHOUSE';
+
+// Who a blocked task is waiting on (so the UI can say "who is blocking / who must unblock").
+export type BlockedByParty = 'SUPPLIER' | 'CARRIER' | 'KBI' | 'CUSTOMS' | 'INTERNAL';
 
 export type LogisticsTaskTemplateRef = {
   task_template_id: string;
   group_code: string | null;
   group_name: string | null;
   milestone_code: string | null;
-  department: string | null;
+  department: DepartmentCode | null;
   sla_hours: number | null;
   sla_text: string | null;
   related_documents: string | null;
@@ -36,7 +33,8 @@ export type LogisticsTask = {
   po_number: string | null;
   production_contract_number: string;
   task_name: string;
-  role: TaskRole;
+  department: DepartmentCode;
+  assignee_code: string | null;
   assignee: UserRef;
   progress: number;
   created_at: string;
@@ -47,6 +45,8 @@ export type LogisticsTask = {
   due_date: string;
   notes: string;
   blocked_reason: string | null;
+  blocked_by_party: BlockedByParty | null;
+  is_required_for_closure: boolean;
   task_template_id: string | null;
   template: LogisticsTaskTemplateRef | null;
 };
@@ -77,6 +77,10 @@ export interface Gd1PoStageTask {
   task_template_id: string | null;
   template_milestone_code: string | null;
   template_department: string | null;
+  template_group_code: string | null;
+  template_group_name: string | null;
+  assignee_code: string | null;
+  assignee_name: string | null;
   assignee_id: string;
   assigned_by: string;
   status: Gd1TaskStatus;

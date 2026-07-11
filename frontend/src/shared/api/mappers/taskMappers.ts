@@ -1,4 +1,4 @@
-import { Gd1PoStageTask, Gd1TaskStatus, LogisticsTask, LogisticsTaskTemplateRef, Priority, TaskRole, TaskStatus } from '@shared/model/logistics';
+import { BlockedByParty, DepartmentCode, Gd1PoStageTask, Gd1TaskStatus, LogisticsTask, LogisticsTaskTemplateRef, Priority, TaskStatus } from '@shared/model/logistics';
 import { dateOnly, toNumber } from './mapperShared';
 
 export type TaskScreenItem = {
@@ -8,25 +8,28 @@ export type TaskScreenItem = {
   ref_type: 'PURCHASE_ORDER' | string;
   ref_id: string;
   ref_no: string;
-  stage: TaskScreenStage;
-  role: TaskRole;
+  po_number?: string | null;
+  stage: string;
   assignee: {
     id?: string;
     user_id?: string;
     name: string;
-    department: string | null;
+    department: DepartmentCode | string | null;
   };
+  assignee_code?: string | null;
   status: TaskStatus;
   priority: Priority;
   due_at: string | null;
   completed_at: string | null;
   progress: number;
   blocked_reason: string | null;
+  blocked_by_party?: BlockedByParty | null;
+  is_required_for_closure?: boolean;
   note?: string | null;
   description?: string | null;
   task_template_id?: string | null;
   milestone_code?: string | null;
-  department?: string | null;
+  department?: DepartmentCode | string | null;
   sla_hours?: number | null;
   sla_text?: string | null;
   related_documents?: string | null;
@@ -54,7 +57,7 @@ export function mapTaskScreenToTemplateRef(task: TaskScreenItem): LogisticsTaskT
     group_code: task.template_group_code ?? null,
     group_name: task.template_group_name ?? null,
     milestone_code: task.milestone_code ?? null,
-    department: task.department ?? null,
+    department: (task.department as DepartmentCode | null | undefined) ?? null,
     sla_hours: task.sla_hours ?? null,
     sla_text: task.sla_text ?? null,
     related_documents: task.related_documents ?? null,
@@ -72,6 +75,8 @@ export function mapTaskScreenToLogisticsTask(task: TaskScreenItem): LogisticsTas
       user_id: assigneeId,
     },
     blocked_reason: task.blocked_reason ?? null,
+    blocked_by_party: task.blocked_by_party ?? null,
+    is_required_for_closure: Boolean(task.is_required_for_closure),
     completed_at: task.completed_at,
     created_at: task.create_at ?? '',
     do_number: task.ref_no,
@@ -83,7 +88,8 @@ export function mapTaskScreenToLogisticsTask(task: TaskScreenItem): LogisticsTas
     production_contract_number: task.ref_id,
     progress: toNumber(task.progress),
     request_code: task.ref_no,
-    role: task.role,
+    assignee_code: task.assignee_code ?? null,
+    department: (task.department ?? task.assignee.department ?? '') as DepartmentCode,
     status: task.status,
     task_id: task.id,
     task_name: task.task_name,
@@ -111,6 +117,8 @@ export function mapTaskScreenToPoStageTask(task: TaskScreenItem): Gd1PoStageTask
   return {
     assigned_by: 'mock-api',
     assignee_id: assigneeId,
+    assignee_code: task.assignee_code ?? null,
+    assignee_name: task.assignee.name ?? null,
     completed_at: task.completed_at,
     completed_by: task.completed_at ? assigneeId : null,
     created_at: task.create_at ?? '',
@@ -119,13 +127,15 @@ export function mapTaskScreenToPoStageTask(task: TaskScreenItem): Gd1PoStageTask
     linked_shipment_milestone: null,
     note: task.note ?? null,
     po_stage: task.stage as Gd1PoStageTask['po_stage'],
-    purchase_order_id: task.ref_id,
+    purchase_order_id: task.po_number ?? task.ref_no,
     started_at: task.status === 'IN_PROGRESS' ? task.update_at ?? task.create_at ?? null : null,
     status: taskScreenStatusToGd1(task.status),
     task_name: task.task_name,
     task_template_id: task.task_template_id ?? null,
     template_milestone_code: task.milestone_code ?? null,
     template_department: task.department ?? null,
+    template_group_code: task.template_group_code ?? null,
+    template_group_name: task.template_group_name ?? null,
     tenant_id: null,
     updated_at: task.update_at ?? '',
   };

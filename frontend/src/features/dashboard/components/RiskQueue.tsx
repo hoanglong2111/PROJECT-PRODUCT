@@ -110,9 +110,9 @@ function riskDetail(risk: OperationalRisk, t: ReturnType<typeof useI18n>['t']) {
 
 function slaLabel(slaCode: OperationalRisk['slaCode'], t: ReturnType<typeof useI18n>['t']) {
   const labels: Record<OperationalRisk['slaCode'], string> = {
-    '1H': t('opsRisk.sla.1H'),
-    '2H': t('opsRisk.sla.2H'),
-    '8H': t('opsRisk.sla.8H'),
+    QUOTATION_SLA: t('opsRisk.sla.quotation'),
+    DRAFT_BL_SLA: t('opsRisk.sla.draftBl'),
+    MISSING_DOCUMENTS: t('opsRisk.sla.missingDocuments'),
     BEFORE_CLOSE: t('opsRisk.sla.beforeClose'),
     TODAY: t('opsRisk.sla.today'),
   };

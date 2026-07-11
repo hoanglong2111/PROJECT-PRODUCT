@@ -831,33 +831,40 @@ department     : FDS_SALES, KBI_PURCHASING, FDS_OPS, FDS_OPS_CUSTOMS,
 assignee_code  : S01..S03, O01..O03, A01..A02 (SOP §6.2)
 ```
 
-The runtime Tasks screen (`features/tasks`) is **linked to**, not a duplicate
-of, the catalog:
+`logistics-tasks` is the single runtime pool. The Tasks screen, PO board and
+DO task summary are projections of that pool, linked to the catalog:
 
 ```txt
-- Each runtime task carries task_template_id + a `template` snapshot
-  (milestone_code, department, sla, related_documents, group).
+- Each runtime task carries `task_template_id`, a template snapshot
+  (milestone_code, department, assignee_code, SLA, related_documents, group),
+  and owns work through DepartmentCode + assignee_code rather than TaskRole.
 - Surface the template metadata (milestone badge on the board, SOP panel in
   TaskDetail). Render milestone/department labels from MILESTONE_CODES /
   DEPARTMENTS in `@shared/api/taskTemplates` — do not hand-map SOP codes.
 - A runtime task with no template link shows no SOP panel; never invent a link
   on the frontend (the backend seed owns the mapping).
+- `is_required_for_closure` is INHERITED from the linked SOP template (an SOP
+  property, never hand-set per task). The DO closure gate (`DeliveryOrderTasksTab`)
+  lists the required tasks still open; `required_tasks_remaining` = required tasks
+  not COMPLETED.
+- A blocked task carries `blocked_by_party` (SUPPLIER|CARRIER|KBI|CUSTOMS|INTERNAL)
+  so the UI says who is blocking / who must unblock. "blocked" = "bị chặn" (distinct
+  from overdue); closing a DO's file is "đóng hồ sơ lô hàng" (never "đóng lệnh").
 ```
 
 Manual add / edit (`TaskFormModal`, opened from the board "Create task" button
 and the TaskDetail "Edit" button):
 
 ```txt
-- The modal is template-driven: picking a Task Template prefills task_name and
-  previews the SOP milestone / department / SLA that the backend will snapshot.
+- The modal is template-driven: picking a Task Template prefills task_name,
+  department, assignee_code and previews the SOP milestone / SLA snapshot.
 - A task can also be created freeform (no template) and any field overridden.
 - Create -> createLogisticsTask (POST /v1/tasks); edit -> updateLogisticsTask
   (PATCH /v1/tasks/:id). Invalidate queryKeys.tasks + globalPoStageTasks after.
-- Default tasks/roles are system-generated (backend seed). The modal is the
-  manual escape hatch, not a replacement for that default generation.
+- Default tasks are SOP-native backend seed data. The modal is the manual
+  escape hatch, not a replacement for that default generation.
 ```
 
-Out of scope (do not implement unless requested): generating runtime tasks
-from templates per PO/Shipment, and replacing the legacy `TaskRole`/free-text
-assignee.department vocabulary on runtime tasks.
+Out of scope: generating runtime tasks per PO/Shipment from templates and a
+real SLA engine.
 

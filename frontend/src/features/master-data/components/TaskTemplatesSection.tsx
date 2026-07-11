@@ -20,7 +20,6 @@ import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
 import {
-  assigneeRoleLabel,
   DEPARTMENTS,
   MILESTONE_CODES,
   fetchTaskTemplates,
@@ -345,14 +344,7 @@ export function TaskTemplatesSection({
                             </Badge>
                           </Table.Td>
                           <Table.Td className="md-cell-clamp">
-                            <Stack gap={2}>
-                              <Text size="sm" lineClamp={1}>{template.assignee_role || '-'}</Text>
-                              {assigneeRoleLabel(template.assignee_role) !== '-' ? (
-                                <Text size="xs" c="dimmed" lineClamp={1}>
-                                  {assigneeRoleLabel(template.assignee_role)}
-                                </Text>
-                              ) : null}
-                            </Stack>
+                            <Text size="sm" lineClamp={1}>{template.assignee_code || '-'}</Text>
                           </Table.Td>
                           <Table.Td className="md-cell-align-center">
                             <StatusToggle active={template.is_active !== false} />

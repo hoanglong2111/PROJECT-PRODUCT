@@ -1,17 +1,28 @@
 import { Badge, Group, Paper, Progress, SimpleGrid, Stack, Text } from '@mantine/core';
+import { useQuery } from '@tanstack/react-query';
 
-import type { DeliveryOrder } from '@shared/api/logistics';
+import { fetchLogisticsTasks, type DeliveryOrder } from '@shared/api/logistics';
+import { queryKeys } from '@shared/api/queryKeys';
+import { StatusBadge } from '@shared/components/StatusBadge';
 import { useI18n } from '@shared/i18n';
 
 import { DeliveryOrderFact } from './DeliveryOrderFact';
 
 export function DeliveryOrderTasksTab({ deliveryOrder }: { deliveryOrder: DeliveryOrder }) {
-  const { t } = useI18n();
+  const { departmentLabel, t } = useI18n();
   const missingDocumentsCount = deliveryOrder.logistics_shipping.missing_documents.length;
   const taskProgress =
     deliveryOrder.task_summary.total_tasks > 0
       ? Math.round((deliveryOrder.task_summary.completed_tasks / deliveryOrder.task_summary.total_tasks) * 100)
       : 0;
+
+  // Closure-required checklist: the actual tasks (from the unified pool) that still
+  // gate closing this DO's file. "Required" is inherited from the SOP task template.
+  const orderNumber = deliveryOrder.order_info.order_number;
+  const tasksQuery = useQuery({ queryKey: queryKeys.tasks, queryFn: fetchLogisticsTasks });
+  const requiredRemaining = (tasksQuery.data ?? []).filter(
+    (task) => task.do_number === orderNumber && task.is_required_for_closure && task.status !== 'COMPLETED',
+  );
 
   return (
     <Stack gap="md">
@@ -58,6 +69,41 @@ export function DeliveryOrderTasksTab({ deliveryOrder }: { deliveryOrder: Delive
         <DeliveryOrderFact label={t('tasks.blocked')} value={String(deliveryOrder.task_summary.blocked_tasks)} />
         <DeliveryOrderFact label={t('deliveryOrders.requiredRemaining')} value={String(deliveryOrder.task_summary.required_tasks_remaining)} />
       </SimpleGrid>
+
+      <Paper withBorder p="md" className="delivery-order-required-checklist">
+        <Text fw={700} mb="xs">
+          {t('tasks.requiredChecklistTitle')}
+        </Text>
+        {requiredRemaining.length > 0 ? (
+          <Stack gap={8}>
+            {requiredRemaining.map((task) => (
+              <Group key={task.task_id} justify="space-between" gap="sm" wrap="nowrap" className="required-checklist-row">
+                <div style={{ minWidth: 0 }}>
+                  <Text fw={600} lineClamp={1} title={task.task_name}>
+                    {task.task_name}
+                  </Text>
+                  <Text size="xs" c="dimmed">
+                    {departmentLabel(task.department)}
+                    {task.assignee_code ? ` · ${task.assignee_code}` : ''}
+                  </Text>
+                </div>
+                <Group gap={6} wrap="nowrap">
+                  {task.status === 'BLOCKED' && task.blocked_by_party ? (
+                    <Badge color="red" variant="light" size="sm">
+                      {t(`tasks.blockedBy.${task.blocked_by_party}`)}
+                    </Badge>
+                  ) : null}
+                  <StatusBadge status={task.status} />
+                </Group>
+              </Group>
+            ))}
+          </Stack>
+        ) : (
+          <Text size="sm" c="dimmed">
+            {t('tasks.requiredChecklistEmpty')}
+          </Text>
+        )}
+      </Paper>
     </Stack>
   );
 }

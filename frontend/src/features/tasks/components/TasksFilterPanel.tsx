@@ -1,8 +1,8 @@
 import { Button, Group, Select, SimpleGrid, TextInput } from '@mantine/core';
 import { IconSearch, IconX } from '@tabler/icons-react';
 
-import type { LogisticsTask, Priority, TaskRole, TaskStatus } from '@shared/api/logistics';
-import { MILESTONE_CODES } from '@shared/api/taskTemplates';
+import type { DepartmentCode, LogisticsTask, Priority, TaskStatus } from '@shared/api/logistics';
+import { DEPARTMENTS, MILESTONE_CODES } from '@shared/api/taskTemplates';
 import { FilterToolbar } from '@shared/components/FilterToolbar';
 import { useI18n } from '@shared/i18n';
 
@@ -18,16 +18,16 @@ export function TasksFilterPanel({
   isFetching: boolean;
   tasks: LogisticsTask[];
 }) {
-  const { priorityLabel, statusLabel, t, taskRoleLabel } = useI18n();
+  const { departmentLabel, priorityLabel, statusLabel, t } = useI18n();
   const search = useTasksUiStore((s) => s.search);
   const statusFilter = useTasksUiStore((s) => s.statusFilter);
-  const roleFilter = useTasksUiStore((s) => s.roleFilter);
+  const departmentFilter = useTasksUiStore((s) => s.departmentFilter);
   const priorityFilter = useTasksUiStore((s) => s.priorityFilter);
   const milestoneFilter = useTasksUiStore((s) => s.milestoneFilter);
   const overdueOnly = useTasksUiStore((s) => s.overdueOnly);
   const setSearch = useTasksUiStore((s) => s.setSearch);
   const setStatusFilter = useTasksUiStore((s) => s.setStatusFilter);
-  const setRoleFilter = useTasksUiStore((s) => s.setRoleFilter);
+  const setDepartmentFilter = useTasksUiStore((s) => s.setDepartmentFilter);
   const setPriorityFilter = useTasksUiStore((s) => s.setPriorityFilter);
   const setMilestoneFilter = useTasksUiStore((s) => s.setMilestoneFilter);
   const setOverdueOnly = useTasksUiStore((s) => s.setOverdueOnly);
@@ -36,7 +36,7 @@ export function TasksFilterPanel({
   const hasActiveFilters =
     search.trim().length > 0 ||
     statusFilter !== 'all' ||
-    roleFilter !== 'all' ||
+    departmentFilter !== 'all' ||
     priorityFilter !== 'all' ||
     milestoneFilter !== 'all' ||
     overdueOnly;
@@ -51,14 +51,12 @@ export function TasksFilterPanel({
     { label: statusLabel('COMPLETED'), value: 'COMPLETED' },
     { label: statusLabel('CANCELLED'), value: 'CANCELLED' },
   ];
-  const roleOptions: Array<{ label: string; value: TaskRole | 'all' }> = [
-    { label: t('common.allRoles'), value: 'all' },
-    { label: taskRoleLabel('BUYER'), value: 'BUYER' },
-    { label: taskRoleLabel('LOGISTICS_PLANNER'), value: 'LOGISTICS_PLANNER' },
-    { label: taskRoleLabel('PIC_MANAGER'), value: 'PIC_MANAGER' },
-    { label: taskRoleLabel('PORT_OFFICER'), value: 'PORT_OFFICER' },
-    { label: taskRoleLabel('CUSTOMS_OFFICER'), value: 'CUSTOMS_OFFICER' },
-    { label: taskRoleLabel('WAREHOUSE_STAFF'), value: 'WAREHOUSE_STAFF' },
+  const departmentOptions: Array<{ label: string; value: DepartmentCode | 'all' }> = [
+    { label: t('common.all'), value: 'all' },
+    ...Object.keys(DEPARTMENTS).map((department) => ({
+      label: departmentLabel(department),
+      value: department as DepartmentCode,
+    })),
   ];
   const priorityOptions: Array<{ label: string; value: Priority | 'all' }> = [
     { label: t('tasks.allPriorities'), value: 'all' },
@@ -106,10 +104,10 @@ export function TasksFilterPanel({
             onChange={(event) => setSearch(event.currentTarget.value)}
           />
           <Select
-            label={t('common.role')}
-            value={roleFilter}
-            onChange={(value) => setRoleFilter((value ?? 'all') as TaskRole | 'all')}
-            data={roleOptions}
+            label={t('tasks.department')}
+            value={departmentFilter}
+            onChange={(value) => setDepartmentFilter((value ?? 'all') as DepartmentCode | 'all')}
+            data={departmentOptions}
           />
           <Select
             label={t('forms.priority')}

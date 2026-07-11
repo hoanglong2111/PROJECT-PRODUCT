@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-import type { BusinessFlowTag, Priority, TaskRole } from '@shared/model/logistics';
+import type { BusinessFlowTag, Priority } from '@shared/model/logistics';
 import type { AppRole } from '@shared/auth/types';
 import {
   localeForLanguage,
@@ -24,7 +24,6 @@ import {
   searchKindLabels,
   shippingMethodLabels,
   statusLabels,
-  taskRoleLabels,
   visualThemeLabels,
   type SearchKind,
   type ShippingMethod,
@@ -41,13 +40,6 @@ function interpolate(template: string, params?: TranslationParams) {
   }
 
   return template.replace(/\{(\w+)\}/g, (_, key: string) => String(params[key] ?? ''));
-}
-
-function fallbackLabel(value: string) {
-  return value
-    .split('_')
-    .map((part) => `${part.slice(0, 1)}${part.slice(1).toLowerCase()}`)
-    .join(' ');
 }
 
 export function useI18n() {
@@ -89,7 +81,6 @@ export function useI18n() {
         (key: MessageKey, params?: TranslationParams): string;
         (key: string, params?: TranslationParams): string;
       },
-      taskRoleLabel: (role: TaskRole) => taskRoleLabels[language][role] ?? fallbackLabel(role),
     };
   }, [language]);
 }

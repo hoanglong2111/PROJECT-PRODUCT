@@ -18,10 +18,10 @@ export function TaskDetail({
   onUpdated?: (task: LogisticsTask) => void;
   task: LogisticsTask;
 }) {
-  const { priorityLabel, t, taskRoleLabel } = useI18n();
+  const { priorityLabel, t } = useI18n();
   const detailFacts: Array<{ label: ReactNode; value: ReactNode; tone?: 'attention' | 'neutral' }> = [
-    { label: t('common.role'), value: taskRoleLabel(task.role) },
-    { label: t('common.assignee'), value: `${task.assignee.name} - ${task.assignee.department}` },
+    { label: t('tasks.department'), value: departmentLabel(task.department) },
+    { label: t('common.assignee'), value: `${task.assignee_code ?? '-'} - ${task.assignee.name}` },
     { label: t('forms.priority'), value: priorityLabel(task.priority) },
     { label: t('tasks.dueDate'), value: task.due_date },
     { label: 'PO', value: task.po_number ?? '-' },
@@ -84,7 +84,6 @@ export function TaskDetail({
             </Group>
             <SimpleGrid cols={{ base: 1, sm: 2 }} spacing={0} className="task-detail-facts is-compact">
               <TaskFact label={t('tasks.milestone')} value={milestoneLabel(task.template.milestone_code)} />
-              <TaskFact label={t('tasks.department')} value={departmentLabel(task.template.department)} />
               <TaskFact label={t('tasks.sla')} value={templateSlaLabel(task.template)} />
               <TaskFact label={t('tasks.relatedDocuments')} value={task.template.related_documents ?? '-'} />
             </SimpleGrid>
@@ -98,6 +97,11 @@ export function TaskDetail({
                 {t('tasks.blockedReason')}
               </Text>
               <Text size="sm">{task.blocked_reason}</Text>
+              {task.blocked_by_party ? (
+                <Badge color="red" variant="light" size="sm" mt={6}>
+                  {t(`tasks.blockedBy.${task.blocked_by_party}`)}
+                </Badge>
+              ) : null}
             </div>
           ) : null}
           <div className="task-detail-note-block">

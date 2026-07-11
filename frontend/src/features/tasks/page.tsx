@@ -29,18 +29,18 @@ export function Tasks() {
   const today = dayjs().startOf('day');
   const isOverdue = (task: LogisticsTask) => task.status !== 'COMPLETED' && dayjs(task.due_date).isBefore(today, 'day');
   const [searchParams] = useSearchParams();
-  const roleParam = searchParams.get('role');
+  const departmentParam = searchParams.get('department');
   const focusedPo = searchParams.get('po');
   const { value: focusedDo } = useEntityParam('do');
   const focusedContext = focusedPo || focusedDo;
 
   const search = useTasksUiStore((s) => s.search);
   const statusFilter = useTasksUiStore((s) => s.statusFilter);
-  const roleFilter = useTasksUiStore((s) => s.roleFilter);
+  const departmentFilter = useTasksUiStore((s) => s.departmentFilter);
   const priorityFilter = useTasksUiStore((s) => s.priorityFilter);
   const milestoneFilter = useTasksUiStore((s) => s.milestoneFilter);
   const overdueOnly = useTasksUiStore((s) => s.overdueOnly);
-  const setRoleFilter = useTasksUiStore((s) => s.setRoleFilter);
+  const setDepartmentFilter = useTasksUiStore((s) => s.setDepartmentFilter);
 
   const tasksQuery = useQuery({
     queryKey: queryKeys.tasks,
@@ -51,10 +51,10 @@ export function Tasks() {
   const drawers = useTaskDrawers(tasks);
 
   useEffect(() => {
-    if (roleParam) {
-      setRoleFilter(roleParam as any);
+    if (departmentParam) {
+      setDepartmentFilter(departmentParam as any);
     }
-  }, [roleParam, setRoleFilter]);
+  }, [departmentParam, setDepartmentFilter]);
 
   const filteredTasks = useMemo(() => {
     const normalizedSearch = search.toLowerCase().trim();
@@ -66,7 +66,7 @@ export function Tasks() {
         task.po_number === focusedContext ||
         task.production_contract_number === focusedContext;
       const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
-      const matchesRole = roleFilter === 'all' || task.role === roleFilter;
+      const matchesDepartment = departmentFilter === 'all' || task.department === departmentFilter;
       const matchesPriority = priorityFilter === 'all' || task.priority === priorityFilter;
       const matchesMilestone = milestoneFilter === 'all' || task.template?.milestone_code === milestoneFilter;
       const matchesOverdue = !overdueOnly || isOverdue(task);
@@ -85,16 +85,16 @@ export function Tasks() {
       return (
         matchesFlowContext &&
         matchesStatus &&
-        matchesRole &&
+        matchesDepartment &&
         matchesPriority &&
         matchesMilestone &&
         matchesOverdue &&
         matchesSearch
       );
     });
-  }, [focusedContext, isOverdue, milestoneFilter, overdueOnly, priorityFilter, roleFilter, search, statusFilter, tasks]);
+  }, [departmentFilter, focusedContext, isOverdue, milestoneFilter, overdueOnly, priorityFilter, search, statusFilter, tasks]);
 
-  const pagination = useListPagination(filteredTasks, [focusedContext, milestoneFilter, overdueOnly, priorityFilter, roleFilter, search, statusFilter]);
+  const pagination = useListPagination(filteredTasks, [departmentFilter, focusedContext, milestoneFilter, overdueOnly, priorityFilter, search, statusFilter]);
 
   const blockedCount = tasks.filter((task) => task.status === 'BLOCKED').length;
   const overdueCount = tasks.filter(isOverdue).length;

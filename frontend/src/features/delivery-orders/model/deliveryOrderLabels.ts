@@ -31,29 +31,7 @@ export function riskLabel(code: OperationalRiskCode, t: ReturnType<typeof useI18
 }
 
 export function gateDetail(gate: OperationalGate, t: ReturnType<typeof useI18n>['t']) {
-  if (gate.id === 'documents') {
-    return gate.passed ? t('deliveryOrders.gateDocumentsReadyDetail') : gate.detail;
-  }
-  if (gate.id === 'customs') {
-    return gate.passed
-      ? t('deliveryOrders.gateCustomsReadyDetail')
-      : t('deliveryOrders.gateWaitingDocumentCrossCheckDetail');
-  }
-  if (gate.id === 'tasks') {
-    return gate.passed
-      ? t('deliveryOrders.gateRequiredTasksClearDetail')
-      : t('deliveryOrders.gateTasksBlockedDetail', extractTaskGateCounts(gate.detail));
-  }
-  if (gate.id === 'warehouse') {
-    const days = Number.parseInt(gate.detail, 10);
-    return gate.passed
-      ? t('deliveryOrders.gateWithinWarehouseDeadlineDetail')
-      : t('deliveryOrders.gateWarehouseLateDetail', { days: Number.isFinite(days) ? days : 0 });
-  }
-  if (gate.id === 'finance') {
-    return gate.passed ? t('deliveryOrders.gateFinanceProceedDetail') : t('deliveryOrders.gateFinanceWaitsDetail');
-  }
-  return gate.detail;
+  return t(gate.detail.key, gate.detail.params);
 }
 
 export function riskDetail(risk: OperationalRisk, t: ReturnType<typeof useI18n>['t']) {
@@ -62,9 +40,9 @@ export function riskDetail(risk: OperationalRisk, t: ReturnType<typeof useI18n>[
 
 export function slaLabel(slaCode: OperationalRisk['slaCode'], t: ReturnType<typeof useI18n>['t']) {
   const keys: Record<OperationalRisk['slaCode'], string> = {
-    '1H': 'opsRisk.sla.1H',
-    '2H': 'opsRisk.sla.2H',
-    '8H': 'opsRisk.sla.8H',
+    QUOTATION_SLA: 'opsRisk.sla.quotation',
+    DRAFT_BL_SLA: 'opsRisk.sla.draftBl',
+    MISSING_DOCUMENTS: 'opsRisk.sla.missingDocuments',
     BEFORE_CLOSE: 'opsRisk.sla.beforeClose',
     TODAY: 'opsRisk.sla.today',
   };
@@ -72,10 +50,3 @@ export function slaLabel(slaCode: OperationalRisk['slaCode'], t: ReturnType<type
   return t(keys[slaCode]);
 }
 
-export function extractTaskGateCounts(detail: string) {
-  const matches = detail.match(/\d+/g) ?? [];
-  return {
-    blocked: Number(matches[1] ?? 0),
-    required: Number(matches[0] ?? 0),
-  };
-}

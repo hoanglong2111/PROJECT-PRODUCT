@@ -1,5 +1,5 @@
 import type { AppRole } from '@shared/auth/types';
-import type { BusinessFlowTag, DeliveryOrder, Priority, TaskRole } from '@shared/model/logistics';
+import type { BusinessFlowTag, DeliveryOrder, Priority } from '@shared/model/logistics';
 import type { AppearanceMode, DensityPreference, VisualTheme, WorkspaceLanguage } from '@shared/preferences/WorkspacePreferencesContext';
 
 export type ShippingMethod = DeliveryOrder['logistics_shipping']['shipping_method'];
@@ -23,25 +23,6 @@ export const roleLabels: Record<WorkspaceLanguage, Record<AppRole, string>> = {
     PORT_OFFICER: 'Nhân viên cảng',
     SALE_STAFF: 'Nhân viên kinh doanh',
     WAREHOUSE_STAFF: 'Nhân viên kho',
-  },
-};
-
-export const taskRoleLabels: Record<WorkspaceLanguage, Partial<Record<TaskRole, string>>> = {
-  en: {
-    'Customs Officer': 'Customs Officer',
-    'Finance Officer': 'Finance Officer',
-    'PIC Manager': 'PIC Manager',
-    'Port Officer': 'Port Officer',
-    'Sale Staff': 'Sale Staff',
-    'Warehouse Staff': 'Warehouse Staff',
-  },
-  vi: {
-    'Customs Officer': 'Nhân viên hải quan',
-    'Finance Officer': 'Nhân viên tài chính',
-    'PIC Manager': 'PIC Manager',
-    'Port Officer': 'Nhân viên cảng',
-    'Sale Staff': 'Nhân viên kinh doanh',
-    'Warehouse Staff': 'Nhân viên kho',
   },
 };
 

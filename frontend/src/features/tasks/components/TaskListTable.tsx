@@ -28,7 +28,7 @@ export function TaskListTable({
   total: number;
   visibleTasks: LogisticsTask[];
 }) {
-  const { priorityLabel, t, taskRoleLabel } = useI18n();
+  const { priorityLabel, t } = useI18n();
 
   return (
     <Paper withBorder p={0} className="dl-data-panel">
@@ -40,8 +40,7 @@ export function TaskListTable({
               <Table.Th>
                 <HeaderLabel label="DO" hint={t('glossary.do')} />
               </Table.Th>
-              <Table.Th>{t('common.role')}</Table.Th>
-              <Table.Th>{t('common.assignee')}</Table.Th>
+              <Table.Th>{t('tasks.department')}</Table.Th>
               <Table.Th>{t('forms.priority')}</Table.Th>
               <Table.Th>{t('common.status')}</Table.Th>
               <Table.Th>{t('tasks.progress')}</Table.Th>
@@ -83,13 +82,10 @@ export function TaskListTable({
                     {task.do_number}
                   </Text>
                 </Table.Td>
-                <Table.Td>{taskRoleLabel(task.role)}</Table.Td>
                 <Table.Td>
+                  <Badge size="sm" variant="light" color="blue">{departmentLabel(task.department)}</Badge>
                   <Text size="sm" fw={600}>
-                    {task.assignee.name}
-                  </Text>
-                  <Text size="xs" c="dimmed">
-                    {task.assignee.department}
+                    {task.assignee_code ?? '-'} · {task.assignee.name}
                   </Text>
                 </Table.Td>
                 <Table.Td>
@@ -112,8 +108,17 @@ export function TaskListTable({
                   </Text>
                 </Table.Td>
                 <Table.Td className="table-cell-truncate" style={{ maxWidth: '18rem' }}>
-                  {task.blocked_reason ? (
-                    <Badge color="red" variant="light" size="sm" title={task.blocked_reason}>{task.blocked_reason}</Badge>
+                  {task.blocked_reason || task.blocked_by_party ? (
+                    <Group gap={4} wrap="wrap">
+                      {task.blocked_by_party ? (
+                        <Badge color="red" variant="filled" size="sm">
+                          {t(`tasks.blockedBy.${task.blocked_by_party}`)}
+                        </Badge>
+                      ) : null}
+                      {task.blocked_reason ? (
+                        <Badge color="red" variant="light" size="sm" title={task.blocked_reason}>{task.blocked_reason}</Badge>
+                      ) : null}
+                    </Group>
                   ) : (
                     <Text size="sm" c="dimmed">
                       -

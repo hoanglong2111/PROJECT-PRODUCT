@@ -1,4 +1,5 @@
 import { apiClient } from './axiosConfig';
+import type { DepartmentCode } from '@shared/model/logistics';
 
 export type PaginationMeta = {
   page: number;
@@ -51,7 +52,7 @@ export const DEPARTMENTS = {
 
 export type MilestoneCode = keyof typeof MILESTONE_CODES;
 
-export type DepartmentCode = keyof typeof DEPARTMENTS;
+export type { DepartmentCode } from '@shared/model/logistics';
 
 export type TaskTemplate = {
   id: string;
@@ -62,9 +63,10 @@ export type TaskTemplate = {
   milestone_code: MilestoneCode | string | null;
   sla_hours: number | null;
   sla_text: string | null;
-  department: DepartmentCode | string;
-  assignee_role: string | null;
-  required_documents: string;
+  department: DepartmentCode;
+  assignee_code: string | null;
+  related_documents: string;
+  is_required_for_closure: boolean;
   note: string | null;
   sort_order: number;
   is_active?: boolean;
@@ -82,9 +84,9 @@ export type TaskTemplatePayload = {
   milestone_code?: MilestoneCode | string | null;
   sla_hours?: number | null;
   sla_text?: string | null;
-  department?: DepartmentCode | string;
-  assignee_role?: string | null;
-  required_documents?: string;
+  department?: DepartmentCode;
+  assignee_code?: string | null;
+  related_documents?: string;
   note?: string | null;
   sort_order?: number;
   is_active?: boolean;
@@ -143,8 +145,9 @@ export function normalizeTaskTemplate(template: TaskTemplate): TaskTemplate {
     milestone_code: template.milestone_code ?? null,
     sla_hours: template.sla_hours ?? null,
     sla_text: template.sla_text ?? null,
-    assignee_role: template.assignee_role ?? null,
-    required_documents: template.required_documents ?? '',
+    assignee_code: template.assignee_code ?? null,
+    related_documents: template.related_documents ?? '',
+    is_required_for_closure: template.is_required_for_closure === true,
     note: template.note ?? null,
     sort_order: Number(template.sort_order ?? 0),
     is_active: template.is_active !== false,

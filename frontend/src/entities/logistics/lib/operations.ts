@@ -10,19 +10,11 @@ export type OperationalRiskCode =
   | 'QUOTATION_SLA'
   | 'DRAFT_BL_SLA';
 
-export type OperationalOwner =
-  | 'PIC Manager'
-  | 'Sale Staff'
-  | 'Port Officer'
-  | 'Customs Officer'
-  | 'Finance Officer'
-  | 'Warehouse Staff';
-
 export type OperationalRisk = {
   code: OperationalRiskCode;
   severity: 'high' | 'medium' | 'low';
   ownerDept: DepartmentCode;
-  slaCode: '1H' | '2H' | '8H' | 'TODAY' | 'BEFORE_CLOSE';
+  slaCode: 'QUOTATION_SLA' | 'DRAFT_BL_SLA' | 'MISSING_DOCUMENTS' | 'TODAY' | 'BEFORE_CLOSE';
   detail: {
     key: string;
     params?: Record<string, string | number>;
@@ -32,9 +24,11 @@ export type OperationalRisk = {
 export type OperationalGate = {
   id: string;
   passed: boolean;
-  owner: OperationalOwner;
-  detail: string;
+  owner: DepartmentCode;
+  detail: { key: string; params?: Record<string, string | number> };
 };
+
+export const REQUIRED_DO_DOCUMENTS = ['Invoice', 'Packing List', 'B/L', 'CO'] as const;
 
 export function getDeliveryOrderDelay(deliveryOrder: DeliveryOrder) {
   return calcDelay({
@@ -60,7 +54,7 @@ export function getDeliveryOrderRisks(
       detail: { key: 'opsRisk.detail.quotationPendingResponse', params: { quoteNumber: orderQuote.quoteNumber } },
       ownerDept: 'FDS_SALES',
       severity: 'high',
-      slaCode: '1H',
+      slaCode: 'QUOTATION_SLA',
     });
   } else if (!quotations && deliveryOrder.order_info.status === 'CREATED') {
     risks.push({
@@ -68,7 +62,7 @@ export function getDeliveryOrderRisks(
       detail: { key: 'opsRisk.detail.quotationBiddingPending' },
       ownerDept: 'FDS_SALES',
       severity: 'high',
-      slaCode: '1H',
+      slaCode: 'QUOTATION_SLA',
     });
   }
 
@@ -80,7 +74,7 @@ export function getDeliveryOrderRisks(
       detail: { key: 'opsRisk.detail.draftBlPendingKbiReview' },
       ownerDept: 'FDS_OPS_CUSTOMS',
       severity: 'high',
-      slaCode: '2H',
+      slaCode: 'DRAFT_BL_SLA',
     });
   } else if (!documentReviews && deliveryOrder.order_info.status === 'IN_TRANSIT') {
     risks.push({
@@ -88,7 +82,7 @@ export function getDeliveryOrderRisks(
       detail: { key: 'opsRisk.detail.draftBlUploadedPendingKbiReview' },
       ownerDept: 'FDS_OPS_CUSTOMS',
       severity: 'high',
-      slaCode: '2H',
+      slaCode: 'DRAFT_BL_SLA',
     });
   }
 
@@ -101,7 +95,7 @@ export function getDeliveryOrderRisks(
       },
       ownerDept: 'FDS_OPS_CUSTOMS',
       severity: 'high',
-      slaCode: '1H',
+      slaCode: 'MISSING_DOCUMENTS',
     });
   }
 
@@ -159,7 +153,7 @@ export function getPrimaryOperationalRisk(
 }
 
 export function getOperationalGates(deliveryOrder: DeliveryOrder): OperationalGate[] {
-  const hasCoreDocuments = ['Invoice', 'Packing List', 'B/L'].every((documentName) =>
+  const hasCoreDocuments = REQUIRED_DO_DOCUMENTS.every((documentName) =>
     deliveryOrder.logistics_shipping.documents_list.includes(documentName),
   );
   const delay = getDeliveryOrderDelay(deliveryOrder);
@@ -169,35 +163,35 @@ export function getOperationalGates(deliveryOrder: DeliveryOrder): OperationalGa
 
   return [
     {
-      detail: documentsReady ? 'Draft B/L, CI, Packing List ready' : deliveryOrder.logistics_shipping.missing_documents.join(', '),
+      detail: documentsReady ? { key: 'opsGate.documentsReady' } : { key: 'opsGate.documentsMissing', params: { documents: deliveryOrder.logistics_shipping.missing_documents.join(', ') } },
       id: 'documents',
-      owner: 'Port Officer',
+      owner: 'FDS_OPS',
       passed: documentsReady,
     },
     {
-      detail: documentsReady ? 'Customs declaration ready' : 'Waiting for document cross-check',
+      detail: documentsReady ? { key: 'opsGate.customsReady' } : { key: 'opsGate.customsWaiting' },
       id: 'customs',
-      owner: 'Customs Officer',
+      owner: 'FDS_OPS_CUSTOMS',
       passed: documentsReady,
     },
     {
       detail: tasksReady
-        ? 'Required tasks clear'
-        : `${deliveryOrder.task_summary.required_tasks_remaining} required, ${deliveryOrder.task_summary.blocked_tasks} blocked`,
+        ? { key: 'opsGate.tasksReady' }
+        : { key: 'opsGate.tasksBlocked', params: { required: deliveryOrder.task_summary.required_tasks_remaining, blocked: deliveryOrder.task_summary.blocked_tasks } },
       id: 'tasks',
-      owner: 'PIC Manager',
+      owner: 'FDS_OPS',
       passed: tasksReady,
     },
     {
-      detail: delay.isLate ? `${delay.days}d late/forecast` : 'Within warehouse deadline',
+      detail: delay.isLate ? { key: 'opsGate.warehouseLate', params: { days: delay.days } } : { key: 'opsGate.warehouseReady' },
       id: 'warehouse',
-      owner: 'Warehouse Staff',
+      owner: 'KBI_WAREHOUSE',
       passed: warehouseReady,
     },
     {
-      detail: tasksReady && documentsReady ? 'OF/AF then Final Debit Note can proceed' : 'Finance note waits for ops gates',
+      detail: tasksReady && documentsReady ? { key: 'opsGate.financeReady' } : { key: 'opsGate.financeWaiting' },
       id: 'finance',
-      owner: 'Finance Officer',
+      owner: 'FDS_ACCOUNTING',
       passed: tasksReady && documentsReady,
     },
   ];

@@ -8,7 +8,7 @@ import { gateDetail, gateLabel, riskDetail, riskLabel, slaLabel } from '../model
 import { DeliveryOrderFact } from './DeliveryOrderFact';
 
 export function DeliveryOrderOpsTab({ deliveryOrder }: { deliveryOrder: DeliveryOrder }) {
-  const { departmentLabel, t, taskRoleLabel } = useI18n();
+  const { departmentLabel, t } = useI18n();
   const gates = getOperationalGates(deliveryOrder);
   const risks = getDeliveryOrderRisks(deliveryOrder);
   const delay = calcDelay({
@@ -105,7 +105,7 @@ export function DeliveryOrderOpsTab({ deliveryOrder }: { deliveryOrder: Delivery
                   </Text>
                 </div>
                 <Text size="sm" c="dimmed">
-                  {taskRoleLabel(gate.owner)}
+                  {departmentLabel(gate.owner)}
                 </Text>
                 <Badge color={gate.passed ? 'teal' : 'orange'} variant="light">
                   {gate.passed ? t('deliveryOrders.gatePassed') : t('deliveryOrders.gateBlocked')}

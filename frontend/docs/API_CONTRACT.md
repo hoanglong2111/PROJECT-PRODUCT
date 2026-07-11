@@ -252,9 +252,9 @@ envelope above; handle their shapes separately from the `/v1` envelope.
 
 Task template DTOs mirror the SOP master-data seed and expose:
 `group_code`, `group_name`, `task_name`, `task_description`, `milestone_code`,
-`sla_hours`, `sla_text`, `department`, `assignee_role`, `required_documents`,
-`note`, `sort_order`, and `is_active`. The frontend must not write legacy
-`assignee_code` or `related_documents` fields for this endpoint.
+`sla_hours`, `sla_text`, `department`, `assignee_code`, `related_documents`,
+`note`, `sort_order`, and `is_active`. Department and assignee code are the
+SOP-native ownership fields for task templates and runtime tasks.
 
 Charge code DTOs expose two independent taxonomy fields: `group` is the seven-section
 macro group (`ORIGIN_EXPORT`, `MAIN_FREIGHT`, `FREIGHT_SURCHARGE`,

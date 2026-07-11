@@ -43,7 +43,8 @@ export function Gd1PoTasksBoard() {
       const matchesSearch =
         task.task_name.toLowerCase().includes(normalizedSearch) ||
         task.purchase_order_id.toLowerCase().includes(normalizedSearch) ||
-        task.assignee_id.toLowerCase().includes(normalizedSearch);
+        (task.assignee_code ?? '').toLowerCase().includes(normalizedSearch) ||
+        (task.assignee_name ?? '').toLowerCase().includes(normalizedSearch);
 
       const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
       return matchesSearch && matchesStatus;
@@ -101,9 +102,9 @@ export function Gd1PoTasksBoard() {
                   <HeaderLabel label={t('tasks.poNumber')} hint={t('glossary.po')} />
                 </Table.Th>
                 <Table.Th>
-                  <HeaderLabel label={t('tasks.poStage')} hint={t('glossary.poStage')} />
+                  <HeaderLabel label={t('tasks.sopTemplate')} hint={t('tasks.milestone')} />
                 </Table.Th>
-                <Table.Th>{t('tasks.assignedRole')}</Table.Th>
+                <Table.Th>{t('tasks.department')}</Table.Th>
                 <Table.Th>{t('tasks.dueCompletion')}</Table.Th>
               </Table.Tr>
             </Table.Thead>
@@ -142,9 +143,11 @@ export function Gd1PoTasksBoard() {
                     </Table.Td>
                     <Table.Td>
                       <Group gap={6}>
-                        <Badge color="gray" variant="light">
-                          {task.po_stage}
-                        </Badge>
+                        {task.template_group_code ? (
+                          <Badge color="gray" variant="light">
+                            {task.template_group_code}{task.template_group_name ? ` · ${task.template_group_name}` : ''}
+                          </Badge>
+                        ) : null}
                         {task.template_milestone_code ? (
                           <Badge color="grape" variant="light">
                             {milestoneLabel(task.template_milestone_code)}
@@ -158,9 +161,12 @@ export function Gd1PoTasksBoard() {
                       </Group>
                     </Table.Td>
                     <Table.Td>
-                      <Badge color="blue" variant="light">
-                        {task.assignee_id}
-                      </Badge>
+                      <Stack gap={2}>
+                        <Badge color="blue" variant="light" w="fit-content">
+                          {departmentLabel(task.template_department)}
+                        </Badge>
+                        <Text size="xs" c="dimmed">{task.assignee_code ?? '-'} · {task.assignee_name ?? '-'}</Text>
+                      </Stack>
                     </Table.Td>
                     <Table.Td>
                       <Text size="xs" className="tabular-nums">

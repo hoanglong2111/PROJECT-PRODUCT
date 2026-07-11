@@ -100,7 +100,7 @@ export const vi = {
   'dashboard.delayUnder3Days': 'Trễ dưới 3 ngày',
   'dashboard.delay3To7Days': 'Trễ từ 3-7 ngày',
   'dashboard.delayOver7Days': 'Trễ hơn 7 ngày',
-  'dashboard.moduleDeliveryOrdersDescription': 'Theo dõi logistics, checklist chứng từ và closure gate.',
+  'dashboard.moduleDeliveryOrdersDescription': 'Theo dõi logistics, checklist chứng từ và cổng đóng hồ sơ lô hàng.',
   'dashboard.moduleDeliveryOrdersTitle': 'DO',
   'dashboard.modulePurchaseOrdersDescription': 'Đơn mua hàng, nhà cung cấp, lots và các DO phát sinh.',
   'dashboard.modulePurchaseOrdersTitle': 'Đơn mua hàng',

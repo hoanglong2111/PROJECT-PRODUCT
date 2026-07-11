@@ -2,6 +2,7 @@
   BusinessFlowTag,
   AdvanceSettlement,
   AdvanceSettlementStatus,
+  BlockedByParty,
   DeliveryOrder,
   DeliveryOrderStatus,
   DeliverySourceLine,
@@ -30,7 +31,7 @@
   QuotationStatus,
   ShippingMode,
   SlaStatus,
-  TaskRole,
+  DepartmentCode,
   TaskStatus,
   UserRef,
   Gd1PoStageTask,
@@ -83,6 +84,7 @@ export type {
   BusinessFlowTag,
   AdvanceSettlement,
   AdvanceSettlementStatus,
+  BlockedByParty,
   DeliveryOrder,
   DeliveryOrderStatus,
   DeliverySourceLine,
@@ -111,7 +113,7 @@ export type {
   QuotationStatus,
   ShippingMode,
   SlaStatus,
-  TaskRole,
+  DepartmentCode,
   TaskStatus,
   UserRef,
   Gd1PoStageTask,
@@ -177,22 +179,23 @@ export type UpdateDeliveryOrderPayload = {
 export type TaskAssigneeInput = {
   id?: string | null;
   name: string;
-  department?: string | null;
+  department?: DepartmentCode | null;
+  code?: string | null;
 };
 
 export type UpdateTaskPayload = {
   blockedReason?: string | null;
+  blockedByParty?: BlockedByParty | null;
   completedAt?: string | null;
   dueDate?: string;
   notes?: string;
   progress?: number;
   status?: TaskStatus;
   taskName?: string;
-  role?: TaskRole;
-  stage?: TaskScreenStage;
-  refType?: string;
-  refId?: string;
-  refNo?: string;
+  department?: DepartmentCode;
+  assigneeCode?: string | null;
+  doNumber?: string | null;
+  poNumber?: string | null;
   priority?: Priority;
   assignee?: TaskAssigneeInput;
   taskTemplateId?: string | null;
@@ -201,11 +204,13 @@ export type UpdateTaskPayload = {
 export type CreateTaskPayload = {
   taskName: string;
   taskTemplateId?: string | null;
-  refType?: string;
-  refId?: string;
   refNo?: string;
-  stage?: TaskScreenStage;
-  role?: TaskRole;
+  blockedReason?: string | null;
+  blockedByParty?: BlockedByParty | null;
+  department?: DepartmentCode;
+  assigneeCode?: string | null;
+  doNumber?: string | null;
+  poNumber?: string | null;
   assignee?: TaskAssigneeInput;
   status?: TaskStatus;
   priority?: Priority;
@@ -252,7 +257,7 @@ export type DashboardStats = {
   businessFlowCounts?: Array<{ tag: BusinessFlowTag; count: number }>;
   deliveryOrderStatus: Array<{ status: DeliveryOrderStatus; count: number }>;
   taskStatus: Array<{ status: TaskStatus; count: number }>;
-  taskRoleProgress: Array<{ role: TaskRole; total: number; completed: number; completionRate: number }>;
+  taskDepartmentProgress: Array<{ department: DepartmentCode; total: number; completed: number; completionRate: number }>;
   monthlyThroughput: Array<{ month: string; deliveryOrders: number; completedTasks: number }>;
 };
 
@@ -386,14 +391,14 @@ export type SlaAlert = {
   entityId: string;
   entityType: 'document_review' | 'finance_note' | 'quotation';
   message: string;
-  ownerRole: TaskRole | string;
+  ownerDept: DepartmentCode | string;
   slaDueAt: string | null;
   slaStage: string | null;
 };
 
 export type CreateAdvanceSettlementPayload = {
   hblNumber?: string | null;
-  assignedRole: TaskRole;
+  assignedRole: string;
   amount: number;
   currency: string;
   purpose: string;
@@ -538,7 +543,7 @@ export async function fetchDashboardStats() {
   ]);
   const statusCounts = new Map<DeliveryOrderStatus, number>();
   const taskStatusCounts = new Map<TaskStatus, number>();
-  const taskRoleCounts = new Map<TaskRole, { completed: number; total: number }>();
+  const taskDepartmentCounts = new Map<DepartmentCode, { completed: number; total: number }>();
   const businessFlowCounts = new Map<BusinessFlowTag, number>();
   const monthCounts = new Map<string, { completedTasks: number; deliveryOrders: number }>();
 
@@ -560,8 +565,8 @@ export async function fetchDashboardStats() {
 
   tasks.forEach((task) => {
     taskStatusCounts.set(task.status, (taskStatusCounts.get(task.status) ?? 0) + 1);
-    const current = taskRoleCounts.get(task.role) ?? { completed: 0, total: 0 };
-    taskRoleCounts.set(task.role, {
+    const current = taskDepartmentCounts.get(task.department) ?? { completed: 0, total: 0 };
+    taskDepartmentCounts.set(task.department, {
       completed: current.completed + (task.status === 'COMPLETED' ? 1 : 0),
       total: current.total + 1,
     });
@@ -573,10 +578,10 @@ export async function fetchDashboardStats() {
     monthlyThroughput: Array.from(monthCounts.entries())
       .sort(([left], [right]) => left.localeCompare(right))
       .map(([month, counts]) => ({ month, ...counts })),
-    taskRoleProgress: Array.from(taskRoleCounts.entries()).map(([role, counts]) => ({
+    taskDepartmentProgress: Array.from(taskDepartmentCounts.entries()).map(([department, counts]) => ({
       completionRate: counts.total > 0 ? Math.round((counts.completed / counts.total) * 100) : 0,
       completed: counts.completed,
-      role,
+      department,
       total: counts.total,
     })),
     taskStatus: Array.from(taskStatusCounts.entries()).map(([status, count]) => ({ count, status })),
@@ -804,6 +809,7 @@ function mapTaskAssigneeInput(assignee?: TaskAssigneeInput) {
     id: assignee.id ?? null,
     name: assignee.name,
     department: assignee.department ?? null,
+    code: assignee.code ?? null,
   };
 }
 
@@ -811,17 +817,19 @@ export async function createLogisticsTask(payload: CreateTaskPayload) {
   const response = await apiClient.post<ApiResponse<TaskScreenItem>>('/v1/tasks', {
     task_name: payload.taskName,
     task_template_id: payload.taskTemplateId,
-    ref_type: payload.refType,
-    ref_id: payload.refId,
     ref_no: payload.refNo,
-    stage: payload.stage,
-    role: payload.role,
+    do_number: payload.doNumber,
+    po_number: payload.poNumber,
+    department: payload.department,
+    assignee_code: payload.assigneeCode,
     assignee: mapTaskAssigneeInput(payload.assignee),
     status: payload.status,
     priority: payload.priority,
     due_at: payload.dueDate,
     progress: payload.progress,
     note: payload.notes,
+    blocked_reason: payload.blockedReason,
+    blocked_by_party: payload.blockedByParty,
   });
   return mapTaskScreenToLogisticsTask(response.data.data);
 }
@@ -829,17 +837,17 @@ export async function createLogisticsTask(payload: CreateTaskPayload) {
 export async function updateLogisticsTask(taskId: string, payload: UpdateTaskPayload) {
   const response = await apiClient.patch<ApiResponse<TaskScreenItem>>(`/v1/tasks/${taskId}`, {
     blocked_reason: payload.blockedReason,
+    blocked_by_party: payload.blockedByParty,
     completed_at: payload.completedAt,
     due_at: payload.dueDate,
     note: payload.notes,
     progress: payload.progress,
     status: payload.status,
     task_name: payload.taskName,
-    role: payload.role,
-    stage: payload.stage,
-    ref_type: payload.refType,
-    ref_id: payload.refId,
-    ref_no: payload.refNo,
+    do_number: payload.doNumber,
+    po_number: payload.poNumber,
+    department: payload.department,
+    assignee_code: payload.assigneeCode,
     priority: payload.priority,
     assignee: mapTaskAssigneeInput(payload.assignee),
     task_template_id: payload.taskTemplateId,

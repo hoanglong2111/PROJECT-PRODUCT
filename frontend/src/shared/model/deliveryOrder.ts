@@ -1,5 +1,5 @@
 import type { AdvanceSettlementStatus, BusinessFlowTag, CustomsChannel, CustomsLaneStatus, CustomsStatus, DocumentReviewStatus, DriveDossierStatus, FinanceChargeType, MblType, SlaStatus } from './common';
-import type { TaskRole } from './task';
+import type { DepartmentCode } from './task';
 
 export type DeliveryOrderStatus =
   | 'DRAFT'
@@ -241,7 +241,7 @@ export type AdvanceSettlement = {
   hblNumber: string | null;
   settlementNumber: string;
   requestedBy: string | null;
-  assignedRole: TaskRole;
+  assignedRole: DepartmentCode;
   amount: number | string;
   currency: string;
   purpose: string;
