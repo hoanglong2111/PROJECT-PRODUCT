@@ -1,4 +1,4 @@
-import { Badge, Button, Group, Paper, SimpleGrid, Stack, Text } from '@mantine/core';
+import { Badge, Group, Paper, SimpleGrid, Stack, Text } from '@mantine/core';
 import {
   IconAccessible,
   IconLayoutDashboard,
@@ -21,10 +21,9 @@ type Props = {
   experienceProfile: ExperienceProfile;
   isCustomized: boolean;
   onChange: (profile: ExperienceProfile) => void;
-  onReset: () => void;
 };
 
-export function ExperienceProfilesCard({ experienceProfile, isCustomized, onChange, onReset }: Props) {
+export function ExperienceProfilesCard({ experienceProfile, isCustomized, onChange }: Props) {
   const { t } = useI18n();
 
   return (
@@ -70,17 +69,6 @@ export function ExperienceProfilesCard({ experienceProfile, isCustomized, onChan
             );
           })}
         </SimpleGrid>
-
-        {isCustomized ? (
-          <Group gap="sm">
-            <Button onClick={onReset} size="compact-sm" variant="light">
-              {t('settings.resetToProfile')}
-            </Button>
-            <Text c="dimmed" size="xs">
-              {t('settings.profileCustomizedHint')}
-            </Text>
-          </Group>
-        ) : null}
       </Stack>
     </Paper>
   );

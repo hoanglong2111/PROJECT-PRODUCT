@@ -61,7 +61,6 @@ export function Settings() {
     language,
     mobileQuickActionsVisible,
     resetFineTune,
-    resetToProfileDefaults,
     resolvedColorScheme,
     surfaceTransparency,
     setAppearanceMode,
@@ -163,7 +162,6 @@ export function Settings() {
               experienceProfile={experienceProfile}
               isCustomized={isProfileCustomized}
               onChange={setExperienceProfile}
-              onReset={resetToProfileDefaults}
             />
 
             <div>

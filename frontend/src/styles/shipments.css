@@ -13,11 +13,6 @@
   overflow-x: auto;
 }
 
-.shipment-filter-toolbar .dl-chip-row.is-fill .dl-chip {
-  flex: 0 0 auto;
-  justify-content: flex-start;
-}
-
 .shipment-filter-toolbar .dl-chip {
   min-height: 1.875rem;
   padding-block: 0.25rem;
