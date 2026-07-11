@@ -50,7 +50,6 @@ type WorkspacePreferencesContextValue = {
   mobileQuickActionsVisible: boolean;
   presentation: AdaptivePresentation;
   resetFineTune: () => void;
-  resetToProfileDefaults: () => void;
   resolvedColorScheme: ResolvedColorScheme;
   sidebarCollapsed: boolean;
   surfaceTransparency: SurfaceTransparency;
@@ -386,18 +385,28 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
     }
   };
 
-  const persistLevel = (key: string, level: FineTuneLevel, setter: (value: FineTuneLevel) => void) => {
-    startThemeTransition();
+  const persistLevel = (
+    key: string,
+    attribute: 'kbfeColorIntensity' | 'kbfeContrastLevel' | 'kbfeDimLevel',
+    level: FineTuneLevel,
+    setter: (value: FineTuneLevel) => void,
+  ) => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.dataset[attribute] = level;
+    }
     setter(level);
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(key, level);
     }
   };
-  const setColorIntensityLevel = (level: FineTuneLevel) => persistLevel(COLOR_INTENSITY_STORAGE_KEY, level, setColorIntensityLevelState);
-  const setDimLevel = (level: FineTuneLevel) => persistLevel(DIM_LEVEL_STORAGE_KEY, level, setDimLevelState);
-  const setContrastLevel = (level: FineTuneLevel) => persistLevel(CONTRAST_LEVEL_STORAGE_KEY, level, setContrastLevelState);
+  const setColorIntensityLevel = (level: FineTuneLevel) => persistLevel(COLOR_INTENSITY_STORAGE_KEY, 'kbfeColorIntensity', level, setColorIntensityLevelState);
+  const setDimLevel = (level: FineTuneLevel) => persistLevel(DIM_LEVEL_STORAGE_KEY, 'kbfeDimLevel', level, setDimLevelState);
+  const setContrastLevel = (level: FineTuneLevel) => persistLevel(CONTRAST_LEVEL_STORAGE_KEY, 'kbfeContrastLevel', level, setContrastLevelState);
 
   const setSurfaceTransparency = (nextTransparency: SurfaceTransparency) => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.dataset.kbfeTransparency = nextTransparency;
+    }
     setSurfaceTransparencyState(nextTransparency);
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(SURFACE_TRANSPARENCY_STORAGE_KEY, nextTransparency);
@@ -421,11 +430,6 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(EXPERIENCE_PROFILE_STORAGE_KEY, nextProfile);
     }
-  };
-
-  const resetToProfileDefaults = () => {
-    startThemeTransition();
-    applyProfileDefaults(experienceProfile);
   };
 
   const resetFineTune = () => {
@@ -483,7 +487,6 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
       mobileQuickActionsVisible,
       presentation: PROFILE_DEFAULTS[experienceProfile].presentation,
       resetFineTune,
-      resetToProfileDefaults,
       resolvedColorScheme,
       sidebarCollapsed,
       surfaceTransparency,

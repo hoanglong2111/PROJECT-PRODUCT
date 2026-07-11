@@ -747,28 +747,6 @@ html[data-kbfe-visual-theme='high-contrast'] .dl-filter-panel .mantine-Select-in
   display: none;
 }
 
-/* Fill mode (few tabs, e.g. Shipment): tabs stretch to fill the row width so
-   there is no empty gap to the right. */
-.dl-chip-row.is-fill {
-  width: 100%;
-  overflow-x: visible;
-}
-
-.dl-chip-row.is-fill .dl-chip {
-  flex: 1 1 0;
-  justify-content: center;
-}
-
-@media (max-width: 47.9375em) {
-  .dl-chip-row.is-fill {
-    overflow-x: auto;
-  }
-
-  .dl-chip-row.is-fill .dl-chip {
-    flex: 0 0 auto;
-  }
-}
-
 /* Chip/tab styling */
 .dl-chip {
   display: inline-flex;
@@ -797,7 +775,7 @@ html[data-kbfe-visual-theme='high-contrast'] .dl-filter-panel .mantine-Select-in
 
 .dl-chip:hover {
   border-color: color-mix(in srgb, var(--chip-color, var(--kbfe-primary-color)) 60%, var(--kbfe-border-primary));
-  background: color-mix(in srgb, var(--chip-color, var(--kbfe-primary-color)) 4%, var(--kbfe-surface-elevated));
+  background: color-mix(in srgb, var(--chip-color, var(--kbfe-primary-color)) var(--kbfe-tuner-hover-strength), var(--kbfe-surface-elevated));
   box-shadow: 0 8px 16px -14px color-mix(in srgb, var(--chip-color, var(--kbfe-primary-color)) 55%, transparent);
   transform: translateY(-1px);
 }
@@ -813,7 +791,7 @@ html[data-kbfe-visual-theme='high-contrast'] .dl-filter-panel .mantine-Select-in
      light) and is muted for dark ones (slate). The mix keeps the hue but is
      always legible on the 10% tint, in both light and dark schemes. */
   --dl-chip-ink: color-mix(in srgb, var(--dl-chip) 62%, var(--kbfe-text-primary));
-  background: color-mix(in srgb, var(--dl-chip) 10%, var(--kbfe-surface-elevated)) !important;
+  background: color-mix(in srgb, var(--dl-chip) var(--kbfe-tuner-selected-strength), var(--kbfe-surface-elevated)) !important;
   border-color: color-mix(in srgb, var(--dl-chip) 72%, var(--kbfe-border-primary)) !important;
   box-shadow:
     inset 0 0 0 1px color-mix(in srgb, var(--dl-chip) 16%, transparent),

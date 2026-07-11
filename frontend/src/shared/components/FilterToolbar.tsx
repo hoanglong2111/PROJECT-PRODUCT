@@ -23,7 +23,7 @@ export function FilterToolbar<T extends string>({
   isFetching?: boolean;
   onTabChange: (tab: T) => void;
   shown: number;
-  tabs: Array<{ label: string; value: T; count?: number }>;
+  tabs: Array<{ label: string; value: T; count?: number; color?: string }>;
 }) {
   const { t } = useI18n();
 
@@ -35,10 +35,14 @@ export function FilterToolbar<T extends string>({
             {headerControl ?? (
               <FilterSegment
                 ariaLabel={t('common.status')}
-                fill
                 value={activeTab}
                 onChange={(value) => onTabChange(value as T)}
-                options={tabs.map((tab) => ({ value: tab.value, label: tab.label, count: tab.count }))}
+                options={tabs.map((tab) => ({
+                  value: tab.value,
+                  label: tab.label,
+                  count: tab.count,
+                  color: tab.color,
+                }))}
               />
             )}
           </div>

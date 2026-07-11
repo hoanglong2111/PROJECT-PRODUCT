@@ -1,8 +1,10 @@
 export const STATUS_COLOR_VARS: Record<string, string> = {
   blue: 'var(--kbfe-status-blue)',
   cyan: 'var(--kbfe-status-cyan)',
+  grape: 'var(--kbfe-status-cyan)',
   gray: 'var(--kbfe-status-gray)',
   green: 'var(--kbfe-status-teal)',
+  indigo: 'var(--kbfe-status-blue)',
   orange: 'var(--kbfe-status-orange)',
   red: 'var(--kbfe-status-red)',
   teal: 'var(--kbfe-status-teal)',

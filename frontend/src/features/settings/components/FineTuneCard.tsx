@@ -1,5 +1,6 @@
 import { Badge, Button, Group, Paper, Slider, Stack, Text } from '@mantine/core';
 import { IconAdjustmentsHorizontal } from '@tabler/icons-react';
+import { useEffect, useRef, useState } from 'react';
 import { useI18n } from '@shared/i18n';
 import {
   FINE_TUNE_LEVELS,
@@ -31,6 +32,19 @@ function TuneSlider<T extends string>({ label, level, levels, locked, onChange, 
   valueLabel: (level: T) => string;
 }) {
   const value = Math.max(0, levels.indexOf(level));
+  const [dragValue, setDragValue] = useState(value);
+  const draggingRef = useRef(false);
+
+  useEffect(() => {
+    if (!draggingRef.current) setDragValue(value);
+  }, [value]);
+
+  const updateValue = (nextValue: number) => {
+    setDragValue(nextValue);
+    const nextLevel = levels[Math.round(nextValue)];
+    if (nextLevel !== level) onChange(nextLevel);
+  };
+
   return (
     <div className="settings-tuner-control">
       <Group justify="space-between" gap="sm" wrap="nowrap">
@@ -41,13 +55,20 @@ function TuneSlider<T extends string>({ label, level, levels, locked, onChange, 
         aria-label={label}
         className="settings-tuner-slider"
         disabled={locked}
-        label={(nextValue) => valueLabel(levels[nextValue])}
+        label={(nextValue) => valueLabel(levels[Math.round(nextValue)])}
         marks={levels.map((_, index) => ({ value: index }))}
         max={levels.length - 1}
         min={0}
-        onChange={(nextValue) => onChange(levels[nextValue])}
-        step={1}
-        value={value}
+        onChange={updateValue}
+        onChangeEnd={(nextValue) => {
+          draggingRef.current = false;
+          setDragValue(Math.round(nextValue));
+        }}
+        onPointerDown={() => {
+          draggingRef.current = true;
+        }}
+        step={0.01}
+        value={dragValue}
       />
       <Group className="settings-tuner-range-labels" justify="space-between" wrap="nowrap">
         <Text c="dimmed" size="xs">{valueLabel(levels[0])}</Text>

@@ -1,6 +1,9 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { Group, UnstyledButton } from '@mantine/core';
 
+import { statusColorVar } from '@shared/components/statusColors';
+import { getStatusBadgeConfig } from '@shared/components/StatusBadge';
+
 export type FilterSegmentOption = {
   value: string;
   label: ReactNode;
@@ -9,16 +12,39 @@ export type FilterSegmentOption = {
   color?: string;
 };
 
-const statusColorTokens: Record<string, string> = {
-  blue: 'var(--kbfe-status-blue)',
-  cyan: 'var(--kbfe-status-cyan)',
-  gray: 'var(--kbfe-status-gray)',
-  green: 'var(--kbfe-status-teal)',
-  orange: 'var(--kbfe-status-orange)',
-  red: 'var(--kbfe-status-red)',
-  teal: 'var(--kbfe-status-teal)',
-  yellow: 'var(--kbfe-status-yellow)',
+const semanticColors: Record<string, string> = {
+  all: 'blue',
+  blocked: 'red',
+  cancelled: 'gray',
+  completed: 'teal',
+  confirmed: 'teal',
+  customs: 'yellow',
+  customsCleared: 'teal',
+  customsWaiting: 'yellow',
+  delivered: 'teal',
+  delivering: 'orange',
+  draft: 'gray',
+  handover: 'cyan',
+  in_progress: 'blue',
+  in_transit: 'cyan',
+  internationalTransit: 'cyan',
+  issues: 'red',
+  pending: 'yellow',
+  processing: 'blue',
+  quoted: 'yellow',
+  received: 'cyan',
+  rejected: 'red',
+  submitted: 'blue',
+  todo: 'gray',
+  waiting: 'orange',
 };
+
+function optionColor(option: FilterSegmentOption) {
+  if (option.color) return option.color;
+  const semanticColor = semanticColors[option.value] ?? semanticColors[option.value.toLowerCase()];
+  if (semanticColor) return semanticColor;
+  return getStatusBadgeConfig(option.value.toUpperCase()).color;
+}
 
 /**
  * FilterSegment — the shared "pill + count badge" status control (design-language
@@ -29,20 +55,18 @@ const statusColorTokens: Record<string, string> = {
  */
 export function FilterSegment({
   ariaLabel,
-  fill = false,
   onChange,
   options,
   value,
 }: {
   ariaLabel?: string;
-  fill?: boolean;
   onChange: (value: string) => void;
   options: FilterSegmentOption[];
   value: string;
 }) {
   return (
     <Group
-      className={`dl-chip-row${fill ? ' is-fill' : ''}`}
+      className="dl-chip-row"
       gap="xs"
       wrap="nowrap"
       role="group"
@@ -50,9 +74,7 @@ export function FilterSegment({
     >
       {options.map((option) => {
         const active = option.value === value;
-        const style = option.color
-          ? ({ '--chip-color': statusColorTokens[option.color] ?? 'var(--kbfe-primary-color)' } as CSSProperties)
-          : undefined;
+        const style = { '--chip-color': statusColorVar(optionColor(option)) } as CSSProperties;
         return (
           <UnstyledButton
             key={option.value}
