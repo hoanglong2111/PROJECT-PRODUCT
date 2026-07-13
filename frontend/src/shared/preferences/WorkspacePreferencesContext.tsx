@@ -49,7 +49,7 @@ type WorkspacePreferencesContextValue = {
   language: WorkspaceLanguage;
   mobileQuickActionsVisible: boolean;
   presentation: AdaptivePresentation;
-  resetFineTune: () => void;
+  resetWorkspacePreferences: () => void;
   resolvedColorScheme: ResolvedColorScheme;
   sidebarCollapsed: boolean;
   surfaceTransparency: SurfaceTransparency;
@@ -193,9 +193,9 @@ function readStoredExperienceProfile(): ExperienceProfile {
   return inferProfileFromLegacyPreferences(readStoredVisualTheme(), readStoredDensity());
 }
 
-function readStoredSurfaceTransparency(profile: ExperienceProfile): SurfaceTransparency {
+function readStoredSurfaceTransparency(): SurfaceTransparency {
   if (typeof window === 'undefined') {
-    return 'medium';
+    return DEFAULT_FINE_TUNE_SETTINGS.transparencyLevel;
   }
 
   const value = window.localStorage.getItem(SURFACE_TRANSPARENCY_STORAGE_KEY);
@@ -203,12 +203,12 @@ function readStoredSurfaceTransparency(profile: ExperienceProfile): SurfaceTrans
   if (value === 'reduced') return 'low';
   if (value === 'low' || value === 'medium' || value === 'high' || value === 'ultra') return value;
 
-  return PROFILE_DEFAULTS[profile].transparency;
+  return DEFAULT_FINE_TUNE_SETTINGS.transparencyLevel;
 }
 
-function readLevel(key: string, fallback: FineTuneLevel = 'medium'): FineTuneLevel {
+function readLevel(key: string, fallback: FineTuneLevel = 'light'): FineTuneLevel {
   if (typeof window === 'undefined') {
-    return 'medium';
+    return fallback;
   }
   const value = window.localStorage.getItem(key);
   return isFineTuneLevel(value) ? value : fallback;
@@ -227,7 +227,7 @@ export function readStoredFineTuneSettings(): FineTuneSettings {
     colorIntensityLevel: readLevel(COLOR_INTENSITY_STORAGE_KEY, legacy),
     dimLevel: readLevel(DIM_LEVEL_STORAGE_KEY),
     contrastLevel: readLevel(CONTRAST_LEVEL_STORAGE_KEY),
-    transparencyLevel: readStoredSurfaceTransparency(readStoredExperienceProfile()),
+    transparencyLevel: readStoredSurfaceTransparency(),
   };
 }
 
@@ -432,11 +432,22 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
     }
   };
 
-  const resetFineTune = () => {
-    setColorIntensityLevel('medium');
-    setDimLevel('medium');
-    setContrastLevel('medium');
-    setSurfaceTransparency('medium');
+  const resetWorkspacePreferences = () => {
+    startThemeTransition();
+    setAppearanceMode('light');
+    setVisualTheme('standard');
+    setDensity('standard');
+    setColorPreset(defaultColorPresetId);
+    setLanguage('vi');
+    setMobileQuickActionsVisible(true);
+    setExperienceProfileState('overview');
+    setColorIntensityLevel(DEFAULT_FINE_TUNE_SETTINGS.colorIntensityLevel);
+    setDimLevel(DEFAULT_FINE_TUNE_SETTINGS.dimLevel);
+    setContrastLevel(DEFAULT_FINE_TUNE_SETTINGS.contrastLevel);
+    setSurfaceTransparency(DEFAULT_FINE_TUNE_SETTINGS.transparencyLevel);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(EXPERIENCE_PROFILE_STORAGE_KEY, 'overview');
+    }
   };
 
   const persistPresets = (next: FineTunePreset[]) => {
@@ -486,7 +497,7 @@ export function WorkspacePreferencesProvider({ children }: { children: React.Rea
       language,
       mobileQuickActionsVisible,
       presentation: PROFILE_DEFAULTS[experienceProfile].presentation,
-      resetFineTune,
+      resetWorkspacePreferences,
       resolvedColorScheme,
       sidebarCollapsed,
       surfaceTransparency,

@@ -53,12 +53,18 @@
   --dashboard-card-accent: var(--kbfe-primary-color);
   min-height: 100%;
   border-color: var(--kbfe-border-primary) !important;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--kbfe-surface-elevated) 97%, var(--kbfe-primary-color) 3%), var(--kbfe-surface-elevated)) !important;
+  background: var(--kbfe-list-row-background) !important;
   box-shadow: var(--kbfe-shadow-xs);
   transition:
     transform 150ms cubic-bezier(0.2, 0.8, 0.2, 1),
     box-shadow 150ms cubic-bezier(0.2, 0.8, 0.2, 1),
     border-color 150ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Dashboard cards use the same theme-aware fill as list rows. The shared
+   metric-card gloss would tint that fill a second time, so disable it here. */
+.dashboard-card::after {
+  display: none;
 }
 
 .dashboard-card:hover {
@@ -308,7 +314,7 @@
   padding: 0.5rem 0.625rem;
   border: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 82%, transparent);
   border-radius: var(--kbfe-radius-md);
-  background: color-mix(in srgb, var(--kbfe-surface-elevated) 94%, var(--kbfe-surface-subtle) 6%);
+  background: var(--kbfe-list-row-background);
   transition:
     border-color 150ms ease,
     background-color 150ms ease,
@@ -419,7 +425,7 @@
   padding: 0.5rem 0.75rem;
   border: 1px solid color-mix(in srgb, var(--kbfe-border-primary) 84%, transparent);
   border-radius: var(--kbfe-radius-md);
-  background: color-mix(in srgb, var(--kbfe-surface-elevated) 94%, var(--kbfe-surface-subtle) 6%);
+  background: var(--kbfe-list-row-background);
   transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
 }
 

@@ -104,7 +104,7 @@
 
 .settings-advanced-grid > *,
 .settings-appearance-cards-grid > *,
-.settings-workspace-preferences > * {
+.settings-recommendations-grid > * {
   height: 100%;
   min-width: 0;
 }
@@ -138,13 +138,6 @@
 
 .settings-tuner-range-labels {
   margin-top: 0.2rem;
-}
-
-.settings-workspace-preferences {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--kbfe-space-lg);
-  align-items: stretch;
 }
 
 .settings-density-card .mantine-SegmentedControl-root {
@@ -197,7 +190,10 @@
 }
 
 .settings-transparency-preview.is-low span { background: var(--kbfe-surface-elevated); backdrop-filter: none; }
+.settings-transparency-preview.is-medium span { background: color-mix(in srgb, var(--kbfe-surface-elevated) 72%, transparent); backdrop-filter: blur(12px) saturate(1.1); }
 .settings-transparency-preview.is-high span { background: color-mix(in srgb, var(--kbfe-surface-elevated) 54%, transparent); backdrop-filter: blur(18px) saturate(1.25); }
+.settings-transparency-preview.is-extra-high span { background: color-mix(in srgb, var(--kbfe-surface-elevated) 47%, transparent); backdrop-filter: blur(21px) saturate(1.32); }
+.settings-transparency-preview.is-max span { background: color-mix(in srgb, var(--kbfe-surface-elevated) 42%, transparent); backdrop-filter: blur(24px) saturate(1.4); }
 .settings-transparency-preview.is-ultra span { background: color-mix(in srgb, var(--kbfe-surface-elevated) 40%, transparent); backdrop-filter: blur(24px) saturate(1.4); }
 
 .settings-override-dim {
@@ -228,46 +224,6 @@
   transform: scaleY(1.08);
 }
 
-/* Experience profile picker — plain buttons styled like swatch cards. */
-.settings-profile-option {
-  width: 100%;
-  padding: var(--kbfe-space-sm);
-  text-align: left;
-  font: inherit;
-  color: var(--kbfe-text-primary);
-  border: 1px solid var(--kbfe-border-primary);
-  border-radius: var(--mantine-radius-md);
-  background: var(--kbfe-surface-elevated);
-  cursor: pointer;
-  transition:
-    background-color 150ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    border-color 150ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-.settings-profile-option:hover {
-  border-color: color-mix(in srgb, var(--kbfe-primary-color) 46%, var(--kbfe-border-primary));
-  background: var(--kbfe-row-hover-background);
-}
-
-.settings-profile-option.is-active {
-  border-color: var(--kbfe-primary-color);
-  background: var(--kbfe-code-background);
-  box-shadow: inset 0 -2px 0 var(--kbfe-primary-color);
-}
-
-.settings-profile-option-icon {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border: 1px solid var(--kbfe-icon-border);
-  border-radius: var(--kbfe-radius-md);
-  background: var(--kbfe-icon-background);
-  color: var(--kbfe-icon-color);
-}
-
 @media (max-width: 47.9375em) {
   .settings-fine-tune-header {
     flex-wrap: wrap;
@@ -284,8 +240,7 @@
 }
 
 @media (max-width: 74.9375em) {
-  .settings-advanced-grid,
-  .settings-workspace-preferences {
+  .settings-advanced-grid {
     grid-template-columns: 1fr;
   }
 }

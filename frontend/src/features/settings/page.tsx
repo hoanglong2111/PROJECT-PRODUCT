@@ -14,6 +14,7 @@ import {
   IconBulb,
   IconDeviceMobile,
   IconPalette,
+  IconRestore,
   IconSettings,
   IconShieldLock,
   IconUserCircle,
@@ -36,7 +37,6 @@ import {
   AppearanceModeCard,
   ColorPresetGrid,
   DensityCard,
-  ExperienceProfilesCard,
   FineTuneCard,
   LanguageCard,
   VisualThemeCard,
@@ -51,18 +51,15 @@ export function Settings() {
     appearanceMode,
     colorPreset,
     density,
-    experienceProfile,
     colorIntensityLevel,
     contrastLevel,
     dimLevel,
     fineTunePresets,
-    isProfileCustomized,
     language,
     mobileQuickActionsVisible,
-    resetFineTune,
+    resetWorkspacePreferences,
     surfaceTransparency,
     setAppearanceMode,
-    setExperienceProfile,
     setSurfaceTransparency,
     setColorPreset,
     setDensity,
@@ -122,11 +119,16 @@ export function Settings() {
         icon={<IconSettings size={20} />}
         title={t('settings.title')}
         subtitle={t('settings.subtitle')}
-        actions={
-          <Badge leftSection={<IconSettings size={14} />} size="lg" variant="light">
-            {t('settings.preferences')}
-          </Badge>
-        }
+        actions={(
+          <Group gap="sm">
+            <Badge leftSection={<IconSettings size={14} />} size="lg" variant="light">
+              {t('settings.preferences')}
+            </Badge>
+            <Button leftSection={<IconRestore size={16} />} onClick={resetWorkspacePreferences} variant="default">
+              {t('settings.resetAll')}
+            </Button>
+          </Group>
+        )}
       />
 
       <Tabs
@@ -154,13 +156,7 @@ export function Settings() {
 
         <Tabs.Panel value="preferences" pt="lg">
           <Stack gap="xl" className="settings-preferences-layout">
-            <ExperienceProfilesCard
-              experienceProfile={experienceProfile}
-              isCustomized={isProfileCustomized}
-              onChange={setExperienceProfile}
-            />
-
-            <SimpleGrid cols={{ base: 1, md: 2 }} className="settings-appearance-cards-grid">
+            <SimpleGrid cols={{ base: 1, sm: 2, xl: 4 }} className="settings-appearance-cards-grid">
               <AppearanceModeCard
                 appearanceMode={appearanceMode}
                 onChange={setAppearanceMode}
@@ -169,6 +165,8 @@ export function Settings() {
                 visualTheme={visualTheme}
                 onChange={setVisualTheme}
               />
+              <DensityCard density={density} onChange={setDensity} />
+              <LanguageCard language={language} onChange={setLanguage} />
             </SimpleGrid>
 
             <div>
@@ -189,57 +187,44 @@ export function Settings() {
                 onColorIntensityChange={setColorIntensityLevel}
                 onContrastChange={setContrastLevel}
                 onDimChange={setDimLevel}
-                onReset={resetFineTune}
                 onTransparencyChange={setSurfaceTransparency}
                 transparencyLevel={surfaceTransparency}
                 visualTheme={visualTheme}
               />
             </div>
 
-            <div className="settings-workspace-preferences">
-              <DensityCard
-                density={density}
-                onChange={setDensity}
-              />
-              <LanguageCard
-                language={language}
-                onChange={setLanguage}
-              />
-
-              <Paper withBorder p="lg" className="dl-data-panel settings-mobile-shell-card">
-                <Group justify="space-between" align="flex-start" gap="md" wrap="wrap">
-                  <Group gap="sm" align="flex-start" wrap="nowrap">
-                    <IconDeviceMobile size={22} />
-                    <div>
-                      <Text fw={700}>{t('settings.mobileShell')}</Text>
-                      <Text c="dimmed" size="sm">
-                        {t('settings.mobileShellDescription')}
-                      </Text>
-                    </div>
-                  </Group>
-                  <Badge color={mobileQuickActionsVisible ? 'teal' : 'gray'} variant="light">
-                    {mobileQuickActionsVisible
-                      ? t('settings.mobileQuickActionsVisible')
-                      : t('settings.mobileQuickActionsHidden')}
-                  </Badge>
-                </Group>
-                <Button
-                  disabled={mobileQuickActionsVisible}
-                  mt="md"
-                  onClick={() => setMobileQuickActionsVisible(true)}
-                  variant={mobileQuickActionsVisible ? 'default' : 'filled'}
-                >
-                  {t('settings.mobileQuickActionsRestore')}
-                </Button>
-              </Paper>
-            </div>
-
-            <Paper withBorder p="lg" className="dl-data-panel">
+            <div>
               <Group gap="sm" mb="md">
                 <IconBulb size={18} />
                 <Text fw={700}>{t('settings.recommendations')}</Text>
               </Group>
-              <SimpleGrid cols={{ base: 1, md: canManageUsers ? 3 : 2 }}>
+              <SimpleGrid cols={{ base: 1, sm: 2, xl: 4 }} className="settings-recommendations-grid">
+                <Paper withBorder p="md" className="dl-data-panel settings-mobile-shell-card">
+                  <Group justify="space-between" align="flex-start" gap="md" wrap="wrap">
+                    <Group gap="sm" align="flex-start" wrap="nowrap">
+                      <IconDeviceMobile size={22} />
+                      <div>
+                        <Text fw={700}>{t('settings.mobileShell')}</Text>
+                        <Text c="dimmed" size="sm">
+                          {t('settings.mobileShellDescription')}
+                        </Text>
+                      </div>
+                    </Group>
+                    <Badge color={mobileQuickActionsVisible ? 'teal' : 'gray'} variant="light">
+                      {mobileQuickActionsVisible
+                        ? t('settings.mobileQuickActionsVisible')
+                        : t('settings.mobileQuickActionsHidden')}
+                    </Badge>
+                  </Group>
+                  <Button
+                    disabled={mobileQuickActionsVisible}
+                    mt="md"
+                    onClick={() => setMobileQuickActionsVisible(true)}
+                    variant={mobileQuickActionsVisible ? 'default' : 'filled'}
+                  >
+                    {t('settings.mobileQuickActionsRestore')}
+                  </Button>
+                </Paper>
                 <Recommendation
                   description={t('settings.recommendationProfileDescription')}
                   icon={<IconUserCircle size={16} />}
@@ -261,7 +246,7 @@ export function Settings() {
                   />
                 ) : null}
               </SimpleGrid>
-            </Paper>
+            </div>
           </Stack>
         </Tabs.Panel>
 
@@ -318,13 +303,15 @@ function Recommendation({
   to: string;
 }) {
   return (
-    <Stack gap="xs">
+    <Paper withBorder p="md">
+      <Stack gap="xs">
       <Button component={Link} to={to} leftSection={icon} variant="light" justify="flex-start">
         {label}
       </Button>
       <Text c="dimmed" size="sm">
         {description}
       </Text>
-    </Stack>
+      </Stack>
+    </Paper>
   );
 }

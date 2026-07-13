@@ -27,7 +27,7 @@ describe('Fine Tune preferences', () => {
       return <span>{p.colorIntensityLevel}/{p.dimLevel}/{p.contrastLevel}/{p.surfaceTransparency}</span>;
     }
     await act(async () => root.render(<WorkspacePreferencesProvider><Probe /></WorkspacePreferencesProvider>));
-    expect(host.textContent).toBe('extra-high/medium/medium/low');
+    expect(host.textContent).toBe('extra-high/light/light/low');
     expect(window.localStorage.getItem('kbfe.preferences.color-intensity-level')).toBe('extra-high');
     expect(window.localStorage.getItem('kbfe.preferences.surface-transparency')).toBe('low');
     await act(async () => root.unmount());
@@ -44,9 +44,9 @@ describe('Fine Tune preferences', () => {
     }
     await act(async () => root.render(<WorkspacePreferencesProvider><Probe /></WorkspacePreferencesProvider>));
     await act(async () => setters?.color('ultra'));
-    expect(host.textContent).toBe('ultra/medium/medium');
+    expect(host.textContent).toBe('ultra/light/light');
     await act(async () => setters?.dim('high'));
-    expect(host.textContent).toBe('ultra/high/medium');
+    expect(host.textContent).toBe('ultra/high/light');
     await act(async () => setters?.contrast('max'));
     expect(host.textContent).toBe('ultra/high/max');
     expect(window.localStorage.getItem('kbfe.preferences.color-intensity-level')).toBe('ultra');

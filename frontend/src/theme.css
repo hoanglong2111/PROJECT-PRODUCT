@@ -498,18 +498,18 @@ html[data-kbfe-visual-theme='high-contrast'] {
    non-text presentation only, so even Max/Ultra can feel substantially more
    vivid without weakening body-copy or filled-button contrast. */
 html[data-kbfe-color-intensity='light'] {
-  --kbfe-tuner-factor: 0.65;
-  --kbfe-tuner-surface-scale: 0.45;
-  --kbfe-tuner-hover-strength: 4%;
-  --kbfe-tuner-selected-strength: 7%;
-  --kbfe-tuner-filter-strength: 3%;
-  --kbfe-tuner-list-strength: 4%;
-  --kbfe-tuner-spotlight-strength: 3%;
-  --kbfe-tuner-chart-strength: 4%;
-  --kbfe-tuner-border-strength: 2%;
-  --kbfe-tuner-liquid-a-strength: 16%;
-  --kbfe-tuner-liquid-b-strength: 10%;
-  --kbfe-tuner-chrome-opacity: 0.25;
+  --kbfe-tuner-factor: 0.82;
+  --kbfe-tuner-surface-scale: 0.72;
+  --kbfe-tuner-hover-strength: 6%;
+  --kbfe-tuner-selected-strength: 11%;
+  --kbfe-tuner-filter-strength: 6%;
+  --kbfe-tuner-list-strength: 7%;
+  --kbfe-tuner-spotlight-strength: 6%;
+  --kbfe-tuner-chart-strength: 8%;
+  --kbfe-tuner-border-strength: 5%;
+  --kbfe-tuner-liquid-a-strength: 24%;
+  --kbfe-tuner-liquid-b-strength: 17%;
+  --kbfe-tuner-chrome-opacity: 0.42;
 }
 
 html[data-kbfe-color-intensity='high'] {
@@ -612,6 +612,26 @@ html[data-kbfe-transparency='high']:not([data-kbfe-visual-theme='high-contrast']
   --kbfe-glass-saturate: 1.28;
 }
 
+html[data-kbfe-transparency='extra-high']:not([data-kbfe-visual-theme='high-contrast']) {
+  --kbfe-header-glass-surface: color-mix(in srgb, var(--kbfe-surface-elevated) 47%, transparent);
+  --kbfe-glass-surface: color-mix(in srgb, var(--kbfe-surface-elevated) 53%, transparent);
+  --kbfe-glass-surface-2: color-mix(in srgb, var(--kbfe-surface-elevated) 69%, transparent);
+  --kbfe-header-glass-blur: 18px;
+  --kbfe-glass-blur-1: 27px;
+  --kbfe-glass-blur-2: 33px;
+  --kbfe-glass-saturate: 1.34;
+}
+
+html[data-kbfe-transparency='max']:not([data-kbfe-visual-theme='high-contrast']) {
+  --kbfe-header-glass-surface: color-mix(in srgb, var(--kbfe-surface-elevated) 44%, transparent);
+  --kbfe-glass-surface: color-mix(in srgb, var(--kbfe-surface-elevated) 50%, transparent);
+  --kbfe-glass-surface-2: color-mix(in srgb, var(--kbfe-surface-elevated) 67%, transparent);
+  --kbfe-header-glass-blur: 19px;
+  --kbfe-glass-blur-1: 29px;
+  --kbfe-glass-blur-2: 35px;
+  --kbfe-glass-saturate: 1.38;
+}
+
 html[data-kbfe-transparency='ultra']:not([data-kbfe-visual-theme='high-contrast']) {
   --kbfe-header-glass-surface: color-mix(in srgb, var(--kbfe-surface-elevated) 42%, transparent);
   --kbfe-glass-surface: color-mix(in srgb, var(--kbfe-surface-elevated) 48%, transparent);
@@ -624,16 +644,25 @@ html[data-kbfe-transparency='ultra']:not([data-kbfe-visual-theme='high-contrast'
 
 /* Dimness only moves neutral backgrounds/surfaces. Mode-specific limits keep
    light mode from becoming muddy and dark mode from crushing shadow detail. */
-html[data-kbfe-dim-level='light'] { --kbfe-background-primary: color-mix(in srgb, var(--kbfe-background-primary-base) 94%, #ffffff); }
-html[data-kbfe-dim-level='high'] { --kbfe-background-primary: color-mix(in srgb, var(--kbfe-background-primary-base) 94%, #000000); --kbfe-surface-elevated: color-mix(in srgb, var(--kbfe-surface-elevated-base) 96%, #000000); }
-html[data-kbfe-dim-level='extra-high'] { --kbfe-background-primary: color-mix(in srgb, var(--kbfe-background-primary-base) 88%, #000000); --kbfe-surface-elevated: color-mix(in srgb, var(--kbfe-surface-elevated-base) 92%, #000000); }
-html[data-kbfe-dim-level='max'] { --kbfe-background-primary: color-mix(in srgb, var(--kbfe-background-primary-base) 82%, #000000); --kbfe-surface-elevated: color-mix(in srgb, var(--kbfe-surface-elevated-base) 88%, #000000); }
-html[data-kbfe-dim-level='ultra'] { --kbfe-background-primary: color-mix(in srgb, var(--kbfe-background-primary-base) 76%, #000000); --kbfe-surface-elevated: color-mix(in srgb, var(--kbfe-surface-elevated-base) 84%, #000000); }
+html[data-kbfe-dim-level='light'] {
+  --kbfe-background-primary: color-mix(in srgb, var(--kbfe-background-primary-base) 88%, #ffffff);
+  --kbfe-background-secondary: color-mix(in srgb, var(--kbfe-background-secondary-base) 90%, #ffffff);
+  --kbfe-surface-elevated: color-mix(in srgb, var(--kbfe-surface-elevated-base) 92%, #ffffff);
+}
+html[data-kbfe-dim-level='medium'] { --kbfe-background-primary: color-mix(in srgb, var(--kbfe-background-primary-base) 96%, #000000); --kbfe-surface-elevated: color-mix(in srgb, var(--kbfe-surface-elevated-base) 98%, #000000); }
+html[data-kbfe-dim-level='high'] { --kbfe-background-primary: color-mix(in srgb, var(--kbfe-background-primary-base) 90%, #000000); --kbfe-surface-elevated: color-mix(in srgb, var(--kbfe-surface-elevated-base) 94%, #000000); }
+html[data-kbfe-dim-level='extra-high'] { --kbfe-background-primary: color-mix(in srgb, var(--kbfe-background-primary-base) 84%, #000000); --kbfe-surface-elevated: color-mix(in srgb, var(--kbfe-surface-elevated-base) 90%, #000000); }
+html[data-kbfe-dim-level='max'] { --kbfe-background-primary: color-mix(in srgb, var(--kbfe-background-primary-base) 78%, #000000); --kbfe-surface-elevated: color-mix(in srgb, var(--kbfe-surface-elevated-base) 86%, #000000); }
+html[data-kbfe-dim-level='ultra'] { --kbfe-background-primary: color-mix(in srgb, var(--kbfe-background-primary-base) 72%, #000000); --kbfe-surface-elevated: color-mix(in srgb, var(--kbfe-surface-elevated-base) 82%, #000000); }
 html[data-kbfe-resolved-color-scheme='dark'][data-kbfe-dim-level='max'] { --kbfe-background-primary: color-mix(in srgb, var(--kbfe-background-primary-base) 92%, #000000); }
 html[data-kbfe-resolved-color-scheme='dark'][data-kbfe-dim-level='ultra'] { --kbfe-background-primary: color-mix(in srgb, var(--kbfe-background-primary-base) 88%, #000000); }
 
 /* Contrast changes hierarchy without mutating semantic colors or focus rings. */
-html[data-kbfe-contrast-level='light'] { --kbfe-border-primary: color-mix(in srgb, var(--kbfe-border-primary-base) 70%, var(--kbfe-surface-elevated)); --kbfe-text-secondary: color-mix(in srgb, var(--kbfe-text-secondary-base) 88%, var(--kbfe-text-primary-base)); }
+html[data-kbfe-contrast-level='light'] {
+  --kbfe-border-primary: color-mix(in srgb, var(--kbfe-border-primary-base) 38%, var(--kbfe-surface-elevated));
+  --kbfe-border-strong: color-mix(in srgb, var(--kbfe-border-strong-base) 58%, var(--kbfe-surface-elevated));
+  --kbfe-text-secondary: color-mix(in srgb, var(--kbfe-text-secondary-base) 76%, var(--kbfe-surface-elevated));
+}
 html[data-kbfe-contrast-level='high'] { --kbfe-border-primary: color-mix(in srgb, var(--kbfe-border-primary-base) 82%, var(--kbfe-text-primary-base)); --kbfe-border-strong: color-mix(in srgb, var(--kbfe-border-strong-base) 72%, var(--kbfe-text-primary-base)); }
 html[data-kbfe-contrast-level='extra-high'] { --kbfe-border-primary: color-mix(in srgb, var(--kbfe-border-primary-base) 70%, var(--kbfe-text-primary-base)); --kbfe-border-strong: color-mix(in srgb, var(--kbfe-border-strong-base) 58%, var(--kbfe-text-primary-base)); }
 html[data-kbfe-contrast-level='max'] { --kbfe-border-primary: color-mix(in srgb, var(--kbfe-border-primary-base) 58%, var(--kbfe-text-primary-base)); --kbfe-border-strong: color-mix(in srgb, var(--kbfe-border-strong-base) 44%, var(--kbfe-text-primary-base)); }

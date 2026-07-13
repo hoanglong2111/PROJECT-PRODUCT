@@ -1,5 +1,5 @@
 export type FineTuneLevel = 'light' | 'medium' | 'high' | 'extra-high' | 'max' | 'ultra';
-export type SurfaceTransparency = 'low' | 'medium' | 'high' | 'ultra';
+export type SurfaceTransparency = 'low' | 'medium' | 'high' | 'extra-high' | 'max' | 'ultra';
 
 export type FineTuneSettings = {
   colorIntensityLevel: FineTuneLevel;
@@ -14,12 +14,12 @@ export type FineTunePreset = FineTuneSettings & {
 };
 
 export const FINE_TUNE_LEVELS: FineTuneLevel[] = ['light', 'medium', 'high', 'extra-high', 'max', 'ultra'];
-export const TRANSPARENCY_LEVELS: SurfaceTransparency[] = ['low', 'medium', 'high', 'ultra'];
+export const TRANSPARENCY_LEVELS: SurfaceTransparency[] = ['low', 'medium', 'high', 'extra-high', 'max', 'ultra'];
 export const DEFAULT_FINE_TUNE_SETTINGS: FineTuneSettings = {
-  colorIntensityLevel: 'medium',
-  contrastLevel: 'medium',
-  dimLevel: 'medium',
-  transparencyLevel: 'medium',
+  colorIntensityLevel: 'light',
+  contrastLevel: 'light',
+  dimLevel: 'light',
+  transparencyLevel: 'low',
 };
 
 export const FINE_TUNE_PRESETS_STORAGE_KEY = 'kbfe.preferences.fine-tune-presets';

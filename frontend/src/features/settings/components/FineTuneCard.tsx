@@ -1,4 +1,4 @@
-import { Badge, Button, Group, Paper, Slider, Stack, Text } from '@mantine/core';
+import { Badge, Group, Paper, Slider, Stack, Text } from '@mantine/core';
 import { IconAdjustmentsHorizontal } from '@tabler/icons-react';
 import { useEffect, useRef, useState } from 'react';
 import { useI18n } from '@shared/i18n';
@@ -17,7 +17,6 @@ type Props = {
   onColorIntensityChange: (level: FineTuneLevel) => void;
   onContrastChange: (level: FineTuneLevel) => void;
   onDimChange: (level: FineTuneLevel) => void;
-  onReset: () => void;
   onTransparencyChange: (level: SurfaceTransparency) => void;
   transparencyLevel: SurfaceTransparency;
   visualTheme: VisualTheme;
@@ -81,12 +80,10 @@ function TuneSlider<T extends string>({ label, level, levels, locked, onChange, 
 export function FineTuneCard(props: Props) {
   const { t } = useI18n();
   const locked = props.visualTheme === 'high-contrast';
-  const changed = [props.colorIntensityLevel, props.dimLevel, props.contrastLevel, props.transparencyLevel]
-    .some((level) => level !== 'medium');
   return (
     <Paper withBorder p="lg" className="settings-fine-tune-card">
       <Stack gap="md">
-        <Group className="settings-fine-tune-header" justify="space-between" align="flex-start" wrap="nowrap">
+        <Group className="settings-fine-tune-header" align="flex-start" wrap="nowrap">
           <Group gap="sm" align="flex-start" wrap="nowrap">
             <IconAdjustmentsHorizontal size={20} />
             <div>
@@ -94,7 +91,6 @@ export function FineTuneCard(props: Props) {
               <Text c="dimmed" size="sm">{t('settings.fineTuneDescription')}</Text>
             </div>
           </Group>
-          {changed ? <Button variant="subtle" size="xs" onClick={props.onReset}>{t('settings.fineTuneReset')}</Button> : null}
         </Group>
         {locked ? <Text size="sm" c="orange">{t('settings.fineTuneHighContrastLocked')}</Text> : null}
         <div className="settings-tuner-selectors">
