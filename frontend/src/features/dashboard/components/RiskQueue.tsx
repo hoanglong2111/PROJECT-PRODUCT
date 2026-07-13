@@ -1,26 +1,25 @@
-import { Badge, Button, Group, Paper, Stack, Text, Title } from '@mantine/core';
-import { IconArrowRight, IconClockHour4, IconShieldCheck } from '@tabler/icons-react';
+import { Badge, Button, Group, Paper, Stack, Text } from '@mantine/core';
+import { IconArrowRight, IconClockHour4, IconShieldCheck, IconShieldExclamation } from '@tabler/icons-react';
 import { Link } from 'react-router-dom';
 
 import { useI18n } from '@shared/i18n';
 import { getRiskColor, type OperationalRiskCode, type OperationalRisk } from '@entities/logistics';
 
 import type { DashboardRiskRow } from '../model/dashboardSelectors';
+import { DashboardCardHeader } from './DashboardCardHeader';
 
 export function RiskQueue({ riskRows }: { riskRows: DashboardRiskRow[] }) {
   const { departmentLabel, t } = useI18n();
 
   return (
     <Paper withBorder p="md" className="metric-card dashboard-card dashboard-risk-card dl-data-panel">
-      <Group justify="space-between" mb="sm" align="flex-start" className="dl-data-panel-header dashboard-risk-header">
-        <div>
-          <Title order={3}>{t('dashboard.riskQueue')}</Title>
-          <Text size="sm" c="dimmed">
-            {t('dashboard.riskQueueDescription')}
-          </Text>
-        </div>
-        <Badge variant="light">{t('common.records', { count: riskRows.length })}</Badge>
-      </Group>
+      <DashboardCardHeader
+        icon={<IconShieldExclamation size={20} />}
+        tone="red"
+        title={t('dashboard.riskQueue')}
+        description={t('dashboard.riskQueueDescription')}
+        aside={<Badge variant="light">{t('common.records', { count: riskRows.length })}</Badge>}
+      />
 
       {riskRows.length > 0 ? (
         <Stack gap={6}>

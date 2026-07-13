@@ -95,34 +95,23 @@ export function AppShellLayout() {
     const active = item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path);
     const label = t(item.labelKey);
 
-    if (railMode) {
-      return (
-        <Tooltip key={item.path} label={label} position="right" withArrow>
-          <NavLink
-            component={RouterNavLink}
-            to={item.path}
-            active={active}
-            aria-label={label}
-            leftSection={<Icon size={20} stroke={1.8} />}
-          />
-        </Tooltip>
-      );
-    }
-
     return (
-      <NavLink
-        key={item.path}
-        component={RouterNavLink}
-        to={item.path}
-        label={label}
-        active={active}
-        leftSection={<Icon size={18} stroke={1.8} />}
-      />
+      <Tooltip key={item.path} label={label} position="right" withArrow disabled={!railMode}>
+        <NavLink
+          component={RouterNavLink}
+          to={item.path}
+          label={label}
+          active={active}
+          aria-label={label}
+          leftSection={<Icon size={18} stroke={1.8} />}
+        />
+      </Tooltip>
     );
   });
 
   return (
     <AppShell
+      className="workspace-app-shell"
       header={{ height: { base: 120, sm: 64 } }}
       navbar={{
         width: { base: 272, sm: sidebarCollapsed ? 72 : 272 },
@@ -130,6 +119,8 @@ export function AppShellLayout() {
         collapsed: { mobile: true, desktop: false },
       }}
       padding="lg"
+      transitionDuration={160}
+      transitionTimingFunction="cubic-bezier(0.2, 0.8, 0.2, 1)"
     >
       <a href="#main-content" className="skip-link">
         {t('shell.skipToContent')}
