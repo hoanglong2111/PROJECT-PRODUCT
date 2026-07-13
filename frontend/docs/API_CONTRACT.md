@@ -113,7 +113,8 @@ exact request/response types.)
 
 ### Delivery Orders (Internal DO)
 - `GET /v1/delivery-orders`
-- `GET /v1/delivery-orders/screen` — screen DTO (list with task_summary / missing_documents / warehouse). `order_info.status` is **derived** from the laggard linked shipment once the DO is handed off (it is not the raw DO record status); CANCELLED/CLOSED stay terminal. Parallels the PO `lifecycle_status` rule.
+- `GET /v1/delivery-orders/screen` — screen DTO (list with task_summary / missing_documents / warehouse). `order_info.status` is **derived** from the laggard linked shipment once the DO is handed off (it is not the raw DO record status); CANCELLED/CLOSED stay terminal. Parallels the PO `lifecycle_status` rule. `logistics_shipping` also carries the **documents-complete gate**: `required_documents` (codes from the `document-types` catalog where `is_required`), `documents_complete`, `documents_outstanding` (required types with no uploaded file — blocks DO closure), `documents_unverified` (uploaded but none `VERIFIED` — soft warning). **`missing_documents` means REJECTED, not "not yet uploaded"** — use `documents_outstanding` for the upload gate. The same triple is mirrored onto `GET /v1/shipments/:id`.
+- `GET|POST|PATCH|DELETE /document-types` — admin-configurable document catalog (`code`, `label_en`, `label_vi`, `is_required`, `sort_order`) that owns the required set for the DO documents gate; mirrors the Task Template `is_required_for_closure` pattern.
 - `GET /v1/delivery-orders/:id`
 - `POST /v1/delivery-orders/from-lots` — accepts `lot_ids`, optional `delivery_order_no`, `requested_pickup_date`, `planned_etd`, `planned_eta`, `origin_address`, `destination_address`, and `notes`. The PO LOT confirm UI maps POL/POD to `origin_address` / `destination_address`.
 - `POST /v1/delivery-orders/:id/ready-for-quotation`

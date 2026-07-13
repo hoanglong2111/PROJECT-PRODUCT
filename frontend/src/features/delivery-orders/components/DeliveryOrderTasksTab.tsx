@@ -4,13 +4,14 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchLogisticsTasks, type DeliveryOrder } from '@shared/api/logistics';
 import { queryKeys } from '@shared/api/queryKeys';
 import { StatusBadge } from '@shared/components/StatusBadge';
+import { DocumentsCompleteBadge } from '@shared/components/documents';
 import { useI18n } from '@shared/i18n';
 
 import { DeliveryOrderFact } from './DeliveryOrderFact';
 
 export function DeliveryOrderTasksTab({ deliveryOrder }: { deliveryOrder: DeliveryOrder }) {
   const { departmentLabel, t } = useI18n();
-  const missingDocumentsCount = deliveryOrder.logistics_shipping.missing_documents.length;
+  const documentsShipping = deliveryOrder.logistics_shipping;
   const taskProgress =
     deliveryOrder.task_summary.total_tasks > 0
       ? Math.round((deliveryOrder.task_summary.completed_tasks / deliveryOrder.task_summary.total_tasks) * 100)
@@ -37,15 +38,11 @@ export function DeliveryOrderTasksTab({ deliveryOrder }: { deliveryOrder: Delive
             </Text>
           </div>
           <Group gap={6}>
-            {missingDocumentsCount > 0 ? (
-              <Badge size="xs" color="red" variant="light">
-                {t('deliveryOrders.missingDocuments', { count: missingDocumentsCount })}
-              </Badge>
-            ) : (
-              <Badge size="xs" color="teal" variant="light">
-                {t('deliveryOrders.complete')}
-              </Badge>
-            )}
+            <DocumentsCompleteBadge
+              complete={documentsShipping.documents_complete ?? documentsShipping.missing_documents.length === 0}
+              outstanding={documentsShipping.documents_outstanding}
+              unverified={documentsShipping.documents_unverified}
+            />
             {deliveryOrder.task_summary.blocked_tasks > 0 ? (
               <Badge size="xs" color="orange" variant="light">
                 {t('deliveryOrders.blockedSuffix', { count: deliveryOrder.task_summary.blocked_tasks })}

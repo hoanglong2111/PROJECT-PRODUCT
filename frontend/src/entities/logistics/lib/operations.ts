@@ -86,12 +86,17 @@ export function getDeliveryOrderRisks(
     });
   }
 
-  if (deliveryOrder.logistics_shipping.missing_documents.length > 0) {
+  // "Missing" here means required documents NOT yet uploaded (documents_outstanding),
+  // not REJECTED ones (missing_documents). Fall back to the legacy field when the
+  // backend gate is absent (e.g. non-screen mapper path).
+  const outstandingDocuments =
+    deliveryOrder.logistics_shipping.documents_outstanding ?? deliveryOrder.logistics_shipping.missing_documents;
+  if (outstandingDocuments.length > 0) {
     risks.push({
       code: 'MISSING_DOCUMENTS',
       detail: {
         key: 'opsRisk.detail.missingDocuments',
-        params: { documents: deliveryOrder.logistics_shipping.missing_documents.join(', ') },
+        params: { documents: outstandingDocuments.join(', ') },
       },
       ownerDept: 'FDS_OPS_CUSTOMS',
       severity: 'high',
@@ -159,11 +164,19 @@ export function getOperationalGates(deliveryOrder: DeliveryOrder): OperationalGa
   const delay = getDeliveryOrderDelay(deliveryOrder);
   const tasksReady = deliveryOrder.task_summary.required_tasks_remaining === 0 && deliveryOrder.task_summary.blocked_tasks === 0;
   const warehouseReady = Boolean(deliveryOrder.warehouse_tracking.actual_entry_date) || !delay.isLate;
-  const documentsReady = deliveryOrder.logistics_shipping.missing_documents.length === 0 && hasCoreDocuments;
+  // Prefer the backend documents-complete gate; fall back to the legacy heuristic.
+  const outstandingDocuments = deliveryOrder.logistics_shipping.documents_outstanding ?? [];
+  const documentsReady =
+    deliveryOrder.logistics_shipping.documents_complete ??
+    (deliveryOrder.logistics_shipping.missing_documents.length === 0 && hasCoreDocuments);
+  const documentsMissingList = (outstandingDocuments.length > 0
+    ? outstandingDocuments
+    : deliveryOrder.logistics_shipping.missing_documents
+  ).join(', ');
 
   return [
     {
-      detail: documentsReady ? { key: 'opsGate.documentsReady' } : { key: 'opsGate.documentsMissing', params: { documents: deliveryOrder.logistics_shipping.missing_documents.join(', ') } },
+      detail: documentsReady ? { key: 'opsGate.documentsReady' } : { key: 'opsGate.documentsMissing', params: { documents: documentsMissingList } },
       id: 'documents',
       owner: 'FDS_OPS',
       passed: documentsReady,

@@ -3,6 +3,7 @@ import {
   IconBox,
   IconCash,
   IconClipboardList,
+  IconFileCheck,
   IconFileCode,
   IconMapPin,
   IconReceiptTax,
@@ -34,6 +35,7 @@ import type { DeleteEntityKind, MasterDataModalSet, ToggleEntityKind } from '../
 import { useMasterDataStore } from '../model/masterDataStore';
 import { ForwardersCarriersSection } from './ForwardersCarriersSection';
 import { FILTER_SELECT_WIDTH } from './MasterDataToolbar';
+import { DocumentTypesSection } from './DocumentTypesSection';
 import { ReferenceDataPanel } from './ReferenceDataPanel';
 import {
   buildChargeCodeColumns,
@@ -197,6 +199,9 @@ export function MasterDataReferenceTabs({
             </Tabs.Tab>
             <Tabs.Tab value="containerTypes" leftSection={<IconBox size={16} />}>
               {t('masterData.tabContainerTypes')}
+            </Tabs.Tab>
+            <Tabs.Tab value="documentTypes" leftSection={<IconFileCheck size={16} />}>
+              {t('masterData.tabDocumentTypes')}
             </Tabs.Tab>
           </Tabs.List>
         </div>
@@ -472,6 +477,10 @@ export function MasterDataReferenceTabs({
           onEdit={modals.containerType.openEdit}
           onDelete={(record) => onDelete('containerType', record)}
         />
+      </Tabs.Panel>
+
+      <Tabs.Panel value="documentTypes" pt="md">
+        <DocumentTypesSection canManage={canManage} />
       </Tabs.Panel>
     </Tabs>
   );

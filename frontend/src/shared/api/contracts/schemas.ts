@@ -25,6 +25,10 @@ export const deliveryOrderScreenSchema = z
       .object({
         shipping_method: z.string(),
         missing_documents: z.array(z.string()),
+        required_documents: z.array(z.string()).optional(),
+        documents_complete: z.boolean().optional(),
+        documents_outstanding: z.array(z.string()).optional(),
+        documents_unverified: z.array(z.string()).optional(),
       })
       .passthrough(),
     warehouse_tracking: z

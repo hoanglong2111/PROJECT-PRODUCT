@@ -302,7 +302,10 @@ function countOrdersByStatus(deliveryOrders: DeliveryOrder[], statuses: Delivery
 }
 
 function countMissingDocumentOrders(deliveryOrders: DeliveryOrder[]) {
-  return deliveryOrders.filter((deliveryOrder) => deliveryOrder.logistics_shipping.missing_documents.length > 0).length;
+  return deliveryOrders.filter(
+    (deliveryOrder) =>
+      (deliveryOrder.logistics_shipping.documents_outstanding ?? deliveryOrder.logistics_shipping.missing_documents).length > 0,
+  ).length;
 }
 
 function countOverdueTasks(tasks: LogisticsTask[], keywords: string[]) {

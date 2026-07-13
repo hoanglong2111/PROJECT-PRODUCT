@@ -47,7 +47,7 @@ export function hasOperationalRisk(deliveryOrder: DeliveryOrder) {
   return (
     deliveryOrder.warehouse_tracking.delay_days > 0 ||
     deliveryOrder.task_summary.blocked_tasks > 0 ||
-    deliveryOrder.logistics_shipping.missing_documents.length > 0
+    (deliveryOrder.logistics_shipping.documents_outstanding ?? deliveryOrder.logistics_shipping.missing_documents).length > 0
   );
 }
 

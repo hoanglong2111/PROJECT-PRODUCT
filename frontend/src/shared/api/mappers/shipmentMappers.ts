@@ -101,5 +101,8 @@ export function mapV1Shipment(shipment: ShipmentV1): ShipmentRecordWithQuotation
     load_type: shipment.load_type ?? inferLoadTypeFromMode(shipment.mode),
     status: shipment.status as ShipmentStatus,
     vessel_voyage: vesselParts.join(' / '),
+    documents_complete: shipment.documents_complete,
+    documents_outstanding: shipment.documents_outstanding,
+    documents_unverified: shipment.documents_unverified,
   };
 }

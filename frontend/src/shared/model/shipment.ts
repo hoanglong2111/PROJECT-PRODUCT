@@ -153,4 +153,8 @@ export type ShipmentRecord = {
   documents: ShipmentDocument[];
   costs: ShipmentCost[];
   po_tasks: ShipmentPoTask[];
+  // Mirrored from the parent DO's derived "documents complete" gate (source of truth = DO).
+  documents_complete?: boolean;
+  documents_outstanding?: string[];
+  documents_unverified?: string[];
 };

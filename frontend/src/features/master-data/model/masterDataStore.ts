@@ -4,6 +4,7 @@ type MasterDataTab =
   | 'chargeCodes'
   | 'containerTypes'
   | 'currencies'
+  | 'documentTypes'
   | 'forwarders'
   | 'incoterms'
   | 'items'

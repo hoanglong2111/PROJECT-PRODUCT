@@ -86,6 +86,12 @@ export type DeliveryOrder = {
     port_of_destination: string;
     documents_list: string[];
     missing_documents: string[];
+    // Derived, admin-configurable "documents complete" gate (source of truth = backend
+    // DO screen-DTO). `missing_documents` above means REJECTED, NOT "not yet uploaded".
+    required_documents?: string[];
+    documents_complete?: boolean;
+    documents_outstanding?: string[];
+    documents_unverified?: string[];
     cut_off_date: string | null;
     etd_planned: string | null;
     eta_planned: string | null;

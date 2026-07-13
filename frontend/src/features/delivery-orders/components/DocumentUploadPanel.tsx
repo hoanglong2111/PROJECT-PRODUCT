@@ -10,6 +10,7 @@ import {
   type DeliveryOrderDocumentV1,
 } from '@shared/api/deliveryOrders';
 import type { DeliveryOrder } from '@shared/api/logistics';
+import { fetchDocumentTypes } from '@shared/api/documentTypes';
 import { queryKeys } from '@shared/api/queryKeys';
 import { AttachmentList, DocumentCard, DocumentStatusBadge, type DocumentFile } from '@shared/components/documents';
 import { getApiErrorMessage } from '@shared/lib/errors';
@@ -17,9 +18,10 @@ import { useI18n } from '@shared/i18n';
 
 const ACCEPT = 'application/pdf,image/png,image/jpeg,image/webp,image/gif';
 
-// Core customs documents tracked as a readiness checklist (kept in sync with the
-// backend REQUIRED_DO_DOCUMENT_TYPES).
-const REQUIRED_DOCUMENT_TYPES = ['Invoice', 'Packing List', 'B/L', 'CO'];
+// Fallback readiness checklist, used only when the document-types catalog can't be
+// loaded. The authoritative required set is the admin-configurable document-types
+// master data (is_required); see the query below.
+const FALLBACK_REQUIRED_DOCUMENT_TYPES = ['Invoice', 'Packing List', 'B/L', 'CO'];
 
 function toDocumentFile(doc: DeliveryOrderDocumentV1): DocumentFile {
   return {
@@ -46,6 +48,14 @@ export function DocumentUploadPanel({
     queryFn: () => fetchDeliveryOrderDocuments(deliveryOrderId),
   });
   const documents = documentsQuery.data ?? [];
+
+  const documentTypesQuery = useQuery({
+    queryKey: queryKeys.documentTypes,
+    queryFn: () => fetchDocumentTypes(),
+  });
+  const requiredDocumentTypes =
+    documentTypesQuery.data?.data.filter((type) => type.is_required).map((type) => type.code) ??
+    FALLBACK_REQUIRED_DOCUMENT_TYPES;
 
   const invalidate = () => {
     void Promise.all([
@@ -78,7 +88,7 @@ export function DocumentUploadPanel({
   };
 
   const error = createMutation.error ?? deleteMutation.error ?? documentsQuery.error;
-  const additionalDocuments = documents.filter((doc) => !REQUIRED_DOCUMENT_TYPES.includes(doc.document_type));
+  const additionalDocuments = documents.filter((doc) => !requiredDocumentTypes.includes(doc.document_type));
 
   return (
     <Stack gap="lg">
@@ -93,7 +103,7 @@ export function DocumentUploadPanel({
           {t('deliveryOrders.requiredForCustoms')}
         </Text>
         <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-          {REQUIRED_DOCUMENT_TYPES.map((type) => {
+          {requiredDocumentTypes.map((type) => {
             const typeDocs = documents.filter((doc) => doc.document_type === type);
             const received = typeDocs.length > 0;
             return (

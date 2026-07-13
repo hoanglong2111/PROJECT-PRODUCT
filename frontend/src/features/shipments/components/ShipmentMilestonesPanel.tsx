@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 
 import { DateTimeField } from '@shared/components/DateField';
 import { DateTimeText } from '@shared/components/DateTimeText';
+import { DocumentsCompleteBadge } from '@shared/components/documents';
 import type { ShipmentRecord } from '@shared/api/logistics';
 import type { ShipmentMilestoneCodeV1 } from '@shared/api/shipments';
 import { useI18n } from '@shared/i18n';
@@ -157,9 +158,19 @@ export function ShipmentMilestonesPanel({
               </Text>
             </div>
           </Group>
-          <Badge color={progressValue === 100 ? 'teal' : 'blue'} variant="light" size="lg">
-            {t('shipments.completedOf', { completed: completedCount, total: renderedMilestones.length })}
-          </Badge>
+          <Group gap="xs" wrap="nowrap">
+            {shipment.documents_complete !== undefined ? (
+              <DocumentsCompleteBadge
+                complete={shipment.documents_complete}
+                outstanding={shipment.documents_outstanding}
+                unverified={shipment.documents_unverified}
+                size="lg"
+              />
+            ) : null}
+            <Badge color={progressValue === 100 ? 'teal' : 'blue'} variant="light" size="lg">
+              {t('shipments.completedOf', { completed: completedCount, total: renderedMilestones.length })}
+            </Badge>
+          </Group>
         </Group>
 
         <Progress value={progressValue} color={progressValue === 100 ? 'teal' : 'blue'} radius="xl" size="sm" />

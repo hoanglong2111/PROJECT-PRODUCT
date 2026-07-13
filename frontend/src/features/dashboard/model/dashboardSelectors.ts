@@ -28,7 +28,10 @@ export function getBlockedTasks(tasks: LogisticsTask[]) {
 }
 
 export function getMissingDocumentOrders(deliveryOrders: DeliveryOrder[]) {
-  return deliveryOrders.filter((deliveryOrder) => deliveryOrder.logistics_shipping.missing_documents.length > 0);
+  return deliveryOrders.filter(
+    (deliveryOrder) =>
+      (deliveryOrder.logistics_shipping.documents_outstanding ?? deliveryOrder.logistics_shipping.missing_documents).length > 0,
+  );
 }
 
 export function getDashboardRiskRows(deliveryOrders: DeliveryOrder[]): DashboardRiskRow[] {

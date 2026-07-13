@@ -852,6 +852,17 @@ DO task summary are projections of that pool, linked to the catalog:
 - A blocked task carries `blocked_by_party` (SUPPLIER|CARRIER|CUSTOMER|CUSTOMS|INTERNAL)
   so the UI says who is blocking / who must unblock. "blocked" = "bị chặn" (distinct
   from overdue); closing a DO's file is "đóng hồ sơ lô hàng" (never "đóng lệnh").
+- Documents-complete gate: "đã upload đủ chứng từ" is a DERIVED status (NOT an 11th
+  shipment milestone — the 10 milestones stay). The backend DO screen-DTO owns
+  `documents_complete` / `documents_outstanding` (required type with no uploaded file)
+  / `documents_unverified` (uploaded but not VERIFIED); the FE never synthesizes them.
+  The required set is the admin-configurable `document-types` master data (`is_required`),
+  mirroring `is_required_for_closure`. Surface it with `DocumentsCompleteBadge`
+  (`@shared/components/documents`) on the DO tasks tab and the shipment milestone panel.
+  The close-DO dialog (`DeliveryOrderDetail`) is two-tier: `documents_outstanding` blocks
+  the confirm button; `documents_unverified` only needs the acknowledgement checkbox
+  (RECEIVED opens the gate). NOTE: `logistics_shipping.missing_documents` means REJECTED,
+  not "not yet uploaded" — always read `documents_outstanding` for the upload gate.
 ```
 
 Manual add / edit (`TaskFormModal`, opened from the board "Create task" button

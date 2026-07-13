@@ -184,6 +184,10 @@ export type ShipmentV1 = {
   milestones?: ShipmentMilestoneV1[];
   documents?: ShipmentDocumentV1[];
   costs?: ShipmentCostV1[];
+  // Mirrored from the parent DO's derived documents-complete gate (backend getShipment).
+  documents_complete?: boolean;
+  documents_outstanding?: string[];
+  documents_unverified?: string[];
 };
 
 export type ListShipmentsParams = {

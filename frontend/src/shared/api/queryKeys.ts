@@ -87,6 +87,8 @@ export const queryKeys = {
   supplierDetail: (id: string) => ['suppliers', 'detail', id] as const,
   supplierLists: ['suppliers'] as const,
   suppliers: (params: Record<string, unknown>) => ['suppliers', params] as const,
+  documentTypes: ['document-types'] as const,
+  documentTypesList: (params: Record<string, unknown>) => ['document-types', params] as const,
   taskTemplates: ['task-templates'] as const,
   taskTemplateLists: ['task-templates'] as const,
   taskTemplateDetail: (id: string) => ['task-templates', 'detail', id] as const,

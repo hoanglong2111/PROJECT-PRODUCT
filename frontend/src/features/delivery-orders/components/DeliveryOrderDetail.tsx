@@ -1,6 +1,7 @@
 import {
   Alert,
   Button,
+  Checkbox,
   Grid,
   Group,
   List,
@@ -59,6 +60,7 @@ export function DeliveryOrderDetail({ deliveryOrder, onClose }: { deliveryOrder:
   const { documentLabel, t } = useI18n();
   const [createShipmentOpen, setCreateShipmentOpen] = useState(false);
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
+  const [closeAckUnverified, setCloseAckUnverified] = useState(false);
   const gates = getOperationalGates(deliveryOrder);
   const risks = getDeliveryOrderRisks(deliveryOrder);
   const allocationWeightKg = getAllocationWeightKg(deliveryOrder);
@@ -101,13 +103,28 @@ export function DeliveryOrderDetail({ deliveryOrder, onClose }: { deliveryOrder:
   const canCreateShipment =
     !deliveryOrder.linked_shipment_number &&
     !['CANCELLED', 'CLOSED', 'ASSIGNED_TO_SHIPMENT'].includes(deliveryOrder.order_info.status);
+  // Two-tier documents gate: outstanding (required type with no uploaded file) BLOCKS
+  // closing; unverified (uploaded but none VERIFIED) is a soft warning that only needs
+  // an explicit acknowledgement. RECEIVED opens the gate.
+  const docShipping = deliveryOrder.logistics_shipping;
+  const documentsOutstanding = docShipping.documents_outstanding ?? [];
+  const documentsUnverified = docShipping.documents_unverified ?? [];
+  const documentsComplete = docShipping.documents_complete ?? docShipping.missing_documents.length === 0;
+  const closeBlockedByDocuments = documentsOutstanding.length > 0;
+  const closeNeedsAck = !closeBlockedByDocuments && documentsUnverified.length > 0;
+  const canConfirmClose = !closeBlockedByDocuments && (!closeNeedsAck || closeAckUnverified);
   const closureChecklist = [
     { ok: Boolean(deliveryOrder.linked_shipment_number), label: t('deliveryOrders.checklistLinkedShipment') },
-    { ok: deliveryOrder.logistics_shipping.missing_documents.length === 0, label: t('deliveryOrders.checklistNoMissingDocuments') },
+    { ok: documentsComplete, label: t('deliveryOrders.checklistDocumentsComplete') },
     { ok: deliveryOrder.task_summary.blocked_tasks === 0, label: t('deliveryOrders.checklistNoBlockedTasks') },
     { ok: deliveryOrder.task_summary.required_tasks_remaining === 0, label: t('deliveryOrders.checklistRequiredClosureTasks') },
     { ok: Boolean(deliveryOrder.warehouse_tracking.actual_entry_date), label: t('deliveryOrders.checklistWarehousePodRecorded') },
   ];
+
+  const closeCloseConfirm = () => {
+    setCloseConfirmOpen(false);
+    setCloseAckUnverified(false);
+  };
 
   if (createShipmentOpen) {
     return (
@@ -308,7 +325,7 @@ export function DeliveryOrderDetail({ deliveryOrder, onClose }: { deliveryOrder:
 
       <Modal
         opened={closeConfirmOpen}
-        onClose={() => setCloseConfirmOpen(false)}
+        onClose={closeCloseConfirm}
         title={
           <ModalTitle
             feature="delivery-orders"
@@ -339,16 +356,41 @@ export function DeliveryOrderDetail({ deliveryOrder, onClose }: { deliveryOrder:
               </List.Item>
             ))}
           </List>
+          {closeBlockedByDocuments ? (
+            <Alert color="red" icon={<IconAlertTriangle size={18} />}>
+              {t('deliveryOrders.closeDocsOutstanding', {
+                documents: documentsOutstanding.map((code) => documentLabel(code)).join(', '),
+              })}
+            </Alert>
+          ) : null}
+          {closeNeedsAck ? (
+            <Alert color="yellow" icon={<IconAlertTriangle size={18} />}>
+              <Stack gap="xs">
+                <Text size="sm">
+                  {t('deliveryOrders.closeDocsUnverified', {
+                    documents: documentsUnverified.map((code) => documentLabel(code)).join(', '),
+                  })}
+                </Text>
+                <Checkbox
+                  size="xs"
+                  checked={closeAckUnverified}
+                  onChange={(event) => setCloseAckUnverified(event.currentTarget.checked)}
+                  label={t('deliveryOrders.closeAckUnverified')}
+                />
+              </Stack>
+            </Alert>
+          ) : null}
           <Group justify="flex-end" gap="xs">
-            <Button variant="subtle" onClick={() => setCloseConfirmOpen(false)}>
+            <Button variant="subtle" onClick={closeCloseConfirm}>
               {t('common.cancel')}
             </Button>
             <Button
               color="teal"
+              disabled={!canConfirmClose}
               loading={actionMutation.isPending}
               onClick={() => {
                 actionMutation.mutate('close');
-                setCloseConfirmOpen(false);
+                closeCloseConfirm();
               }}
             >
               {t('deliveryOrders.closeDoAction')}
