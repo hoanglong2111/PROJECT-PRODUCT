@@ -959,11 +959,11 @@
 
 .po-line-filter-badge .mantine-Badge-root {
   cursor: pointer;
-  transition: filter 120ms ease, box-shadow 120ms ease;
+  transition: box-shadow 120ms ease;
 }
 
 .po-line-filter-badge:hover .mantine-Badge-root {
-  filter: brightness(0.96);
+  box-shadow: inset 0 0 0 1px var(--kbfe-border-primary);
 }
 
 .po-lines-table-wrap {

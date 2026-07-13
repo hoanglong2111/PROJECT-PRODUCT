@@ -22,7 +22,8 @@
     inset -1px 0 0 color-mix(in srgb, var(--kbfe-background-secondary) 64%, transparent),
     var(--kbfe-glass-highlight);
   backdrop-filter: blur(var(--kbfe-glass-blur-1)) saturate(var(--kbfe-glass-saturate));
-  transition: width 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  contain: layout paint;
+  transition: width 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 /* Liquid tint — two soft color blobs drifting slowly behind the chrome
@@ -45,6 +46,12 @@
   opacity: var(--kbfe-chrome-liquid-opacity);
   animation: kbfe-liquid-undulate var(--kbfe-liquid-duration) ease-in-out infinite;
   mix-blend-mode: overlay;
+}
+
+/* Keep the sidebar's decorative tint static. Continuously animating a blurred
+   layer while its width changes is expensive on integrated/low-end GPUs. */
+.mantine-AppShell-navbar::before {
+  animation: none;
 }
 
 html[data-kbfe-resolved-color-scheme='dark'] .mantine-AppShell-header::before,
@@ -78,6 +85,24 @@ html[data-kbfe-visual-theme='high-contrast'] .mantine-AppShell-navbar::before {
   overflow: hidden;
   border: 1px solid transparent;
   border-radius: var(--kbfe-radius-md);
+  white-space: nowrap;
+  transition:
+    width 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    padding 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+.app-shell-nav .mantine-NavLink-body {
+  min-width: 0;
+  max-width: 14rem;
+  opacity: 1;
+  overflow: hidden;
+  transform: translateX(0);
+  transition:
+    max-width 140ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 90ms ease-out,
+    transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .app-shell-nav .mantine-NavLink-root[data-active]::before {
@@ -156,7 +181,13 @@ html[data-kbfe-visual-theme='high-contrast'] .app-shell-nav .mantine-NavLink-roo
 
 .mantine-AppShell-navbar[data-rail='true'] .mantine-NavLink-body,
 .mantine-AppShell-navbar[data-rail='true'] .mantine-NavLink-chevron {
-  display: none;
+  width: 0;
+  max-width: 0;
+  flex: 0 0 0;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateX(-0.35rem);
+  pointer-events: none;
 }
 
 /* Collapse toggle: sits beside the logo (expanded, absolutely pinned to the
@@ -204,8 +235,9 @@ html[data-kbfe-visual-theme='high-contrast'] .app-shell-nav .mantine-NavLink-roo
   padding-inline: var(--kbfe-space-lg);
   border-right: 1px solid var(--kbfe-border-primary);
   transition:
-    width 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    flex-basis 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    width 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    flex-basis 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    padding 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .header-body {
@@ -297,6 +329,9 @@ html[data-kbfe-visual-theme='high-contrast'] .app-shell-nav .mantine-NavLink-roo
   width: 5rem;
   height: 2.75rem;
   flex: 0 0 auto;
+  transition:
+    width 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    height 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .brand-logo {
@@ -316,8 +351,13 @@ html[data-kbfe-visual-theme='high-contrast'] .app-shell-nav .mantine-NavLink-roo
   flex-direction: column;
   justify-content: center;
   min-width: 0;
+  max-width: 7rem;
   max-height: 2.75rem;
   overflow: hidden;
+  opacity: 1;
+  transition:
+    max-width 140ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 90ms ease-out;
 }
 
 .brand-wordmark-line {
@@ -338,7 +378,9 @@ html[data-kbfe-visual-theme='high-contrast'] .app-shell-nav .mantine-NavLink-roo
 }
 
 .brand-zone[data-rail='true'] .brand-wordmark {
-  display: none;
+  max-width: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .brand-zone[data-rail='true'] .brand-mark {
@@ -553,6 +595,19 @@ html[data-kbfe-visual-theme='high-contrast'] .app-shell-nav .mantine-NavLink-roo
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .workspace-app-shell {
+    --app-shell-transition-duration: 0ms !important;
+  }
+
+  .mantine-AppShell-navbar,
+  .app-shell-nav .mantine-NavLink-root,
+  .app-shell-nav .mantine-NavLink-body,
+  .brand-zone,
+  .brand-logo-frame,
+  .brand-wordmark {
+    transition: none;
+  }
+
   .sidebar-user-footer-info,
   .sidebar-user-footer-logout {
     transition: none;

@@ -86,11 +86,14 @@ export function FineTuneCard(props: Props) {
   return (
     <Paper withBorder p="lg" className="settings-fine-tune-card">
       <Stack gap="md">
-        <Group justify="space-between" align="flex-start">
-          <Group gap="sm"><IconAdjustmentsHorizontal size={20} /><div>
-            <Text fw={700}>{t('settings.fineTune')}</Text>
-            <Text c="dimmed" size="sm">{t('settings.fineTuneDescription')}</Text>
-          </div></Group>
+        <Group className="settings-fine-tune-header" justify="space-between" align="flex-start" wrap="nowrap">
+          <Group gap="sm" align="flex-start" wrap="nowrap">
+            <IconAdjustmentsHorizontal size={20} />
+            <div>
+              <Text fw={700}>{t('settings.fineTune')}</Text>
+              <Text c="dimmed" size="sm">{t('settings.fineTuneDescription')}</Text>
+            </div>
+          </Group>
           {changed ? <Button variant="subtle" size="xs" onClick={props.onReset}>{t('settings.fineTuneReset')}</Button> : null}
         </Group>
         {locked ? <Text size="sm" c="orange">{t('settings.fineTuneHighContrastLocked')}</Text> : null}

@@ -5,11 +5,8 @@
   outline-offset: -2px;
 }
 
-.settings-info-tile {
+.settings-preferences-layout {
   min-width: 0;
-  border-left: 3px solid var(--kbfe-primary-color);
-  padding-left: var(--kbfe-space-sm);
-  transition: border-color 150ms ease;
 }
 
 .settings-accounts-table-panel {
@@ -98,13 +95,23 @@
   background: color-mix(in srgb, var(--kbfe-surface-elevated) 70%, transparent);
 }
 
-.settings-advanced-grid > * {
+.settings-advanced-grid {
+  display: grid;
+  grid-template-columns: minmax(18rem, 5fr) minmax(24rem, 7fr);
+  gap: var(--kbfe-space-lg);
+  align-items: stretch;
+}
+
+.settings-advanced-grid > *,
+.settings-appearance-cards-grid > *,
+.settings-workspace-preferences > * {
   height: 100%;
+  min-width: 0;
 }
 
 .settings-tuner-selectors {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--kbfe-space-md);
 }
 
@@ -133,8 +140,15 @@
   margin-top: 0.2rem;
 }
 
-.settings-preference-cards-grid > * {
-  height: 100%;
+.settings-workspace-preferences {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--kbfe-space-lg);
+  align-items: stretch;
+}
+
+.settings-density-card .mantine-SegmentedControl-root {
+  width: 100%;
 }
 
 .settings-preset-section {
@@ -206,11 +220,12 @@
 .settings-palette-color {
   flex: 1;
   height: 100%;
-  transition: flex-grow 150ms ease;
+  transform-origin: center bottom;
+  transition: transform 120ms ease;
 }
 
 .settings-palette-color:hover {
-  flex-grow: 1.5;
+  transform: scaleY(1.08);
 }
 
 /* Experience profile picker — plain buttons styled like swatch cards. */
@@ -253,162 +268,24 @@
   color: var(--kbfe-icon-color);
 }
 
-/* Live workspace preview — a simulated shell scoped to its OWN light/dark
-   tokens so the preview can show the opposite scheme without touching the
-   app-wide theme. Values mirror theme.css standard light/dark. Accent stays
-   on the live --kbfe-primary-color so preset changes preview instantly. */
-.settings-workspace-preview {
-  --pv-bg: #f7f8f6;
-  --pv-surface: #fbfcfa;
-  --pv-text: #1b232e;
-  --pv-text-secondary: #4b5563;
-  --pv-border: #dde3de;
-  display: flex;
-  overflow: hidden;
-  border: 1px solid var(--kbfe-border-primary);
-  border-radius: var(--mantine-radius-md);
-  background: var(--pv-bg);
-  color: var(--pv-text);
-}
-
-.settings-workspace-preview[data-preview-scheme='dark'] {
-  --pv-bg: #0f141d;
-  --pv-surface: #1a212f;
-  --pv-text: #e7ebf2;
-  --pv-text-secondary: #cbd5e1;
-  --pv-border: #253044;
-}
-
-.settings-workspace-preview-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: var(--kbfe-space-xs);
-  flex: none;
-  width: 3rem;
-  padding: var(--kbfe-space-sm) var(--kbfe-space-xs);
-  border-right: 1px solid var(--pv-border);
-  background: var(--pv-surface);
-}
-
-.settings-workspace-preview-sidebar span {
-  height: 0.5rem;
-  border-radius: var(--kbfe-radius-xs);
-  background: color-mix(in srgb, var(--pv-text-secondary) 30%, transparent);
-}
-
-.settings-workspace-preview-sidebar span:first-child {
-  background: var(--kbfe-primary-color);
-}
-
-.settings-workspace-preview-main {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: var(--kbfe-space-sm);
-  min-width: 0;
-  padding: var(--kbfe-space-sm) var(--kbfe-space-md);
-}
-
-.settings-workspace-preview-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--kbfe-space-sm);
-}
-
-.settings-workspace-preview-title {
-  width: 7rem;
-  height: 0.625rem;
-  border-radius: var(--kbfe-radius-xs);
-  background: color-mix(in srgb, var(--pv-text) 42%, transparent);
-}
-
-.settings-workspace-preview-action {
-  padding: 0.125rem 0.625rem;
-  font-size: var(--kbfe-font-size-xs);
-  font-weight: var(--kbfe-font-weight-semibold);
-  color: var(--kbfe-primary-contrast);
-  border-radius: var(--kbfe-radius-sm);
-  background: var(--kbfe-primary-color);
-}
-
-.settings-workspace-preview-kpis {
-  display: flex;
-  gap: var(--kbfe-space-sm);
-}
-
-.settings-workspace-preview-kpi {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 0.125rem;
-  min-width: 0;
-  padding: var(--kbfe-space-xs) var(--kbfe-space-sm);
-  border: 1px solid var(--pv-border);
-  border-radius: var(--kbfe-radius-md);
-  background:
-    linear-gradient(125deg, color-mix(in srgb, var(--kbfe-primary-color) calc(8% * var(--kbfe-tuner-factor)), transparent), transparent 60%),
-    var(--pv-surface);
-}
-
-.settings-workspace-preview-kpi-value {
-  font-size: var(--kbfe-font-size-lg);
-  font-weight: var(--kbfe-font-weight-bold);
-}
-
-.settings-workspace-preview-kpi-label {
-  font-size: var(--kbfe-font-size-xs);
-  color: var(--pv-text-secondary);
-}
-
-.settings-workspace-preview-table {
-  width: 100%;
-  font-size: var(--kbfe-font-size-xs);
-  border-collapse: collapse;
-}
-
-.settings-workspace-preview-table th,
-.settings-workspace-preview-table td {
-  padding: 0.3rem 0.5rem;
-  text-align: left;
-  border-bottom: 1px solid var(--pv-border);
-}
-
-.settings-workspace-preview-table th {
-  font-weight: var(--kbfe-font-weight-semibold);
-  color: var(--pv-text-secondary);
-  background: var(--pv-surface);
-}
-
-.settings-workspace-preview-next {
-  display: flex;
-  align-items: baseline;
-  gap: var(--kbfe-space-sm);
-  padding: var(--kbfe-space-xs) var(--kbfe-space-sm);
-  font-size: var(--kbfe-font-size-xs);
-  border: 1px solid color-mix(in srgb, var(--kbfe-primary-color) calc(28% * var(--kbfe-tuner-factor)), var(--pv-border));
-  border-radius: var(--kbfe-radius-md);
-  background: color-mix(in srgb, var(--kbfe-primary-color) calc(8% * var(--kbfe-tuner-factor)), var(--pv-surface));
-}
-
-.settings-workspace-preview-next-label {
-  font-weight: var(--kbfe-font-weight-bold);
-  text-transform: uppercase;
-  color: var(--kbfe-primary-color);
-}
-
-/* High contrast: the preview keeps its own scoped palette (it is a mock, not
-   live content), but drop the decorative KPI wash for consistency. */
-html[data-kbfe-visual-theme='high-contrast'] .settings-workspace-preview-kpi {
-  background: var(--pv-surface);
-}
-
 @media (max-width: 47.9375em) {
+  .settings-fine-tune-header {
+    flex-wrap: wrap;
+  }
+
+  .settings-tuner-selectors {
+    grid-template-columns: 1fr;
+  }
+
   .settings-mobile-shell-card .mantine-Button-root {
     width: 100%;
   }
 
-  .settings-workspace-preview-kpis {
-    flex-direction: column;
+}
+
+@media (max-width: 74.9375em) {
+  .settings-advanced-grid,
+  .settings-workspace-preferences {
+    grid-template-columns: 1fr;
   }
 }

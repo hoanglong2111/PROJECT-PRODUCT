@@ -17,7 +17,7 @@ export function DensityCard({ density, onChange }: Props) {
   ];
 
   return (
-    <Paper withBorder p="lg">
+    <Paper withBorder p="lg" className="settings-density-card">
       <Stack gap="sm">
         <Group gap="sm">
           <IconSettings size={20} />

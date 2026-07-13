@@ -1,5 +1,15 @@
-import { Group, NumberFormatter, Paper, Progress, SimpleGrid, Stack, Text, Title } from '@mantine/core';
-import { IconArrowRight, IconChecklist, IconShoppingCart, IconTruckDelivery } from '@tabler/icons-react';
+import { Group, NumberFormatter, Paper, Progress, SimpleGrid, Stack, Text } from '@mantine/core';
+import {
+  IconArrowRight,
+  IconChartBar,
+  IconChecklist,
+  IconClockExclamation,
+  IconHourglass,
+  IconLayoutGrid,
+  IconShoppingCart,
+  IconTimeline,
+  IconTruckDelivery,
+} from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -12,6 +22,8 @@ import type {
   PurchaseOrderStatus,
 } from '@shared/api/logistics';
 import { useI18n } from '@shared/i18n';
+
+import { DashboardCardHeader } from './DashboardCardHeader';
 
 type MetricColor = 'blue' | 'orange' | 'teal' | 'yellow' | 'red';
 
@@ -52,24 +64,26 @@ export function DashboardCharts({
     <Stack gap="lg">
       <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="md">
         <Paper withBorder p="lg" className="metric-card dashboard-card dashboard-chart-card">
-          <CardHeader
+          <DashboardCardHeader
+            icon={<IconChartBar size={20} />}
+            tone="orange"
             title={t('dashboard.purchaseOrderChartTitle')}
             description={t('dashboard.purchaseOrderChartDescription')}
           />
           <PoBarChart ariaLabel={t('dashboard.purchaseOrderChartAria')} data={poBars} />
         </Paper>
 
-        <MetricListCard title={t('dashboard.deliveryDelayTitle')} metrics={getDeliveryDelayMetrics(deliveryOrders, t)} />
+        <MetricListCard icon={<IconTruckDelivery size={20} />} tone="red" title={t('dashboard.deliveryDelayTitle')} metrics={getDeliveryDelayMetrics(deliveryOrders, t)} />
       </SimpleGrid>
 
       <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="md">
-        <MetricListCard title={t('dashboard.overdueWorkTitle')} metrics={getOverdueTaskMetrics(tasks, deliveryOrders, t)} />
-        <MetricListCard title={t('dashboard.delayAgeTitle')} metrics={getDelayAgeMetrics(deliveryOrders, t)} />
+        <MetricListCard icon={<IconClockExclamation size={20} />} tone="orange" title={t('dashboard.overdueWorkTitle')} metrics={getOverdueTaskMetrics(tasks, deliveryOrders, t)} />
+        <MetricListCard icon={<IconHourglass size={20} />} tone="yellow" title={t('dashboard.delayAgeTitle')} metrics={getDelayAgeMetrics(deliveryOrders, t)} />
       </SimpleGrid>
 
       <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="md">
         <Paper withBorder p="lg" className="metric-card dashboard-card dashboard-chart-card">
-          <CardHeader title={t('dashboard.monthlyThroughputChart')} description={t('dashboard.monthlyThroughputDescription')} />
+          <DashboardCardHeader icon={<IconTimeline size={20} />} tone="teal" title={t('dashboard.monthlyThroughputChart')} description={t('dashboard.monthlyThroughputDescription')} />
           <Stack gap="sm">
             {stats.monthlyThroughput.map((item) => (
               <div key={item.month} className="dashboard-progress-row">
@@ -98,7 +112,7 @@ export function DashboardCharts({
         </Paper>
 
         <Paper withBorder p="lg" className="metric-card dashboard-card dashboard-chart-card">
-          <CardHeader title={t('dashboard.modulesTitle')} description={t('dashboard.modulesDescription')} />
+          <DashboardCardHeader icon={<IconLayoutGrid size={20} />} tone="blue" title={t('dashboard.modulesTitle')} description={t('dashboard.modulesDescription')} />
           <Stack gap="sm" mt="md">
             <ModuleLink
               to="/purchase-orders"
@@ -121,19 +135,6 @@ export function DashboardCharts({
           </Stack>
         </Paper>
       </SimpleGrid>
-    </Stack>
-  );
-}
-
-function CardHeader({ description, title }: { description?: string; title: string }) {
-  return (
-    <Stack gap={4} mb="md">
-      <Title order={3}>{title}</Title>
-      {description ? (
-        <Text size="sm" c="dimmed">
-          {description}
-        </Text>
-      ) : null}
     </Stack>
   );
 }
@@ -178,10 +179,10 @@ function PoBarChart({ ariaLabel, data }: { ariaLabel: string; data: Array<{ colo
   );
 }
 
-function MetricListCard({ metrics, title }: { metrics: ListMetric[]; title: string }) {
+function MetricListCard({ icon, metrics, title, tone }: { icon: ReactNode; metrics: ListMetric[]; title: string; tone: MetricColor }) {
   return (
     <Paper withBorder p="lg" className="metric-card dashboard-card dashboard-list-card">
-      <CardHeader title={title} />
+      <DashboardCardHeader icon={icon} title={title} tone={tone} />
       <Stack gap="xs">
         {metrics.map((metric) => (
           <Group key={metric.label} justify="space-between" gap="md" wrap="nowrap" className="dashboard-list-row">

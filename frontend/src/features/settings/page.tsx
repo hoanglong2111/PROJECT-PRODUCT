@@ -40,7 +40,6 @@ import {
   FineTuneCard,
   LanguageCard,
   VisualThemeCard,
-  WorkspacePreviewCard,
 } from './components';
 import { CreateUserModal } from './components/CreateUserModal';
 import { UserManagementPanel } from './components/UserManagementPanel';
@@ -61,7 +60,6 @@ export function Settings() {
     language,
     mobileQuickActionsVisible,
     resetFineTune,
-    resolvedColorScheme,
     surfaceTransparency,
     setAppearanceMode,
     setExperienceProfile,
@@ -80,7 +78,7 @@ export function Settings() {
     setVisualTheme,
     visualTheme,
   } = useWorkspacePreferences();
-  const { appearanceModeLabel, densityLabel, languageLabel, t, visualThemeLabel } = useI18n();
+  const { t } = useI18n();
   const [message, setMessage] = useState<string | null>(null);
   const canManageUsers = true;
   const requestedSection = searchParams.get('section');
@@ -155,14 +153,23 @@ export function Settings() {
         </Tabs.List>
 
         <Tabs.Panel value="preferences" pt="lg">
-          <Stack gap="lg">
-            <WorkspacePreviewCard />
-
+          <Stack gap="xl" className="settings-preferences-layout">
             <ExperienceProfilesCard
               experienceProfile={experienceProfile}
               isCustomized={isProfileCustomized}
               onChange={setExperienceProfile}
             />
+
+            <SimpleGrid cols={{ base: 1, md: 2 }} className="settings-appearance-cards-grid">
+              <AppearanceModeCard
+                appearanceMode={appearanceMode}
+                onChange={setAppearanceMode}
+              />
+              <VisualThemeCard
+                visualTheme={visualTheme}
+                onChange={setVisualTheme}
+              />
+            </SimpleGrid>
 
             <div>
               <Text fw={700}>{t('settings.advanced')}</Text>
@@ -171,7 +178,7 @@ export function Settings() {
               </Text>
             </div>
 
-            <SimpleGrid cols={{ base: 1, md: 2 }} className="settings-advanced-grid">
+            <div className="settings-advanced-grid">
               <ColorPresetGrid colorPreset={colorPreset} onChange={setColorPreset} presets={fineTunePresets}
                 onApplyPreset={applyFineTunePreset} onDeletePreset={deleteFineTunePreset}
                 onRenamePreset={renameFineTunePreset} onSavePreset={saveFineTunePreset} />
@@ -187,17 +194,9 @@ export function Settings() {
                 transparencyLevel={surfaceTransparency}
                 visualTheme={visualTheme}
               />
-            </SimpleGrid>
+            </div>
 
-            <SimpleGrid cols={{ base: 1, sm: 2, xl: 4 }} className="settings-preference-cards-grid">
-              <AppearanceModeCard
-                appearanceMode={appearanceMode}
-                onChange={setAppearanceMode}
-              />
-              <VisualThemeCard
-                visualTheme={visualTheme}
-                onChange={setVisualTheme}
-              />
+            <div className="settings-workspace-preferences">
               <DensityCard
                 density={density}
                 onChange={setDensity}
@@ -206,56 +205,34 @@ export function Settings() {
                 language={language}
                 onChange={setLanguage}
               />
-            </SimpleGrid>
 
-            <Paper withBorder p="lg" className="dl-data-panel settings-mobile-shell-card">
-              <Group justify="space-between" align="flex-start" gap="md" wrap="wrap">
-                <Group gap="sm" align="flex-start" wrap="nowrap">
-                  <IconDeviceMobile size={22} />
-                  <div>
-                    <Text fw={700}>{t('settings.mobileShell')}</Text>
-                    <Text c="dimmed" size="sm">
-                      {t('settings.mobileShellDescription')}
-                    </Text>
-                  </div>
+              <Paper withBorder p="lg" className="dl-data-panel settings-mobile-shell-card">
+                <Group justify="space-between" align="flex-start" gap="md" wrap="wrap">
+                  <Group gap="sm" align="flex-start" wrap="nowrap">
+                    <IconDeviceMobile size={22} />
+                    <div>
+                      <Text fw={700}>{t('settings.mobileShell')}</Text>
+                      <Text c="dimmed" size="sm">
+                        {t('settings.mobileShellDescription')}
+                      </Text>
+                    </div>
+                  </Group>
+                  <Badge color={mobileQuickActionsVisible ? 'teal' : 'gray'} variant="light">
+                    {mobileQuickActionsVisible
+                      ? t('settings.mobileQuickActionsVisible')
+                      : t('settings.mobileQuickActionsHidden')}
+                  </Badge>
                 </Group>
-                <Badge color={mobileQuickActionsVisible ? 'teal' : 'gray'} variant="light">
-                  {mobileQuickActionsVisible
-                    ? t('settings.mobileQuickActionsVisible')
-                    : t('settings.mobileQuickActionsHidden')}
-                </Badge>
-              </Group>
-              <Button
-                disabled={mobileQuickActionsVisible}
-                mt="md"
-                onClick={() => setMobileQuickActionsVisible(true)}
-                variant={mobileQuickActionsVisible ? 'default' : 'filled'}
-              >
-                {t('settings.mobileQuickActionsRestore')}
-              </Button>
-            </Paper>
-
-            <Paper withBorder p="lg" className="dl-data-panel">
-              <SimpleGrid cols={{ base: 1, md: 2, xl: 4 }}>
-                <Info
-                  label={t('settings.currentProfile')}
-                  value={`${t(`settings.profileOption.${experienceProfile}`)}${isProfileCustomized ? ` — ${t('settings.profileCustomized')}` : ''}`}
-                />
-                <Info
-                  label={t('settings.currentTransparency')}
-                  value={t(`settings.transparencyLevels.${surfaceTransparency}`)}
-                />
-                <Info label={t('settings.currentAppearance')} value={appearanceModeLabel(appearanceMode)} />
-                <Info label={t('settings.currentResolvedMode')} value={appearanceModeLabel(resolvedColorScheme)} />
-                <Info
-                  label={t('settings.colorPreset')}
-                  value={t(`settings.colorPresets.${colorPreset}`)}
-                />
-                <Info label={t('settings.currentVisualTheme')} value={visualThemeLabel(visualTheme)} />
-                <Info label={t('settings.currentDensity')} value={densityLabel(density)} />
-                <Info label={t('settings.currentLanguage')} value={languageLabel(language)} />
-              </SimpleGrid>
-            </Paper>
+                <Button
+                  disabled={mobileQuickActionsVisible}
+                  mt="md"
+                  onClick={() => setMobileQuickActionsVisible(true)}
+                  variant={mobileQuickActionsVisible ? 'default' : 'filled'}
+                >
+                  {t('settings.mobileQuickActionsRestore')}
+                </Button>
+              </Paper>
+            </div>
 
             <Paper withBorder p="lg" className="dl-data-panel">
               <Group gap="sm" mb="md">
@@ -348,17 +325,6 @@ function Recommendation({
       <Text c="dimmed" size="sm">
         {description}
       </Text>
-    </Stack>
-  );
-}
-
-function Info({ label, value }: { label: string; value: string }) {
-  return (
-    <Stack className="settings-info-tile" gap={2}>
-      <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-        {label}
-      </Text>
-      <Text fw={600}>{value}</Text>
     </Stack>
   );
 }

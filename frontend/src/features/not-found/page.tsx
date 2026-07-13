@@ -102,7 +102,7 @@ export function NotFound() {
                     gap: '1rem',
                     textDecoration: 'none',
                     color: 'inherit',
-                    transition: 'all 200ms ease',
+                    transition: 'background-color 120ms ease, border-color 120ms ease, transform 120ms ease',
                   }}
                 >
                   <ThemeIcon
@@ -136,7 +136,7 @@ export function NotFound() {
                     gap: '1rem',
                     textDecoration: 'none',
                     color: 'inherit',
-                    transition: 'all 200ms ease',
+                    transition: 'background-color 120ms ease, border-color 120ms ease, transform 120ms ease',
                   }}
                 >
                   <ThemeIcon
@@ -170,7 +170,7 @@ export function NotFound() {
                     gap: '1rem',
                     textDecoration: 'none',
                     color: 'inherit',
-                    transition: 'all 200ms ease',
+                    transition: 'background-color 120ms ease, border-color 120ms ease, transform 120ms ease',
                   }}
                 >
                   <ThemeIcon

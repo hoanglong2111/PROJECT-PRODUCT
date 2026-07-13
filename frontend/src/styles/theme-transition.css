@@ -8,6 +8,76 @@ html[data-kbfe-theme-transition='active'] *::after {
   transition: none !important;
 }
 
+/* Project-wide motion budget.
+   Keep interaction feedback on compositor-friendly properties and prevent a
+   slow device from spending frames interpolating layout or expensive filters. */
+*,
+*::before,
+*::after {
+  transition-property:
+    opacity,
+    transform,
+    color,
+    background-color,
+    border-color,
+    box-shadow !important;
+  transition-duration: 120ms !important;
+}
+
+/* The desktop rail is the one intentional layout transition. It is isolated
+   with containment in app-shell.css and remains short enough to never gate
+   navigation or data rendering. */
+.workspace-app-shell .mantine-AppShell-navbar {
+  transition-property: width !important;
+  transition-duration: 120ms !important;
+}
+
 html[data-kbfe-theme-transition='active'] .theme-toggle-icon {
-  transition: opacity 170ms cubic-bezier(0.2, 0.8, 0.2, 1), transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+  transition-property: opacity, transform !important;
+  transition-duration: 120ms !important;
+}
+
+/* Decorative liquid gradients continuously consume paint/composite time.
+   A static tint preserves the visual hierarchy without a background task. */
+.kbfe-liquid-surface::before,
+.app-shell-header::before,
+.app-shell-mobile-bar::before {
+  animation: none !important;
+  filter: none !important;
+  will-change: auto !important;
+}
+
+/* Loading placeholders reserve the same geometry but do not run an infinite
+   shimmer. Actual activity indicators remain animated and data-driven. */
+.mantine-Skeleton-root::before,
+.mantine-Skeleton-root::after {
+  animation: none !important;
+}
+
+/* Slow-refresh and accessibility environments get a fully static interface.
+   The UI remains immediately operable while asynchronous data can finish in
+   its own time. */
+@media (update: slow), (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Backdrop blur is particularly expensive on low-refresh devices. Use the
+   already themed opaque surface fallback instead of translucent repainting. */
+@media (update: slow), (prefers-reduced-transparency: reduce) {
+  *,
+  *::before,
+  *::after {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
 }
