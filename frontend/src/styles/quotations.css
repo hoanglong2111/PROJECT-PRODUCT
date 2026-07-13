@@ -2892,6 +2892,53 @@ html[data-kbfe-resolved-color-scheme='dark'] .rfq-list-panel {
   line-height: 1.2;
 }
 
+/* Identity cell: distinguish customer vs supplier sub-lines, and keep long
+   supplier names on a single truncated line (full name shown via tooltip). */
+.rfq-queue-idline,
+.rfq-queue-supplier {
+  margin-top: 2px;
+  min-width: 0;
+}
+
+.rfq-queue-info {
+  flex: none;
+}
+
+/* Keep existing rows visible during a background refetch, but dim + lock them
+   so the toolbar loader reads as "updating" rather than the table flashing. */
+.rfq-list-body--refetching {
+  opacity: 0.55;
+  pointer-events: none;
+  transition: opacity 150ms ease;
+}
+
+/* Short text tag ("KH"/"NCC") that labels the customer / supplier sub-line. */
+.rfq-queue-tag {
+  flex: none;
+  min-width: 2.25rem;
+  font-weight: 600;
+  color: var(--kbfe-text-tertiary, var(--kbfe-text-secondary));
+}
+
+/* Cargo-ready urgency flags — reuse the shared status tokens, no new colors. */
+.rfq-ready-flag--overdue {
+  color: var(--kbfe-status-red);
+}
+
+.rfq-ready-flag--soon {
+  color: var(--kbfe-status-orange);
+}
+
+/* Whole row opens the RFQ detail (keeps the eye icon as an explicit affordance). */
+.rfq-queue-row {
+  cursor: pointer;
+}
+
+.rfq-queue-row:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--kbfe-primary-color) 70%, transparent);
+  outline-offset: -2px;
+}
+
 .rfq-detail-table td,
 .rfq-detail-table th {
   vertical-align: top;

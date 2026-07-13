@@ -12,7 +12,7 @@ export type DepartmentCode =
   | 'KBI_WAREHOUSE';
 
 // Who a blocked task is waiting on (so the UI can say "who is blocking / who must unblock").
-export type BlockedByParty = 'SUPPLIER' | 'CARRIER' | 'KBI' | 'CUSTOMS' | 'INTERNAL';
+export type BlockedByParty = 'SUPPLIER' | 'CARRIER' | 'CUSTOMER' | 'CUSTOMS' | 'INTERNAL';
 
 export type LogisticsTaskTemplateRef = {
   task_template_id: string;

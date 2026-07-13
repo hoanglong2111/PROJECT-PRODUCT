@@ -843,11 +843,13 @@ DO task summary are projections of that pool, linked to the catalog:
   DEPARTMENTS in `@shared/api/taskTemplates` — do not hand-map SOP codes.
 - A runtime task with no template link shows no SOP panel; never invent a link
   on the frontend (the backend seed owns the mapping).
-- `is_required_for_closure` is INHERITED from the linked SOP template (an SOP
-  property, never hand-set per task). The DO closure gate (`DeliveryOrderTasksTab`)
-  lists the required tasks still open; `required_tasks_remaining` = required tasks
-  not COMPLETED.
-- A blocked task carries `blocked_by_party` (SUPPLIER|CARRIER|KBI|CUSTOMS|INTERNAL)
+- `is_required_for_closure` is a **manually-curated master-data property of the SOP
+  template** — admins toggle it per template in the Task Template form (`TaskTemplateModal`,
+  master-data), the value persists, and runtime tasks INHERIT it from the linked template
+  (never set per task instance). The reseed formula (MS1–MS8 & not accounting) is only the
+  seed DEFAULT. The DO closure gate (`DeliveryOrderTasksTab`) lists the required tasks still
+  open; `required_tasks_remaining` = required tasks not COMPLETED.
+- A blocked task carries `blocked_by_party` (SUPPLIER|CARRIER|CUSTOMER|CUSTOMS|INTERNAL)
   so the UI says who is blocking / who must unblock. "blocked" = "bị chặn" (distinct
   from overdue); closing a DO's file is "đóng hồ sơ lô hàng" (never "đóng lệnh").
 ```

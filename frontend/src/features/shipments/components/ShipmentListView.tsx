@@ -1,5 +1,5 @@
 import { ActionIcon, Anchor, Badge, Button, Checkbox, Group, Paper, ScrollArea, SegmentedControl, Select, Stack, Table, Text, TextInput, Tooltip } from '@mantine/core';
-import { IconCalendarStats, IconExternalLink, IconSearch, IconTruck, IconX } from '@tabler/icons-react';
+import { IconCalendarStats, IconEye, IconSearch, IconTruck, IconX } from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -396,7 +396,7 @@ export function ShipmentListView({
                             onSelectShipment(shp);
                           }}
                         >
-                          <IconExternalLink size={18} />
+                          <IconEye size={18} />
                         </ActionIcon>
                       </Tooltip>
                     </Table.Td>

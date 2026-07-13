@@ -1,4 +1,4 @@
-import { Alert, NumberInput, Select, SimpleGrid, Textarea, TextInput } from '@mantine/core';
+import { Alert, NumberInput, Select, SimpleGrid, Switch, Textarea, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -38,6 +38,7 @@ type TaskTemplateFormValues = {
   relatedDocuments: string;
   note: string;
   sortOrder: string;
+  isRequiredForClosure: boolean;
 };
 
 const emptyValues: TaskTemplateFormValues = {
@@ -53,6 +54,7 @@ const emptyValues: TaskTemplateFormValues = {
   relatedDocuments: '',
   note: '',
   sortOrder: '',
+  isRequiredForClosure: false,
 };
 
 export function TaskTemplateModal({
@@ -89,6 +91,7 @@ export function TaskTemplateModal({
       relatedDocuments: editing.related_documents,
       note: editing.note ?? '',
       sortOrder: String(editing.sort_order),
+      isRequiredForClosure: editing.is_required_for_closure,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opened, editing]);
@@ -138,6 +141,7 @@ export function TaskTemplateModal({
         related_documents: optionalString(form.values.relatedDocuments) ?? '',
         note: optionalString(form.values.note) ?? null,
         sort_order: sortOrderNumber ?? 0,
+        is_required_for_closure: form.values.isRequiredForClosure,
       };
 
       return editing ? updateTaskTemplate(editing.id, payload) : createTaskTemplate(payload);
@@ -207,6 +211,13 @@ export function TaskTemplateModal({
           />
           <TextInput label={t('masterData.slaText')} {...form.getInputProps('slaText')} />
         </SimpleGrid>
+        <Switch
+          mt="md"
+          label={t('masterData.requiredForClosure')}
+          description={t('masterData.requiredForClosureHint')}
+          checked={form.values.isRequiredForClosure}
+          onChange={(event) => form.setFieldValue('isRequiredForClosure', event.currentTarget.checked)}
+        />
       </MasterDataFormSection>
       <MasterDataFormSection>
         <TextInput label={t('masterData.taskName')} required {...form.getInputProps('taskName')} />

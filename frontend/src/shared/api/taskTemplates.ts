@@ -89,6 +89,7 @@ export type TaskTemplatePayload = {
   related_documents?: string;
   note?: string | null;
   sort_order?: number;
+  is_required_for_closure?: boolean;
   is_active?: boolean;
 };
 

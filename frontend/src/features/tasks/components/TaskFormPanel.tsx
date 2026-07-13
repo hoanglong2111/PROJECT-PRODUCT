@@ -25,7 +25,7 @@ import { milestoneLabel, templateSlaLabel } from '../model/tasksModel';
 
 const PRIORITY_VALUES: Priority[] = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
 const STATUS_VALUES: TaskStatus[] = ['PENDING', 'TODO', 'IN_PROGRESS', 'WAITING', 'BLOCKED', 'COMPLETED', 'CANCELLED'];
-const BLOCKED_BY_PARTY_VALUES: BlockedByParty[] = ['SUPPLIER', 'CARRIER', 'KBI', 'CUSTOMS', 'INTERNAL'];
+const BLOCKED_BY_PARTY_VALUES: BlockedByParty[] = ['SUPPLIER', 'CARRIER', 'CUSTOMER', 'CUSTOMS', 'INTERNAL'];
 
 type TaskFormValues = {
   taskTemplateId: string | null;

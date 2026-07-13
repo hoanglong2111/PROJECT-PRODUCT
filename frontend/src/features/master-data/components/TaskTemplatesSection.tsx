@@ -324,7 +324,16 @@ export function TaskTemplatesSection({
                           </Table.Td>
                           <Table.Td className="md-cell-clamp">
                             <Stack gap={3}>
-                              <Text size="sm" fw={700}>{template.task_name}</Text>
+                              <Group gap={6} wrap="nowrap">
+                                <Text size="sm" fw={700} lineClamp={1}>{template.task_name}</Text>
+                                {template.is_required_for_closure ? (
+                                  <Tooltip label={t('masterData.requiredForClosure')}>
+                                    <Badge color="orange" variant="light" size="xs" style={{ flexShrink: 0 }}>
+                                      {t('tasks.required')}
+                                    </Badge>
+                                  </Tooltip>
+                                ) : null}
+                              </Group>
                               <Text size="sm" c="dimmed" lineClamp={2}>
                                 {template.task_description || '-'}
                               </Text>

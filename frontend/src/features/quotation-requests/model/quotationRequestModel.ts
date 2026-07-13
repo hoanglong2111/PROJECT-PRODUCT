@@ -1,3 +1,5 @@
+import dayjs from 'dayjs';
+
 import type { QuotationRequestLineV1, QuotationRequestStatusV1, QuotationRequestV1 } from '@shared/api/quotationRequests';
 import type { QuotationV1 } from '@shared/api/quotations';
 import { getStatusBadgeConfig } from '@shared/components/StatusBadge';
@@ -28,6 +30,34 @@ export const quotationRequestTabItems: { value: QuotationRequestTab; labelKey: M
 /** Delegates to the shared status-color map so RFQ badges match every other status badge in the app. */
 export function rfqStatusColor(status: QuotationRequestStatusV1): string {
   return getStatusBadgeConfig(status).color;
+}
+
+/** Statuses where the desired cargo-ready date is still actionable, so an urgency signal is worth showing. */
+const RFQ_OPEN_STATUSES: QuotationRequestStatusV1[] = ['SUBMITTED', 'RECEIVED', 'QUOTED'];
+
+export type RfqCargoReadyUrgencyKey = 'overdue' | 'today' | 'soon' | 'later' | 'none';
+export type RfqCargoReadyUrgency = { key: RfqCargoReadyUrgencyKey; days: number };
+
+/**
+ * Classifies how urgent the desired cargo-ready date is for a queue row: overdue, today,
+ * soon (within {soonWithinDays}), or later. Only "open" RFQs get an urgency flag — a
+ * confirmed/cancelled request no longer needs the reader chased about its ready date, so
+ * it returns `none` (render the plain date). `days` is the whole-day distance from today
+ * (negative when overdue).
+ */
+export function rfqCargoReadyUrgency(
+  date: string | null | undefined,
+  status: QuotationRequestStatusV1,
+  soonWithinDays = 3,
+): RfqCargoReadyUrgency {
+  if (!date || !RFQ_OPEN_STATUSES.includes(status)) return { key: status ? 'later' : 'none', days: 0 };
+  const target = dayjs(date);
+  if (!target.isValid()) return { key: 'none', days: 0 };
+  const days = target.startOf('day').diff(dayjs().startOf('day'), 'day');
+  if (days < 0) return { key: 'overdue', days: Math.abs(days) };
+  if (days === 0) return { key: 'today', days: 0 };
+  if (days <= soonWithinDays) return { key: 'soon', days };
+  return { key: 'later', days };
 }
 
 export const rfqModeOptions = [
